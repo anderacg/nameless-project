@@ -23,7 +23,7 @@ onWorld(()=>{ROUTES=new WeakMap()});
 // is the straight line from (x0,y0) to (x1,y1) open ground all the way (a holding's walls shut: holdShut; a crossing shut, Router.close:
 // as the tile searches keep off both, a code review, 2026-11-03, found a closed bridge crossed by the straight line)
 function clearLine(x0,y0,x1,y1){holdShut();const d=Math.hypot(x1-x0,y1-y0),n=Math.ceil(d/4),F=WAY_FOOT&&footMask(),s0=Math.floor(y0/TILE)*MW+Math.floor(x0/TILE),g0=Math.floor(y1/TILE)*MW+Math.floor(x1/TILE);
-  for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k,j=Math.floor(y/TILE)*MW+Math.floor(x/TILE);if(!passable(terrAt(x,y))||SHUT&&SHUT[j]&7||F&&F[j]&&j!==s0&&j!==g0)return false}return true}
+  let p=s0;for(let i=1;i<=n;i++){const k=i/n,x=x0+(x1-x0)*k,y=y0+(y1-y0)*k,j=Math.floor(y/TILE)*MW+Math.floor(x/TILE);if(!passable(terrAt(x,y))||SHUT&&SHUT[j]&7||F&&F[j]&&j!==s0&&j!==g0)return false;if(j!==p){if(!WAY_CLIMB&&!ledgeOk(p,j))return false;p=j}}return true}
 /* on foot round the buildings (the owner, 2026-11-10: "fix pathfinder and the guide path to use a walkable path otherwise my character
    would walk into obstacle"): your band's way (WAY_FOOT, set while world.js heroWay looks for it, and so for the way drawn ahead of
    you) goes round a holding's buildings (its houses, halls, workshops, wells, carts: footMask; its fields and pastures, WAY_FOOT_LOT.open,
@@ -51,7 +51,7 @@ onWorld(()=>{FOOTM={m:null,key:'',t:-1e9}});
 // rm: off the roads x rm (a road keeper's)
 function findPath(x0,y0,x1,y1,pad,rm){
   holdShut();pad=pad||16;const sx=Math.floor(x0/TILE),sy=Math.floor(y0/TILE),gx=Math.floor(x1/TILE),gy=Math.floor(y1/TILE);if(sx===gx&&sy===gy)return[];
-  const climb=(i,t)=>WAY_CLIMB&&t===T_MOUNT,canAt=i=>walkTile(i)||climb(i,tiles[i]);// (a climber's cliffs: map.js heroClimbs)
+  const climb=(i,t)=>WAY_CLIMB&&t===T_MOUNT,canAt=i=>(walkTile(i)||climb(i,tiles[i]))&&!bridgeSide(i);// (a climber's cliffs: map.js heroClimbs)
   if(gx<0||gy<0||gx>=MW||gy>=MH||!canAt(gy*MW+gx))return null;
   const bx=Math.max(0,Math.min(sx,gx)-pad),by=Math.max(0,Math.min(sy,gy)-pad),bw=Math.min(MW,Math.max(sx,gx)+pad+1)-bx,bh=Math.min(MH,Math.max(sy,gy)+pad+1)-by;
   const N=bw*bh,g=new Float64Array(N).fill(Infinity),from=new Int32Array(N).fill(-1),heap=[],L=(x,y)=>(y-by)*bw+(x-bx);
@@ -60,7 +60,7 @@ function findPath(x0,y0,x1,y1,pad,rm){
   const h=(x,y)=>Math.hypot(x-gx,y-gy)/ROAD_BAND.speed,s0=L(sx,sy),goal=L(gx,gy),F=WAY_FOOT&&footMask(),fc=WAY_FOOT_LOT.cost,LVW=WM&&WM.lv;g[s0]=0;push(s0,h(sx,sy));
   while(heap.length){const [,i]=pop();if(i===goal)break;const x=bx+i%bw,y=by+((i/bw)|0);
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<bx||ny<by||nx>=bx+bw||ny>=by+bh)continue;
-      const t=tiles[ny*MW+nx];if(!canAt(ny*MW+nx)||SHUT&&SHUT[ny*MW+nx])continue;if(dx&&dy&&(!canAt(y*MW+nx)||!canAt(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
+      const t=tiles[ny*MW+nx];if(!canAt(ny*MW+nx)||SHUT&&SHUT[ny*MW+nx]||!WAY_CLIMB&&!ledgeOk(y*MW+x,ny*MW+nx))continue;if(dx&&dy&&(!canAt(y*MW+nx)||!canAt(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&6||SHUT[ny*MW+x]&6)))continue;// (no corner of a holding's walls cut, its centre's or its ring's: holdShut)
       const sp=t===T_ROAD?ROAD_BAND.speed:Math.max(.25,Math.max(.35,SPEEDMUL[t]*CLIMMUL[CLIMS[climate[ny*MW+nx]]])*slopeMulAt(ny*MW+nx)),j=L(nx,ny),wb=t===T_WATER?waterBand(ny*MW+nx):0,nd=g[i]+((dx&&dy?1.414:1)*(wb?(wb>=4&&WAY_NOSWIM?Infinity:WATER.cost[wb]):t===T_MOUNT?LAB_WALK.climbCost:1/sp)+climbCost(LVW,y*MW+x,ny*MW+nx,t===T_ROAD))*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(F&&F[ny*MW+nx]?fc:1);
       if(nd<g[j]){g[j]=nd;from[j]=i;push(j,nd+h(nx,ny))}}}
   if(!isFinite(g[goal]))return null;
@@ -141,7 +141,7 @@ const wayStepAt=(i,m=WM)=>{if(m.kind[i]!==T_WATER)return wayStep(m.kind[i],m.cli
 const wayDay=()=>TILE/moveStep(WAY.pace,DAY_SECONDS*WORLD_PACE);
 function buildWayGraph(g){
   const m=g.map,W=m.w,H=m.h,N=W*H,K=m.kind,Cl=m.clim,CS=WAY.cs,cols=Math.ceil(W/CS),rows=Math.ceil(H/CS),DPT=wayDay(),cost=i=>wayStepAt(i,m)/(m.slope&&K[i]!==T_ROAD&&K[i]!==T_WATER?SLOPE.mul[m.slope[i]]:1),LV=m.lv||null;
-  const X=new Int32Array(N).fill(-1);m.crossings.forEach((c,k)=>{for(const i of c.tiles)X[i]=k});
+  const X=new Int32Array(N).fill(-1);m.crossings.forEach((c,k)=>{for(const i of c.tiles)X[i]=k});ledgeBits(m,g.holdings);// (map.js: no step over a ledge)
   const tile=[],nk=[],at=new Map(),node=(i,k)=>{let v=at.get(i);if(v===undefined){v=tile.length;at.set(i,v);tile.push(i);nk.push(k)}return v};
   // (an edge a to b: [a, b, days, ek, xing, road, from, to]; the cheapest kept between two nodes)
   const E=[],pair=new Map(),edge=(a,b,c,k,x,r,ka,kb)=>{if(a===b)return;const q=a*1048576+b,o=pair.get(q);if(o!==undefined){if(E[o][2]>c)E[o]=[a,b,c,k,x,r,ka,kb];return}pair.set(q,E.length);E.push([a,b,c,k,x,r,ka,kb])};
@@ -162,15 +162,15 @@ function buildWayGraph(g){
   // the crossing's edge)
   m.roads.forEach((r,ri)=>{const p=r.path,ek=r.kind==='road'?0:1;let ka=-1;
     for(let k=0;k<p.length;k++){const v=at.get(p[k]);if(v===undefined)continue;
-      if(ka>=0){let ok=true,cf=0,cb=0;for(let q=ka+1;q<=k;q++){const a=p[q-1],b=p[q];if(K[b]===T_WATER||X[b]>=0&&q<k){ok=false;break}const d=a%W!==b%W&&(a/W|0)!==(b/W|0)?1.4142:1;cf+=cost(b)*d+climbCost(LV,a,b,K[b]===T_ROAD);cb+=cost(a)*d+climbCost(LV,b,a,K[a]===T_ROAD)}
-        if(ok){const u=at.get(p[ka]);edge(u,v,cf*DPT,ek,-1,ri,ka,k);edge(v,u,cb*DPT,ek,-1,ri,k,ka)}}
+      if(ka>=0){let ok=true,of=true,ob=true,cf=0,cb=0;for(let q=ka+1;q<=k;q++){const a=p[q-1],b=p[q];if(K[b]===T_WATER||X[b]>=0&&q<k){ok=false;break}if(!ledgeOk(a,b,m))of=false;if(!ledgeOk(b,a,m))ob=false;const d=a%W!==b%W&&(a/W|0)!==(b/W|0)?1.4142:1;cf+=cost(b)*d+climbCost(LV,a,b,K[b]===T_ROAD);cb+=cost(a)*d+climbCost(LV,b,a,K[a]===T_ROAD)}
+        if(ok){const u=at.get(p[ka]);if(of)edge(u,v,cf*DPT,ek,-1,ri,ka,k);if(ob)edge(v,u,cb*DPT,ek,-1,ri,k,ka)}}
       ka=k}});
   // the crossings: a bridge or a ford its tiles' costs, a ferry WAY.ferry days
   m.crossings.forEach((c,xi)=>{let f=WAY.ferry,b=WAY.ferry;if(c.kind!=='ferry'){f=cost(c.j);b=cost(c.i);for(const i of c.tiles){f+=cost(i);b+=cost(i)}f*=DPT;b*=DPT}
     edge(at.get(c.i),at.get(c.j),f,2,xi,-1,0,0);edge(at.get(c.j),at.get(c.i),b,2,xi,-1,0,0)});
   // the chunk portals: along each border between two chunks, each open run (walkable on both sides, no crossing's tile) cut into
   // pieces of WAY.run tiles at most, a node each side of each piece's middle, a step between them
-  const open=i=>walkTile(i,m)&&X[i]<0,port=(i,j)=>{const a=node(i,5),b=node(j,5);edge(a,b,(cost(j)+climbCost(LV,i,j))*DPT,5,-1,-1,0,0);edge(b,a,(cost(i)+climbCost(LV,j,i))*DPT,5,-1,-1,0,0)};
+  const open=i=>walkTile(i,m)&&X[i]<0,port=(i,j)=>{const a=node(i,5),b=node(j,5);if(ledgeOk(i,j,m))edge(a,b,(cost(j)+climbCost(LV,i,j))*DPT,5,-1,-1,0,0);if(ledgeOk(j,i,m))edge(b,a,(cost(i)+climbCost(LV,j,i))*DPT,5,-1,-1,0,0)};
   const runs=(len,ok,put)=>{for(let s=0;s<len;){if(!ok(s)){s++;continue}let e=s;while(e<len&&ok(e))e++;const q=Math.ceil((e-s)/WAY.run);
     for(let k=0;k<q;k++)put((s+Math.floor((e-s)*k/q)+s+Math.floor((e-s)*(k+1)/q)-1)>>1);s=e}};
   for(let cx=1;cx<cols;cx++)for(let cy=0;cy<rows;cy++){const x=cx*CS,y0=cy*CS;runs(Math.min(CS,H-y0),k=>open((y0+k)*W+x-1)&&open((y0+k)*W+x),k=>port((y0+k)*W+x-1,(y0+k)*W+x))}
@@ -204,6 +204,13 @@ let SHUT=null,WAYN=null,WAYV=0;const PAIRS=new Map(),WAYS={queries:0,hits:0,grap
 onWorld(m=>{SHUT=null;WAYN=null;PAIRS.clear();WAYV++;if(m.graph){m.graph.chunk.clear();m.graph.closed.fill(0)}});
 const wayNodes=()=>WAYN||(WAYN=new Map(Array.from(WM.graph.tile,(t,v)=>[t,v])));
 const wayChunkOf=(G,i)=>((i/MW|0)/G.cs|0)*G.cols+((i%MW)/G.cs|0);
+/* (the river's tiles beside a bridge (8 ways from its tiles and its two ends), a byte a tile, kept for each map: shut to the ways
+   (findPath, wayLocal: no step into one) and to the march's ground (march.js MarchGround), so one crossing keeps to the deck, never swims or wades
+   beside it, and an army squeezes onto it (the owner, 2026-11-18: "the bridge path seems weird")) */
+const BRIDGE_SIDE=new WeakMap();
+function bridgeSide(k,m=WM){let S=BRIDGE_SIDE.get(m);if(!S){const W=m.w,H=m.h,K=m.kind;S=new Uint8Array(W*H);const X=new Set();for(const c of m.crossings)for(const i of c.tiles)X.add(i);
+    for(const c of m.crossings){if(c.kind!=='bridge')continue;for(const i of [c.i,c.j,...c.tiles]){const x=i%W,y=(i-x)/W;for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b,j=v*W+u;if(u>=0&&v>=0&&u<W&&v<H&&K[j]===T_WATER&&!X.has(j))S[j]=1}}}
+    BRIDGE_SIDE.set(m,S)}return S[k]===1}
 const wayOpen=i=>walkTile(i)&&!(SHUT&&SHUT[i]);
 // (open but for a holding's walls: the map's march grids, which shut the walls by their footings: march.js MarchGround)
 const wayLand=i=>walkTile(i)&&!(SHUT&&SHUT[i]&5);// (a town's ring of walls shut to them too: world/townwalls.js)
@@ -264,7 +271,7 @@ function wayLocal(s,x0,y0,x1,y1,rev){const bw=x1-x0,D=new Float64Array(bw*(y1-y0
   if(sx<x0||sy<y0||sx>=x1||sy>=y1)return D;const q0=(sy-y0)*bw+sx-x0;D[q0]=0;H.push(0,q0);
   while(H.n){const d=H.top,q=H.pop();if(d>D[q])continue;const x=x0+q%bw,y=y0+((q/bw)|0),i=y*MW+x;if(q!==q0&&!wayOpen(i))continue;
     for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>=x1||ny>=y1)continue;const j=ny*MW+nx;
-      if(!wayOpen(j)&&!NO.has(j)||dx&&dy&&(!walkTile(y*MW+nx)||!walkTile(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2)))continue;
+      if((!wayOpen(j)||bridgeSide(j))&&!NO.has(j)||dx&&dy&&(!walkTile(y*MW+nx)||!walkTile(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2))||!ledgeOk(rev?j:i,rev?i:j))continue;
       const k=rev?i:j,rd=tiles[k]===T_ROAD,c=d+(dx&&dy?1.414:1)*wayStepAt(k)/(rd||tiles[k]===T_WATER?1:slopeMulAt(k))+climbCost(WM.lv,rev?j:i,rev?i:j,rd),r=(ny-y0)*bw+nx-x0;if(c<D[r]){D[r]=c;H.push(c,r)}}}
   return D}
 // (a chunk's table: its nodes (ids) and the days between each two inside it (d, k x k), made on demand, kept for this graph's
@@ -365,12 +372,14 @@ function wayRay(x0,y0,x1,y1,fn){const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),ax=M
   for(let n=0;n<4096;n++){const end=tx===ex&&ty===ey,nt=end?1:Math.min(mx,my,1);if(fn(id(tx,ty),(nt-t)*L)===false)return false;t=nt;if(end||nt>=1)return true;
     if(mx<my){tx+=sx;mx+=kx}else if(my<mx){ty+=sy;my+=ky}else{if(fn(id(tx+sx,ty),0)===false||fn(id(tx,ty+sy),0)===false)return false;tx+=sx;ty+=sy;mx+=kx;my+=ky}}
   return true}
+// (wayRay's tiles each ok(tile), and no ledge stepped over from one to the next (map.js ledgeOk))
+function wayRayOk(x0,y0,x1,y1,ok){let p=-1;return wayRay(x0,y0,x1,y1,i=>{if(!ok(i)||p>=0&&!ledgeOk(p,i))return false;p=i;return true})}
 // (a tile's cost to cross, as findPath weighs it: rm, a road keeper's, off the roads)
 const wayCostAt=(i,rm)=>{const t=tiles[i];return wayStepAt(i)*(rm>1&&t!==T_ROAD&&t!==T_FORD?rm:1)*(WAY_FOOT&&footMask()[i]?WAY_FOOT_LOT.cost:1)};
 // (the line from (x0, y0) to (x1, y1) open: every tile it crosses, and those of two lines WAY_SMOOTH.w px each side of it)
 function wayClear(x0,y0,x1,y1){const d=Math.hypot(x1-x0,y1-y0);if(!d)return true;const w=WAY_SMOOTH.w,nx=-(y1-y0)/d*w,ny=(x1-x0)/d*w,F=WAY_FOOT&&footMask(),s0=Math.floor(y0/TILE)*MW+Math.floor(x0/TILE),g0=Math.floor(y1/TILE)*MW+Math.floor(x1/TILE),
     ok=i=>i>=0&&wayOpen(i)&&tiles[i]!==T_WATER&&!(F&&F[i]&&i!==s0&&i!==g0);// (never straightened over water: a way through it keeps its tiles)
-  return wayRay(x0,y0,x1,y1,ok)&&wayRay(x0+nx,y0+ny,x1+nx,y1+ny,ok)&&wayRay(x0-nx,y0-ny,x1-nx,y1-ny,ok)}
+  return wayRayOk(x0,y0,x1,y1,ok)&&wayRayOk(x0+nx,y0+ny,x1+nx,y1+ny,ok)&&wayRayOk(x0-nx,y0-ny,x1-nx,y1-ny,ok)}
 // (the line's cost: px in each tile x its cost; WAYOFF: px of it off the roads and fords)
 let WAYOFF=0;
 function wayLineCost(x0,y0,x1,y1,rm){let c=0;WAYOFF=0;wayRay(x0,y0,x1,y1,(i,l)=>{if(!l)return;c+=l*wayCostAt(i,rm);if(tiles[i]!==T_ROAD&&tiles[i]!==T_FORD)WAYOFF+=l});return c}
@@ -429,7 +438,7 @@ function wayCost(s,p){let c=0,a=s;for(const k of p){const d=a%MW!==k%MW&&(a/MW|0
 const FLEE_ROUTE={radius:12,depth:24,look:3,rethink:3,cost:.12,wait:30,grow:2};
 class FleeRoutes{
   static paths=new WeakMap();
-  static clear(a,b){return wayRay(a.x,a.y,b.x,b.y,i=>i>=0&&wayOpen(i))}
+  static clear(a,b){return wayRayOk(a.x,a.y,b.x,b.y,i=>i>=0&&wayOpen(i))}
   static plan(o,threat,k=0){
     const start=wayTile(o),sx=start%MW,sy=Math.floor(start/MW),seen=new Map([[start,{prev:-1,depth:0}]]),q=[start],base=Math.hypot(o.x-threat.x,o.y-threat.y),RAD=FLEE_ROUTE.radius<<k,DEP=FLEE_ROUTE.depth<<k;
     let best=start,score=TILE*.5;
@@ -439,7 +448,7 @@ class FleeRoutes{
       for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
         if(!dx&&!dy)continue;const nx=x+dx,ny=y+dy,j=ny*MW+nx;
         if(nx<0||ny<0||nx>=MW||ny>=MH||Math.abs(nx-sx)>RAD||Math.abs(ny-sy)>RAD||seen.has(j)||!wayOpen(j))continue;
-        if(dx&&dy&&(!wayOpen(y*MW+nx)||!wayOpen(ny*MW+x)))continue;
+        if(dx&&dy&&(!wayOpen(y*MW+nx)||!wayOpen(ny*MW+x))||!ledgeOk(k,j))continue;
         const [px,py]=wayCentre(j);if(k===start&&!this.clear(o,{x:px,y:py}))continue;
         seen.set(j,{prev:k,depth:depth+1});q.push(j);
         const value=Math.hypot(px-threat.x,py-threat.y)-base-(depth+1)*TILE*FLEE_ROUTE.cost;

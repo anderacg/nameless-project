@@ -199,7 +199,7 @@ function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;
   const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let n=0;
   for(let k=Math.ceil((s0+3-ph)/gp),s=k*gp+ph;s<end&&s<reach&&n<400;k++,s+=gp){const [x,y]=wuiPt(w,s),[ax,ay]=wuiPt(w,s-F.look),[bx,by]=wuiPt(w,s+F.look),l=Math.hypot(bx-ax,by-ay)||1,ux=(bx-ax)/l,uy=(by-ay)/l,left=!(k&1),sd=left?-F.side:F.side;
     // (seen where it is drawn: a point rounded over a tile's edge into the dark is not)
-    const rx=Math.round(x-uy*sd),ry=Math.round(y+ux*sd);if(!seenAt(rx,ry))continue;const sx=rx-cam.x,sy=ry-cam.y-Math.round(wuiL(rx,ry));if(sx<-6||sy<-6||sx>VW+6||sy>VH+6)continue;
+    const rx=Math.round(x-uy*sd),ry=Math.round(y+ux*sd);if(!seenAt(rx,ry))continue;const bs=typeof bridgeShift==='function'?bridgeShift(rx,ry):null,sx=rx-cam.x+(bs?Math.round(bs[0]):0),sy=ry-cam.y-Math.round(wuiL(rx,ry))+(bs?Math.round(bs[1]):0);if(sx<-6||sy<-6||sx>VW+6||sy>VH+6)continue;// (on a bridge: on its deck)
     D.push(sx,sy,Math.min(1,(s-s0-3)/14,(end+6-s)/8));FT.push(((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,left?1:0);n++}
   for(let i=0,f=0;i<D.length;i+=3,f+=2){const c=wuiFoot(FT[f],FT[f+1],col);ctx.globalAlpha=D[i+2];wuiPut(c,D[i],D[i+1],c.cx,c.cy)}ctx.globalAlpha=1}
 // (a chased thing's feet, the top of what is drawn of it (a party's label over its army too: render.js armyTagAt) and its ring's

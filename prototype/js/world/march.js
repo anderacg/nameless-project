@@ -239,6 +239,9 @@ function marchFace(x,y,hx,hy,J=MARCH_ACT){let p=liftAt(x,y),a0=0;
 // (the move over a face h px high (up +), out of water wd levels deep, by his kind S, on a graded way or not; none, null)
 function marchMove(h,wd,S,graded,J=MARCH_ACT){if(h<0){const d=-h;return d<J.down[0]?null:d<J.down[1]||graded?'step':d<J.down[2]?'hop':'jump'}
   if(h<J.up[0])return null;if(S.beast||graded)return 'stepup';if(wd>=J.deep&&h>=J.crawl&&!S.mounted)return 'crawl';return h<J.up[1]?'stepup':'climb'}
+// (on a bridge's span at map px (x, y): its deck and the road ramped up to it (worldways.js bridgeShift: drawn on the deck), where
+// no edge move is played; the land under it is the river's, never his)
+const marchOnBridge=(x,y)=>typeof bridgeShift==='function'&&!!bridgeShift(x,y);
 // (a graded way at map px (x, y): a ford's tile, a road's, or well into a road's band as drawn (roadband.js), where the way is cut down
 // the bank: walked, stepping down or up it, never leapt, climbed or crawled)
 function marchGraded(x,y){const t=terrAt(x,y);return t===T_FORD||t===T_ROAD||typeof RoadBand!=='undefined'&&(RoadBand.at(x,y)&63)>=ROAD_BAND.name*63}
@@ -250,7 +253,7 @@ function marchWaterBehind(x,y,hx,hy,J=MARCH_ACT){if(typeof drawnWet!=='function'
 function marchActLift(A,q,J=MARCH_ACT){const k=A.k,sm=q*q*(3-2*q);return A.from+A.h*(k==='hop'||k==='jump'?q*q:sm)+(J.arc[k]?J.arc[k]*4*q*(1-q):0)}
 function marchAct(u){const J=MARCH_ACT,now=performance.now()/1000,S=ST[u.type]||{},none={pose:undefined,dy:0};if(S.fly||typeof liftAt!=='function')return none;
   const walks=marchWalks(u),m=u._ax!=null?Math.hypot(u.x-u._ax,u.y-u._ay):0,hx=m>0?(u.x-u._ax)/m:0,hy=m>0?(u.y-u._ay)/m:0,L=liftAt(u.x,u.y),aL=u._aL;
-  u._ax=u.x;u._ay=u.y;u._aL=L;let A=u._act;
+  u._ax=u.x;u._ay=u.y;u._aL=L;let A=u._act;if(marchOnBridge(u.x,u.y)){u._act=null;return none}// (on a bridge's span: walked level on its deck)
   if(m>J.far){u._act=null;return none}
   if(A){if(m>0){A.go+=m;A.t=now}if(now-A.t>J.stall||A.go>=A.span)u._act=A=null}
   // (a face at his feet: its move; met while still in a move past its own face (a narrow stream's far bank), the next from where he is drawn)
@@ -280,10 +283,10 @@ function drawMarcherAt(u,o,cam){
   // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px, eased between its bands: wadeCut; worldterrain.js
   //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
-  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),inn=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH,cut=!inn?0:typeof drawnDepth==='function'?wadeCut(drawnDepth(u.x,u.y))||(drawnWet(u.x,u.y)?WATER.cut[1]:0):WATER.cut[Math.min(4,waterBand(ty*MW+tx))];
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),inn=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH,deck=inn&&typeof bridgeShift==='function'&&(bridgeShift(u.x,u.y)||[])[2],cut=!inn||deck?0:typeof drawnDepth==='function'?wadeCut(drawnDepth(u.x,u.y))||(drawnWet(u.x,u.y)?WATER.cut[1]:0):WATER.cut[Math.min(4,waterBand(ty*MW+tx))];
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
-  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&typeof grassOver==='function'){grassOver(u.x,u.y,s.width*k/2);stepPrint(u)}}
+  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&!deck&&typeof grassOver==='function'){grassOver(u.x,u.y,s.width*k/2);stepPrint(u)}}// (on a bridge's deck: no water at his legs, no grass)
 // (a man in water (march.js drawMarcherAt): his picture s drawn at (x, y) scaled (sx, k), its corner (bx, by); the water cut figure px up
 // his body. Under the line his body faint and wavering; at it a darker band of water and a broken ring of foam, wavering; a ripple ring
 // spreading from him, quicker while he moves; all of it only over the screen's px where water is drawn (the owner: "the water circle
@@ -582,10 +585,10 @@ class MarchGround{
     const shut=this.foot=new Uint8Array(g.cost.length);if(!fly)for(const b of this.blocks){const c0=Math.max(0,Math.floor((b.x-this.x)/cs)),c1=Math.min(g.C-1,Math.ceil((b.x+b.w-this.x)/cs)-1),r0=Math.max(0,Math.floor((b.y-this.y)/cs)),r1=Math.min(g.R-1,Math.ceil((b.y+b.h-this.y)/cs)-1);
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const x=this.x+(c+.5)*cs,y=this.y+(r+.5)*cs;if(x+cs/2>b.x&&x-cs/2<b.x+b.w&&y+cs/2>b.y&&y-cs/2<b.y+b.h)shut[r*g.C+c]=1}}
     for(let i=0;i<g.cost.length;i++){const x=this.x+(i%g.C+.5)*cs,y=this.y+(Math.floor(i/g.C)+.5)*cs,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),k=ty*MW+tx;
-      let open=WM.has(tx,ty)&&(fly||wayLand(k)||climb&&tiles[k]===T_MOUNT&&!(SHUT&&SHUT[k]));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
+      let open=WM.has(tx,ty)&&(fly||wayLand(k)||climb&&tiles[k]===T_MOUNT&&!(SHUT&&SHUT[k]))&&(fly||!bridgeSide(k));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
       // (water by its depth, WATER.cost: waded, swum; map.js)
       const wb=open&&!fly&&tiles[k]===T_WATER?waterBand(k):0;g.cost[i]=open&&!shut[i]?Math.min(255,Math.round(ROUTE.unit*(wb?WATER.cost[wb]:1))):0;
-      if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k];if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
+      if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k]|(climb?0:ledgeBits()[k]);if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
     }
     if(!fly&&MARCH_MOVE.slit)this.shutSlits(Math.floor(MARCH_MOVE.slit/cs));
   }

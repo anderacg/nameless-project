@@ -29,7 +29,8 @@ const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,t
 function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
   const inWall=TownWall.at(Math.floor(o.x/TILE),Math.floor(o.y/TILE));// (a town's ring of walls kept off, but by one standing in it: world/townwalls.js)
-  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if((walkAt(nx,ny)||o===P&&WAY_CLIMB&&terrAt(nx,ny)===T_MOUNT)&&!((o===P||WAY_NOSWIM)&&waterBand(Math.floor(ny/TILE)*MW+Math.floor(nx/TILE))>=4&&waterBand(Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE))<4&&(WAY_NOSWIM||!heroSwims()))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
+  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(!(o===P&&WAY_CLIMB)&&!ledgePass(o.x,o.y,nx,ny))continue;// (no step over a ledge: map.js ledgeOk)
+    if((walkAt(nx,ny)||o===P&&WAY_CLIMB&&terrAt(nx,ny)===T_MOUNT)&&!((o===P||WAY_NOSWIM)&&waterBand(Math.floor(ny/TILE)*MW+Math.floor(nx/TILE))>=4&&waterBand(Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE))<4&&(WAY_NOSWIM||!heroSwims()))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
     WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;

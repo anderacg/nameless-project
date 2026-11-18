@@ -22,6 +22,56 @@ const slopeMulAt=i=>{const S=WM&&WM.slope;if(!S)return 1;const v=SLOPE.mul[S[i]]
    (router.js findPath, buildWayGraph) */
 const CLIMB={up:1.1,down:.3,road:.35};
 const climbCost=(L,a,b,road)=>{if(!L)return 0;const d=L[b]-L[a];return (d>0?d*CLIMB.up:-d*CLIMB.down)*(road?CLIMB.road:1)};
+/* ledges (the owner, 2026-11-18: "If too high or too low then we cannot go down or go up"): a step from one tile to the next over a
+   face of the land (march.js marchFace's: a run of steep px begun at rate px a px, on while steep by soft (MARCH_ACT's), on the line
+   between their middles by the land's height, landHeight in game px) higher than up px is never climbed, deeper than down px never
+   leapt; one way where only one is (a 12 px ledge leapt down, not climbed). A road's or a ford's tile to another's, and a crossing's
+   tiles, always pass (the way cut down the bank). A piece of land with tiles its holdings do not reach, or that do not reach them
+   back, has the ledges round those tiles opened, so no one is boxed in and every holding and place stays reached both ways. The
+   line looked at every coarse px first, a face sought px by px only where two looks differ by big px or more. ledgeBits(m, holdings):
+   a byte a tile, bit 1 E, 2 S, 4 W, 8 N: no step from it over that edge (battle/route.js's wall bits); kept for each map. Everyone
+   walking keeps to it (world.js walk, router.js findPath, wayLocal, the way graph's portals and roads, the straight lines, the flight,
+   march.js the march's ground); a climber of cliffs (heroClimbs) climbs ledges too */
+const LEDGE={up:9,down:16,rate:1.5,soft:.5,coarse:4,big:3,rounds:8};
+const LEDGES=new WeakMap(),LEDGE_ON={m:null,B:null};
+function ledgeBits(m=WM,holds){if(LEDGE_ON.m===m&&(LEDGE_ON.B.pk||!holds))return LEDGE_ON.B;let B=LEDGES.get(m);
+  if(!B){const W=m.w,H=m.h,N=W*H,K=m.kind,ht=ledgeHt(m),L=LEDGE,XT=new Uint8Array(N);
+    B=new Uint8Array(N);for(const c of m.crossings)for(const i of c.tiles)XT[i]=1;const gr=i=>K[i]===T_ROAD||K[i]===T_FORD;
+    const edge=(i,j,cx,cy,dx,dy,bij,bji)=>{if(!walkTile(i,m)||!walkTile(j,m)||XT[i]||XT[j]||gr(i)&&gr(j))return;let p=ht(cx,cy),big=false;
+      for(let a=L.coarse;a<=TILE;a+=L.coarse){const q=ht(cx+dx*a,cy+dy*a);if(Math.abs(q-p)>=L.big){big=true;break}p=q}if(!big)return;
+      const [up,dn]=ledgeFaces(ht,cx,cy,dx,dy);if(up>L.up||dn>L.down)B[i]|=bij;if(dn>L.up||up>L.down)B[j]|=bji};
+    for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){const i=ty*W+tx,cx=tx*TILE+8,cy=ty*TILE+8;if(tx+1<W)edge(i,i+1,cx,cy,1,0,1,4);if(ty+1<H)edge(i,i+W,cx,cy,0,1,2,8)}
+    LEDGES.set(m,B)}
+  if(holds&&!B.pk){ledgeOpen(m,B,holds);B.pk=1}LEDGE_ON.m=m;LEDGE_ON.B=B;return B}
+// (the land's height at game px (x, y), as the ledges read it: landHeight in game px, never under 0)
+const ledgeHt=m=>{const hf=landHeight(m),lh=WORLD_TERRAIN.lh;return(x,y)=>Math.max(0,hf(x*2+1,y*2+1))*lh};
+// (the faces on the line from (cx, cy) a tile along (dx, dy), px by px: [the highest rise, the deepest fall], each a run of steep px)
+const LEDGE_V=new Float32Array(TILE+1);
+function ledgeFaces(ht,cx,cy,dx,dy){const v=LEDGE_V,J=LEDGE;for(let a=0;a<=TILE;a++)v[a]=ht(cx+dx*a,cy+dy*a);let up=0,dn=0;
+  for(let a=1;a<=TILE;a++){const d=v[a]-v[a-1];if(Math.abs(d)<J.rate)continue;const sg=Math.sign(d);let b=a;while(b<TILE&&Math.sign(v[b+1]-v[b])===sg&&Math.abs(v[b+1]-v[b])>=J.soft)b++;const h=v[b]-v[a-1];if(h>up)up=h;if(-h>dn)dn=-h;a=b}
+  return[up,dn]}
+// (the faces met stepping from tile i to its neighbour j (4 ways), [up, down] px: what the ledges are made of, the tests' look)
+function ledgeHeights(i,j,m=WM){const W=m.w,x=i%W,y=(i-x)/W,d=j-i;return ledgeFaces(ledgeHt(m),x*TILE+8,y*TILE+8,d===1?1:d===-1?-1:0,d===W?1:d===-W?-1:0)}
+// (the pockets opened: from the first holding of each piece of land, the tiles it reaches and that reach it back over the ledges (4
+// ways, a ferry's ends joined); round every other tile of its piece, the ledges opened both ways; again till none is left)
+function ledgeOpen(m,B,holds){const W=m.w,H=m.h,N=W*H,FE=new Map(),D=[[1,0,1,4],[0,1,2,8],[-1,0,4,1],[0,-1,8,2]];
+  for(const c of m.crossings)if(c.kind==='ferry'){FE.set(c.i,(FE.get(c.i)||[]).concat(c.j));FE.set(c.j,(FE.get(c.j)||[]).concat(c.i))}
+  const flood=(s,back,blocks,seen)=>{const q=[s];seen[s]=1;for(let h=0;h<q.length;h++){const i=q[h],x=i%W,y=(i-x)/W;
+    for(const [dx,dy,bo,bi] of D){const nx=x+dx,ny=y+dy;if(nx<0||ny<0||nx>=W||ny>=H)continue;const j=ny*W+nx;if(seen[j]||!walkTile(j,m)||blocks&&(back?B[j]&bi:B[i]&bo))continue;seen[j]=1;q.push(j)}
+    for(const j of FE.get(i)||[])if(!seen[j]){seen[j]=1;q.push(j)}}return q};
+  const done=new Uint8Array(N);
+  for(const h of holds){let s=h.ty*W+h.tx;if(!walkTile(s,m))for(const [dx,dy] of D){const j=s+dy*W+dx;if(walkTile(j,m)){s=j;break}}if(!walkTile(s,m)||done[s])continue;
+    const piece=flood(s,false,false,done);
+    for(let r=0;r<LEDGE.rounds;r++){const f=new Uint8Array(N),b=new Uint8Array(N);flood(s,false,true,f);flood(s,true,true,b);let n=0;
+      for(const i of piece){if(f[i]&&b[i])continue;n++;const x=i%W,y=(i-x)/W;B[i]=0;for(const [dx,dy,,bi] of D){const nx=x+dx,ny=y+dy;if(nx>=0&&ny>=0&&nx<W&&ny<H)B[ny*W+nx]&=~bi}}
+      if(!n)break}}}
+// (may one step from tile i to its neighbour j: no ledge over their edge, or both a road's or a ford's tiles as they are now (an
+// estate's track laid since); a diagonal step only with all four edges round its corner open, as route.js's; anything farther, or the
+// same tile, passes. ledgePass: a move from (x0, y0) to (x1, y1), px)
+function ledgeOk(i,j,m=WM){if(i===j)return true;const W=m.w,B=ledgeBits(m),ix=i%W,jx=j%W,dx=jx-ix,dy=(j-jx)/W-(i-ix)/W;if(dx>1||dx<-1||dy>1||dy<-1)return true;
+  const K=m.kind,g=a=>K[a]===T_ROAD||K[a]===T_FORD,e=(a,b)=>{const d=b-a;return !(B[a]&(d===1?1:d===W?2:d===-1?4:8))||g(a)&&g(b)};if(!dx||!dy)return e(i,j);const a=i+dx,b=i+dy*W;return e(i,a)&&e(a,j)&&e(i,b)&&e(b,j)}
+const ledgePass=(x0,y0,x1,y1)=>{const tx=Math.floor(x0/TILE),ty=Math.floor(y0/TILE),ux=Math.floor(x1/TILE),uy=Math.floor(y1/TILE);
+  return tx===ux&&ty===uy||tx<0||ty<0||ux<0||uy<0||tx>=MW||ux>=MW||ty>=MH||uy>=MH||ledgeOk(ty*MW+tx,uy*MW+ux)};
 /* water as the world lab has it (engine/worldlab.js LAB.depth; the owner, 2026-11-15: "Use the same concept in the lab. Use that as
    a baseline, we can swim as well right?"): every water tile is walked by its depth (levels, a level some 0.85 m): ankle, knee,
    waist deep past bands' each, deeper swum; how fast by each (speed: dry, ankle, knee, waist, swimming) and what a tile of it
