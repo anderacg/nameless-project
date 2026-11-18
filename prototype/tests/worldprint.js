@@ -880,7 +880,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  a river's colours the open water's by depth (WORLD_TERRAIN.water), a lake's shore measured to real land only (DLR) so a river's mouth
 //  eases into the still water, one broken foam on every shore and bank (waterRim), the mouth's plume circle gone and the river bed's
 //  glints back. W1-W4, W7, W8, B2 and the sums hold. Were W5 4e3a2019, W6 1d51b245)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'7762de70',W6:'031dd03d',W7:'2dafadb3',W8:'1cdbeaf3',B2:'9fa9d7f3'};
+// (W6 re-recorded 2026-11-18 again, on purpose, the owner's "The jumping and animations should be based on the height": the water
+//  at a man's legs drawn smoothly by its depth and at his ankles on drawn water of no depth (march.js wadeCut), the moves over an edge
+//  by its height, at the edge (MARCH_ACT). W1-W5, W7, W8, B2 and the sums hold. Was W6 031dd03d)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'7762de70',W6:'76d8ceca',W7:'2dafadb3',W8:'1cdbeaf3',B2:'9fa9d7f3'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

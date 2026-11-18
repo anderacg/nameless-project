@@ -87,15 +87,34 @@ Kit.suite(({ok,info})=>{
  {const S=t.WM.slope;let got=null;
   for(let i=0;i<S.length&&!got;i++){if(S[i]!==1||t.WM.kind[i]===t.T_MOUNT)continue;const x=(i%t.MW+.5)*TILE,y=(Math.floor(i/t.MW)+.5)*TILE;for(let k=0;k<8;k++){const a=k*.785;if(t.headingUp(x,y,x+Math.cos(a)*8,y+Math.sin(a)*8)===true&&t.headingUp(x,y,x-Math.cos(a)*8,y-Math.sin(a)*8)===false){got={x,y,a};break}}}
   if(got){const u={x:got.x,y:got.y,dir:got.a,type:'spearman',id:3},o={x:got.x,y:got.y};ok(t.marchSlope(u,o)==='up'&&t.marchSlope({...u,dir:got.a+Math.PI},o)==='down','facing uphill he climbs; turned round, he goes down')}}
- // ---- a marcher's leap off a ledge, his pull up one, his crawl out of the water (march.js marchAct; drawn only)
- {const lift0=window.liftAt,dep0=window.drawnDepth;let L=10,D=0;window.liftAt=()=>L;window.drawnDepth=()=>D;
-  try{const u={type:'spearman',x:100,y:100,id:2,walking:true},J=t.MARCH_ACT;
-   t.marchAct(u);u.x+=1;L=10-J.drop-1;const a=t.marchAct(u);ok(a.pose===t.JUMP_POSE&&a.dy>J.drop,'the ground dropping '+(J.drop+1)+' px under his step: he leaps, drawn from the height he left');
-   u._act=null;u.x+=1;L+=J.drop+1;const b=t.marchAct(u);ok(b.pose>=t.CLIFF_POSE&&b.pose<t.CLIFF_POSE+4&&b.dy<0,'rising so: he pulls himself up, drawn from below');
-   u._act=null;u.x+=1;L+=.5;const c=t.marchAct(u);ok(c.pose===undefined&&c.dy===0,'half a px on a step: he walks on');
-   D=.6;u.x+=1;t.marchAct(u);D=0;u.x+=1;const d=t.marchAct(u);ok(d.pose>=t.CRAWL_POSE&&d.pose<t.CRAWL_POSE+4,'out of waist-deep water onto the bank: he crawls');
-   const w={type:'spearman',x:100,y:100,id:4,walking:false};t.marchAct(w);w.x+=1;L-=9;ok(t.marchAct(w).pose===undefined,'standing, nothing')}
-  finally{window.liftAt=lift0;window.drawnDepth=dep0}}
+ // ---- a marcher's move over a ledge, a bank or out of the water, by its height, at the edge (march.js marchAct; drawn only; the owner,
+ // 2026-11-18: "if the water is at foot level then there no need to jump down", "the distance to play animation should be close to edge")
+ {const lift0=window.liftAt,dep0=window.drawnDepth,wet0=window.drawnWet,wd0=window.waterDepths,J=t.MARCH_ACT,E=100;let hi=10,lo=10,deep=0;
+  let gr=false;const gr0=window.marchGraded;window.marchGraded=()=>gr;window.liftAt=x=>x<E?hi:lo;window.drawnWet=x=>deep>0&&x<E;window.drawnDepth=x=>deep>0&&x<E?deep:0;window.waterDepths=()=>new Proxy({},{get:()=>deep});
+  const typeBy=f=>Object.keys(t.ST).find(k=>f(t.ST[k])),rider=typeBy(s=>s.mounted&&!s.beast),beast=typeBy(s=>s.beast&&!s.fly);
+  // (he walks east over the face at x E, half a px a frame: the move, where it began, its poses and least and most drawn lift past the ground)
+  const walk=(a,b,dw=0,type='spearman',step=.5)=>{hi=a;lo=b;deep=dw;const u={type,x:E-12,y:100,id:2,walking:true};let k=null,at=null,first=null,dyMax=-1e9,dyMin=1e9,end=null;const poses=new Set();
+   for(;u.x<E+14;u.x+=step){const r=t.marchAct(u);if(u._act&&!k){k=u._act.k;at=u.x;first=r.dy}if(r.pose!=null)poses.add(r.pose);if(u._act){dyMax=Math.max(dyMax,r.dy);dyMin=Math.min(dyMin,r.dy)}else if(k&&end==null)end={x:u.x,dy:r.dy}}
+   return{k,at,first,poses:[...poses],dyMax,dyMin,end}};
+  try{
+   const flat=walk(10,9),ford=walk(10,10-(J.down[0]-.5),.2);ok(!flat.k&&!ford.k,'a step under '+J.down[0]+' px down, or into foot-deep water off a low bank: he walks on, no jump ('+flat.k+', '+ford.k+')');
+   const st=walk(10,10-J.down[0]-.5);ok(st.k==='step'&&st.poses.every(p=>p>=23&&p<=26),'a bank '+(J.down[0]+.5)+' px down: a step down, no leap ('+st.k+', poses '+st.poses+')');
+   const hop=walk(14,14-J.down[1]-1),jump=walk(20,20-J.down[2]-3);
+   ok(hop.k==='hop'&&jump.k==='jump'&&hop.poses.includes(t.JUMP_POSE)&&jump.dyMax>hop.dyMax,'higher, a hop ('+(J.down[1]+1)+' px), higher still a jump ('+(J.down[2]+3)+' px), the jump the higher arc ('+hop.dyMax.toFixed(1)+', '+jump.dyMax.toFixed(1)+')');
+   ok([st,hop,jump].every(w=>w.at>=E-Math.max(J.reach,1)-.5&&w.at<E&&Math.abs(w.first)<.01),'each begun at the edge, not before it nor past it ('+[st,hop,jump].map(w=>(w.at-E).toFixed(1)).join(', ')+' px from it), from where he stands');
+   ok([st,hop,jump].every(w=>w.end&&Math.abs(w.end.dy)<.01&&w.end.x-E<=J.span.jump+J.per*12+1),'and each ended where the land does, on it ('+[st,hop,jump].map(w=>w.end&&(w.end.x-E).toFixed(1)).join(', ')+' px past the edge)');
+   const up=walk(10,10+J.down[0]+.5),cl=walk(10,10+J.up[1]+3);
+   ok(up.k==='stepup'&&up.poses.every(p=>p>=19&&p<=22)&&cl.k==='climb'&&cl.poses.every(p=>p>=t.CLIFF_POSE&&p<t.CLIFF_POSE+4)&&cl.dyMin<0,'up '+(J.up[0]+.5)+' px a step up; up '+(J.up[1]+3)+' px he pulls himself up, drawn from below');
+   const cb=J.crawl+.5,cr=walk(10,10+cb,.6),low=walk(10,13,.6),shal=walk(10,10+cb,.2),lake=walk(9.5,10,.9);
+   ok(cr.k==='crawl'&&low.k==='stepup'&&cr.poses.every(p=>p>=t.CRAWL_POSE&&p<t.CRAWL_POSE+4),'out of waist-deep water up a '+cb+' px bank: he crawls out ('+cr.k+'); up a 3 px one he steps out ('+low.k+')');
+   ok(shal.k==='stepup'&&!lake.k,'out of knee-deep water up the '+cb+' px bank he steps up ('+shal.k+'); out of deep water onto a shore level with it he wades out ('+lake.k+')');
+   gr=true;{const fj=walk(20,20-J.down[2]-3),fc=walk(7,10+J.up[1]+3,.6);gr=false;ok(fj.k==='step'&&fc.k==='stepup','on a ford or a road (graded) only a step down or up, however high: '+fj.k+' down '+(J.down[2]+3)+' px, '+fc.k+' up out of the water')}
+   if(rider){const r=walk(10,10+cb,.6,rider);ok(r.k!=='crawl','a rider never crawls ('+r.k+')')}
+   if(beast){const b=walk(10,10+J.up[1]+3,0,beast);ok(b.k&&b.poses.length===0,'a beast neither climbs nor crawls: up a ledge drawn as its walk ('+b.k+')')}
+   {hi=10;lo=10-J.down[2]-3;deep=0;const u={type:'spearman',x:E-1,y:100,id:2,walking:true};t.marchAct(u);u.x+=20;ok(t.marchAct(u).pose===undefined&&!u._act,'a far move (a gate) over a face: nothing')}
+   {hi=10;lo=10-J.down[2]-3;const w={type:'spearman',x:E-1,y:100,id:4,walking:false};t.marchAct(w);w.x+=.5;t.marchAct(w);w.x+=.5;ok(t.marchAct(w).pose===undefined&&!w._act,'standing, nothing')}
+   ok(t.wadeCut(0)===0&&t.wadeCut(.01)===t.WATER.cut[1]&&t.wadeCut(.3)>t.wadeCut(.2)&&t.wadeCut(.5)>t.wadeCut(.4)&&t.wadeCut(2)===t.WATER.cut[4],'the water up a man eased with its depth: '+[0,.01,.1,.2,.3,.4,.5,.7,2].map(d=>t.wadeCut(d)).join(', ')+' figure px')}
+  finally{window.liftAt=lift0;window.drawnDepth=dep0;window.drawnWet=wet0;window.waterDepths=wd0;window.marchGraded=gr0}}
  // ---- loot outlined whole, seen or hid (data/drops.js LOOT_GLOW.outline.all; depth.js ghostOver)
  ok(t.LOOT_GLOW.outline.all===true,'what is still to be looted is outlined whether something hides it or not');
  // ---- a fight on the map by a river: its water by the drawn depth (worldbattle.js terrain), its banners up with its men (ui/moraleicons.js iconLift)

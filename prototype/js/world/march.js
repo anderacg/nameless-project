@@ -212,24 +212,60 @@ function marchDraw(ents,o,cam){
 function marchSlope(u,o){const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return null;const i=ty*MW+tx;if(WM.kind[i]===T_MOUNT)return 'cliff';
   const c=WM.slope&&WM.slope[i];if(c!==1&&c!==2)return null;const a=u.dir??marchFacing(o),up=headingUp(u.x,u.y,u.x+Math.cos(a)*8,u.y+Math.sin(a)*8);return up==null?null:up?'up':'down'}
 function marchClimbPose(u,o){if(!marchWalks(u)||(ST[u.type]||{}).fly)return undefined;const s=marchSlope(u,o);if(!s)return undefined;return (s==='up'?19:s==='down'?23:CLIFF_POSE)+marcherStep(u)}
-/* a marcher's moment over a ledge or out of the water (the owner, 2026-11-17: "make jumping animation when ascending the hill edge (if
-   can go down)", "add crawling up animation from shore, edge of land and water"), drawn only: the land's lift under him dropping by
-   drop game px or more, at rate px a px he moved, as he steps (a ledge's face): he leaps, hopping hop px over jump s, eased from the
-   height he left down to the new (JUMP_POSE); rising so, he pulls himself up over up s (the cliff's scramble, CLIFF_POSE); out of water
-   wet deep (map.js WATER's bands: waist) within shore s (the drawn water shallows toward its bank) onto dry land, he crawls up the bank
-   on his hands and knees for crawl s (CRAWL_POSE). Its
-   pose and how far up from where the land would put him (dy, game px) */
-const MARCH_ACT={drop:3,rate:1.5,moved:.1,hop:3,jump:.35,up:.4,crawl:.7,wet:3,shore:2};
+/* a marcher's moment over a ledge, a bank or out of the water (the owner, 2026-11-17: "make jumping animation when ascending the hill
+   edge (if can go down)", "add crawling up animation from shore, edge of land and water"; 2026-11-18: "The jumping and animations should
+   be based on the height right? ... if the water is at foot level then there no need to jump down", "the distance to play animation
+   should be close to edge"), drawn only, by the land as painted (liftAt: a river's water lies some px below its banks, a lake's level
+   with them). Walking, he looks along his way up to look game px for a face: the first px where the land changes by rate px or more
+   from the one before; its height from the px before it to the land past it (the face running on up to face px while it changes by soft
+   px or more a px). When his feet are within reach px of it (or the px he moves this frame), its height picks his move (game px; a man
+   stands some 16): going down, under down[0] he walks on, under down[1] a step down, under down[2] a hop, more a jump; going up, under
+   up[0] he walks on, under up[1] a step up, more a pull up (the cliff's scramble); up out of water deep or deeper (levels, map.js WATER:
+   waist; the water's own depth over the ramp px behind him, not the drawn shallows at its bank) by crawl px or more, he crawls out on his
+   hands and knees. On a graded way (a ford, a road: marchGraded) he only steps down or up, however high. A beast neither climbs nor
+   crawls (its moves drawn as its walk), a rider never crawls. The move is played over the
+   ground he covers from there (span game px of it plus per px of its height, at least past the face), so it begins at the edge and ends
+   where the land does; met while in a move past its own face (a narrow stream's far bank), the next from where he is drawn; standing
+   still stall s, it is dropped; a far move (far px, a gate) none. Past a face in one frame, the move from the height he left. Its pose and how far up from where the land would put him (dy, game px) */
+const MARCH_ACT={look:6,reach:2,rate:1.5,face:4,soft:.5,moved:.1,far:8,stall:.4,down:[2.5,5,9],up:[2.5,5],deep:.35,crawl:4,ramp:8,
+  span:{step:3,hop:5,jump:7,stepup:3,climb:5,crawl:7},per:.3,arc:{hop:1.5,jump:3}};
+// (the face along (hx, hy) from map px (x, y) within look px: {a: px to it, end: px to the land past it, from, to: the land's lift
+// before and past it, h: to - from}; none, null)
+function marchFace(x,y,hx,hy,J=MARCH_ACT){let p=liftAt(x,y),a0=0;
+  for(let a=1;a<=J.look;a++){const v=liftAt(x+hx*a,y+hy*a);if(Math.abs(v-p)>=J.rate){a0=a;break}p=v}
+  if(!a0)return null;let to=liftAt(x+hx*a0,y+hy*a0),b=a0;const sg=Math.sign(to-p);
+  for(;b<a0+J.face;b++){const v=liftAt(x+hx*(b+1),y+hy*(b+1));if(Math.abs(v-to)<J.soft||Math.sign(v-to)!==sg)break;to=v}
+  return{a:a0,end:b,from:p,to,h:to-p}}
+// (the move over a face h px high (up +), out of water wd levels deep, by his kind S, on a graded way or not; none, null)
+function marchMove(h,wd,S,graded,J=MARCH_ACT){if(h<0){const d=-h;return d<J.down[0]?null:d<J.down[1]||graded?'step':d<J.down[2]?'hop':'jump'}
+  if(h<J.up[0])return null;if(S.beast||graded)return 'stepup';if(wd>=J.deep&&h>=J.crawl&&!S.mounted)return 'crawl';return h<J.up[1]?'stepup':'climb'}
+// (a graded way at map px (x, y): a ford's tile, a road's, or well into a road's band as drawn (roadband.js), where the way is cut down
+// the bank: walked, stepping down or up it, never leapt, climbed or crawled)
+function marchGraded(x,y){const t=terrAt(x,y);return t===T_FORD||t===T_ROAD||typeof RoadBand!=='undefined'&&(RoadBand.at(x,y)&63)>=ROAD_BAND.name*63}
+// (how deep the water he is leaving is, levels: its tiles' own depth (open water WATER.open) over the ramp px behind him; none, 0)
+function marchWaterBehind(x,y,hx,hy,J=MARCH_ACT){if(typeof drawnWet!=='function')return 0;const D=waterDepths(WM);let w=0;
+  for(let k=0;k<=J.ramp;k+=2){const px=x-hx*k,py=y-hy*k;if(!drawnWet(px,py))continue;const i=Math.floor(py/TILE)*MW+Math.floor(px/TILE),d=D[i]<0?WATER.open:D[i];if(d>w)w=d}
+  return w}
+// (where a move A draws him at its share q: the land's lift there, eased from the height he left to the new, a hop's or a jump's arc over it)
+function marchActLift(A,q,J=MARCH_ACT){const k=A.k,sm=q*q*(3-2*q);return A.from+A.h*(k==='hop'||k==='jump'?q*q:sm)+(J.arc[k]?J.arc[k]*4*q*(1-q):0)}
 function marchAct(u){const J=MARCH_ACT,now=performance.now()/1000,S=ST[u.type]||{},none={pose:undefined,dy:0};if(S.fly||typeof liftAt!=='function')return none;
-  const L=liftAt(u.x,u.y),wb=typeof drawnDepth==='function'?depthBand(drawnDepth(u.x,u.y)):0;
-  if(u._aL!=null&&marchWalks(u)){const d=u._aL-L,m=Math.hypot(u.x-u._ax,u.y-u._ay);
-    if(m>=J.moved&&Math.abs(d)>=J.drop&&Math.abs(d)/m>=J.rate){if(d>0)u._act={k:'jump',t:now,d};else if(!S.beast)u._act={k:'up',t:now,d:-d}}
-    if(wb===0&&u._wetT!=null&&now-u._wetT<J.shore&&!S.beast&&!S.mounted){u._act={k:'crawl',t:now,d:0};u._wetT=null}}
-  if(wb>=J.wet)u._wetT=now;u._aL=L;u._ax=u.x;u._ay=u.y;
-  const A=u._act;if(!A)return none;const q=(now-A.t)/J[A.k];if(q>=1||q<0){u._act=null;return none}
-  if(A.k==='jump')return{pose:S.beast?undefined:JUMP_POSE,dy:A.d*(1-q)+J.hop*4*q*(1-q)};
-  if(A.k==='up')return{pose:CLIFF_POSE+marcherStep(u),dy:-A.d*(1-q)};
-  return{pose:CRAWL_POSE+Math.floor(q*8)%4,dy:0}}
+  const walks=marchWalks(u),m=u._ax!=null?Math.hypot(u.x-u._ax,u.y-u._ay):0,hx=m>0?(u.x-u._ax)/m:0,hy=m>0?(u.y-u._ay)/m:0,L=liftAt(u.x,u.y),aL=u._aL;
+  u._ax=u.x;u._ay=u.y;u._aL=L;let A=u._act;
+  if(m>J.far){u._act=null;return none}
+  if(A){if(m>0){A.go+=m;A.t=now}if(now-A.t>J.stall||A.go>=A.span)u._act=A=null}
+  // (a face at his feet: its move; met while still in a move past its own face (a narrow stream's far bank), the next from where he is drawn)
+  if(walks&&m>=J.moved&&(!A||A.go>=A.past)){
+    const f=marchFace(u.x,u.y,hx,hy,J);let k=null,from=0,h=0,end=0;
+    if(f&&f.a<=Math.max(J.reach,m*1.5)){k=marchMove(f.h,f.h>0?marchWaterBehind(u.x,u.y,hx,hy,J):0,S,marchGraded(u.x,u.y)||marchGraded(u.x+hx*f.end,u.y+hy*f.end),J);if(A&&!k)k=A.k;from=A?marchActLift(A,Math.min(1,A.go/A.span),J):f.from;h=f.to-from;end=f.end}
+    else if(!A&&!f&&aL!=null&&Math.abs(L-aL)/m>=J.rate){h=L-aL;from=aL;k=marchMove(h,h>0?marchWaterBehind(u.x,u.y,hx,hy,J):0,S,marchGraded(u.x,u.y),J)}
+    if(k)u._act=A={k,t:now,go:0,from,h,past:end,span:Math.max(J.span[k]+J.per*Math.abs(h),end+1)}}
+  if(!A)return none;const q=Math.min(1,A.go/A.span),dy=marchActLift(A,q,J)-L,k=A.k;if(S.beast)return{pose:undefined,dy};const st=marcherStep(u);
+  return{pose:k==='step'?23+st:k==='stepup'?19+st:k==='climb'?CLIFF_POSE+st:k==='crawl'?CRAWL_POSE+Math.floor(q*8)%4:JUMP_POSE,dy}}
+// (how far up a man the water stands at depth d (levels), figure px: WATER.cut's bands eased one into the next, full at each band's
+// middle (MARCH_WADE), so he sinks as he wades in and rises as he wades out, the drawn depth easing in from the bank; any water an ankle's,
+// a ford's and a brook's drawn over the land (their depth 0) too)
+const MARCH_WADE=[0,.06,.235,.575,.8];
+function wadeCut(d){if(!(d>0))return 0;const C=WATER.cut,K=MARCH_WADE;for(let b=1;b<K.length;b++)if(d<K[b])return Math.max(C[1],Math.round(C[b-1]+(C[b]-C[b-1])*(d-K[b-1])/(K[b]-K[b-1])));return C[4]}
 // (drawn small without losing its lines when zoomed out: render.js reduced)
 function drawMarcher(u,o,cam){if(u.gateAt)return;if(o.drawMan)return o.drawMan(u,cam);return reduced(()=>drawMarcherAt(u,o,cam))}// (an army of no soldiers draws its own men: refugees.js)// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
@@ -241,10 +277,10 @@ function drawMarcherAt(u,o,cam){
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
   const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
-  // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px by its band; worldterrain.js
+  // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px, eased between its bands: wadeCut; worldterrain.js
   //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
-  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),wb=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH?(typeof drawnDepth==='function'?depthBand(drawnDepth(u.x,u.y)):waterBand(ty*MW+tx)):0,cut=wb?WATER.cut[Math.min(4,wb)]:0;
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),inn=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH,cut=!inn?0:typeof drawnDepth==='function'?wadeCut(drawnDepth(u.x,u.y))||(drawnWet(u.x,u.y)?WATER.cut[1]:0):WATER.cut[Math.min(4,waterBand(ty*MW+tx))];
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
   if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&typeof grassOver==='function'){grassOver(u.x,u.y,s.width*k/2);stepPrint(u)}}
