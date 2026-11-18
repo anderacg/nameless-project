@@ -83,6 +83,43 @@ Kit.suite(({ok,info})=>{
  // ---- a beast in deep water is drawn cut at its waterline (march.js wadeCut), as every marcher is
  {let d=0;for(let r=0;r<1200&&!d;r+=4)for(let a=0;a<24&&!d;a++){const x=P.x+Math.cos(a*.26)*r,y=P.y+Math.sin(a*.26)*r;if(t.depthBand(t.drawnDepth(x,y))>=3)d=t.drawnDepth(x,y)}
   if(!d)info('no deep drawn water near you');else ok(t.wadeCut(d)>=t.WATER.cut[2]&&t.wadeCut(d)>t.wadeCut(d/3)&&t.marchOwners().some(o=>W.monsters.includes(o)),'a beast in deep water ('+d.toFixed(2)+') is cut at its waterline as a marcher, the deeper the more ('+t.wadeCut(d)+' px, '+t.wadeCut(d/3)+' at a third of it)')}
+ // ---- a herd as a loose unit (world/critters.js herdFlock, WILD_LIFE.flock; the owner, 2026-11-18: "Wildlife sprite is shrinking back
+ //      and forth", "make them move in formation like army but more spread like one unit"): one size, spread, each on its own
+ {const FL=L.flock,kinds=Object.keys(t.CRITTERS).filter(k=>!t.CRITTERS[k].live);
+  // (every pose of a kind at one scale, and its two nibbling frames one size: no grazer bobbing bigger and smaller)
+  const bad=kinds.filter(id=>{const P0=[[0,null],[2,null],[0,'run'],[0,'graze'],[1,'graze'],[0,'rest']].map(([f,h])=>t.critterArt(id,f,0,h)),g0=P0[3],g1=P0[4];return new Set(P0.map(a=>a.k)).size>1||g0.w!==g1.w||g0.h!==g1.h});
+  ok(!bad.length,'each kind\'s poses at one scale, its nibbling frames one size ('+(bad.join(', ')||'all '+kinds.length+' kinds')+')');
+  const herd=(id,n)=>({crit:true,id,x:5000,y:5000,hx:5000,hy:5000,n,t:0,a:0,dir:1,tire:0,cool:0,coat:7,st:'graze'}),gs0=G.speed;G.speed=1;
+  const run=(c,s0,s1,fn)=>{const A0=t.critterArt(c.id,0,c.coat);let F=null;for(let s=s0;s<s1;s+=1/30){if(fn)fn(c,1/30);F=t.herdFlock(c,A0,s*1000)}return F},
+    pairs=F=>{let lo=1e9,sum=0;F.m.forEach((p,i)=>{let nn=1e9;F.m.forEach((q,j)=>{if(i!==j)nn=Math.min(nn,Math.hypot(p.x-q.x,p.y-q.y))});sum+=nn;lo=Math.min(lo,nn)});return [sum/F.m.length,lo]},
+    spread=(F,c)=>F.m.reduce((a,m)=>a+Math.hypot(m.x-c.x,m.y-c.y),0)/F.m.length;
+  try{// (at rest: spread round its point, none on another, each grazing, looking up and turning on its own time)
+   const c=herd('reindeer',5),A0=t.critterArt(c.id,0,c.coat),w=A0.w;let F=run(c,0,4),low=1e9,same=0,samples=0,flips=0,prev=null;
+   for(let s=4;s<34;s+=1/30){F=t.herdFlock(c,A0,s*1000);const pn=performance.now;performance.now=()=>s*1000;let hows;try{hows=F.m.map((m,i)=>t.herdPose(c,i,t.herdGoes(c,m),0).how)}finally{performance.now=pn}
+    low=Math.min(low,pairs(F)[1]);if(Math.round(s*30)%15===0){samples++;if(new Set(hows).size===1&&new Set(F.m.map(m=>m.f)).size===1)same++}
+    if(prev)flips+=hows.filter((h,i)=>h!==prev[i]).length;prev=hows}
+   const [mean]=pairs(F);
+   ok(mean>=w*FL.gap*.6&&low>=w*FL.keep-.6,'a herd at rest stands spread round its point: '+mean.toFixed(1)+' px on average to the nearest (its width '+w+', gap '+FL.gap+'), none nearer than '+low.toFixed(1)+' (keep '+(w*FL.keep).toFixed(1)+')');
+   ok(same<=samples*.3,'its animals graze, look up and turn each on its own time: all alike '+same+' times of '+samples);
+   ok(flips<=c.n*30/(L.graze[0]+L.look[0])*2+c.n,'each lowers and lifts its head slowly ('+flips+' changes among '+c.n+' in 30 s)');
+   // (on the way: the first ahead, the rest behind it fanned out, each at its spot's reach, not in step)
+   c.st='walk';let far=0,lead=0,n0=0,phase=0;F=run(c,34,36,(c,d)=>{c.x+=8*d});
+   for(let s=36;s<46;s+=1/30){c.x+=8/30;F=t.herdFlock(c,A0,s*1000);const q=F.m.map((m,i)=>Math.hypot(...t.flockSpot(c,F,i,F.m.length,Math.max(4,w)*FL.gap,s*1000,true).map((v,k)=>(k?c.y:c.x)+v-(k?m.y:m.x))));far=Math.max(far,...q);
+    n0++;if(F.m[0].x>=Math.max(...F.m.slice(1).map(m=>m.x)))lead++;if(new Set(F.m.map(m=>Math.floor(m.d/(Math.max(4,w)/t.PX.MAP_STEPS))%t.PX.MAP_STEPS)).size>1)phase++}
+   ok(far<=Math.max(4,w)*FL.gap*2.5&&lead>=n0*.8,'walking, the first goes ahead ('+Math.round(lead/n0*100)+'% of the time) and each keeps within '+far.toFixed(1)+' px of its spot in the wedge');
+   ok(phase>=n0*.6,'they do not step as one ('+Math.round(phase/n0*100)+'% of the time on different steps)');
+   // (fleeing they scatter wider; at rest again they come back together)
+   const walk=spread(F,c);c.st='flee';F=run(c,46,49,(c,d)=>{c.x+=48*d});const fled=spread(F,c);
+   c.st='graze';F=run(c,49,61);const back=spread(F,c);
+   ok(fled>walk*1.3&&back<fled,'fleeing they scatter wider ('+fled.toFixed(1)+' px from its point, '+walk.toFixed(1)+' walking), and gather again at rest ('+back.toFixed(1)+')');
+   // (one more in it and the herd gone far meanwhile (out of sight a while, a calf born): none left behind where it was)
+   {c.x+=900;c.y+=300;c.n=6;c.st='graze';const F3=t.herdFlock(c,A0,62000),off=Math.max(...F3.m.map(m=>Math.hypot(m.x-c.x,m.y-c.y)));
+    ok(F3.m.length===6&&off<Math.max(4,w)*FL.gap*3,'one more in a herd gone far meanwhile: all '+F3.m.length+' with it ('+off.toFixed(1)+' px from its point at most)')}
+   // (a big herd splits in two knots that drift apart and back)
+   const c2=herd('fowl',6),A2=t.critterArt(c2.id,0,c2.coat),knots=F=>{const g=i=>F.m.filter((m,j)=>j%2===i),cen=a=>[a.reduce((s,m)=>s+m.x,0)/a.length,a.reduce((s,m)=>s+m.y,0)/a.length];const [a,b]=[cen(g(0)),cen(g(1))];return Math.hypot(a[0]-b[0],a[1]-b[1])};
+   let lo2=1e9,hi2=0;for(let s=0;s<140;s+=1/10){const F2=t.herdFlock(c2,A2,s*1000);if(s>4){const k=knots(F2);lo2=Math.min(lo2,k);hi2=Math.max(hi2,k)}}
+   ok(hi2>lo2+A2.w*FL.gap*.8,'a herd of '+c2.n+' splits in two knots drifting apart ('+hi2.toFixed(1)+' px between them at most) and back ('+lo2.toFixed(1)+')')}
+  finally{G.speed=gs0}}
  // ---- a frame of it stays cheap
  {A.on=true;try{t.drawWorld();const t0=performance.now();for(let i=0;i<30;i++){t.drawWorld()}const per=(performance.now()-t0)/30;const a0=performance.now();for(let i=0;i<30;i++){const e=[];t.ambientWorld(e,G.cam,t.vis());t.drawHerds(e,G.cam,t.vis())}const amb=(performance.now()-a0)/30;
    ok(amb<4,'the wildlife\'s share of a frame: '+amb.toFixed(2)+' ms (the frame '+per.toFixed(1)+' ms)')}finally{A.on=false}}

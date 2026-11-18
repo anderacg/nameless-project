@@ -134,8 +134,9 @@
     o.back=S.back.map(r);o.legs=S.legs.map((v,i)=>i===2?Math.round(v*k):Math.max(1,Math.round(v*k)));if(S.fore)o.fore=S.fore.map((v,i)=>i===2?Math.round(v*k):Math.max(1,Math.round(v*k)));if(S.hump)o.hump=S.hump.map(r);
     if(S.pawUp)o.pawUp=Math.max(1,Math.round(S.pawUp*k));if(S.head){const h=S.head;o.head={...h,x:Math.round(h.x*k),y:r(h.y),w:Math.max(3,Math.round(h.w*k)),h:Math.max(3,Math.round(h.h*k)),snout:h.snout&&h.snout.map(r)}}return o};
   function quad(g,S,F,o){S=scaleS(S,PX.BEAST_SIZE[o.kind]);
-    // (grazing: its head down by its own height to just over the grass, a step forward, nibbling)
-    if(F.a==='graze'&&S.head)F={...F,head:[2+F.i,Math.max(0,Math.round(S.head.y-S.head.h/2-2))-F.i],tail:0};
+    // (grazing: its head down by its own height to just over the grass, a step forward, nibbling with its jaw, its head held still: the
+    //  two frames one size, so a grazer never bobs bigger and smaller, the owner 2026-11-18: "Wildlife sprite is shrinking back and forth")
+    if(F.a==='graze'&&S.head)F={...F,head:[2,Math.max(0,Math.round(S.head.y-S.head.h/2-2))],jaw:F.i,tail:0};
     const Y=S.Y,b=F.bob,lx=F.lean?1:0,hip=S.hip,sho=S.sho+lx,top=[Y-S.back[0]+b,Y-S.back[1]+b],bel=Y-S.belly+b,C=S.C,Dk=S.D,P={Y,b,lx,hip,sho,top,bel};
     // (a leg: from its root under the body to its foot on the ground (lift: raised), a hind one bent back at the hock)
     const leg=(i,near)=>{const fore=i%2===1,[dx,lift]=F.legs[i]||[0,0],up=fore&&near&&S.pawUp?[0,S.pawUp,Math.ceil(S.pawUp/2)][F.paw]||0:0,rx=(fore?sho:hip)+(near?0:-1),ry=bel-1,

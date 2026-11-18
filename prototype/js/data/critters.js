@@ -21,7 +21,15 @@ const WILD_ART={on:true};
    water within r tiles and stands at its edge (within at px of it) time s, its head down; town, px round a holding it keeps out of
    (and its lots: it walks off them, away from the holding); graze, s with its head down to the grass, then look s with it up;
    bound, px the leaps of its bounders reach as they flee, hop its hoppers' (bounce: their leaps a second) */
-const WILD_LIFE={night:.55,wary:1.6,drink:{chance:.25,r:4,at:6,time:[4,8]},town:48,graze:[2.5,5],look:[.8,1.6],bound:3,hop:2,bounce:3,
+/* (flock: a herd's animals each on its own, a loose unit round the herd's point (critters.js herdFlock; the owner, 2026-11-18: "dont make
+   them moving the same, make them move in formation like army but more spread like one unit"): most drawn of it; gap its width × between
+   its ranks and files, jit that × of jitter; flee its spots that × wider as it bolts; pace an animal's speed against the herd's (+ its own
+   share of pace[1]), amble px a s at least, catch × when gap × behind; start px from its spot before it sets off (its own share of the
+   range: the first goes first, the rest follow); keep its width × apart at least; wander × gap each drifts about its spot at rest, over
+   its own s in the range; split: a herd of n or more in two knots drifting apart, far × gap at most, and back over per s; turn: s
+   between an idle one's turns, its own) (graze, look: slow, each on its own time, so a herd never ducks and rises as one) */
+const WILD_LIFE={night:.55,wary:1.6,drink:{chance:.25,r:4,at:6,time:[4,8]},town:48,graze:[6,12],look:[2,4],bound:3,hop:2,bounce:3,
+  flock:{most:6,gap:1.8,jit:.35,flee:1.8,pace:[.85,.3],amble:5,catch:1.6,start:[.6,2.4],keep:.8,wander:[.22,7,13],split:{n:4,far:2.4,per:[35,70]},turn:[3,8]},
   bounders:['deer','stag','reindeer','gazelle','ibex'],hoppers:['rabbit','hare']};
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},
