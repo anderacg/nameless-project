@@ -184,8 +184,14 @@ function mapDots(V,fn){const T=LOD_TAG,G=lodGrid(),L=MAP_NEAR,r=V+WORLD_LOD.lag,
   for(const o of roadList())each(o)}
 // the two minimaps' frame: the management windows' brown and gold, outside their unchanged map and hit rectangles
 const MAP_FRAME={bg:'#141116',edge:'#967744',light:'#c9a24e',view:'#e7d7b3',muted:'#b5a88e'};
-function drawMapFrame(r){ctx.save();ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
-  ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2);ctx.restore()}
+MAP_FRAME.art=new Image();MAP_FRAME.art.src='art/ui/forged-rim.png';
+function drawMapFrame(r){ctx.save();const a=MAP_FRAME.art;
+  if(a.complete&&a.naturalWidth){
+    const s=176,w=a.naturalWidth,h=a.naturalHeight,x=r.x-2,y=r.y-2,W=r.w+4,H=r.h+4,
+      sx=[0,s,w-s],sy=[0,s,h-s],sw=[s,w-2*s,s],sh=[s,h-2*s,s],dx=[x,x+2,x+W-2],dy=[y,y+2,y+H-2],dw=[2,W-4,2],dh=[2,H-4,2];
+    ctx.imageSmoothingEnabled=true;for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(i!==1||j!==1)ctx.drawImage(a,sx[i],sy[j],sw[i],sh[j],dx[i],dy[j],dw[i],dh[j]);
+  }else{ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
+    ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2)}ctx.restore()}
 // The campaign's desktop slot, in game pixels; its drawing and full-map tap share this rectangle.
 // With no visible slot (mobile or before the HUD's first frame), use the original top-right map.
 // s: pixels a tile; the fallback keeps the same screen size at every map zoom (zk, core.js MAPZOOM).

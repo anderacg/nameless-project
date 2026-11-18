@@ -32,7 +32,11 @@ Kit.suite(({ok})=>{
  click('battleOrdersToggle');window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));ok(orders.hidden&&G.mode==='battle','Escape closes battle panels before the game menu');
  click('bMenu');t.frame();ok(G.mode==='esc'&&!hud.enabled,'Menu opens the existing paused battle menu');t.act('esc-resume');t.frame();ok(hud.enabled&&t.B.paused,'Resume restores the battle HUD and tactical pause');
  t.WORLD_BATTLE.on=false;G.enc=null;t.BDEPLOY.on=true;t.startBattle({enemies:['militia'],deploy:true});t.frame();
- ok(t.B.deploy&&document.getElementById('bPause').textContent.includes('Start'),'deployment retains a visible Start button');click('bPause');ok(!t.B.deploy,'Begin starts the battle');
+ ok(t.B.deploy&&document.getElementById('bPause').textContent.includes('Start'),'deployment retains a visible Start button');
+ click('battleOrdersToggle');
+ ok(getComputedStyle(document.querySelector('.battle-start')).visibility==='hidden','the center Start button does not cover the open Orders drawer');
+ ok(shown(document.getElementById('bPause')),'Start remains available in the dock while Orders are open');hud.close();
+ click('bPause');ok(!t.B.deploy,'Begin starts the battle');
  click('battleSpeedToggle');ok([...speeds.querySelectorAll('[data-bspeed]')].map(b=>b.textContent).join()==='0.5×,1×,2×,5×','field battles retain their distinct speed settings');hud.close();t.battlePause(true);
  ok(!ERR.length,'mobile battle controls produce no runtime errors');
 });
