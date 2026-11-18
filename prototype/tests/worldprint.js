@@ -866,7 +866,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  foot and drawn over a man's feet (grassFeet, grassOver), nothing drawn on land never seen and nothing moving out of your sight
 //  (fog.js VIEW_SEEN), the remembered scene cut at game px, pixel for pixel as before (fogMem) (W6). W1-W4, W7, W8, B2 and the sums
 //  hold. Were W5 c8fd11f3, W6 3939e37e)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'26f08294',W6:'c306f4a3',W7:'a9fc5330',W8:'93ccd29a',B2:'1c3f6432'};
+// (W5, W6 re-recorded 2026-11-18, on purpose, the owner's "Small water have a square shape around it", "The walkable path on river is
+//  not realistic": a pool's or lake's tiles slope down to the water with no flat square floor (worldterrain.js, WORLD_TERRAIN.shore.basin),
+//  the river's colour blended by its climates' shares, the ford a gravel bar with uneven, foamed edges and stepping stones
+//  (WORLD_WAYS.river.fordBar) move the painted world (W5) and the view (W6), with the view's effects lifted with the land at each man
+//  (effectcentre). W1-W4, W7, W8, B2 and the sums hold. Were W5 26f08294, W6 c306f4a3)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'592981ea',W6:'d987c67d',W7:'a9fc5330',W8:'93ccd29a',B2:'1c3f6432'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
