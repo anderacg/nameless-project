@@ -871,7 +871,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  the river's colour blended by its climates' shares, the ford a gravel bar with uneven, foamed edges and stepping stones
 //  (WORLD_WAYS.river.fordBar) move the painted world (W5) and the view (W6), with the view's effects lifted with the land at each man
 //  (effectcentre). W1-W4, W7, W8, B2 and the sums hold. Were W5 26f08294, W6 c306f4a3)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'592981ea',W6:'d987c67d',W7:'a9fc5330',W8:'93ccd29a',B2:'1c3f6432'};
+// (W5-W8, B2 re-recorded 2026-11-18 again, on purpose, the owner's "the sites is not in the same level as building?", "sites such as
+//  stone pillar, abandon places, are too close to each other and even too close to the holding": sites cast their own shadows past their
+//  pictures and lift at their foot (structures.js siteCast, SITE_SHADOW) (W5, W6), and stand 14 tiles apart, 8 from any lot, 12 from a
+//  holding's centre, goblin warrens placed first (SITE_SPACE, SITE_AWAY.any) (W6-W8, B2). W1-W4 and the sums hold. Were W5 592981ea,
+//  W6 d987c67d, W7 a9fc5330, W8 93ccd29a, B2 1c3f6432)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'4e3a2019',W6:'1d51b245',W7:'2dafadb3',W8:'1cdbeaf3',B2:'9fa9d7f3'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
