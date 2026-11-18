@@ -21,8 +21,15 @@ const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,
    what their deadline asks: the work left (est ms a chunk at first, then as measured, eased by learn; rest of it at least for one
    begun) over the time before the view reaches them at its speed (speed game px a second at least; soon ms at the least), safety
    times over, slice ms a frame at least, most at most. The view's speed and the frame's length eased by ease. A chunk half painted
-   is kept, keep of them at most, while it stays near the view */
-const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2};
+   is kept, keep of them at most, while it stays near the view. In play while the game's loop drew within alive ms (one slow frame,
+   a model made, never makes the next paint a chunk whole) */
+const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2,alive:2000};
+// the map's painter workers (gfx/worldart.js ArtWorkers): on in play; how many on a phone, and at most elsewhere (never more than the
+// device's cores less one; each worker holds a whole second copy of the game and its world, about 300 MB at a phone's size, so one on a
+// phone); help: ms a chunk in view may wait for a worker before it is painted here too (the first done kept)
+// (phone 0: none on a phone till one is measured there (each worker holds a whole second game, ~300 MB; Safari may close the tab), ?workers
+//  for one: the owner, 2026-11-18)
+const ART_WORKERS={on:true,phone:0,most:4,help:400};
 /* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
    read at a place warped climWarp game px by noise, each px's picked from their shares (climPick: by a slow noise at sc game px, spread k, grain at its edge: ragged
    tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from
