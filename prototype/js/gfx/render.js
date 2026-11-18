@@ -654,7 +654,11 @@ function drawBattle(){
     if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(cam.x-w.x0),T.f+k*(cam.y-w.y0));
       // (the fallen among them by their feet, just behind one standing where they lie: vfx.js corpseEnts)
       const L=E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,f:()=>{ctx.setTransform(T);draw(o)}}));
-      for(const c of corpseEnts(camView()))L.push({y:w.world(c).y,nf:true,f:()=>{ctx.setTransform(T);ctx.translate(0,-fieldLift(c.x,c.y));drawBody(ctx,c.corpse,c.q,c.k)}});// (lying where he fell, up by its ground's lift as he stood)L.sort((a,b)=>a.y-b.y);
+      // (each lying where he fell, up by its ground's lift as he stood; his blood apart, by its far edge, so the living standing in it are
+      //  drawn over it, the owner, 2026-11-18: "The blood is draw above characters")
+      for(const c of corpseEnts(camView())){const up=(c.corpse.pool*CORPSE_POOL.top+CORPSE_POOL.pad)*WORLD_BATTLE.sprite,at=f=>()=>{ctx.setTransform(T);ctx.translate(0,-fieldLift(c.x,c.y));drawBody(ctx,c.corpse,c.q,c.k,f)};
+        L.push({y:w.world({x:c.x,y:c.y-up}).y,nf:true,f:at(1)},{y:w.world(c).y,nf:true,f:at(2)})}
+      L.sort((a,b)=>a.y-b.y);
       try{worldOverdraw(L,cam)}finally{ctx.restore()}}else E.forEach(draw)}
   // (each missile and its shadow up by the lift of the ground under it, as the men it flies between: vfx.js fieldLift)
   for(const a of B.arrows){const Lf=fieldLift(a.x,a.y);if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);

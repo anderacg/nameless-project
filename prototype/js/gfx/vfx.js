@@ -85,6 +85,8 @@ function vfxDeath(t,corpse){
 // (DYING: how far through his fall (q) each frame of a man's dying lasts: the stagger, to his knees, the landing a pixel up)
 const DYING={stagger:.25,kneel:.6,land:.75};
 const GORE={fall:.65,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
+// (a fight on the map: a pool drawn as ground, among the living by its far edge, top of its size and pad field px above his feet: render.js)
+const CORPSE_POOL={top:.5,pad:4};
 const undead=u=>!!(u&&(breedOf(u.type)==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
 /* the blood layer (B.gore, R16): by tiles of GORE.tile px, each made only where blood falls or one of the fallen is painted in, and
    kept for the battle (blood is never painted twice; the ground's tiles come and go apart from it). each(x0,y0,x1,y1,f): f(g) for
@@ -119,9 +121,10 @@ function poolSprite(r,seed,bl){const red=!bl||bl.key==='red',key=r+'_'+seed+(red
    turning, to where it lands (fly: its arc, px high, turns over its flight); a paper doll's thin, as he held it */
 const FALLS=['over','back','knees'],FALL_FLY={h:9,turns:1.5};
 const fallOf=c=>c.fall||(c.fall=FALLS[(Math.round(c.x)*7+Math.round(c.y)*3)%3]);
-function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFor(c):null;if(V&&!V.beast&&!V.horse)return drawFallen(g,c,V,q,k);const S=V||c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
+function drawBody(g,c,q,k,part){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFor(c):null;if(V&&!V.beast&&!V.horse)return drawFallen(g,c,V,q,k,part);const S=V||c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
   const bl=V?V.blood===undefined?{key:'red'}:V.blood:undefined;// (his kind's blood: sprites.js bloodOf; null none)
-  if(k>0&&BLOOD.on&&(V?bl:!c.dry)){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,bl),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
+  if(part!==2&&k>0&&BLOOD.on&&(V?bl:!c.dry)){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,bl),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
+  if(part===1){if(B?.world)g.restore();return}// (part 1: his pool alone, the ground under the living; 2: him alone: render.js, a fight on the map)
   g.save();g.translate(X,Y);if(c.face<0)g.scale(-1,1);
   // (a beast, a mount: slumped low where it stood; its rider thrown forward of it)
   if(S.beast){const sp=S.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2),Q=q*q;
@@ -139,9 +142,10 @@ function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFo
 /* one of the fallen as his death says (sprites.js deathOf): he goes down into it (over: forward; back: over backwards; knees: to
    his knees, there to stay), his weapon flung the side it drops (wd), his shield and his helm by him once he lies; a rider's mount
    sinks (on its side or its belly) and he lies clear of it, across it or pinned under it (at: from its middle) */
-function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mount,at=M?V.at:[0,0],f=c.face;fallOf(c);
+function drawFallen(g,c,V,q,k,part){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mount,at=M?V.at:[0,0],f=c.face;fallOf(c);
   if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
-  if(k>0&&BLOOD.on&&V.blood){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,V.blood);g.globalAlpha=.85;g.drawImage(p,X+(at[0]+V.pool[0])*f-(p.width>>1),Y+at[1]+V.pool[1]-(p.height>>1));g.globalAlpha=1}
+  if(part!==2&&k>0&&BLOOD.on&&V.blood){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,V.blood);g.globalAlpha=.85;g.drawImage(p,X+(at[0]+V.pool[0])*f-(p.width>>1),Y+at[1]+V.pool[1]-(p.height>>1));g.globalAlpha=1}
+  if(part===1){if(B?.world)g.restore();return}
   g.save();g.translate(X,Y);if(f<0)g.scale(-1,1);
   const mount=()=>{if(q<1){const s=1-.5*q*q;g.drawImage(M,-Math.floor(M.width/2),Math.round(1-(M.height-1)*s),M.width,Math.max(1,Math.round(M.height*s)))}else g.drawImage(V.down,-Math.floor(V.down.width/2),3-V.down.height)};
   if(M&&V.ride!=='under')mount();
