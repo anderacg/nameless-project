@@ -93,7 +93,12 @@ const DAY_SECONDS=293,NIGHT_AT=.5;// (180, times the world lab's walk over the m
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
 // a battle's tempo on screen (the owner, 2026-11-17: "Can you reduce the speed in battle?"): the real time a frame of a battle runs on,
 // at its 1x (main.js); its rules and its tests' steps untouched. The world round a fight on the map keeps its own speed
-const BATTLE_TEMPO=.7;
+// (.55, was .7: the owner, 2026-11-18: "Reduce moving speed in the world and battle speed")
+const BATTLE_TEMPO=.55;
+// the map's tempo on screen (the owner, 2026-11-18: "Reduce moving speed in the world"): the real time a frame on the map runs on, at its
+// 1x (main.js), the same way as a battle's; everything on the map goes slower together, its clock too (a day 293 s / WORLD_TEMPO), so
+// what a day holds is the same; its rules and its tests' steps untouched
+const WORLD_TEMPO=.75;
 // the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
 // speed (the owner, 2026-10-22: back on the bar)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
