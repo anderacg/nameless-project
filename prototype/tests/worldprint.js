@@ -883,7 +883,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 re-recorded 2026-11-18 again, on purpose, the owner's "The jumping and animations should be based on the height": the water
 //  at a man's legs drawn smoothly by its depth and at his ankles on drawn water of no depth (march.js wadeCut), the moves over an edge
 //  by its height, at the edge (MARCH_ACT). W1-W5, W7, W8, B2 and the sums hold. Was W6 031dd03d)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'7762de70',W6:'76d8ceca',W7:'2dafadb3',W8:'1cdbeaf3',B2:'9fa9d7f3'};
+// (W6-W8 re-recorded 2026-11-18 again, on purpose, the owner's "If too high or too low then we cannot go down or go up" and "check
+//  the bridges": steps up over 9 px or down over 16 px block every mover (world/map.js LEDGE, router.js, world.js walk, MarchGround), and
+//  the river beside a bridge is shut to routes and formations (bridgeSide), which moves where every party is (W7, W8) and the view (W6).
+//  W1-W5, B2 and the sums hold. Were W6 76d8ceca, W7 2dafadb3, W8 1cdbeaf3)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'7762de70',W6:'db7ef1b3',W7:'cc683a1e',W8:'ed3f924a',B2:'9fa9d7f3'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
