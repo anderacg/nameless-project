@@ -13,7 +13,7 @@ Kit.suite(({ok,info})=>{
    const got=Q.level===lv&&t.RENDER.fine===n.fine&&t.RENDER.fps===n.fps&&t.VFX.max===n.vfx&&t.AMBIENT.density===n.amb&&t.MIST.res===n.mist[0]&&t.WFOG.mistEvery===n.mist[1]&&t.MINIMAP.world===n.mini[0]&&t.MINIMAP.refresh===n.mini[1]&&Q.now.fxCap===n.fxCap&&t.fxLite()===(n.fx==='light'||t.prefGet('bfx')==='light');
    ok(got,lv+': its numbers in force (scene fine '+t.RENDER.fine+', '+t.RENDER.fps+' fps, blow particles '+t.VFX.max+', ambient '+t.AMBIENT.density+', mist '+t.MIST.res+' px / '+t.WFOG.mistEvery+' ms, minimap '+t.MINIMAP.world+' / '+t.MINIMAP.refresh+' ms, state particles '+Q.now.fxCap+', effects '+(t.fxLite()?'light':'full')+')')}
   t.prefSet('gfx','high');const rH=t.sceneRes();t.prefSet('gfx','low');const rL=t.sceneRes();t.prefSet('gfx','high');
-  ok(rH===Math.min(2,t.WORLD_VIEW.fine)&&rL===1,'the scene drawn at the level\'s fine px: High '+rH+', Low '+rL+' (the map at its own pixels)');
+  ok(rH===Math.min(2,t.WORLD_VIEW.fine)&&rL===rH,'the land drawn as fine at every level (the owner: trees and grass the same): High '+rH+', Low '+rL);
   // (High is the game as it always was: what Auto gives here, every fingerprint's page)
   t.prefSet('gfx','auto');ok(Q.level==='high'&&Q.pick('auto')==='high'&&t.RENDER.fine===B.fine&&t.VFX.max===B.vfx,'Auto on a test\'s page and a desktop: High, the game as it was (scene fine cap '+t.RENDER.fine+')');
   // ---- Auto on a phone: Medium; a phone whose first frames run slow: Low, remembered
@@ -33,13 +33,13 @@ Kit.suite(({ok,info})=>{
    t.act('gfx','medium');const on=[...document.querySelectorAll('#panel [data-act="gfx"]')].filter(b=>b.classList.contains('on')).map(b=>b.dataset.arg).join();
    ok(t.prefGet('gfx')==='medium'&&Q.level==='medium'&&on==='medium'&&t.RENDER.fps===Math.min(t.prefGet('fps'),30),'chosen there: in force at once, no reload ('+Q.level+', '+t.RENDER.fps+' fps), the page redrawn with it on');
    t.prefSet('gfx','auto');for(let i=0;i<3&&G.mode!=='world';i++)key();G.mode='world';G.modal=false}
-  // ---- grass: Medium draws a share of the clumps, the same ones each frame; High all
+  // ---- grass: every level draws every clump High draws, the same each frame (the owner, 2026-11-18: no grass setting)
   {t.prefSet('gfx','medium');const f=Kit.field(t.townBy('Ashford')||t.TOWNS[0]);Kit.goTo(f[0],f[1]);G.mode='world';G.modal=false;const r=t.sceneRes(),WA=t.WorldArt,CH=t.CHUNK;
    const fine=()=>{const c=WA.chunks.get(Math.floor(P.y/CH)*WA.cols+Math.floor(P.x/CH));return c&&c.grass&&c.fr===r?c:null};for(let i=0;i<300&&!fine();i++){t.drawWorld();WA.step(60)}t.drawWorld();
    const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)},C=[...WA.chunks.values()].filter(c=>c.grass&&c.grass.L&&c.fr===r),vs0=window.viewState;
    const drawn=()=>{for(const c of C)c.grass.L.fill(-99);window.viewState=()=>1;try{t.terrainEnts([],cam)}finally{window.viewState=vs0}let n=0;for(const c of C)for(let k=0;k<c.grass.n;k++)if(c.grass.L[k]!==-99)n++;return n};
    if(r<=1||!fine())info('no fine grass under you: grass share not checked');else{const m1=drawn(),m2=drawn();t.prefSet('gfx','high');const h=drawn();
-    ok(h>0&&m1===m2&&Math.abs(m1/h-QL.medium.grass)<.12,'Medium draws '+(m1/h*100).toFixed(0)+'% of the grass clumps High draws ('+m1+' of '+h+'), the same each frame');for(const c of C)c.grass.L.fill(0)}}
+    ok(h>0&&m1===m2&&m1===h,'Medium draws every grass clump High draws ('+m1+' of '+h+'), the same each frame');for(const c of C)c.grass.L.fill(0)}}
   // ---- a holding's buildings made ahead in spare time: one lot a call at most, the way you go first, none with too little time left
   {t.prefSet('gfx','high');const rs=t.sceneRes(),W=t.LOT_WARM,hs=t.TOWNS.filter(h=>h.lots&&Math.hypot(h.x-P.x,h.y-P.y)<t.vis()+W.r);
    for(const h of hs)for(const l of h.lots)if(l._s){l._s._f=null;l._s._fr=0}

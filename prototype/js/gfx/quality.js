@@ -20,7 +20,7 @@ const Quality={
   watch(now){const A=QUALITY.auto;if(prefGet('gfx')!=='auto'||this.level!==A.phone||this.weak())return;
     const W=this.W||(this.W={t0:now,f:[]});if(now-W.t0<A.after||W.done)return;W.f.push(performance.now()-now);if(W.f.length<A.frames)return;
     W.done=true;const m=W.f.slice().sort((a,b)=>a-b)[W.f.length>>1];W.median=m;if(m>A.slow){this.setWeak(true);this.apply();if(typeof toast==='function')toast('Graphics set to '+QUALITY.names[this.level]+' for this device (Settings → Graphics).')}},
-  note(){const v=prefGet('gfx'),n=QUALITY.names;return (v==='auto'?'Auto: '+n[this.level]+' on this device. ':'')+'Low draws the map at its own pixels, no fine grass or fine buildings, at 30 frames a second; Medium the fine map, less grass and fewer particles, at 30; High everything, at up to 60.'}};
+  note(){const v=prefGet('gfx'),n=QUALITY.names;return (v==='auto'?'Auto: '+n[this.level]+' on this device. ':'')+'The land, trees and grass look the same at every level. Low: fewer effects, ambient life and mist, the screen a little coarser, at 30 frames a second; Medium: fewer particles, at 30; High: everything, at up to 60.'}};
 // the frame's spare time on the map (main.js paintIdle): Auto's watch, then a holding's buildings made ahead (structures.js lotWarm)
 function frameSpare(now,ms){Quality.watch(now);lotWarm(ms)}
 Quality.apply();
