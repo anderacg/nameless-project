@@ -61,7 +61,7 @@ const LOT_AHEAD={r:600,ms:3};
 // (the sites asked for at their fine scale, and the camps warmed, at the scene's resolution: kept apart from the sites themselves, which
 // are saved as they stand (core/save.js), so a loaded game warms them again)
 const SITE_WARM=new WeakMap();
-function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
+function lotsAhead(V){const t0=performance.now(),R=performance.now()-LOT_WARM.at<250?LOT_WARM.near:LOT_AHEAD.r;for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+R).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
   for(const l of t.lots){if(l._s&&l._gimg&&(sceneRes()<=1||l._s._fr===sceneRes()))continue;lotSprite(t,l);lotYard(t,l);lotFine(t,l,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
   // (the sites near you asked for at their fine scale before they come into view (sites.js draw's k), made with the rest: no site drawn
   //  coarse its first frames, its yard with it)
@@ -72,6 +72,18 @@ function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>
 // (a site's picture at the scene's finer resolution: its model made r times finer by its maker (siteCanvas mk), with its own touches
 // (deco) drawn r times larger; asked for when it is drawn (fineOf), made ahead with the lots (FINE_Q), drawn where it is made (drawFine),
 // else the picture itself)
+/* a holding's buildings made ahead in the frame's spare time (main.js paintIdle, by quality.js frameSpare; the owner, 2026-11-18: "go
+   ahead with 1-3"): the lots of the holdings within r px past your sight, the nearest the way you go first (ahead: how much a px
+   of it the way you face counts), one lot a call at most (a fine model can take a hundred ms: never two in one slice), none while the
+   frame has under min ms left. While it works (called in the last 250 ms: at) lotsAhead makes in the frame only what lies within near
+   px past your sight (where lots are drawn), what is not ready when it comes there. n: lots made so far */
+const LOT_WARM={on:true,r:1400,near:340,ahead:.6,min:4,n:0,at:0,way:null};
+const lotReady=(l,rs)=>!!(l._s&&l._gimg&&(rs<=1||lotK(l)<1||l._s._fr===rs));
+function lotWarm(ms){const W=LOT_WARM;if(!W.on||typeof TOWNS==='undefined')return false;W.at=performance.now();if(!(ms>=W.min))return false;const rs=sceneRes(),V=vis(),w=W.way||(W.way={x:P.x,y:P.y,dx:0,dy:0});
+  {const mx=P.x-w.x,my=P.y-w.y,m=Math.hypot(mx,my);if(m>2){w.dx=mx/m;w.dy=my/m;w.x=P.x;w.y=P.y}}
+  let best=null,bs=Infinity;for(const t of TOWNS){if(!t.lots)continue;const dx=t.x-P.x,dy=t.y-P.y,d=Math.hypot(dx,dy);if(d>V+W.r)continue;const sc=d-W.ahead*(dx*w.dx+dy*w.dy);
+    if(sc<bs&&t.lots.some(l=>!lotReady(l,rs))){bs=sc;best=t}}
+  if(!best)return false;const l=best.lots.find(l=>!lotReady(l,rs));lotSprite(best,l);lotYard(best,l);lotFine(best,l,rs);W.n++;return true}
 const FINE_Q=new Set();
 function fineOf(cv,r){if(r<=1||!cv.mk)return null;if(cv._f&&cv._fr===r)return cv._f;cv._want=r;FINE_Q.add(cv);return null}
 function buildFine(cv,r){const m=cv.mk(r),N=m.cell;cv._f=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(cv.deco){g.scale(r,r);cv.deco(g,cv.width)}});if(cv.gr)cv._fg=siteYard(m,r);cv._fr=r}

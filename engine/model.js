@@ -491,7 +491,9 @@
     // the same building at the same scale); then drawn, and smaller again if its pixels do not
     // (W4: several facings are judged on their pixels together, and the scale kept for the plan, so a facing whose pixels run a pixel
     // over never draws the building smaller than its other facings)
-    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit0&&b.y1-b.y0+1<=fit0},key=yaws.length>1?JSON.stringify(Object.assign({},spec,{yaw:0,snow:0})):null;
+    // (the scale kept by the spec as it is fitted, at detail 0, so its finer picture takes the scale its coarse one found, never searched
+    //  again; a spec of one facing kept by that facing)
+    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit0&&b.y1-b.y0+1<=fit0},key=JSON.stringify(Object.assign({},spec,{yaw:yaws.length>1?0:spec.yaw|0,snow:0,detail:0}));
     let sc=key&&FITS.get(key),R,bx,last=null;
     // (the fit's next choice when the pixels run over its points, up to three; then smaller all over. Its own facing's pixels at the
     // scale it ends on, already drawn and cleaned for the test, kept (last): never drawn again, the same pixels)

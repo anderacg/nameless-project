@@ -208,7 +208,7 @@ let LIGHTQ=[];
 // more each way, for the camera's fraction): drawn onto the screen, and what you remember of the land outside your sight
 // (the scene's resolution: fine px a game px where the screen has them (WORLD_VIEW), and only as many as divide the screen's own
 // (VS), so a fine px is always whole screen px and nothing is resampled; the scene canvas keeps its own, r)
-const resAt=s=>{const v=Math.floor(s);for(let r=Math.min(WORLD_VIEW.fine,v);r>1;r--)if(v%r===0)return r;return 1},sceneRes=()=>resAt(VS);
+const resAt=s=>{const v=Math.floor(s);for(let r=Math.min(WORLD_VIEW.fine,RENDER.fine,v);r>1;r--)if(v%r===0)return r;return 1},sceneRes=()=>resAt(VS);
 // (how fine the map's chunks are painted: the scene's, or, before the map's zoom is on (the game loading), the scale the map will
 // open at (core.js MAPZOOM.auto), so a chunk painted while it loads is not painted again once it opens)
 const paintRes=()=>{const Z=typeof MAPZOOM!=='undefined'?MAPZOOM:null;return !Z||Z.map||!Z.auto?sceneRes():resAt(Z.auto)};

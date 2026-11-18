@@ -22,7 +22,7 @@ let VS=1,CVS=1;
 // desktop GPU (doc/WORLD_DESIGN.md §3.5, "The frame's cost"), a GPU screen fed by the software canvases the frame is built in was
 // no faster, and every layer moved to the GPU was slower; for trying on a phone. sharpBattle: a battle fought apart drawn at the
 // screen's own pixels (bview, below); off, today's canvas of BVW x BVH stretched to the window
-const RENDER={cap:2,fps:60,gpu:/[?&]gpu=1/.test(location.search),sharpBattle:true};
+const RENDER={cap:2,fps:60,fine:Infinity,gpu:/[?&]gpu=1/.test(location.search),sharpBattle:true};// (fine: the scene's fine px a game px at most, the graphics level's: gfx/quality.js, render.js resAt)
 const dprOf=()=>Math.min(window.devicePixelRatio||1,RENDER.cap);
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
 const cv=$('#game');let ctx=cv.getContext('2d',{willReadFrequently:!RENDER.gpu});const ctx0=ctx;

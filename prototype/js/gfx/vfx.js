@@ -269,14 +269,14 @@ function vfxAir(){
    Line), a gold burst from its men; flanked, a red flash on the side it is struck from; its leader down, a ring of shock round
    him and his men shaken. Light (Settings, Battle effects: fxLite): the rings, colours and stars only, no particles */
 const STATE_FX={on:true,pulse:1.6,flare:1.4,shock:.45,col:{cry:'236,104,64',banner:'120,170,255',stand:'236,200,110',rally:'255,220,120'},pale:.35,grey:.1};
-const fxLite=()=>prefGet('bfx')==='light',FX_LITE=new Set(['ring','flash','trail','streak','wave','star']);
-const STATE_MARKS=new WeakMap(),FXP=[];let FXR=1,FXT=0;
+const fxLite=()=>prefGet('bfx')==='light'||typeof Quality!=='undefined'&&Quality.now.fx==='light',FX_LITE=new Set(['ring','flash','trail','streak','wave','star']);
+const STATE_MARKS=new WeakMap(),FXP=[],FXP_CAP=300;let FXR=1,FXT=0;// (FXP_CAP: its particles at once, the graphics level's at most: gfx/quality.js)
 const fxr=()=>(FXR=(FXR*1103515245+12345)%2147483648)/2147483648;
 const stateMark=o=>{let m=STATE_MARKS.get(o);if(!m){m={};STATE_MARKS.set(o,m)}return m};
 // (a moment's own particle: k ring, spark (rising), dust, flash, and the hero's (herofx.js); drawn in the air but rings and dust,
 // which lie on the ground. Light keeps FX_LITE's only. fol: the man it is on, whom it goes with as he moves, is thrown, leaps (fxpStep);
 // area: a reach over the ground (a group's ring, a landing's wave), drawn at the field's size, the rest at the men's: fxOnMan)
-function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&!FX_LITE.has(o.k))return;if(FXP.length>300)FXP.shift();o.age=0;if(o.fol){o.fx=o.fol.x;o.fy=o.fol.y-fxUp(o.fol.z||0)}const g=o.on||o.fol;if(g&&o.dz==null)o.dz=g.y-o.y;FXP.push(o)}
+function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&!FX_LITE.has(o.k))return;if(FXP.length>(typeof Quality!=='undefined'?Quality.now.fxCap:FXP_CAP))FXP.shift();o.age=0;if(o.fol){o.fx=o.fol.x;o.fy=o.fol.y-fxUp(o.fol.z||0)}const g=o.on||o.fol;if(g&&o.dz==null)o.dz=g.y-o.y;FXP.push(o)}
 // (his rings: what lifts him now)
 function stateRings(u){const C=STATE_FX.col,out=[],r=resolveOf(u);if(u.buffT>0)out.push(C.cry);
   const b=B.banner;if(b&&battleFriend(b.team,u)&&Math.hypot(u.x-b.x,u.y-b.y)<b.r)out.push(C.banner);if(r&&r.standing&&r.standing())out.push(C.stand);return out}

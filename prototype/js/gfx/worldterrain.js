@@ -536,7 +536,7 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
   const Q=typeof viewSeen==='function'?viewSeen(cam):null,vs=(x,y)=>Q?viewState(x,y):2;
   {const now=performance.now(),dt=Math.min(.1,(now-(TGRASS.t||now))/1000),G=WORLD_FLORA.grass,t=now/1000,BW=(VW+1)*r,BH=(VH+1)*r,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
       w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],B=G.back,SD=G.stay;TGRASS.t=now;
-    grassFeet(recs,r,n,dt);
+    const QN=typeof Quality!=='undefined'&&Quality.now,QG=QN?QN.grass:1;if(!QN||QN.feet)grassFeet(recs,r,n,dt);else GRASS_FEET.now.length=0;// (the graphics level's: gfx/quality.js)
     if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkg(BW,BH)}
     const U=TGRASS.buf.u;U.fill(0);let any=false;
     // (footprints, the lab's, fading: under the grass)
@@ -553,7 +553,7 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
           if(F[k+2]===-1){if((((F[k+1]+c.cy*CHUNK*r)*.5-ts*24+F[k+3])%5+5)%5<1){U[y*BW+x]=WF;any=true}}
           else if(F[k+2]===-2){if(((ts*7+F[k+3]*.37)|0)%4===0){U[y*BW+x]=(F[k+3]&1)?WF:SP;any=true}}else{const q=((F[k+2]-ts*RW.speed+F[k+3])%RW.period+RW.period)%RW.period;if(q<RW.len){U[y*BW+x]=q>RW.len-1.2?WF:q>RW.len*.4?SP:SL;any=true}}}}}
     for(const c of recs){const Gr=c.grass;if(!Gr)continue;const fy0=cam.y*r-4,fy1=(cam.y+VH)*r+GH;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy0)lo=m+1;else hi=m}
-      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cam.x*r-5,by=Y-cam.y*r-9;if(bx<-GW||bx>BW)continue;const st=vs(X/r,Y/r);if(!st)continue;any=true;
+      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cam.x*r-5,by=Y-cam.y*r-9;if(bx<-GW||bx>BW||QG<1&&hs(X,Y,439)>=QG)continue;const st=vs(X/r,Y/r);if(!st)continue;any=true;
         // (left, it eases back, never past upright: over back[0] s, back[1] s more for each s it was trodden (up to back[2]); pressed
         //  down, over flat[2] s and as much more; one trodden stay[1] s or more stays down, stay[0] of them; none of it out of sight)
         let lean=0,cut=0;if(st===2){const wind=G.wind*(Math.sin(w1+X*.05+Y*.03)+.8*Math.sin(w2+X*g2-Y*.01));let Pv=Gr.P[k];
