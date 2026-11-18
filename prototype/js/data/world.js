@@ -36,7 +36,13 @@ const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,
    wet sand within wet fine px of the sea, the beach within sand, dunes within dune (on land below a level); a river's bank within
    bank (shore widths in lab px: the lab's wet 5, sand 34, dunes 80); oasis: the desert green within it of a river; pools: the swamp's
    (its noise past at at sc lab px, on land under lo levels, as deep as its excess times deep); blend: the lab's (r lab px, k, warp);
-   decor: the small things' colours. Water: depth (levels) a tile's depth step (the plan's dep 0-9), the bed showing to clear levels */
+   decor: the small things' colours. Water: depth (levels) a tile's depth step (the plan's dep 0-9), the bed showing to clear levels;
+   water: one look for the rivers, lakes, pools and the sea (the owner, 2026-11-18: "make river and lake, ponds colors and
+   characteristics blend"): a river's colours the open water's by depth with murk of its own kept, its bed showing to clear levels;
+   where it runs into still water it eases into it over mouth game px (its depth to the still water's, a lake's measured to the land
+   that is no river's water either, its colours and bed, its current's streaks); at every shore and bank a broken foam within rim game px
+   (a river's by its half-width: rim of it at hw game px and over), at most foam white; the foam riding a river's banks on bankFoam
+   of its edge px (a lake's on all) */
 /* the world's nature drawn finer (gfx/worldterrain.js terrainProps; the world lab's, engine/worldflora.js): per climate its look (the
    flora's rock tones, bush leaves, moss, snow on everything), its trees by where they stand (lowland, waterside: a river within a
    tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
@@ -66,7 +72,7 @@ const WORLD_FLORA={step:9,
    size (a brook's first), a ford's share of it; a river's ford as a gravel bar (fordBar: band game px beside the road it runs out, its
    edge warp px ragged, the ford's tiles blended over blend of a tile's B-spline (no tile's square), gravel its bed's share showing, riffle
    the noise over which its edge runs white, stone the share of cell fine px cells with a stepping stone); how far it wanders off its tiles' line (meander, px, never out of them); its last
-   stretch into the sea or a lake mouth times wider, its plume out into the sea plume times its width; a river rising
+   stretch into the sea or a lake mouth times wider (its water easing into the still water's: WORLD_TERRAIN.water); a river rising
    from tarn.lv levels up rises from a tarn (its head tarn.w times wide); its surface stepped step levels at a time, a fall at each
    (the lab's; 0: smooth). A brook rises from a spring, a pool spring times its width at its head. A river's line simplified within simp of a tile of
    its tiles' middles, then wandering in bends meanderL px long, up to meanderBig px off it (a brook's 26 long, meander off), so no river runs
@@ -94,7 +100,7 @@ const WORLD_FLORA={step:9,
    its ends run on past the water as drawn to dry ground (reach game px at most), its deck at the higher bank, a ramp falling to the
    lower at slope (fine px a fine px) over a stone abutment; where its river runs on a slant (within diag radians
    of the diagonal), it is turned to cross it square, on the slant */
-const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,fordBar:{band:3,warp:3,blend:.42,gravel:.42,riffle:.6,stone:.2,cell:5},meander:6,mouth:1.6,plume:7,tarn:{lv:3,w:3.2},
+const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,fordBar:{band:3,warp:3,blend:.42,gravel:.42,riffle:.6,stone:.2,cell:5},meander:6,mouth:1.6,tarn:{lv:3,w:3.2},
   flow:{lane:1.5,gate:22,on:.55,speed:10,period:30,len:7,edge:.7,smooth:2.5}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
@@ -113,7 +119,7 @@ const PRINT_FOOT={sole:[1.2,1.7,1.2],heel:[-1.7,.8,.7],inner:.3,deep:.55,dirs:16
    (pebbles, no grass clumps, no trees); boulders and stones as props by their chance at its full share */
 const CAVE_ROCK={r:30,feather:16,warp:11,grain:3,up:6,flat:1.3,rock:.55,bare:.55,boulder:.05,stone:.12};
 const WORLD_TERRAIN={prints:{step:2.6,side:.8,rim:.5,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16,basin:7},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
-  decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,shade:.55};
+  decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,water:{murk:.3,clear:.6,mouth:18,rim:1.6,hw:6,foam:.5,bankFoam:.4},shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a

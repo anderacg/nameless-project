@@ -30,7 +30,9 @@ function terrainPal(){if(TPAL)return TPAL;const GP=PX.GROUND_PAL,hx=c=>[parseInt
       sand:[[150,140,110],[162,152,120],[140,130,100]],wet:[[118,110,86],[128,120,94]],dune:[[140,140,96],[120,124,80]],face:gp('swamp','face'),rock:GP.swamp.rock.c.map(hx),
       sea:[[126,170,150],[86,136,132],[56,100,116],[36,70,92]],river:[[104,112,76],[84,94,62],[66,76,50],[54,62,42]],bank:[[86,74,50],[72,62,42],[58,50,36]],lip:[72,92,46],
       mud:[[78,70,46],[64,58,38]],cool:[56,74,58]}};
-  TPAL=CLIMS.map(c=>Object.assign({},base,over[c]||{}));return TPAL}
+  // (one water: a river's colours the open water's by depth, water.murk of its own kept, so a river, a lake, a pool and the sea are one
+  //  water (the owner, 2026-11-18: "make river and lake, ponds colors and characteristics blend"))
+  TPAL=CLIMS.map(c=>{const Q=Object.assign({},base,over[c]||{}),M=WORLD_TERRAIN.water.murk;Q.river=Q.sea.map((v,i)=>tmix(v,Q.river[i],M));return Q});return TPAL}
 
 // (how much of a wood the ground at game px (gx, gy) is, by the tiles round it (land: the plan's land kinds, worldways.js) seen through a
 // warp: a wood's edge ragged and soft, never a tile's square; over .5 its floor and its trees)
@@ -69,7 +71,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
      river's tiles land, its curve its own) roughened by a noise of a lab px or two, water under 0; then each px's distance (game px) to
      the water (DW: the beach, wet sand and dunes, the lab's shore widths) and the water's to the land (DL: its depth, its foam), over the
      window and a margin as wide as the dunes reach) */
-  const BKF=new Float32Array(W2*HE2).fill(1),ow=ti=>tiles[ti]===T_WATER&&(!(Rv[ti]&3)||WY.mouth[ti]),MG=Math.ceil(T.dune/2)+8,ex0=gx0-MG,ey0=gy0-MG,EW=GW+2*MG,EH=GH+2*MG,WAT=new Uint8Array(EW*EH),DW=new Float32Array(EW*EH),DL=new Float32Array(EW*EH),WLV=new Float32Array(EW*EH);
+  const BKF=new Float32Array(W2*HE2).fill(1),ow=ti=>tiles[ti]===T_WATER&&(!(Rv[ti]&3)||WY.mouth[ti]),MG=Math.ceil(T.dune/2)+8,ex0=gx0-MG,ey0=gy0-MG,EW=GW+2*MG,EH=GH+2*MG,WAT=new Uint8Array(EW*EH),DW=new Float32Array(EW*EH),DL=new Float32Array(EW*EH),DLR=new Float32Array(EW*EH),WLV=new Float32Array(EW*EH);
   {const ovf=(tx,ty)=>{tx=Math.max(0,Math.min(MW-1,tx));ty=Math.max(0,Math.min(MH-1,ty));return ow(ty*MW+tx)};
     // (the field a cubic B-spline over the tiles, read at a place warped by noise (shore.warp game px at shore.sc): a lake's or a bay's
     //  shore rounded and wandering, never the tiles' straight runs and diamonds (the owner: "Recheck if there's any weird squared
@@ -86,6 +88,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       for(let y=0;y<EH;y++)for(let x=0;x<EW;x++){const q=y*EW+x;let d=D[q];if(!d)continue;if(x>0)d=Math.min(d,D[q-1]+1);if(y>0){d=Math.min(d,D[q-EW]+1);if(x>0)d=Math.min(d,D[q-EW-1]+1.414);if(x<EW-1)d=Math.min(d,D[q-EW+1]+1.414)}D[q]=d}
       for(let y=EH-1;y>=0;y--)for(let x=EW-1;x>=0;x--){const q=y*EW+x;let d=D[q];if(!d)continue;if(x<EW-1)d=Math.min(d,D[q+1]+1);if(y<EH-1){d=Math.min(d,D[q+EW]+1);if(x<EW-1)d=Math.min(d,D[q+EW+1]+1.414);if(x>0)d=Math.min(d,D[q+EW-1]+1.414)}D[q]=d}};
     cham(DW,q=>WAT[q]);yield;cham(DL,q=>!WAT[q]);yield
+    // (DLR: the water's distance to the land that is no river's water either: a lake's shore where a river runs into it no shore, the
+    //  river's water its own, and a river's px there as deep as the lake's would be (the owner, 2026-11-18: "make river and lake,
+    //  ponds colors and characteristics blend"))
+    {const RE=yield* waysBand(WY.SA,ex0,ey0,EW,EH,1,1);cham(DLR,q=>!WAT[q]&&!(RE.S[q]<0));yield}
     /* (a wide river's banks (two tiles or more): one smooth curve over its tiles, read the same way, its water every px inside it
        (the river's own curves there giving its flow; its depth by how far in it is), drawn shore.river wider than its tiles so its
        curves lie inside it: its banks never show a bulge for each of its curves' points (the
@@ -159,10 +165,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   const FB=new Float32Array(w*HE*3);{const Rb=T.over.blur,tmp=new Float32Array(w*HE*3);
     for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const u=Math.min(w-1,Math.max(0,x+q)),o=(y*w+u)*4;a+=F[o];b+=F[o+1];c+=F[o+2];n++}const o=(y*w+x)*3;tmp[o]=a/n;tmp[o+1]=b/n;tmp[o+2]=c/n}
     for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const v=Math.min(HE-1,Math.max(0,y+q)),o=(v*w+x)*3;a+=tmp[o];b+=tmp[o+1];c+=tmp[o+2];n++}const o=(y*w+x)*3;FB[o]=a/n;FB[o+1]=b/n;FB[o+2]=c/n}}
-  const CWT=new Float32Array(w*HE*4),same=(fo,go)=>F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2],C=[0,0,0],MOU=WY.mouths.filter(([mx,my,mw])=>mx+mw>X&&mx-mw<X+w&&my+mw>Y&&my-mw<Y+HE);
+  const CWT=new Float32Array(w*HE*4),same=(fo,go)=>F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2],C=[0,0,0];
   for(let y=0;y<HE;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],fordT=NF[ti]?fordShare(gx,gy):0,
       over=F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2];
-      const qe=eq(gx,gy),m=WAT[qe]?1:0,dd=m?DL[qe]:DW[qe],e=Lv[k],sl=Math.max(-.16,Math.min(.12,(-Gx[k]-.6*Gy[k])/1*T.lh*T.shade/r)),flat=Math.hypot(Gx[k],Gy[k])<.03;
+      const qe=eq(gx,gy),m=WAT[qe]?1:0,dd=m?DLR[qe]:DW[qe],e=Lv[k],sl=Math.max(-.16,Math.min(.12,(-Gx[k]-.6*Gy[k])/1*T.lh*T.shade/r)),flat=Math.hypot(Gx[k],Gy[k])<.03;
       // (its climates, by the tiles' round it: their shares)
       //  read at a place warped by noise (T.climWarp game px), its own one picked from those shares, dithered: a climate's edge (and a
       //  river's colour across it) ragged, never along the tiles (the owner: "Recheck if there's any weird squared look")
@@ -185,11 +191,16 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           const RW=WV.river.flow,RN=WY.RN||(WY.RN=riverRun(WY)),ux=RN.X[a+1]-RN.X[a],uy=RN.Y[a+1]-RN.Y[a],L=Math.hypot(ux,uy)||1,px=(fx+.5)/r-RN.X[a],py=(fy+.5)/r-RN.Y[a],
             A=(RN.C[a]+(px*ux+py*uy)/L)*r,c=Math.abs(px*uy-py*ux)/L*r,ln=Math.round(c/RW.lane),e=c/hw/RW.edge;
           const fw=fordT>0?fordT*sstep(1-(DF.S[fi]/r+(wnoise2(fx/(9*k2),fy/(9*k2),526)-.5)*2*FB2.warp)/FB2.band):0;
+          // (where it runs into still water (dd game px off it) it eases into it over water.mouth: its depth to the still water's (a
+          //  lake's rule: by how far the land is, DLR), its colours and bed to the still water's, its streaks thinning out)
+          const WT=T.water,mo=sstep(dd/WT.mouth),still=1-mo;
           // (its colour by the climates' shares there, as the land's and the open water's, never one climate's picked: a climate's edge
           //  across a river no stair of game px squares, the owner's "lighter rectangular blocks over the water")
-          {const dq=(dp*(1-q*q)+.04)*(1-fw*(1-WV.river.ford)),qq=m||dd<T.shore.ice?0:q;if(csh[ci]>.98)col=wayWater(Q,CLIMS[ci],fx,fy,dq,qq,fw,A,c,e);
-            else{let a0=0,a1=0,a2=0,sw=0;for(let cc=0;cc<4;cc++){if(csh[cc]<.02)continue;const v=wayWater(PAL[cc],CLIMS[cc],fx,fy,dq,qq,fw,A,c,e);a0+=v[0]*csh[cc];a1+=v[1]*csh[cc];a2+=v[2]*csh[cc];sw+=csh[cc]}col=[a0/sw,a1/sw,a2/sw]}}shade=false;WK[fi]=2;WA[fi]=A;
-          WL[fi]=e>=1||hs(ln,1,546)<e||wnoise2(A/RW.gate,ln*.7,544)<RW.on?0:1+((hs(ln,0,545)*900)|0);
+          {const d0=(dp*(1-q*q)+.04)*(1-fw*(1-WV.river.ford)),dq=mo<1?Math.min(terDepth(P,gx,gy)*T.depth*2,DLR[qe]*.09)*(1-mo)+d0*mo:d0,qq=m||dd<T.shore.ice?0:q;if(csh[ci]>.98)col=wayWater(Q,CLIMS[ci],fx,fy,dq,qq,fw,A,c,e,still);
+            else{let a0=0,a1=0,a2=0,sw=0;for(let cc=0;cc<4;cc++){if(csh[cc]<.02)continue;const v=wayWater(PAL[cc],CLIMS[cc],fx,fy,dq,qq,fw,A,c,e,still);a0+=v[0]*csh[cc];a1+=v[1]*csh[cc];a2+=v[2]*csh[cc];sw+=csh[cc]}col=[a0/sw,a1/sw,a2/sw]}}shade=false;WK[fi]=2;WA[fi]=A;
+          WL[fi]=e>=1||hs(ln,1,546)<e||wnoise2(A/RW.gate,ln*.7,544)<RW.on||mo<1&&wnoise2(A/RW.gate,ln*.7+5,548)>mo?0:1+((hs(ln,0,545)*900)|0);
+          // (its banks' foam, as a lake's shore's: by its half-width, none over a ford's bar)
+          if(!fw)col=waterRim(col,Q,-rs/r,WT.rim*Math.min(1,hw/r/WT.hw),fx,fy);
           // (a natural ford where a track crosses a stream (the owner: "No need to be human made stone ford"): the stream spread
           //  shallow over a gravel bed along the road, its pebbles showing, riffles where it runs over them)
           for(const f of FOc){const tx2=fx/r-f.mx,ty2=fy/r-f.my,t=tx2*f.ux+ty2*f.uy,v=ty2*f.ux-tx2*f.uy;if(Math.abs(v)>f.hw||Math.abs(t)>f.hb+3)continue;
@@ -207,9 +218,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           if(!m&&cmax===2&&rs<T.oasis*k2&&KD[fi]>0){col=tmix(col,tpick(PAL[0].grass,fx,fy,573),Math.min(1,(T.oasis*k2-rs)/(6*k2))*.8);KD[fi]=TERK.oasis+1}
           if(!m&&cmax===3&&e<T.pools.lo&&rs>4*r&&DF.S[fi]>6*r&&(KD[fi]===TERK.grass+1||KD[fi]===TERK.meadow+1)){const pm=wnoise2(fx/(T.pools.sc*k2),fy/(T.pools.sc*k2),574)*.7+wnoise2(fx/(T.pools.sc*k2*.4),fy/(T.pools.sc*k2*.4),575)*.3;
             if(pm>T.pools.at){const d=Math.min(.7,.05+(pm-T.pools.at)*T.pools.deep);col=tmix([86,108,84],[52,70,58],Math.min(1,d/.7));if(wnoise2(fx/6,fy/6,576)>.78&&hs(fx,fy,577)<.55)col=tmix(col,[110,140,62],.65);if(pm-T.pools.at<.012)col=tmix(col,[56,48,32],.6);KD[fi]=0;PL[fi]=1;shade=false}}
-          if(m){shade=false;WK[fi]=1;
-            // (a river's water fanning out into the sea past its mouth: its plume)
-            for(const [mx,my,mw] of MOU){const dq=Math.hypot(fx-mx*r,fy-my*r)/(mw*r);if(dq<1){const rc=wayWater(Q,CLIMS[ci],fx,fy,.6,0,false);col=tmix(col,rc,(1-dq)*(1-dq)*.7)}}}
+          if(m){shade=false;WK[fi]=1}
           // (a river's bank: mud at the water, dark grass up it, then the land)
           else if(rs<bankF||BKF[fi]<1){const tb=Math.min(rs<bankF?rs/bankF:1,BKF[fi]);col=tb<.45?tmix(tpick(Q.mud,fx,fy,519),tmul(col,.86),tb/.45):tmix(tmul(col,.86),col,(tb-.45)/.55)}
           // (what the game painted over it (the trampled patches, the yards: game px): its colour, a little of this fine px's own ground and a
@@ -309,7 +318,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         //  for the south ankle that we cannot see"): its crest's own px darkened)
         else if(!wt){const RM=T.rim;if(fp!==fi&&LFF[fp]<L-RM.drop&&!WF[fp])s=RM.north;else{const fw=fx>0?fi-1:fi,fe=fx<W2-1?fi+1:fi;if(fw!==fi&&LFF[fw]<L-RM.drop&&!WF[fw]||fe!==fi&&LFF[fe]<L-RM.drop&&!WF[fe])s=RM.side}}
         O[o]=CW[ci]*s;O[o+1]=CW[ci+1]*s;O[o+2]=CW[ci+2]*s;O[o+3]=255;DEPF[sy*W2+fx]=fy;TOP[sy*W2+fx]=1;if(first<0)first=sy;
-        const wk=WK[fy*W2+fx];if(wk===1){if(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx])SH.push(fx,sy,(wnoise2((fx+X*r)/14,fy/14,540)*1900)|0)}else if(wk===2&&WL[fy*W2+fx])FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,WL[fy*W2+fx]);else if(wk===3)FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0)}
+        const wk=WK[fy*W2+fx];if((wk===1||wk===2&&hs(fx+X*r,fy,547)<T.water.bankFoam)&&(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx]))SH.push(fx,sy,(wnoise2((fx+X*r)/14,fy/14,540)*1900)|0);if(wk===2&&WL[fy*W2+fx])FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,WL[fy*W2+fx]);else if(wk===3)FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0)}
       if(fy+1>=HE2)continue;const fN=fi+W2,kN=at(gx,Y+(((fy+1)/r)|0)),LN=LFF[fN],syN=fy+1-LN;if(syN<=sy+1)continue;
       // (the lip, lit; snow on a high one)
       const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[CLG[k]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]],rocky=!road&&!(RG.S[k]<bankG+2)&&WK[fN]!==2&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
@@ -618,8 +627,11 @@ function terWater(Q,c,m,dd,P,gx,gy,fx,fy){const T=WORLD_TERRAIN,river=m===2||m==
   const S=river?Q.river:Q.sea,bed=river?Q.pebble[Math.floor(hs(fx>>1,fy>>1,374)*4)]:Q.bed[Math.sin(fx*.35+fy*.12+wnoise2(fx/12,fy/12,375)*6)>.55?0:1];
   let col=d<.4?tmix(S[0],S[1],d/.4):d<1?tmix(S[1],S[2],(d-.4)/.6):tmix(S[2],S[3],Math.min(1,d-1));
   const a=Math.pow(Math.max(0,1-d/(river?.55:T.clear)),1.4);col=tmix(col,bed,a*.8);if(a>.15&&wnoise2(fx/3,fy/3,376)>.74)col=tmix(col,[232,246,246],.22*a);
-  if(dd<1.3&&hs(fx,fy,377)>.35)col=tmix(col,Q.foam,.55);
-  return col}
+  return waterRim(col,Q,dd,T.water.rim,fx,fy)}
+// (the foam at a shore or a river's bank (dist game px off it), within R game px: the shallows lighter, the foam broken, whiter the
+// nearer, water.foam white at most)
+function waterRim(col,Q,dist,R,fx,fy){if(!(dist<R))return col;const u=1-dist/R,n=wnoise2(fx/4,fy/4,377)*.65+hs(fx,fy,378)*.35;col=tmix(col,Q.sea[0],.25*u);
+  return n>1-.7*u?tmix(col,Q.foam,WORLD_TERRAIN.water.foam*(.4+.6*u)):col}
 
 /* ---------- what stands on the land, lifted with it (the world lab's: engine/worldlab.js, the hero and the props drawn up the screen
    by their ground's lift; a ridge in front of one drawn again over him) ---------- */

@@ -16,7 +16,7 @@ const wsm=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
    each one's first point SP; the roads' segments RA (as SA, from P.segs) with their kind and how far along their line each starts
    (RL); mouth: the river tiles beside the sea or a lake (their water as the shore has it) */
 function waysOf(P){if(P.ways)return P.ways;
-  const MO=[],V=WORLD_WAYS.river,Rv=WM.river,LV=WM.lv||(WM.lv=reliefOf(WM)),N=MW*MH,X=[],Y=[],HW=[],LL=[],DP=[],SP=[],SA=[];
+  const V=WORLD_WAYS.river,Rv=WM.river,LV=WM.lv||(WM.lv=reliefOf(WM)),N=MW*MH,X=[],Y=[],HW=[],LL=[],DP=[],SP=[],SA=[];
   // (a curve through pts ([x, y, hw, lv, dp, slack]): its corners cut three times (Chaikin's way, the ends kept; each new point
   //  keeps its nearer parent's level, so the surface steps where the tiles' did), then wandering off its line by its slack)
   //  A river's (big) line is simplified first (Douglas-Peucker, within simp of a tile of its tiles' middles), so its tiles' stairs on a
@@ -40,8 +40,7 @@ function waysOf(P){if(P.ways)return P.ways;
       const [x,y]=mid(i,own&&!sea(i)?own:w),hw=V.hw[w]*WAY_LP;pts.push([x,y,hw,lv,V.depth[w]*(.75+.5*k/Math.max(1,p.length-1)),(w===1?13:w===2?22:30)-hw])}// (deeper downstream, the lab's)
     // (its mouth on the sea or a lake: wider into it)
     if(sea(r.mouth))for(let k=Math.max(0,pts.length-3);k<pts.length;k++)pts[k][2]*=V.mouth;
-    // (its plume into the sea past its mouth; the tarn it rises from on high ground, the lab's: a pool at its head)
-    if(sea(r.mouth)&&pts.length){const q=pts[pts.length-1];MO.push([q[0],q[1],Math.max(20,q[2]*V.plume)])}
+    // (the tarn it rises from on high ground, the lab's: a pool at its head)
     if(pts.length>2&&pts[0][3]>=V.tarn.lv){pts[0][2]*=V.tarn.w;pts[1][2]*=(1+V.tarn.w)/2}
     curve(pts,r.id,true)}
   // the brooks (painted only: no tile of water; worldgen.js genBrook): from each head down its flow to the river, the water or the
@@ -126,7 +125,7 @@ function waysOf(P){if(P.ways)return P.ways;
   const EN=[];{const deg=new Map(),kk=(x,y)=>Math.round(x*2)+','+Math.round(y*2);for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const q=kk(RA[o+e],RA[o+e+1]);deg.set(q,(deg.get(q)||0)+1)}}
     for(let k=0;k<nR;k++){const o=k*6;for(const e of [0,2]){const x=RA[o+e],y=RA[o+e+1];if(deg.get(kk(x,y))!==1)continue;if(BRG.some(b=>{const dx=x-b.mx,dy=y-b.my;return dx*dx+dy*dy<(b.L/2+10)*(b.L/2+10)}))continue;EN.push(x,y)}}}
 
-  return P.ways={bridges:BRG,fords:FO,ends:Float32Array.from(EN),mouths:MO,RZ,RB,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
+  return P.ways={bridges:BRG,fords:FO,ends:Float32Array.from(EN),RZ,RB,land,X:Float32Array.from(X),Y:Float32Array.from(Y),HW:Float32Array.from(HW),LV:Float32Array.from(LL),DP:Float32Array.from(DP),SP:Int32Array.from(SP),SA:Float32Array.from(SA),RA,RK,RL,mouth}}
 
 /* the nearest of a set of segments (A: ax, ay, bx, by, ha, hb, game px) to every px of a window (x0, y0, w x h, in px sc a game px),
    within reach px past its edge: S how far past its edge (px; < 0 within it), Q the segment (-1 none), T how far along it (0-1) */
@@ -141,11 +140,13 @@ function* waysBand(A,x0,y0,w,h,sc,reach){const S=new Float32Array(w*h).fill(1e9)
 
 // a river's water (the lab's underWater with its river's colours): d its depth (levels), its bed of pebbles showing in the shallows,
 // light caught there; a ford's gravel bar (ford: how much of one, 0-1: its bed's gravel showing, riffles running white where it meets
-// the deeper water, stepping stones down its middle; WORLD_WAYS.river.fordBar); the frost's edges frozen (q: how far out from the middle, 0-1)
-function wayWater(Q,cl,fx,fy,d,q,ford,fa,fc,fe){const S=Q.river;
+// the deeper water, stepping stones down its middle; WORLD_WAYS.river.fordBar); the frost's edges frozen (q: how far out from the middle, 0-1);
+// still: how much of the still water's it is where it runs into a lake or the sea (its colours and bed theirs, its ripples gone; 0-1)
+function wayWater(Q,cl,fx,fy,d,q,ford,fa,fc,fe,still=0){const S=still>0?Q.river.map((v,i)=>tmix(v,Q.sea[i],still)):Q.river,CL=WORLD_TERRAIN.water.clear,clear=CL+(WORLD_TERRAIN.clear-CL)*still;
   if(cl==='frost'&&q>.62+(wnoise2(fx/14,fy/14,511)-.5)*.5){let c=tpick(Q.ice,fx,fy,512);if(Math.abs(wnoise2(fx/10,fy/10,513)-.5)<.02)c=tmul(c,.86);return c}
   let c=d<.4?tmix(S[0],S[1],d/.4):d<1?tmix(S[1],S[2],(d-.4)/.6):tmix(S[2],S[3],Math.min(1,d-1));
-  const a=Math.pow(Math.max(0,1-d/.55),1.4)*(ford>0?1-.75*ford:1);c=tmix(c,Q.pebble[Math.floor(hs(fx>>1,fy>>1,514)*4)],a*.8);// (over a ford's bar its own fine gravel instead)if(a>.15&&wnoise2(fx/3,fy/3,515)>.74)c=tmix(c,[232,246,246],.22*a);
+  // (over a ford's bar its own fine gravel instead; into still water its sandy bed)
+  const a=Math.pow(Math.max(0,1-d/clear),1.4)*(ford>0?1-.75*ford:1),pb=Q.pebble[Math.floor(hs(fx>>1,fy>>1,514)*4)];c=tmix(c,still>0?tmix(pb,Q.bed[1],still):pb,a*.8);if(a>.15&&wnoise2(fx/3,fy/3,515)>.74)c=tmix(c,[232,246,246],.22*a);
   if(ford>0){const B=WORLD_WAYS.river.fordBar,g=tmix(WAY_COL.gravel[Math.floor(hs(fx,fy,516)*3)],S[1],.35);c=tmix(c,g,ford*B.gravel*(.55+.9*wnoise2(fx/3.5,fy/3.5,520)));
     if(ford>.12&&ford<.75&&wnoise2((fa??fx)/5,(fc??fy)/1.4,521)>B.riffle)c=tmix(c,WAY_COL.foam,.62*(1-Math.abs(ford-.42)/.34));
     if(ford>.55){const C=B.cell,cx=Math.floor(fx/C),cy=Math.floor(fy/C);if(hs(cx,cy,522)<B.stone){const sx=(cx+.25+hs(cx,cy,523)*.5)*C,sy=(cy+.25+hs(cx,cy,524)*.5)*C,dx=fx+.5-sx,dy=fy+.5-sy,R=1.2+hs(cx,cy,525)*.9;
@@ -153,7 +154,7 @@ function wayWater(Q,cl,fx,fy,d,q,ford,fa,fc,fe){const S=Q.river;
   else if(d<.6&&hs(fx,fy,518)<.004)c=WAY_COL.stone[1];
   // (a ripple now and then along the current, lighter (fa, fc: how far along its line and across it, fe how far out of its main
   //  stream, fewer farther out; none given: along the screen's rows)
-  if(d>.3&&(fa===undefined?wnoise2(fx/9,fy/2.5,519)>.8:wnoise2(fa/9,fc/2.5,519)>.8+.08*Math.min(1.5,fe)))c=tmix(c,Q.fall[1],fe>1?.14:.22);
+  if(d>.3&&still<.9&&(fa===undefined?wnoise2(fx/9,fy/2.5,519)>.8:wnoise2(fa/9,fc/2.5,519)>.8+.08*Math.min(1.5,fe)+.2*still))c=tmix(c,Q.fall[1],(fe>1?.14:.22)*(1-still));
   return c}
 // the lab's colours of the ways (its RCOL, plank, beam, stone, reeds)
 const WAY_COL={pack:[[176,148,104],[168,140,98]],groove:[118,94,66],crown:[[150,124,86],[142,116,80]],loose:[[136,110,76],[126,102,70],[146,120,84]],
