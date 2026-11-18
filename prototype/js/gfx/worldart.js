@@ -650,7 +650,9 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
-  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,
+  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,vel:0,frameMs:16,lastT:0,est:0,need:0,drawSpent:0,
+  // (in play (the game's loop, not a test's page: liveOk) no chunk is ever painted whole in a frame: ART_PACE)
+  liveOk:typeof location==='undefined'||!/[?&]test=/.test(location.search),live(){return this.liveOk&&performance.now()-this.idleAt<250},
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
   get cols(){return Math.ceil(MW*TILE/CHUNK)},get rows(){return Math.ceil(MH*TILE/CHUNK)},
   ensure(){return this.plan||(this.plan=worldArtPlan())},
@@ -667,11 +669,13 @@ const WorldArt={
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
     const fr=typeof sceneRes==='function'?sceneRes():1;
-    for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
+    const live=this.live(),now=performance.now(),AP=ART_PACE;let wait=false;
+    for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){if(live&&!this.chunks.has(cy*this.cols+cx)){if(this.standIn(g,cx,cy,x0,y0,x1,y1,cam))wait=true;continue}const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
       if(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh))continue;// (none of it known: nothing drawn, the fog alone: fog.js VIEW_SEEN)
       if(fr>1&&c&&c.fcv&&c.fr===fr)g.drawImage(c.fcv,(sx-X)*fr,(sy-Y)*fr,sw*fr,sh*fr,sx-cam.x,sy-cam.y,sw,sh);else g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
     // (ahead: the ring round the view, the way it moves first, as many as the cap leaves room for: those painted kept as freshly
     //  used, the rest queued; a job for a chunk no longer queued let go)
+    if(this.last&&this.lastT){const dt=now-this.lastT;if(dt>0&&dt<500){this.vel+=(Math.hypot(cam.x-this.last.x,cam.y-this.last.y)/dt*1000-this.vel)*AP.ease;this.frameMs+=(dt-this.frameMs)*AP.ease}}this.lastT=now;
     const dx=this.last?Math.sign(cam.x-this.last.x):0,dy=this.last?Math.sign(cam.y-this.last.y):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last={x:cam.x,y:cam.y};
     //  (ahead more rings the way it moves: a chunk walked into painted before, never in the frame)
     const A=this.ahead;for(let cy=r0-1-(dy<0?A:0);cy<=r1+1+(dy>0?A:0);cy++)for(let cx=c0-1-(dx<0?A:0);cx<=c1+1+(dx>0?A:0);cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
@@ -679,16 +683,41 @@ const WorldArt={
     for(let i=ring.length-1;i>=0;i--){const k=ring[i][2],c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c)}}
     // (a chunk painted coarser than the scene now is (painted while the game loaded) painted again in the background, those in view first)
     const stale=k=>{const c=this.chunks.get(k);return !c||(c.fine||1)<fr};
-    this.queue=[...[...this.view].filter(k=>stale(k)&&this.chunks.has(k)).map(k=>[k%this.cols,(k/this.cols)|0]),...ring.filter(q=>stale(q[2])).map(q=>[q[3],q[4]])];const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
-    for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.recycle(j.rec.cv)}
+    const at=k=>[k%this.cols,(k/this.cols)|0],ahead=ring.filter(q=>stale(q[2])),vs=[...this.view];
+    if(!live)this.queue=[...vs.filter(k=>stale(k)&&this.chunks.has(k)).map(at),...ahead.map(q=>[q[3],q[4]])];
+    else{
+      // (in play: the chunks not painted yet, in view or ahead, by when they are wanted: the view's gap to each (game px), or, none of
+      //  its land known yet, the later of that and your sight's gap to it (yourSight: the men's box and their reach); the work left
+      //  of each, summed in that order, over the time before it is wanted at the view's speed: what the deadlines ask a frame (need).
+      //  Then those in view painted coarser than the scene is)
+      const S=typeof yourSight==='function'&&typeof VIEW_SEEN!=='undefined'&&VIEW_SEEN.on?yourSight():null,sp=Math.max(this.vel,AP.speed),est=this.est||AP.est,miss=[];
+      for(const k of new Set([...vs,...ahead.map(q=>q[2])])){if(this.chunks.has(k))continue;const [cx,cy]=at(k),X=cx*CHUNK,Y=cy*CHUNK;let gap=Math.max(0,X-x1,x0-X-CHUNK,Y-y1,y0-Y-CHUNK);
+        if(S&&S.m&&!seenAny(X,Y,X+CHUNK,Y+CHUNK))gap=Math.max(gap,Math.max(0,X-S.x1,S.x0-X-CHUNK,Y-S.y1,S.y0-Y-CHUNK)-S.rm);miss.push([cx,cy,gap,k])}
+      miss.sort((p,q)=>p[2]-q[2]);let cum=0,rate=0;
+      for(const [,,gap,k] of miss){const j=this.jobs.get(k);cum+=Math.max(est*AP.rest,est-(j&&j.spent||0));rate=Math.max(rate,cum/Math.max(AP.soon,gap/sp*1000))}
+      this.need=Math.min(AP.most,rate*this.frameMs*AP.safety);
+      this.queue=[...miss.map(q=>[q[0],q[1]]),...vs.filter(k=>stale(k)&&this.chunks.has(k)).map(at),...ahead.filter(q=>this.chunks.has(q[2])).map(q=>[q[3],q[4]])]}
+    const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
+    // (a job no longer queued let go; in play keep of them kept while near the view, their work not lost when the way bends)
+    let spare=live?AP.keep:0;for(const [k,j] of this.jobs)if(!keep.has(k)){const [cx,cy]=at(k);if(spare>0&&cx>=c0-A-1&&cx<=c1+A+1&&cy>=r0-A-1&&cy<=r1+A+1){spare--;continue}this.jobs.delete(k);this.recycle(j.rec.cv)}
     // (sliceView ms a frame while a chunk in view still waits for its fine paint; those ahead in the frame's time left over once it is
     //  drawn (idle: main.js), slice ms here only while no game loop gives it that (the tests' frames))
     let inView=false;for(const k of this.view)if(stale(k)){inView=true;break}
+    if(live){this.drawSpent=this.step(wait?AP.view:inView?this.sliceView:0);return}
     this.step(inView?this.sliceView:performance.now()-this.idleAt<250?0:this.slice)},
+  // (a chunk in view not painted yet, in play: the minimap's colours (mini, a px a tile) smoothed over its part of the view, as long
+  //  as it takes; none where you know none of its land)
+  standIn(g,cx,cy,x0,y0,x1,y1,cam){const [X,Y,w,h]=this.rect(cx,cy),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;
+    if(sw<=0||sh<=0||(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh)))return false;
+    g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();return true},
   // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; main.js loop)
-  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms))},
-  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){this.queue.shift();continue}const j=this.start(cx,cy);
-      while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
+  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));this.drawSpent=0},
+  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){this.queue.shift();continue}const j=this.start(cx,cy),a=performance.now();let end=false;
+      while(performance.now()-t0<ms)if(j.gen.next().done){end=true;break}
+      j.spent=(j.spent||0)+performance.now()-a;if(end){this.learn(j);this.done(j);this.queue.shift()}}
+    return performance.now()-t0},
+  // (a chunk painted at the scene's resolution: its work (ms) eased into what one costs (est))
+  learn(j){if((j.rec.fine||1)>=(typeof paintRes==='function'?paintRes():1))this.est=this.est?this.est+(j.spent-this.est)*ART_PACE.learn:j.spent},
   invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
     if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
     this.forget(r.x*TILE-this.REACH*TILE,r.y*TILE-this.REACH*TILE,(r.x+r.w+this.REACH)*TILE,(r.y+r.h+this.REACH)*TILE)},
@@ -717,8 +746,8 @@ const WorldArt={
       if(k>1){let rd=-1,rv=-1;for(let b=0;b<k&&y*k+b<MH;b++)for(let a=0;a<k&&x*k+a<MW;a++){const j=(y*k+b)*MW+x*k+a;if(Rv[j]&3&&tiles[j]===T_WATER)rv=j;else if(Fe[j]&192&&tiles[j]===T_ROAD)rd=j}if(rv>=0)i=rv;else if(rd>=0)i=rd}
       rect(g,PAL[CLIMS[climate[i]]].mini[tiles[i]],x,y,1,1)}}))},
   deck(c){let d=this.decks.get(c);if(d)return d;d=wayDeck(c);this.decks.set(c,d);return d},
-  standing(x0,y0,x1,y1,fn){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
-    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k))this.chunk(cx,cy);const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
+  standing(x0,y0,x1,y1,fn,ready){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
+    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k)){if(ready)continue;this.chunk(cx,cy)}const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
       for(let j=Math.max(0,Math.floor((y0-S.Y)/cs));j<=Math.min(S.R-1,Math.floor((y1-S.Y)/cs));j++)for(let i=Math.max(0,Math.floor((x0-S.X)/cs));i<=Math.min(S.C-1,Math.floor((x1-S.X)/cs));i++){const q=j*S.C+i;
         for(let p=S.at[q];p<S.at[q+1];p++){const e=S.L[p];if(seen.has(e))continue;seen.add(e);if(fn){fn(S,e);continue}
           const E=S.E,o=e*4,dx=S.X+E[o],dy=S.Y+E[o+1],r=E[o+2],s=r>=0?PX.WN_SPR[r]:null,b=s?s.box:[0,0,0,-r-1];

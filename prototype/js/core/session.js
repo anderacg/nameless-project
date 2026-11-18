@@ -119,14 +119,16 @@ function heroHome(k,b){
 function paintView(){runGen(paintViewSteps(false))}
 // (the same as steps for the loading screen (loading.js runSteps: a chunk's painting given back to it a piece at a time, so the bar
 // keeps moving; the owner, 2026-11-14, "the game lags when start"), and with ring the chunks round the view too (WorldArt.draw's ring,
-// as many as its cap leaves room for), which play would otherwise paint while you first walk (START_WARM)
-function* paintViewSteps(ring=START_WARM.ring>0){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH)),A=WorldArt,
+// as many as its cap leaves room for), which play would otherwise paint while you first walk (START_WARM; in play only, not the
+// tests' games: WorldArt.liveOk)
+function* paintViewSteps(ring=START_WARM.ring>0&&WorldArt.liveOk){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH)),A=WorldArt,
     c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x0+VW-1)/CHUNK),r1=Math.floor((y0+VH-1)/CHUNK),list=[];
   for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)list.push([cx,cy]);
-  if(ring){const n=Math.min(START_WARM.ring,Math.max(0,A.cap-list.length)),mx=(c0+c1)/2,my=(r0+r1)/2,R=[];for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++)if(cx>=0&&cy>=0&&cx<A.cols&&cy<A.rows&&!(cx>=c0&&cx<=c1&&cy>=r0&&cy<=r1))R.push([Math.hypot(cx-mx,cy-my),cx,cy]);
+  if(ring){const n=Math.min(START_WARM.ring,Math.max(0,A.capNow-list.length)),mx=(c0+c1)/2,my=(r0+r1)/2,R=[];for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++)if(cx>=0&&cy>=0&&cx<A.cols&&cy<A.rows&&!(cx>=c0&&cx<=c1&&cy>=r0&&cy<=r1))R.push([Math.hypot(cx-mx,cy-my),cx,cy]);
     R.sort((a,b)=>a[0]-b[0]);for(const [,cx,cy] of R.slice(0,n))list.push([cx,cy])}
   for(let i=0;i<list.length;i++){const [cx,cy]=list[i],k=cy*A.cols+cx;if(A.chunks.has(k))continue;const j=A.start(cx,cy);while(!j.gen.next().done)yield (i+.5)/list.length;A.done(j);yield (i+1)/list.length}}
-// (the buildings round where you start, their models made in the loading steps, not as they first come into view; px round you)
-const START_WARM={ring:0,near:1200};
+// (the buildings round where you start, their models made in the loading steps, not as they first come into view; px round you;
+// ring: the chunks round the view painted there too, the nearest first (the owner, 2026-11-18: "I dont mind building at the start"))
+const START_WARM={ring:2,near:1200};
 function* buildNear(){const T=TOWNS.filter(t=>Math.hypot(t.x-P.x,t.y-P.y)<START_WARM.near),L=[];for(const t of T)for(const l of t.lots||[])if(l.type)L.push([t,l]);
   for(let i=0;i<L.length;i++){lotSprite(L[i][0],L[i][1]);yield (i+1)/L.length}}

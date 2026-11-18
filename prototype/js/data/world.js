@@ -15,6 +15,14 @@
    (its phoneZoom, phone); the map never shows the world smaller than this (the owner, 2026-11-15: "Remove all old concepts that
    reduce the map scale"), and closer at most in times it */
 const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,phone:700,in:2};
+/* the map painted round you as you play (gfx/worldart.js WorldArt; the owner, 2026-11-18: "after i walk my character to new areas it
+   seems to have long load time"): a chunk takes a second or more to paint (several on a phone), so in play none is painted whole in
+   one frame. One in view not painted yet shows the minimap's colours while it is painted, view ms a frame; those queued ahead get
+   what their deadline asks: the work left (est ms a chunk at first, then as measured, eased by learn; rest of it at least for one
+   begun) over the time before the view reaches them at its speed (speed game px a second at least; soon ms at the least), safety
+   times over, slice ms a frame at least, most at most. The view's speed and the frame's length eased by ease. A chunk half painted
+   is kept, keep of them at most, while it stays near the view */
+const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2};
 /* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
    read at a place warped climWarp game px by noise, each px's picked from their shares (climPick: by a slow noise at sc game px, spread k, grain at its edge: ragged
    tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from

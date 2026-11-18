@@ -77,13 +77,18 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     //  shore rounded and wandering, never the tiles' straight runs and diamonds (the owner: "Recheck if there's any weird squared
     //  look"); bias keeps every water tile's middle water)
     const SH=T.shore;
-    for(let j=0;j<EH;j++){const gy=ey0+j;for(let i=0;i<EW;i++){const gx=ex0+i,wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,573)-.5)*2*SH.warp,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,574)-.5)*2*SH.warp,
+    // (a px with no open water's tile within the warp's reach and the spline's four tiles is land for sure: skipped before its noise
+    //  is read, the same px as before; WN: those tiles counted, a prefix sum over the tiles the window reaches)
+    const wt0x=Math.floor((ex0-SH.warp-8)/TS)-1,wt0y=Math.floor((ey0-SH.warp-8)/TS)-1,wtw=Math.floor((ex0+EW+SH.warp-8)/TS)+3-wt0x,wth=Math.floor((ey0+EH+SH.warp-8)/TS)+3-wt0y,WN=new Int32Array((wtw+1)*(wth+1));
+    for(let b=0;b<wth;b++)for(let a=0;a<wtw;a++)WN[(b+1)*(wtw+1)+a+1]=(ovf(wt0x+a,wt0y+b)?1:0)+WN[b*(wtw+1)+a+1]+WN[(b+1)*(wtw+1)+a]-WN[b*(wtw+1)+a];
+    const wsum=(x0,y0,x1,y1)=>{const s=wtw+1;x0-=wt0x;y0-=wt0y;x1+=1-wt0x;y1+=1-wt0y;return WN[y1*s+x1]-WN[y0*s+x1]-WN[y1*s+x0]+WN[y0*s+x0]};
+    for(let j=0;j<EH;j++){const gy=ey0+j,wy0=Math.floor((gy-SH.warp-8)/TS)-1,wy1=Math.floor((gy+SH.warp-8)/TS)+2;for(let i=0;i<EW;i++){if(!wsum(Math.floor((ex0+i-SH.warp-8)/TS)-1,wy0,Math.floor((ex0+i+SH.warp-8)/TS)+2,wy1))continue;const gx=ex0+i,wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,573)-.5)*2*SH.warp,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,574)-.5)*2*SH.warp,
         u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,a=ovf(tx,ty),b=ovf(tx+1,ty),c=ovf(tx,ty+1),d=ovf(tx+1,ty+1);
         let any=a||b||c||d;if(!any)for(let q=-1;q<=2&&!any;q++)for(let p=-1;p<=2;p++)if(ovf(tx+p,ty+q)){any=true;break}if(!any)continue;
         const bx=labBS(fu),by=labBS(fv);let bs=0;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++)rr+=bx[p]*(ovf(tx+p-1,ty+q-1)?-1:1);bs+=by[q]*rr}
         const f=bs-SH.bias+(wnoise2(gx/9,gy/9,571)-.5)*.5+(wnoise2(gx/3.5,gy/3.5,572)-.5)*.2;
         if(f<0){const q=j*EW+i;WAT[q]=1;let lo=1e9;for(const [x,y,o] of [[tx,ty,a],[tx+1,ty,b],[tx,ty+1,c],[tx+1,ty+1,d]])if(o)lo=Math.min(lo,LV[Math.max(0,Math.min(MH-1,y))*MW+Math.max(0,Math.min(MW-1,x))]);WLV[q]=lo}}
-      if(!(j&15))yield}
+      yield}
     const cham=(D,src)=>{for(let q=0;q<EW*EH;q++)D[q]=src(q)?0:1e6;
       for(let y=0;y<EH;y++)for(let x=0;x<EW;x++){const q=y*EW+x;let d=D[q];if(!d)continue;if(x>0)d=Math.min(d,D[q-1]+1);if(y>0){d=Math.min(d,D[q-EW]+1);if(x>0)d=Math.min(d,D[q-EW-1]+1.414);if(x<EW-1)d=Math.min(d,D[q-EW+1]+1.414)}D[q]=d}
       for(let y=EH-1;y>=0;y--)for(let x=EW-1;x>=0;x--){const q=y*EW+x;let d=D[q];if(!d)continue;if(x<EW-1)d=Math.min(d,D[q+1]+1);if(y<EH-1){d=Math.min(d,D[q+EW]+1);if(x<EW-1)d=Math.min(d,D[q+EW+1]+1.414);if(x>0)d=Math.min(d,D[q+EW-1]+1.414)}D[q]=d}};
@@ -144,15 +149,16 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     if(any){const B=new Float32Array(GW*GH),blur=A=>{for(let pass=0;pass<2;pass++){for(let j=0;j<GH;j++){let s=0,n=0;for(let i=-R;i<GW+R;i++){if(i+R<GW){s+=A[j*GW+i+R];n++}if(i-R-1>=0){s-=A[j*GW+i-R-1];n--}if(i>=0)B[j*GW+i]=s/n}}
         for(let i=0;i<GW;i++){let s=0,n=0;for(let j=-R;j<GH+R;j++){if(j+R<GH){s+=B[(j+R)*GW+i];n++}if(j-R-1>=0){s-=B[(j-R-1)*GW+i];n--}if(j>=0)A[j*GW+i]=s/n}}}return A};
       // (the eased levels laid in by the mask blurred the same way, so no crease where the easing ends)
-      const A=blur(Float32Array.from(Lv)),Wm=blur(Float32Array.from(M));
+      const A=blur(Float32Array.from(Lv));yield;const Wm=blur(Float32Array.from(M));yield;
       for(let k=0;k<GW*GH;k++){const u=Math.min(1,Wm[k]*3);PB[k]=u;if(u>0&&!Wa[k])Lv[k]=Math.max(0,Lv[k]+(A[k]-Lv[k])*u)}}
     yield}
   // (each px's slope, and its level stepped where it is steep: never on water, near a road, a lot; a lot's ground (its tiles) eased
   //  into the steps round it over flat game px, never a square edge (the owner, 2026-11-15: "hill level still weird"))
-  const OC=new Float32Array(GW*GH);if(typeof occAt==='function'){const R=T.flat,tmp=new Float32Array(GW*GH);for(let j=0;j<GH;j++)for(let i=0;i<GW;i++)OC[j*GW+i]=occAt((gx0+i)>>4,(gy0+j)>>4)>0?1:0;
+  const OC=new Float32Array(GW*GH);if(typeof occAt==='function'){const R=T.flat,tmp=new Float32Array(GW*GH);for(let j=0;j<GH;j++,(j&63)||(yield))for(let i=0;i<GW;i++)OC[j*GW+i]=occAt((gx0+i)>>4,(gy0+j)>>4)>0?1:0;
     for(let j=0;j<GH;j++){let a=0;for(let i=-R;i<GW+R;i++){if(i+R<GW&&i+R>=0)a+=OC[j*GW+i+R];if(i-R-1>=0&&i-R-1<GW)a-=OC[j*GW+i-R-1];if(i>=0&&i<GW)tmp[j*GW+i]=a/(2*R+1)}}
     for(let i=0;i<GW;i++){let a=0;for(let j=-R;j<GH+R;j++){if(j+R<GH&&j+R>=0)a+=tmp[(j+R)*GW+i];if(j-R-1>=0&&j-R-1<GH)a-=tmp[(j-R-1)*GW+i];if(j>=0&&j<GH)OC[j*GW+i]=Math.min(1,a/(2*R+1)*2)}}}
-  for(let j=1;j<GH-1;j++)for(let i=1;i<GW-1;i++){const k=j*GW+i,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
+  yield;
+  for(let j=1;j<GH-1;j++,(j&63)||(yield))for(let i=1;i<GW-1;i++){const k=j*GW+i,gxl=(Lv[k+1]-Lv[k-1])/2,gyl=(Lv[k+GW]-Lv[k-GW])/2,g=Math.hypot(gxl,gyl);Gx[k]=gxl;Gy[k]=gyl;
     const flat=Wa[k]||DG.S[k]<shG||RG.S[k]<bankG*T.shore.unstep;
     const sw=flat?0:Math.max(0,Math.min(1,(g-T.steps.from)/(T.steps.to-T.steps.from)))*(1-OC[k])*(1-PB[k]),s3=sw*sw*(3-2*sw),e=Lv[k],B=T.steps.band;St[k]=e+(Math.floor(e/B)*B-e)*s3;SW[k]=s3}
   yield;
@@ -163,8 +169,8 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   // (what the game painted over the ground (yards, trampled patches) blurred over T.over.blur game px (FB: its colours), so one meets
   //  another (a yard the worn ground round its holding) softly too, never along a lot's square)
   const FB=new Float32Array(w*HE*3);{const Rb=T.over.blur,tmp=new Float32Array(w*HE*3);
-    for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const u=Math.min(w-1,Math.max(0,x+q)),o=(y*w+u)*4;a+=F[o];b+=F[o+1];c+=F[o+2];n++}const o=(y*w+x)*3;tmp[o]=a/n;tmp[o+1]=b/n;tmp[o+2]=c/n}
-    for(let y=0;y<HE;y++)for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const v=Math.min(HE-1,Math.max(0,y+q)),o=(v*w+x)*3;a+=tmp[o];b+=tmp[o+1];c+=tmp[o+2];n++}const o=(y*w+x)*3;FB[o]=a/n;FB[o+1]=b/n;FB[o+2]=c/n}}
+    for(let y=0;y<HE;y++,(y&31)||(yield))for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const u=Math.min(w-1,Math.max(0,x+q)),o=(y*w+u)*4;a+=F[o];b+=F[o+1];c+=F[o+2];n++}const o=(y*w+x)*3;tmp[o]=a/n;tmp[o+1]=b/n;tmp[o+2]=c/n}
+    for(let y=0;y<HE;y++,(y&31)||(yield))for(let x=0;x<w;x++){let a=0,b=0,c=0,n=0;for(let q=-Rb;q<=Rb;q++){const v=Math.min(HE-1,Math.max(0,y+q)),o=(v*w+x)*3;a+=tmp[o];b+=tmp[o+1];c+=tmp[o+2];n++}const o=(y*w+x)*3;FB[o]=a/n;FB[o+1]=b/n;FB[o+2]=c/n}}
   const CWT=new Float32Array(w*HE*4),same=(fo,go)=>F[fo]===G[go]&&F[fo+1]===G[go+1]&&F[fo+2]===G[go+2],C=[0,0,0];
   for(let y=0;y<HE;y++){for(let x=0;x<w;x++){const gx=X+x,gy=Y+y,fo=(y*w+x)*4,go=((gy-y0)*ww+gx-x0)*4,k=at(gx,gy),ti=(gy>>4)*MW+(gx>>4),t=tiles[ti],fordT=NF[ti]?fordShare(gx,gy):0,
       over=F[fo]!==G[go]||F[fo+1]!==G[go+1]||F[fo+2]!==G[go+2];
@@ -402,7 +408,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
         if(Z.flowers&&(q-=Z.flowers)<0){put(FL.flowersPic(v+Math.floor(hs(fx,fy,408)*3)*8),'flowers',true);continue}if(Z.agave&&(q-=Z.agave)<0){put(FL.agavePic(v),'agave',true);continue}
         if(Z.bones&&(q-=Z.bones)<0){put(FL.bonesPic(v),'bones',true);continue}
         const rb=WB.RF.S[(jy-Y*r)*W2+jx-X*r];if(rb<WB.bankF*1.5&&C.bank.cattail&&(q-=C.bank.cattail)<0){put(FL.cattailPic(v),'reeds');continue}}}
-    if(!(fy&63))yield}
+    if(!(((fy-Y*r-2)/st)&7))yield}
   // (lily pads on the swamp's pools, flat on the water)
   for(let fy=Y*r+2;fy<(Y+h)*r;fy+=st)for(let fx=X*r+2;fx<(X+w)*r;fx+=st){const jx=Math.round(fx+(hs(fx,fy,416)-.5)*st),jy=Math.round(fy+(hs(fx,fy,417)-.5)*st);
     if(jx<X*r||jy<Y*r||jx>=(X+w)*r||jy>=(Y+h)*r||!WB.PL[(jy-Y*r)*W2+jx-X*r]||vis(jx,jy)===-1)continue;const PO=WF.chance[CLIMS[terClimate(jx/r|0,jy/r|0)]].pool;
@@ -427,7 +433,7 @@ function* terrainProps(rec,P,F,G,KP,X,Y,w,h,x0,y0,ww,r,vis,Lv,St,at,WB){
       const cl=CLIMS[terClimate(gx,gy)],dd=WB.dw(gx,gy),g=terWood(LAND,gx,gy)>.5?'woods':dd*2<WORLD_TERRAIN.dune?'dune':meadowShare(jx,jy)>=.5?'meadow':'open';
       const ch=GS.chance[cl][g]*(.35+1.3*wnoise2(jx/GS.patch,jy/GS.patch,413))*(cl==='frost'&&g==='open'?1-WORLD_TERRAIN.snowPatch.tufts*snowDrift(jx,jy):1)*(CVp.length?1-Math.min(1,caveShare(CVp,gx,gy)/CAVE_ROCK.bare):1);if(hs(fx,fy,414)>ch)continue;
       {const L=WB.lfAt(jx,jy);GX.push(jx);GY.push(jy-L)}GT.push(Math.max(0,KI.indexOf(GS.kinds[cl][g])));GV.push(Math.floor(hs(fx,fy,415)*4))}
-    if(!(fy&63))yield}
+    if(!(((fy-Y*r-1)/GS.step)&7))yield}
   out.sort((a,b)=>a.y-b.y);rec.props=out;{const g=rec.fcv&&rec.fcv.getContext('2d');for(const p of out)if(p.bake)if(g)g.drawImage(p.s,p.bake[0],p.bake[1]);else p.bake=null}
   const ord=GX.map((_,k)=>k).sort((a,b)=>GY[a]-GY[b]);rec.grass={X:Int32Array.from(ord.map(k=>GX[k])),Y:Int32Array.from(ord.map(k=>GY[k])),T:Uint8Array.from(ord.map(k=>GT[k])),V:Uint8Array.from(ord.map(k=>GV[k])),P:new Float32Array(ord.length),n:ord.length}}
 

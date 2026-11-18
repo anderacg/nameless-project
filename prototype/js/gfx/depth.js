@@ -43,7 +43,7 @@ function dbRect(x,y,w,h){dbAdd(x,y,w,h);return WDEPTH.fr.call(this,x,y,w,h)}
 // own: what covers it is marked to fade; nf: nothing is (ambient life: gfx/ambient.js, a hare in a wood fades no crown)
 function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
   const w=x1-x0+1,h=y1-y0+1,wx0=x0+ox,wy0=y0+oy,wx1=x1+ox,wy1=y1+oy,C=WDEPTH.C,AL=WDEPTH.al;C.length=0;
-  WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])});
+  WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])},WorldArt.live());// (in play a chunk not painted yet skipped: nothing of it stands in front yet)
   for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+p[4]+(p[3]??D.foot)>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
   if(!C.length)return;C.sort((a,b)=>a[0]-b[0]);
   if(!WDEPTH.img||WDEPTH.img.width<w||WDEPTH.img.height<h){const W=Math.max(w,WDEPTH.img?WDEPTH.img.width:0,64),H=Math.max(h,WDEPTH.img?WDEPTH.img.height:0,64);WDEPTH.img=new ImageData(W,H);WDEPTH.cv=mkg(W,H)}

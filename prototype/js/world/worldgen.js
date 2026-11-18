@@ -107,6 +107,13 @@ const GEN_GLADE={min:80,every:420,apart:14,edge:4,r:[3.6,5],rough:.3,scale:3,rin
 const GEN_RELIEF={per:11,smooth:2,hill:[3,8],bank:2};
 // (a cubic B-spline's four weights at t (0-1), and A (a cw x ch grid) by them at grid point (u, v): smooth, never along the grid)
 const labBS=t=>{const t2=t*t,t3=t2*t;return [(1-t)*(1-t)*(1-t)/6,(3*t3-6*t2+4)/6,(-3*t3+3*t2+3*t+1)/6,t3/6]};
+// (labAt for several grids of one size at a place: the weights once (labWeights, into LABW/LABB, no arrays made), each grid's sum in
+//  labAt's own order (labSum): the same numbers)
+const LABW=new Float64Array(8),LABB=new Int32Array(2);
+function labBSInto(t,O,o){const t2=t*t,t3=t2*t;O[o]=(1-t)*(1-t)*(1-t)/6;O[o+1]=(3*t3-6*t2+4)/6;O[o+2]=(-3*t3+3*t2+3*t+1)/6;O[o+3]=t3/6}
+function labWeights(cw,ch,u,v){u=Math.max(0,Math.min(cw-1.001,u));v=Math.max(0,Math.min(ch-1.001,v));const bx=Math.floor(u),by=Math.floor(v);LABB[0]=bx;LABB[1]=by;labBSInto(u-bx,LABW,0);labBSInto(v-by,LABW,4)}
+function labSum(A,cw,ch){const bx=LABB[0],by=LABB[1];let s=0;
+  for(let b=0;b<4;b++){const row=Math.max(0,Math.min(ch-1,by+b-1))*cw;let r=0;for(let a=0;a<4;a++)r+=LABW[a]*A[row+Math.max(0,Math.min(cw-1,bx+a-1))];s+=LABW[4+b]*r}return s}
 function labAt(A,cw,ch,u,v){u=Math.max(0,Math.min(cw-1.001,u));v=Math.max(0,Math.min(ch-1.001,v));const bx=Math.floor(u),by=Math.floor(v),wx=labBS(u-bx),wy=labBS(v-by);let s=0;
   for(let b=0;b<4;b++){const row=Math.max(0,Math.min(ch-1,by+b-1))*cw;let r=0;for(let a=0;a<4;a++)r+=wx[a]*A[row+Math.max(0,Math.min(cw-1,bx+a-1))];s+=wy[b]*r}return s}
 // (f to the power p, p 1 or more: its whole power multiplied out, the rest between it and the next; no Math.pow in the generator)
@@ -174,9 +181,9 @@ function landHeight(m,fresh){let f=!fresh&&LANDH.get(m);if(f)return f;const W=m.
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;let f=F0[i];for(let b=-T.fr;b<=T.fr;b++)for(let a=-T.fr;a<=T.fr;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const F=F0[v*W+u];if(F>0)f=Math.max(f,F-T.fdrop*Math.sqrt(a*a+b*b))}F1[i]=f}
   for(let i=0;i<N;i++)DL[i]=sea(i)?0:L0[i]-(K[i]===T_WATER?RAW[i]:Math.max(LAB_GEN.floor,RAW[i]));
   const raw=LB?labField(LB,W,H,1,m.seedNum):null;
-  f=(x,y)=>{const u=x/32-.5,v=y/32-.5,rb=labAt(RAW,W,H,u,v),c=labAt(C,W,H,u,v);let e=rb+(raw?(raw(x,y)-rb)*c:0)+labAt(DL,W,H,u,v);
+  f=(x,y)=>{const u=x/32-.5,v=y/32-.5;labWeights(W,H,u,v);const rb=labSum(RAW,W,H),c=labSum(C,W,H),dl=labSum(DL,W,H),f1=labSum(F1,W,H);let e=rb+(raw?(raw(x,y)-rb)*c:0)+dl;
     const ti=Math.max(0,Math.min(H-1,Math.floor(y/32)))*W+Math.max(0,Math.min(W-1,Math.floor(x/32)));
-    return K[ti]===T_WATER?Math.min(e,L0[ti]):Math.max(LAB_GEN.floor,labAt(F1,W,H,u,v),e)};
+    return K[ti]===T_WATER?Math.min(e,L0[ti]):Math.max(LAB_GEN.floor,f1,e)};
   LANDH.set(m,f);return f}
 function landClasses(m,fresh){const W=m.w,H=m.h,N=W*H,K=m.kind,hf=landHeight(m,fresh),C=LAB_GEN.cls,S=new Uint8Array(N),L0=levelsOf(m);
   // (high ground, where the shelves rise, 6 x 6 samples 6 lab px apart; low ground 3 x 3, 12 apart)
