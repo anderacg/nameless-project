@@ -905,7 +905,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W6 re-recorded 2026-11-19 again, on purpose, the owner's "make sure that the tents in camps look like a fabrics": every canvas,
 //  awning and hide drawn as sewn cloth (engine/model.js clothTexel, CLOTHT), camp tents with guy ropes, cloth flaps and pennants
 //  (engine/build-camp.js), market awnings in the view with them. W1-W5, W7, W8, B2 and the sums hold. Was W6 a2ec191a)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'09703e6f',W6:'c2e6d9ef',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
+// (W5 re-recorded 2026-11-19, on purpose, the owner's "I see waterfall in big river looks weird": wide reaches, the last stretch into
+//  still water, a brook's tail in a bigger river and reaches by a bridge ease their levels to a slope with rapids, no white fall face
+//  across them (worldways.js riverRamp, riverLevel; WORLD_WAYS falls.rapid). W1-W4, W6-W8, B2 and the sums hold. Was W5 09703e6f)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'ff899fde',W6:'c2e6d9ef',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
