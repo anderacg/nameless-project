@@ -196,9 +196,10 @@ const Outposts={
     return out},
   // (open ground by a spot to stand on: off the road, nothing built on or round it, a clear tile under the plinth and in front, its
   // ladder's ground on every side: built, climbable; the nearest such)
-  stand(tx,ty){const N=OUTPOST_PLACE.near;let best=null,bd=1e9;
+  stand(tx,ty){let best=null,bd=1e9;
+    for(const N of [OUTPOST_PLACE.near,OUTPOST_PLACE.wide]){if(N>OUTPOST_PLACE.near&&(!best||bd<EDGE_PLACE.cost.outpost))break;// (further out only when all it may stand on near it are by a hill's edge)
     for(let j=-N;j<=N;j++)for(let i=-N;i<=N;i++){const x=tx+i,y=ty+j;if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const k=tAt(x,y),f=tAt(x,y+1);
-      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y)||this.onRoad(x,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd&&!this.built(x,y)&&this.climbable(x,y)){bd=d;best=[x,y]}}
+      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y)||this.onRoad(x,y))continue;const B=OUTPOST_PLACE.body,d=i*i+j*j+(hash(x,y,9301)*.5)+(edgeNear((x+B[0])*TILE,(y+B[1])*TILE,(x+B[2]+1)*TILE,(y+B[3]+1)*TILE)?EDGE_PLACE.cost.outpost:0);if(d<bd&&!this.built(x,y)&&this.climbable(x,y)){bd=d;best=[x,y]}}}// (off a hill's edge where it can: data/world.js EDGE_PLACE)
     return best},
   // (a road under the picture it will have at its biggest: OUTPOST_PLACE.foot)
   onRoad(tx,ty){const [x0,y0,x1,y1]=OUTPOST_PLACE.foot;for(let j=y0;j<=y1;j++)for(let i=x0;i<=x1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false},

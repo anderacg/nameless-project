@@ -32,7 +32,7 @@ class CampSite{
   static tentOk(x,y){const T=CAMP_SITE.tent,x0=x-T[0],x1=x+T[0],y0=y-T[1],y1=y+1,tx0=Math.floor(x0/TILE),tx1=Math.floor(x1/TILE),ty0=Math.floor(y0/TILE),ty1=Math.floor(y1/TILE);
     for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const k=tAt(tx,ty);if(k===T_WATER||k===T_MOUNT||k===T_FORD||k===T_ROAD||occAt(tx,ty))return false}// (a wood's clearing will do: its trees are what stands, below)
     for(const t of TOWNS){if(Math.abs(t.x-x)>240||Math.abs(t.y-y)>240)continue;const b=centreBox(t);if(tx1>=b.x&&tx0<b.x+b.n&&ty1>=b.y&&ty0<b.y+b.n)return false}
-    if(campKeptClear(x0,y0,x1,y1))return false;
+    if(campKeptClear(x0,y0,x1,y1)||edgeNear(x0,y0,x1,y1))return false;// (nor by a hill's edge: data/world.js EDGE_PLACE)
     // (nor on a road's or a track's band as drawn, an estate's tracks too: roadband.js RoadBand, its nearness a byte)
     if(typeof RoadBand!=='undefined')for(const [dx,dy] of [[0,0],[-7,0],[7,0],[0,-8],[-5,-5],[5,-5]])if((RoadBand.at(x+dx,y+dy)&63)>=CAMP_SITE.road*63)return false;
     return !WorldArt.standing(x0,y0,x1,y1).some(e=>e.box[0]<=x1&&e.box[2]>=x0&&e.box[1]<=y1&&e.box[3]>=y0)}

@@ -283,7 +283,7 @@ function lotSpot(t,n,rule,rmin,rmax,R,o){
     if(!lotFits(t,x,y,n,rule,o.gap===undefined?true:o.gap))continue;
     if(o.estate&&nearBandits(x+n/2-.5,y+n/2-.5,BANDIT_GAP+n/2+(o.fields?3:0)))continue;// (its fields reach 3 tiles out)
     // (its chance drawn before the walk is asked of it: a layout with every spot walked to stays as it was)
-    let s=d+R()*(o.jit||1.6);if(o.front){const f=lotRoadBy(x,y,n);if(o.street&&f>0)continue;if(f<=1)s-=LOT_STREET.front*(f?.5:1)}if(!lotWalks(t,x,y,n)||o.steps&&placeWalkSteps(lotWalk(t).all,x+(n>>1),y+n-1)>o.steps)continue;if(!ownBank(t,x+(n>>1),y+(n>>1))){if(t.T.tier===1)continue;s+=LOT_BANK}/* (a hamlet's on its own bank: Elderbough's farm stood over a lake's ford, its folk round by the roads) */if(o.sea&&!seaShore(x,y,n))s+=LOT_SEA;
+    let s=d+R()*(o.jit||1.6);if(o.front){const f=lotRoadBy(x,y,n);if(o.street&&f>0)continue;if(f<=1)s-=LOT_STREET.front*(f?.5:1)}if(!lotWalks(t,x,y,n)||o.steps&&placeWalkSteps(lotWalk(t).all,x+(n>>1),y+n-1)>o.steps)continue;if(!ownBank(t,x+(n>>1),y+(n>>1))){if(t.T.tier===1)continue;s+=LOT_BANK}/* (a hamlet's on its own bank: Elderbough's farm stood over a lake's ford, its folk round by the roads) */if(o.sea&&!seaShore(x,y,n))s+=LOT_SEA;if(edgeNear(x*TILE,y*TILE,(x+n)*TILE,(y+n)*TILE))s+=EDGE_PLACE.cost.lot;// (off a hill's edge wherever one fits: data/world.js EDGE_PLACE)
     // o.fields: an estate that works fields: only where its first level's fields fit, and the more room the better
     if(o.fields){const m=fieldsFor(t,{x,y,n},o.fields).length;if(m<PLOTS_AT[o.fields](1))continue;s+=(PLOTS[o.fields]-m)*1.2}
     if(s<bs){bs=s;best=[x,y]}}

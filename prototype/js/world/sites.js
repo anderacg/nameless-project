@@ -577,6 +577,7 @@ function siteSpot(type,sites,gap,C=SITE_CLASS[type]){
     if(tx<3||ty<3||tx>MW-4||ty>MH-4)continue;
     if(!passable(tAt(tx,fy))||!Router.reach(from,{x:(tx+.5)*TILE,y:(fy+.5)*TILE})||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
     if(k<2500&&Object.hasOwn(C,'wildFirst')&&!wildGround(tx,ty))continue;// (a hideout on wild ground while one is to be had: Hideout.wildFirst)
+    if(k<2500&&!EDGE_PLACE.free.includes(type)){const [px,py]=C.point(tx,ty),[rx,ry]=C.edgeR||EDGE_PLACE.r;if(edgeNear(px-rx,py-ry,px+rx,py+4))continue}// (off a hill's edge while a spot is to be had: data/world.js EDGE_PLACE)
     if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<(C.away||SITE_AWAY[type]||SITE_AWAY.any))||nearLot(tx,ty,SITE_SPACE.lots)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
     return[tx,ty];
   }
