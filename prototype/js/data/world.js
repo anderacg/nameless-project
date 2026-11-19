@@ -138,7 +138,14 @@ const PRINT_FOOT={sole:[1.2,1.7,1.2],heel:[-1.7,.8,.7],inner:.3,deep:.55,dirs:16
    warped warp px by noise and grained; flat (y times flat); bare rock in patches over rock of it (its noise), the ground stony past bare
    (pebbles, no grass clumps, no trees); boulders and stones as props by their chance at its full share */
 const CAVE_ROCK={r:30,feather:16,warp:11,grain:3,up:6,flat:1.3,rock:.55,bare:.55,boulder:.05,stone:.12};
-const WORLD_TERRAIN={prints:{step:2.6,side:.8,rim:.5,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16,basin:7},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2,rapid:{hw:8,mouth:48,join:16,bridge:14,ramp:22,white:.09,streak:5}},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+/* face: a land face's look (gfx/worldterrain.js faceTexel, the owner, 2026-11-19: "please fix that straight line steep hill"): a face of low
+   fine px or less a soft step (lowK of the top's colour); the grass over a lip up to over fine px (overRock over rock; overK its shade; a wave along overSc
+   fine px); a root on root of the columns, up to rootLen px; rock where a face is rockN levels tall (from, wholly), steep (steep times
+   steepG) or high, sand where the land is lower than sand levels (wholly, none); the kinds mottled where they meet (blot: the noise's
+   fine px across and down, mix its say); rock in strata band px tall of blocks block px wide, their bedding broken (crackGap), a joint
+   by joint of them, wavering wob px along wobSc; earth's horizons along horizon px, pebble of its px; shaded shade either way by noise at
+   sc px, foot darker down it; foam on foam of a wet foot's px; log: each face column recorded (tests only, off) */
+const WORLD_TERRAIN={face:{low:5,lowK:.62,over:2.4,overSc:6,overRock:1,overK:.9,root:.06,rootLen:4,rockN:[1.4,2.6],steep:[.85,1.15],sand:[1.05,1.4],blot:[5,4],mix:.7,band:5,block:[4,10],crackGap:.22,joint:.6,wob:4,wobSc:17,horizon:11,pebble:.03,shade:.12,sc:[6,15],foot:.22,foam:.3,log:false},prints:{step:2.6,side:.8,rim:.5,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16,basin:7},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2,rapid:{hw:8,mouth:48,join:16,bridge:14,ramp:22,white:.09,streak:5}},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,water:{murk:.3,clear:.6,mouth:18,rim:1.6,hw:6,foam:.5,bankFoam:.4},shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
@@ -276,6 +283,15 @@ const SITE_AWAY={any:12,cave:20,travelers:14};
 // theirs from them); first: kinds placed ahead of the others (the goblins' warrens want the wild land's few tiles among hills, which
 // the hideouts, on wild ground first, took before them)
 const SITE_SPACE={gap:14,relax:.6,lots:8,own:{hideout:9,goblins:9},first:['goblins']};
+/* nothing built at a hill's edge (the owner, 2026-11-19: "Buildings should not be spawn at the edge of hills"; world/map.js edgeNear):
+   a steep edge is where the land's height (its lift, ledgeHt, px) rises or falls more than steep px from one point to the next of a
+   grid every step px; what is built keeps margin px of ground round its footprint free of one. A holding (worldplace.js, its centre's
+   box: box tiles round its tile, up 1 more), a hamlet, a bandits' camp (genCamps: its spots clear of one first), a lot (lots.js
+   lotSpot), a site (sites.js siteSpot, its box r px across and up: a travellers' camp its ring of tents, encampments.js) and an
+   outpost (outposts.js stand) take a spot clear of one where they can (cost: how much dearer one by an edge is, in each's own score:
+   lots' tiles, a holding's liking, an outpost's tiles squared), and only where none is, one by an edge, so none is lost; a camp's
+   tent or piece (campsite.js tentOk) never stands by one. free: kinds of site an edge is for (a cave's mouth is in a cliff) */
+const EDGE_PLACE={step:4,steep:6,margin:8,box:2,r:[16,20],cost:{lot:1000,hold:1.5,hamlet:1,outpost:400},free:['cave']};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},

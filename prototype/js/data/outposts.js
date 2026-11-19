@@ -34,12 +34,12 @@ const OUTPOST={on:true,guards:[0,3,6,10],hold:4,r:44,renown:4,thanks:6,regrow:1,
 // another realm's land (within border.r tiles); town: tiles from any holding, clear: tiles to anything built; gap: tiles between two; per province base + one for
 // each per of its holdings, most at most, one more where it borders another realm, a kind it has already worth same less (its
 // crossings, fords and passes as well as its deposits); lv: the score for level 2 and 3; near: tiles
-// from its spot it may stand to keep off the road; foot: the tiles its picture covers round its flag at its biggest (its tower to the
-// left), x0, y0, x1, y1: none of them a road (the owner, 2026-11-14, nothing built on a road); body: the tiles it stands on at its
+// from its spot it may stand to keep off the road, wide: tiles it may go when all those are by a hill's edge (data/world.js
+// EDGE_PLACE); foot: the tiles its picture covers round its flag at its biggest (its tower to the left), x0, y0, x1, y1: none of them a road (the owner, 2026-11-14, nothing built on a road); body: the tiles it stands on at its
 // biggest (Outpost#tiles: its plinth, the tile in front, its tower to the left), x0, y0, x1, y1: nothing built on them or on the
 // picture's tiles or a tile round them, and the middle tile beside each side ground its realm's nearest holding reaches (a fight's
 // ladder may face any way: never an outpost on a river's spit, 2026-11-17)
-const OUTPOST_PLACE={score:{deposit:3,fish:2,pass:2.5,ford:2,crossing:1.5},border:{r:8,add:2},town:7,clear:2,gap:16,base:1,per:4,most:3,same:2,lv:[3,4.5],near:3,foot:[-3,-2,1,0],body:[-3,-1,1,1]};
+const OUTPOST_PLACE={score:{deposit:3,fish:2,pass:2.5,ford:2,crossing:1.5},border:{r:8,add:2},town:7,clear:2,gap:16,base:1,per:4,most:3,same:2,lv:[3,4.5],near:3,wide:6,foot:[-3,-2,1,0],body:[-3,-1,1,1]};
 // its name by why it stands there: '<the nearest holding> ford', '<the nearest holding> iron diggings'
 const OUTPOST_WHY={crossing:'crossroads',ford:'ford',pass:'pass',deposit:'diggings',fish:'fishing grounds'};
 // its picture (world/outposts.js outpostSprite): the stone plinth's ramp, the iron pole's, the bare rags of one no one holds

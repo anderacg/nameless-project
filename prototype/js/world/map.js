@@ -45,6 +45,19 @@ function ledgeBits(m=WM,holds){if(LEDGE_ON.m===m&&(LEDGE_ON.B.pk||!holds))return
   if(holds&&!B.pk){ledgeOpen(m,B,holds);B.pk=1}LEDGE_ON.m=m;LEDGE_ON.B=B;return B}
 // (the land's height at game px (x, y), as the ledges read it: landHeight in game px, never under 0)
 const ledgeHt=m=>{const hf=landHeight(m),lh=WORLD_TERRAIN.lh;return(x,y)=>Math.max(0,hf(x*2+1,y*2+1))*lh};
+/* a steep edge by what is built (data/world.js EDGE_PLACE): edgeStep(x0, y0, x1, y1, m) the most the land rises or falls from one
+   point of a grid every step px to the next within the box (game px) and margin px round it, its heights kept for each map as they
+   are asked for (a new world's afresh); edgeNear whether that is over steep px. tileEdgeNear: a holding's centre's box round tile i,
+   box tiles each side and one more up (worldplace.js) */
+let EDGE_GRID=new WeakMap();onWorld(()=>{EDGE_GRID=new WeakMap()});
+function edgeStep(x0,y0,x1,y1,m=WM){const E=EDGE_PLACE,s=E.step,mg=E.margin;let G=EDGE_GRID.get(m);
+  if(!G){G={w:Math.ceil(m.w*TILE/s)+2,h:Math.ceil(m.h*TILE/s)+2,ht:ledgeHt(m)};G.v=new Float32Array(G.w*G.h).fill(-1);EDGE_GRID.set(m,G)}
+  const V=G.v,GW=G.w,at=(i,j)=>{const k=j*GW+i;let v=V[k];if(v<0)v=V[k]=G.ht(i*s,j*s);return v};
+  const i0=Math.max(0,Math.floor((x0-mg)/s)),i1=Math.min(GW-1,Math.ceil((x1+mg)/s)),j0=Math.max(0,Math.floor((y0-mg)/s)),j1=Math.min(G.h-1,Math.ceil((y1+mg)/s));let e=0;
+  for(let j=j0;j<=j1;j++)for(let i=i0;i<=i1;i++){const h=at(i,j);if(i<i1)e=Math.max(e,Math.abs(at(i+1,j)-h));if(j<j1)e=Math.max(e,Math.abs(at(i,j+1)-h))}
+  return e}
+const edgeNear=(x0,y0,x1,y1,m=WM)=>edgeStep(x0,y0,x1,y1,m)>EDGE_PLACE.steep;
+const tileEdgeNear=(m,i)=>{const b=EDGE_PLACE.box,x=i%m.w,y=(i-x)/m.w;return edgeNear((x-b)*TILE,(y-b-1)*TILE,(x+b+1)*TILE,(y+1)*TILE,m)};
 // (the faces on the line from (cx, cy) a tile along (dx, dy), px by px: [the highest rise, the deepest fall], each a run of steep px)
 const LEDGE_V=new Float32Array(TILE+1);
 function ledgeFaces(ht,cx,cy,dx,dy){const v=LEDGE_V,J=LEDGE;for(let a=0;a<=TILE;a++)v[a]=ht(cx+dx*a,cy+dy*a);let up=0,dn=0;
