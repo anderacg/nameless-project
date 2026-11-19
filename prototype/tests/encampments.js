@@ -74,7 +74,7 @@ Kit.suite(({ok,info})=>{
    const a0=t.CampSite.pic(3,'grass',0,{faction:'vale'}),a1=t.CampSite.pic(3,'grass',1,{faction:'vale'});ok(a0===t.CampArt.tent('pavilion',{cloth:t.CAMP_ART.canvas[0],trim:t.FACS.vale.col},3,'grass')&&a1!==a0,'an army’s first tent a pavilion in its colours, the rest plain canvas')}
   // ---- a click on one of them: his name, and the camp's page at his place there, his greeting over it
   {const m=of(0)[0];m.seen=true;W.monsters=W.monsters.filter(z=>Math.hypot(z.x-m.x,z.y-m.y)>F.danger*3);const D=near(m,.2);t.drawWorld();
-   const talk=role=>{const p=D.ppl.find(z=>z.role===role&&!z.hid);if(!p)return null;Kit.world();G.lastSite=null;P.x=p.x;P.y=p.y+8;const o=t.pickAt(p.x,p.y-4);if(o!==p)return 'picked '+(o&&(o.name||o.mapKind));t.interact(o);return p};
+   const talk=role=>{const p=D.ppl.find(z=>z.role===role&&!z.hid);if(!p)return null;Kit.world();G.lastSite=null;P.x=p.x;P.y=p.y+8;t.drawWorld();const o=t.pickAt(p.x,p.y-4);if(o!==p)return 'picked '+(o&&(o.name||o.mapKind));t.interact(o);return p};
    const tr=talk('trader');ok(tr&&tr.name&&G.site===m&&G.siteTab==='trade'&&panel().includes(tr.name)&&/wares/.test(panel()),'a trader clicked: '+(tr&&tr.name)+' opens the camp at its wagons, greeting you');
    ok(/Click: talk/.test(tr.tip())&&tr.tip().includes(tr.name),'his tip: his name and calling ('+tr.tip().replace(/<[^>]+>/g,' ').trim()+')');
    const gd=talk('guard');ok(gd&&G.site===m&&G.siteTab==='hire'&&panel().includes(gd.name),'a guard: the sellswords');

@@ -342,14 +342,13 @@ const CampSpots={
     put.sort((p,q)=>p.cx-q.cx);for(let i=0;i<put.length;i++){const p=put[i];p.x0=p.cx-w/2;p.y0=p.cy-h;
       if(Math.abs(p.cx-hx)<w/2+hw+I.gap&&p.y0<hy&&p.y0+h>hy-hh)p.y0=hy-hh-h-I.gap;
       for(let j=0;j<i;j++){const q=put[j];if(p.x0<q.x0+w+I.gap&&p.x0+w+I.gap>q.x0&&p.y0<q.y0+h+I.gap&&p.y0+h+I.gap>q.y0)p.x0=q.x0+w+I.gap}}
-    for(const p of put){const T=I.tap,gx=x=>(x*dpr-m.e)/m.a+cam.x,gy=y=>(y*dpr-m.f)/m.d+cam.y+p.lf;p.o.box=[gx(p.x0-T),gy(p.y0-T),gx(p.x0+w+T),gy(p.y0+h+T)];
-      const ico=ICONS[I.ico[p.o.k]],pic=uiIconAt(ctx,'campspot:'+p.o.k,w,h,g=>campBadge(g,ico,w,h));
-      ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;
+    for(const p of put){const name=I.ico[p.o.k];if(!uiMarkerReady(name))continue;
+      const T=I.tap,gx=x=>(x*dpr-m.e)/m.a+cam.x,gy=y=>(y*dpr-m.f)/m.d+cam.y+p.lf;p.o.box=[gx(p.x0-T),gy(p.y0-T),gx(p.x0+w+T),gy(p.y0+h+T)];
+      ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
       // (a thin stalk down to what it stands at)
       ctx.fillStyle='rgba(30,24,16,.75)';ctx.fillRect(Math.round(p.x0+w/2-1),Math.round(p.y0+h),2,Math.max(0,Math.round(p.cy-p.y0-h)));
-      ctx.drawImage(pic,Math.round(p.x0),Math.round(p.y0),w,h);ctx.restore()}}
+      ctx.translate(Math.round(p.x0),Math.round(p.y0));campBadge(ctx,name,w,h);ctx.restore()}}
 };
-// (a badge: a dark plate with a gold rim, its icon's pixels on it, two CSS px each (ui/icons.js ICONS))
-function campBadge(g,ico,w,h){g.fillStyle='#221f18';g.fillRect(1,1,w-2,h-2);g.fillStyle='#c4a365';g.fillRect(1,0,w-2,1);g.fillRect(1,h-1,w-2,1);g.fillRect(0,1,1,h-2);g.fillRect(w-1,1,1,h-2);
-  if(!ico)return;const px=ico.px,q=Math.floor((w-4)/9),o=Math.floor((w-q*9)/2);for(let y=0;y<9;y++)for(let x=0;x<9;x++){const c=ico.p[px[y][x]];if(c){g.fillStyle=c;g.fillRect(o+x*q,o+y*q,q,q)}}}
+// Shared painted artwork; recruitment retains a readable plus rather than becoming a Rally symbol.
+const campBadge=(g,name,w,h)=>uiCanvasMarker(g,name,w,h,name==='recruit');
 onWorld(()=>CampSpots.of.clear());
