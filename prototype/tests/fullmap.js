@@ -20,6 +20,10 @@ Kit.suite(({ok,info})=>{
    const p0=t.MINI_PIC;ok(p0&&p0.cv.width===p0.w&&p0.w<=Math.ceil(v.tw*M.box)&&v.ox>=p0.x&&v.ox+v.tw<=p0.x+p0.w,'its picture a box of '+(p0&&p0.w+' x '+p0.h)+' tiles round the view (the full map\'s parchment: fullMapPic box)');
    t.frame();ok(t.MINI_PIC===p0,'kept while the view stays in it');
    const c0={x:G.cam.x,y:G.cam.y};G.cam.x=Math.min(MW*t.TILE-t.VW,Math.max(0,G.cam.x+p0.w*t.TILE));const v2=t.worldMiniView();t.miniPic(v2);ok(t.MINI_PIC!==p0&&v2.ox>=t.MINI_PIC.x&&v2.ox+v2.tw<=t.MINI_PIC.x+t.MINI_PIC.w+1e-9,'made again once the view leaves it');G.cam.x=c0.x;G.cam.y=c0.y;
+   // (at the map's far corner the view, rounded to the minimap's px, may reach a fraction past the map: the picture kept all the same,
+   //  not made again each frame (2026-11-19: there it was 4.6 ms of a 10 ms frame on the throttled phone profile))
+   {const cam={x:MW*t.TILE-t.VW,y:MH*t.TILE-t.VH},v3=t.worldMiniView(cam);t.miniPic(v3);const p1=t.MINI_PIC;t.miniPic(t.worldMiniView(cam));
+    ok(t.MINI_PIC===p1,'at the map\'s far corner kept too (the view to '+(v3.ox+v3.tw).toFixed(2)+', '+(v3.oy+v3.th).toFixed(2)+' of '+MW+' x '+MH+' tiles)')}
    const S=t.seenArr(),b={x:10,y:12,w:30,h:20},img=t.fullMapPic(WM,1,S,t.LAND,t.TOWNS,b),all=t.fullMapPic(WM,1,S,t.LAND,t.TOWNS),pa=img.getContext('2d').getImageData(5,6,1,1).data.join(),pb=all.getContext('2d').getImageData(15,18,1,1).data.join();
    ok(img.width===30&&img.height===20&&pa===pb,'a box of the picture is that part of the whole one ('+pa+')')}
   info('the world: '+WM.gen+', '+MW+' x '+MH+' tiles');

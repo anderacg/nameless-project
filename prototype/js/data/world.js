@@ -22,8 +22,9 @@ const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,
    begun) over the time before the view reaches them at its speed (speed game px a second at least; soon ms at the least), safety
    times over, slice ms a frame at least, most at most. The view's speed and the frame's length eased by ease. A chunk half painted
    is kept, keep of them at most, while it stays near the view. In play while the game's loop drew within alive ms (one slow frame,
-   a model made, never makes the next paint a chunk whole) */
-const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2,alive:2000};
+   a model made, never makes the next paint a chunk whole). The way the view moves: its heading eased by turn a frame, a way taken
+   where the heading leans lean or more along it (.38: aslant takes both), none while the view's speed is still px a second or less */
+const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2,alive:2000,turn:.15,lean:.38,still:4};
 // the map's painter workers (gfx/worldart.js ArtWorkers): on in play; how many on a phone, and at most elsewhere (never more than the
 // device's cores less one; each worker holds a whole second copy of the game and its world, about 300 MB at a phone's size, so one on a
 // phone); help: ms a chunk in view may wait for a worker before it is painted here too (the first done kept)

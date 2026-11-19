@@ -650,7 +650,7 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
-  plan:null,chunks:new Map(),jobs:new Map(),queue:[],miss:new Map(),pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,vel:0,frameMs:16,lastT:0,est:0,need:0,drawSpent:0,
+  plan:null,chunks:new Map(),jobs:new Map(),queue:[],miss:new Map(),pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,vel:0,hx:0,hy:0,frameMs:16,lastT:0,est:0,need:0,drawSpent:0,
   // (in play (the game's loop, not a test's page: liveOk) no chunk is ever painted whole in a frame: ART_PACE)
   liveOk:typeof location==='undefined'||!/[?&]test=/.test(location.search),live(){return this.liveOk&&performance.now()-this.idleAt<ART_PACE.alive},
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
@@ -678,7 +678,11 @@ const WorldArt={
     // (ahead: the ring round the view, the way it moves first, as many as the cap leaves room for: those painted kept as freshly
     //  used, the rest queued; a job for a chunk no longer queued let go)
     if(this.last&&this.lastT){const dt=now-this.lastT;if(dt>0&&dt<500){this.vel+=(Math.hypot(cam.x-this.last.x,cam.y-this.last.y)/dt*1000-this.vel)*AP.ease;this.frameMs+=(dt-this.frameMs)*AP.ease}}this.lastT=now;
-    const dx=this.last?Math.sign(cam.x-this.last.x):0,dy=this.last?Math.sign(cam.y-this.last.y):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last={x:cam.x,y:cam.y};
+    //  (the way it moves: its heading eased over the frames (hx, hy), not one frame's step, so a walk aslant (a px across one frame, a px
+    //   down the next) keeps one ring ahead and its jobs, not three in turn each let go before it is done; none while it stands; a leap
+    //   forgets it)
+    if(this.last){const ex=cam.x-this.last.x,ey=cam.y-this.last.y,l=Math.hypot(ex,ey);if(l>=CHUNK)this.hx=this.hy=0;else if(l>0){this.hx+=(ex/l-this.hx)*AP.turn;this.hy+=(ey/l-this.hy)*AP.turn}}
+    const go=this.vel>AP.still,dx=go?(this.hx>AP.lean?1:this.hx<-AP.lean?-1:0):0,dy=go?(this.hy>AP.lean?1:this.hy<-AP.lean?-1:0):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last={x:cam.x,y:cam.y};
     //  (ahead more rings the way it moves: a chunk walked into painted before, never in the frame)
     const A=this.ahead;for(let cy=r0-1-(dy<0?A:0);cy<=r1+1+(dy>0?A:0);cy++)for(let cx=c0-1-(dx<0?A:0);cx<=c1+1+(dx>0?A:0);cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
     ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.capNow-this.view.size));

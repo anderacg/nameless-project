@@ -256,8 +256,10 @@ function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{
 let MINI_PIC=null;
 function miniPic(v){const M=MINIMAP,c=MINI_PIC,S=seenArr(),now=performance.now(),bw=Math.min(MW,Math.ceil(v.tw*M.box)),bh=Math.min(MH,Math.ceil(v.th*M.box));landFresh();
   const seenIn=b=>{let n=0;for(let y=b.y;y<b.y+b.h;y++){const o=y*MW;for(let x=b.x;x<b.x+b.w;x++)n+=S[o+x]}return n};
-  if(c&&c.m===WM&&c.S===S&&c.ver===landVer&&c.w===bw&&c.h===bh&&v.ox>=c.x&&v.oy>=c.y&&v.ox+v.tw<=c.x+bw&&v.oy+v.th<=c.y+bh){if(now-c.t<M.refresh)return c;c.t=now;const n=seenIn(c);if(n===c.n)return c}
+  // (kept while the view stays in its box, or while the box made now would be its own: at the map's edge the view, rounded to the
+  //  minimap's px, may reach a fraction past the map and so past any box, and was made again each frame)
   const b={x:clamp(Math.floor(v.ox+v.tw/2-bw/2),0,MW-bw),y:clamp(Math.floor(v.oy+v.th/2-bh/2),0,MH-bh),w:bw,h:bh};
+  if(c&&c.m===WM&&c.S===S&&c.ver===landVer&&c.w===bw&&c.h===bh&&(v.ox>=c.x&&v.oy>=c.y&&v.ox+v.tw<=c.x+bw&&v.oy+v.th<=c.y+bh||c.x===b.x&&c.y===b.y)){if(now-c.t<M.refresh)return c;c.t=now;const n=seenIn(c);if(n===c.n)return c}
   return MINI_PIC={...b,m:WM,S,ver:landVer,t:now,n:seenIn(b),cv:fullMapPic(WM,1,S,LAND,TOWNS,b)}}
 // (its paper's darkened edge at w x h, kept by its size)
 let MINI_EDGE=null;
