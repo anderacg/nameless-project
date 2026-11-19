@@ -26,7 +26,9 @@ class Herd extends WorldObject{
     // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color"); its legs by its own steps (d), its pose by its own time
     const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),N=PX.MAP_STEPS,stride=Math.max(4,A.w)/N,F=herdFlock(c,A,performance.now());
-    F.m.forEach((m,i)=>{const go=herdGoes(c,m);grassFoot(m.x,m.y,go,true,m);ents.push({x:m.x,y:m.y,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
+    // (what it shows held steady (flockHold): the herd's doing as drawn, each animal's legs walking or still: never flickering frame to frame)
+    const now=performance.now(),st=flockSt(F,c.st,now);
+    F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);grassFoot(m.x,m.y,go,true,m);ents.push({x:m.x,y:m.y,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),y-1,w,2);
       ctx.save();ctx.translate(x,y-q.up);ctx.scale(m.f<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore();
       if(i)return;if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&DEV.on&&c.fromYou()<90)txt(String(c.n),Math.round(c.x-cam.x),Math.round(c.y-cam.y)-A.h-4,'#c8e0a0','center')}})})}
@@ -36,9 +38,10 @@ const asHerd=asClass(Herd);
 /* (each of a herd's animals drawn by what the herd does (HERD_MIND st): fleeing, a gallop, its bounders leaping (WILD_LIFE.bound px,
    the hoppers hop) its own beat behind the first; bedded down at night, lying; grazing, its head down to the grass for graze s, then
    up for look s, each animal on its own time; drinking at the water's edge, its head down; wary, its head up, still; else walking as
-   it steps. how: critterArt's pose; fr: its step; up: px over its shadow) */
-function herdPose(c,i,go,fr){const L=WILD_LIFE,st=c.st,now=performance.now()/1000;
-  if(st==='flee'&&go){const b=L.bounders.includes(c.id)?L.bound:L.hoppers.includes(c.id)?L.hop:0;return{how:'run',fr,up:b?Math.round(b*Math.abs(Math.sin((now*L.bounce+i*.37)*Math.PI))):0}}
+   it steps. how: critterArt's pose; fr: its step; up: px over its shadow; st: the herd's doing as drawn (flockSt); m: the animal,
+   its leaps by the ground it covers (WILD_LIFE.leap px a leap), never on the clock) */
+function herdPose(c,i,go,fr,st=c.st,m){const L=WILD_LIFE,now=performance.now()/1000;
+  if(st==='flee'&&go){const b=L.bounders.includes(c.id)?L.bound:L.hoppers.includes(c.id)?L.hop:0;return{how:'run',fr,up:b?Math.round(b*Math.abs(Math.sin(((m?m.d:now*30)/L.leap+i*.37)*Math.PI))):0}}
   if(go)return{how:null,fr,up:0};
   if(st==='bed')return{how:'rest',fr:0,up:0};
   if(st==='drink')return{how:'graze',fr:Math.floor(now*2+i)&1,up:0};
@@ -54,21 +57,33 @@ function herdPose(c,i,go,fr){const L=WILD_LIFE,st=c.st,now=performance.now()/100
 const HERD_FLOCK=new WeakMap();
 function herdFlock(c,A,now){const L=WILD_LIFE.flock,n=Math.min(L.most,Math.max(1,c.n||1)),gap=Math.max(4,A.w)*L.gap,v0=c.coat||0;let F=HERD_FLOCK.get(c);
   if(!F||F.m.length!==n){const old=F&&F.m;F=F?{...F,m:[]}:{t:now,px:c.x,py:c.y,hd:c.dir<0?Math.PI:0,sp:0,m:[]};HERD_FLOCK.set(c,F);// (one more or fewer: the rest kept, and where it last stood, so a leap since is still seen)
-    for(let i=0;i<n;i++){if(old&&old[i]){F.m.push(old[i]);continue}const q=flockSpot(c,F,i,n,gap,now,false);F.m.push({x:c.x+q[0],y:c.y+q[1],f:c.dir<0?-1:1,d:0,go:false,h:PX.hash(v0,i,41)})}}
+    for(let i=0;i<n;i++){if(old&&old[i]){F.m.push(old[i]);continue}const q=flockSpot(c,F,i,n,gap,now,false);F.m.push({x:c.x+q[0],y:c.y+q[1],f:c.dir<0?-1:1,ft:now,d:0,go:false,h:PX.hash(v0,i,41)})}}
   const dt=Math.min(.1,Math.max(0,(now-F.t)/1000)),mx=c.x-F.px,my=c.y-F.py,mv=Math.hypot(mx,my);F.t=now;F.px=c.x;F.py=c.y;
-  if(mv>gap*4){F.m.forEach((m,i)=>{const q=flockSpot(c,F,i,n,gap,now,false);m.x=c.x+q[0];m.y=c.y+q[1];m.go=false});return F}// (a leap, not a walk: each straight to its spot)
-  if(dt>0){F.sp+=(mv/dt-F.sp)*Math.min(1,dt*4);if(mv>.01)F.hd=Math.atan2(my,mx)}
-  const moving=F.sp>.5,amble=L.amble*Math.max(1,G.speed||1),wary=c.st==='wary',bed=c.st==='bed';
+  if(mv>L.snap){F.m.forEach((m,i)=>{const q=flockSpot(c,F,i,n,gap,now,false);m.x=c.x+q[0];m.y=c.y+q[1];m.go=false});return F}// (a leap, not a walk: each straight to its spot)
+  // (its heading turned toward its way at most hd rad a s, so its wedge never swings side to side as the herd jinks; on the move by
+  //  move's two speeds, held a while at rest, so its animals never switch between their wedge and their blob each frame)
+  if(dt>0){F.sp+=(mv/dt-F.sp)*Math.min(1,dt*4);if(mv>.01){const w=Math.atan2(my,mx);if(!F.hdOn){F.hd=w;F.hdOn=true}else{let dh=w-F.hd;dh=Math.atan2(Math.sin(dh),Math.cos(dh));F.hd+=Math.sign(dh)*Math.min(Math.abs(dh),L.hd*dt)}}}
+  {const M=L.move;if(!F.mov){if(F.sp>M[0]){F.mov=true;F.calm=0}}else if(F.sp<M[1]){F.calm=F.calm||now;if(now-F.calm>=M[2]*1000)F.mov=false}else F.calm=0}
+  const moving=!!F.mov,amble=L.amble*Math.max(1,G.speed||1),wary=c.st==='wary',bed=c.st==='bed';
   F.m.forEach((m,i)=>{const q=flockSpot(c,F,i,n,gap,now,moving),ex=c.x+q[0]-m.x,ey=c.y+q[1]-m.y,e=Math.hypot(ex,ey),st=L.start[0]+m.h*(L.start[1]-L.start[0]);m.go=false;
-    if(bed||!(e>st||(m.walk&&e>.3))){m.walk=false;return}
+    if(bed||!(e>st||(m.walk&&e>.3))){m.walk=false;m.vx=0;return}
     m.walk=true;m.drift=!moving&&e<gap*.6;const v=Math.max(F.sp*1.1,amble)*(L.pace[0]+m.h*L.pace[1])*(e>gap?L.catch:1),k=Math.min(1,v*dt/e),sx=ex*k,sy=ey*k;
-    m.x+=sx;m.y+=sy;m.d+=Math.hypot(sx,sy);m.go=Math.hypot(sx,sy)>.01;if(Math.abs(sx)>.01)m.f=sx>0?1:-1});
+    m.x+=sx;m.y+=sy;m.d+=Math.hypot(sx,sy);m.go=Math.hypot(sx,sy)>.01;
+    // (facing its way by its eased speed across, never by a step's tiny sway or a push from its neighbour)
+    m.vx=(m.vx||0)+(sx/Math.max(dt,1e-3)-(m.vx||0))*Math.min(1,dt*6);if(Math.abs(m.vx)>L.face.v)flockFace(m,m.vx>0?1:-1,now)});
   // (kept apart: any two nearer than keep x its width pushed apart, half each)
   const kp=Math.max(2,A.w*L.keep);for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const p=F.m[i],q=F.m[j];let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);if(d>=kp)continue;
     if(d<.01){dx=p.h-.5||.3;dy=q.h-.5||.2;d=Math.hypot(dx,dy)}const k=(kp-d)/2/d;p.x-=dx*k;p.y-=dy*k;q.x+=dx*k;q.y+=dy*k}
   // (standing: each turns on its own time; wary, all watch who comes)
-  F.m.forEach((m,i)=>{if(m.go)return;if(wary){m.f=c.dir<0?-1:1;return}if(bed)return;const T=L.turn[0]+m.h*(L.turn[1]-L.turn[0]),k=Math.floor(now/1000/T+m.h*5);if(m.tk!==k){if(m.tk!=null)m.f=PX.hash(v0+i,k,53)<.5?-1:1;m.tk=k}});
+  F.m.forEach((m,i)=>{if(m.go)return;if(wary){flockFace(m,c.dir<0?-1:1,now);return}if(bed)return;const T=L.turn[0]+m.h*(L.turn[1]-L.turn[0]),k=Math.floor(now/1000/T+m.h*5);if(m.tk!==k){if(m.tk!=null)flockFace(m,PX.hash(v0+i,k,53)<.5?-1:1,now);m.tk=k}});
   return F}
+// (an animal turned about f, not sooner than face.hold s after its last turn)
+function flockFace(m,f,now){if(m.f===f||now-(m.ft??-1e9)<WILD_LIFE.flock.face.hold*1000)return;m.f=f;m.ft=now}
+// (a value held steady on o[k]: a new one shown once it has lasted s seconds; the first at once)
+function flockHold(o,k,v,now,s){if(o[k]===undefined||o[k]===v){o[k]=v;o[k+'n']=undefined;return v}if(o[k+'n']!==v){o[k+'n']=v;o[k+'t']=now}if(now-o[k+'t']>=s*1000){o[k]=v;o[k+'n']=undefined}return o[k]}
+// (the herd's doing as its animals show it: fleeing at once, any other once it has lasted hold.st s, so a herd caught between flight
+//  and watching never flickers from a gallop to a walk)
+function flockSt(F,st,now){if(st==='flee'){F.st='flee';F.stn=undefined;return st}return flockHold(F,'st',st,now,WILD_LIFE.flock.hold.st)}
 // (does it walk, its legs moving? not one only drifting about its spot while its herd grazes, drinks or lies: it shifts as it grazes)
 const herdGoes=(c,m)=>m.go&&!(m.drift&&(c.st==='graze'||c.st==='drink'||c.st==='bed'));
 // (an animal's spot about its herd's point: a hunt's scatter (c.m) its own; on the way, a loose wedge behind the first along the herd's

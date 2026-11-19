@@ -6,7 +6,7 @@
 // its legs cut at the waterline; birds flushed off their feeding come down to it again; the wild game grazes, its head down, looks
 // up, stops and watches one coming near, beds down at night, walks to water to drink, gallops and its deer bound as they flee, keeps
 // off the holdings' ground and is never placed on it; their counts hold over days; a beast in deep water is drawn cut at its
-// waterline; and a frame of all of it stays cheap.
+// waterline; none of it jitters (no jumps, no turning about each moment, no pose flicker); and a frame of all of it stays cheap.
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,A=t.AMBIENT,AV=t.AMBV,L=t.WILD_LIFE;
  Kit.begin('soldier',1);Kit.world();G.mode='world';G.modal=false;
@@ -120,6 +120,27 @@ Kit.suite(({ok,info})=>{
    let lo2=1e9,hi2=0;for(let s=0;s<140;s+=1/10){const F2=t.herdFlock(c2,A2,s*1000);if(s>4){const k=knots(F2);lo2=Math.min(lo2,k);hi2=Math.max(hi2,k)}}
    ok(hi2>lo2+A2.w*FL.gap*.8,'a herd of '+c2.n+' splits in two knots drifting apart ('+hi2.toFixed(1)+' px between them at most) and back ('+lo2.toFixed(1)+')')}
   finally{G.speed=gs0}}
+ // ---- steady, never jittering (the owner, 2026-11-18: "The wildlife sometimes jumping rapidly and looping left and right rapidly"):
+ //      a herd caught between fleeing and watching, its point jinking, its facing flipping each moment, at 30 and 60 frames a second
+ {const FL=L.flock,gs0=G.speed;G.speed=1;
+  try{for(const fps of [30,60]){const dt=1/fps,c={crit:true,id:'deer',x:5000,y:5000,hx:5000,hy:5000,n:5,t:0,a:0,dir:1,tire:0,cool:0,coat:11,st:'graze'},A0=t.critterArt(c.id,0,c.coat);
+    let F=null,over=0,worst=0,fast=0,flick=0,frames=0;const hist=new Map(),last=new Map(),seen=new Map();
+    for(let k=0;k<fps*20;k++){const s=k*dt,ms=s*1000,ph=Math.floor(k/(fps>30?3:2));
+     // (the herd's mind flickering: fleeing two or three frames, watching two or three; its point bolting with jinks; its dir flipping)
+     c.st=s<4?'graze':s<16?(ph%2?'flee':'wary'):'graze';c.dir=ph%2?1:-1;if(s>=4&&s<16&&c.st==='flee'){const a=Math.sin(s*5)*1.2;c.x+=Math.cos(a)*44*dt;c.y+=Math.sin(a)*44*dt*.6}
+     const before=F?F.m.map(m=>[m.x,m.y]):null;F=t.herdFlock(c,A0,ms);const st=t.flockSt(F,c.st,ms);frames++;
+     F.m.forEach((m,i)=>{if(before&&before[i]){const d=Math.hypot(m.x-before[i][0],m.y-before[i][1]),lim=Math.max(F.sp*1.1,FL.amble)*(FL.pace[0]+FL.pace[1])*FL.catch*dt+.6;worst=Math.max(worst,d);if(d>lim)over++}
+      if(last.has(i)&&last.get(i).f!==m.f&&s-last.get(i).ft<FL.face.hold-dt)fast++;if(!last.has(i)||last.get(i).f!==m.f)last.set(i,{f:m.f,ft:s});
+      const go=t.flockHold(m,'g',t.herdGoes(c,m),ms,FL.hold.go),pk=(t.herdPose(c,i,go,0,st,m).how||'')+(go?'+':''),H=hist.get(i)||[];if(!H.length||H[H.length-1][0]!==pk)H.push([pk,s]);hist.set(i,H)})}
+    // (a flicker: a pose shown under 0.3 s between two of the same)
+    for(const H of hist.values())for(let j=1;j+1<H.length;j++)if(H[j-1][0]===H[j+1][0]&&H[j+1][1]-H[j][1]<.3)flick++;
+    ok(!over&&!fast&&!flick,fps+' fps, a herd torn between flight and watching 12 s: no animal steps further than its walk allows in a frame ('+worst.toFixed(2)+' px at most, '+over+' over), none turns about sooner than '+FL.face.hold+' s after its last turn ('+fast+'), no pose flickers under 0.3 s ('+flick+')')}}
+  finally{G.speed=gs0}
+  // (a duck's way wobbling about the vertical and a lizard darting to and fro: drawn turning at most once in AMBIENT.face s; a duck's mate
+  //  at the bank drawn swimming or standing only once it has been over the water or the land AMBIENT.duck.wet s)
+  {const e={t:0,dir:1};let n=0,fd=1,lt=-9,early=0;for(let k=0;k<120;k++){e.t=k/60;e.dir=k%3?1:-1;t.ambFace(e);if(e.fd!==fd){if(e.t-lt<A.face-1e-9)early++;lt=e.t;fd=e.fd;n++}}
+   const m={};let sw=0,prev=null;for(let k=0;k<60;k++){const w=t.ambWet(m,k%4<2,k/60);if(prev!=null&&w!==prev)sw++;prev=w}const m2={};t.ambWet(m2,true,0);let at=null;for(let k=1;k<60;k++){if(!t.ambWet(m2,false,k/60)&&at==null)at=k/60}
+   ok(!early&&n<=Math.ceil(2/A.face)+1&&!sw&&at!=null&&Math.abs(at-A.duck.wet)<.05,'ambient creatures drawn steady: '+n+' turns in 2 s of a facing flipping every few frames (none sooner than '+A.face+' s), a duck\'s mate at a flickering bank '+sw+' changes, onto land for good after '+(at==null?'never':at.toFixed(2)+' s'))}}
  // ---- a frame of it stays cheap
  {A.on=true;try{t.drawWorld();const t0=performance.now();for(let i=0;i<30;i++){t.drawWorld()}const per=(performance.now()-t0)/30;const a0=performance.now();for(let i=0;i<30;i++){const e=[];t.ambientWorld(e,G.cam,t.vis());t.drawHerds(e,G.cam,t.vis())}const amb=(performance.now()-a0)/30;
    ok(amb<4,'the wildlife\'s share of a frame: '+amb.toFixed(2)+' ms (the frame '+per.toFixed(1)+' ms)')}finally{A.on=false}}
