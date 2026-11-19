@@ -43,6 +43,35 @@ function terWood(land,gx,gy){const wu=(gx+(wnoise2(gx/12,gy/12,551)-.5)*16-8)/16
 const TERK={water:0,wet:1,sand:2,dune:3,grass:4,meadow:5,wood:6,rock:7,scree:8,snow:9,bank:10,oasis:11};
 let TER_K=0,TER_MW=-1,TER_CAVE=0;// (the kind terLand last chose, and its meadow's share on open land: -1 none; the cave's rock's share at the px it paints: caveShare)
 const tmix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t],tmul=(a,k)=>[a[0]*k,a[1]*k,a[2]*k];
+/* a land face's look (the owner, 2026-11-19: "please fix that straight line steep hill": a tall bank came out as even vertical bars,
+   each game px column a face of its own kind, earth or sand by its level alone, flat down its height): WORLD_TERRAIN.face. Its
+   kind by smooth weights (rW rock: a tall face, a steep slope, high land; sW sand: low land, both by the fine px's own lift), each
+   texel picking by a blotchy noise (blot, mix), so where kinds meet they mottle, never stripe. Earth: the grass hanging over its lip
+   (over), soil horizons wavering along it, a few roots and pebbles, darker down; rock: strata of uneven blocks (band, block), their
+   bedding cracks broken, a lit ledge on each, joints here and there, snow on the ledges up high, scree at its foot; sand soft; all
+   shaded by noise at three scales; a foot at water dark and wet, foam here and there; a low face (low fine px or less) faint */
+const sst=(x,a,b)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t)};
+// (a face column's own, once: its grass's overhang in fine px (a smooth wave along it, never teeth; shallow over rock), a root's length
+//  (0 none), its strata's wobble)
+function faceCol(ax,ay,n,rW){const FC=WORLD_TERRAIN.face;if(n<=FC.low)return{ov:0,root:0,wob:0};
+  return{ov:Math.min(rW>.5?FC.overRock:9,Math.floor((wnoise2(ax/FC.overSc,ay/9,335)*.75+wnoise2(ax/(FC.overSc*.4),ay/5,336)*.25)*(FC.over+1))),root:hs(ax,ay>>3,337)<FC.root?2+Math.floor(hs(ax,ay,338)*FC.rootLen):0,wob:(wnoise2(ax/FC.wobSc,ay/23,339)-.5)*FC.wob}}
+function faceTexel(Q,CW,ci,ax,ay,dz,n,zh,f,rW,sW,snowy,wetB,col){const FC=WORLD_TERRAIN.face,wy=ay+dz,top=[CW[ci],CW[ci+1],CW[ci+2]];
+  if(dz<=col.ov)return tmul(top,FC.overK-.06*dz);// (the grass over its lip, ragged along it)
+  const m=wnoise2(ax/FC.blot[0],wy/FC.blot[1],341),rock=rW>.5+(m-.5)*FC.mix,sand=!rock&&sW>.5+(m-.5)*FC.mix;let c;
+  if(rock){const RC=Q.rock,zz=zh+col.wob,band=Math.floor(zz/FC.band),inb=zz-band*FC.band,bw=FC.block[0]+Math.floor(hs(band,7,342)*(FC.block[1]-FC.block[0]+1)),bo=Math.floor(hs(band,9,343)*bw),blk=Math.floor((ax+bo)/bw);
+    c=tmix(tmix(RC[2],RC[3],hs(band,blk,344)*.8),Q.face[2],.2);
+    if(inb<1&&hs(ax>>1,band,345)>FC.crackGap)c=tmul(c,.64);else if(inb<2)c=tmix(c,RC[1],.45);// (the bedding, broken; the lit ledge over it)
+    if((ax+bo)%bw===0&&hs(blk,band,346)<FC.joint)c=tmul(c,.74);// (a joint between two blocks)
+    if(snowy&&inb<2&&m<.72)c=Q.snow[1];
+    if(dz>=n-1&&!wetB&&hs(ax,wy,352)<.35)c=Q.scree[hs(ax,wy,353)<.5?0:1]}// (scree at its foot)
+  else if(sand)c=tmul(tmix(Q.sand[0],Q.wet[1],f*.75),.95+.1*wnoise2(ax/4,wy/2.5,348));
+  else{c=tmix(Q.bank[0],Q.bank[2],Math.min(1,f*1.1));if(dz===col.ov+1)c=tmix(c,Q.lip,.55);
+    const hz=wnoise2(ax/FC.horizon,wy/3,349);if(hz>.74)c=tmul(c,.86);else if(hz<.2)c=tmix(c,Q.bank[0],.4);// (its soil horizons, wavering)
+    if(col.root&&dz<=col.ov+col.root)c=tmul(Q.bank[2],.78);else if(hs(ax,wy,350)<FC.pebble)c=tmix(c,Q.scree[0],.6)}
+  c=tmul(c,(1-FC.shade+FC.shade*2*(wnoise2(ax/FC.sc[0],wy/FC.sc[0],351)*.5+wnoise2(ax/FC.sc[1],wy/FC.sc[1],354)*.3+hs(ax,wy,355)*.2))*(1-FC.foot*f));
+  if(wetB&&dz>=n-1)c=dz===n&&hs(ax,ay,356)<FC.foam?Q.foam:tmul(c,.72);// (its foot in the water, wet and dark)
+  if(n<=FC.low)c=tmix(c,dz===1?tmix(top,Q.lip,.5):top,FC.lowK*(1-(n-2)/(2*FC.low)));// (a low bank a soft step: its top shading down into it, its lip grassed)
+  return c}
 // (a tone of a palette by patches a few px across, a little grain within: the lab's pick)
 const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.8+hs(x,y,s+1)*.2)*L3.length))];
 
@@ -337,21 +366,19 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       if(fy+1>=HE2)continue;const fN=fi+W2,kN=at(gx,Y+(((fy+1)/r)|0)),LN=LFF[fN],syN=fy+1-LN;if(syN<=sy+1)continue;
       // (the lip, lit; snow on a high one; a face within a road's wall px dressed stone (its cut or fill), never one falling to water: no
       //  masonry on a river's bank where no bridge stands (the owner, 2026-11-18: "Why there's a human made brick when there's no bridge?"))
-      const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[CLG[k]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]]&&!wetB,rocky=!road&&!(RG.S[k]<bankG+2)&&WK[fN]!==2&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
+      const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[CLG[k]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]]&&!wetB,snowy=Lv[k]>=T.snow-1,FC=T.face,lvF=L/lh,rW=road||RG.S[k]<bankG+2||WK[fN]===2?0:Math.max(sst(n,FC.rockN[0]*lh,FC.rockN[1]*lh),sst(Math.hypot(Gx[k],Gy[k]),T.steepG*FC.steep[0],T.steepG*FC.steep[1]),sst(lvF,T.rock-1.6,T.rock-.6)),sW=road?0:sst(lvF,FC.sand[1],FC.sand[0]),rocky=rW>.5,sand=!rocky&&sW>.5;
       if(sy>=0&&sy<H2&&!wet&&!(n<=3&&SF[fi]<.5&&SF[fN]<.5)){const o=(sy*W2+fx)*4;if(snowy){O[o]=242;O[o+1]=246;O[o+2]=252}else{O[o]=Math.min(255,O[o]*1.12);O[o+1]=Math.min(255,O[o+1]*1.12);O[o+2]=Math.min(255,O[o+2]*1.12)}}
       // (a small drop on smooth ground or along water: no face, the lab's way: this top shading into the next)
       // (nor a fall where either water is a rapids' (two rivers met, a steep reach): its water shades down into the next, white streaks on it)
       if(n<=3&&(SF[fi]<.5&&SF[fN]<.5&&!(wetB&&!wet&&WK[fN]===2)||wet&&wetB)||wet&&wetB&&(rapidAt(k)||rapidAt(kN))){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
           O[o]=CW[ci]+(CW[ci2]-CW[ci])*f;O[o+1]=CW[ci+1]+(CW[ci2+1]-CW[ci+1])*f;O[o+2]=CW[ci+2]+(CW[ci2+2]-CW[ci+2])*f;O[o+3]=255;DEPF[yy*W2+fx]=fy;TOP[yy*W2+fx]=1}continue}
+      const col=faceCol(X*r+fx,Y*r+fy,n,rW);if(T.face.log)(rec.faceLog||(rec.faceLog=[])).push(fx,sy,n,col.ov,wall?1:wet&&wetB?2:0);// (each face column: x, top, height, its grass's overhang, 1 a wall, 2 a fall: tests/cliffface.js only)
       for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0)continue;if(yy>=H2)break;const f=dz/Math.max(1,n),zh=L-dz,nz=hs(gx*r+fx%r,fy+dz,331),afx=X*r+fx;let c;
         if(wet&&wetB){if(dz===1)(rec.falls||(rec.falls=[])).push(X+fx/r,Y+fy/r,n,SEAK[k]&&SEAK[kN]?2:SEAK[k]||SEAK[kN]?1:0);// (each fall's column, game px, its drop (fine px), 1 beside still water, 2 over it: tests/waterfalls.js)
           const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1){FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0,0);FR.push(fy)}}
         else if(wall){if(dz===1){rec.walls=(rec.walls||0)+1;if(wetB)rec.wallWet=(rec.wallWet||0)+1}// (counted: a chunk's masonry faces, none down to water, tests/bridgeroads.js)
           const row=Math.floor(dz/3),off=(row&1)*3;c=dz%3===0||(afx+off)%6===0?WAY_COL.stone[2]:WAY_COL.stone[hs(Math.floor((afx+off)/6),row,333)<.5?0:1]}
-        else if(rocky){const RC=Q.rock;c=tmix(f<.5?RC[2]:RC[3],Q.face[2],.25);c=tmix(c,RC[4]||RC[3],Math.min(.5,f*.5));if(zh%lh===0)c=tmul(c,.62);else if((zh+1)%lh===0)c=tmul(RC[1],.95);
-          if(nz<.1)c=tmul(c,.86);if(wnoise2(afx/3,(fy+dz)/6,334)>.7)c=tmul(c,.9);if(snowy&&(zh%lh===0||zh%lh===lh-1)&&nz<.7)c=Q.snow[1]}
-        else if(sand)c=tmix(Q.sand[0],Q.wet[1],f*.8);
-        else{c=dz===1?Q.lip:dz===2&&nz<.5?Q.lip:tmix(Q.bank[0],Q.bank[2],f);if(nz<.06)c=tmul(c,.85)}
+        else c=faceTexel(Q,CW,ci,afx,Y*r+fy,dz,n,zh,f,rW,sW,snowy,wetB,col);
         const o=(yy*W2+fx)*4;O[o]=c[0];O[o+1]=c[1];O[o+2]=c[2];O[o+3]=255;DEPF[yy*W2+fx]=fy;TOP[yy*W2+fx]=0}}
     // (above the first: the map's north edge lifted away, its ground carried up)
     if(first>0){const o0=(first*W2+fx)*4;for(let yy=0;yy<first;yy++){const o=(yy*W2+fx)*4;O[o]=O[o0];O[o+1]=O[o0+1];O[o+2]=O[o0+2];O[o+3]=255}}
