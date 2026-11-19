@@ -197,11 +197,11 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .log div{color:var(--muted)}.log div:last-child{color:var(--fg)}
 
 /* ---------- 4b. loading ---------- */
-/* the loading overlay (loading.js): over every window and the HUD; until it shows (300 ms) it is clear and only takes the
+/* the loading overlay (loading.js): over every window and the HUD, hiding them; until it shows (300 ms) it is clear and only takes the
    pointer. Its window has the panels' look, small and centred (at most 90% wide: a phone on its side), its bar square pixels */
 .loading{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
   padding:calc(12px + var(--sa-t)) calc(12px + var(--sa-r)) calc(12px + var(--sa-b)) calc(12px + var(--sa-l));
-  background:radial-gradient(ellipse at center,rgba(14,11,12,.72),rgba(6,5,6,.9))}
+  background:radial-gradient(ellipse at center,#0e0b0c,#060506)}/* (solid: nothing but the loading window shows while it works, the owner 2026-11-18) */
 .loading.wait{opacity:0}
 .loading .lwin{width:min(540px,90%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px 18px;
   background:linear-gradient(180deg,#2c2320,var(--panel) 120px);border:1px solid var(--line-2);border-top:2px solid var(--trim);border-radius:var(--r-lg);box-shadow:var(--deep)}
@@ -830,6 +830,9 @@ body:has(.overlay:not([hidden])) .discover{visibility:hidden}
 .rec-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .rec-txt small{color:var(--muted);font-size:var(--fs-xs)}
 .rec-step{display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap;justify-content:flex-end}
+/* (a row with its amount's stepper (hiredesk.js stepper): the row in two lines, its name, then the stepper and its button, all in reach) */
+.rec-row:has(.rec-n){flex-wrap:wrap}.rec-row:has(.rec-n) .rec-step{flex:1 0 100%;flex-wrap:nowrap;justify-content:flex-end;gap:3px}
+.rec-row:has(.rec-n) .rec-step .btn{min-width:34px;padding-left:6px;padding-right:6px}.rec-row:has(.rec-n) .rec-step .btn.primary{margin-left:auto}
 /* (the desk's Replenish: a unit's men as a bar, its fit gold and its wounded red after them; Refill all under the rows) */
 .rec-meter{display:flex;height:5px;margin:2px 0 1px;max-width:180px;background:var(--shade);border-radius:3px;overflow:hidden}.rec-meter i{background:var(--accent)}.rec-meter b{background:#b9463c}
 .rec-all{justify-content:flex-end;margin:var(--sp-1) 0}.rec-notice{margin:0 0 var(--sp-1)}
@@ -1551,16 +1554,16 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 /* (a small tab at the middle of the right edge, clear of the time bar, the minimap, the cards and the dock; ` or F2 opens the tools too) */
 /* the frame timings (ui/frameprof.js): a readout at the top, never in the way of a tap */
 .frameprof{position:fixed;top:calc(4px + var(--sa-t));left:50%;transform:translateX(-50%);z-index:10001;max-width:calc(100vw - 16px);padding:4px 8px;background:rgba(0,0,0,.78);color:#e8e0c8;font:11px/1.35 monospace;white-space:pre;overflow:hidden;pointer-events:none;border:1px solid var(--line)}
-#dev-console{position:fixed;inset:0;z-index:10002;background:#0009;padding:clamp(8px,3vw,32px);overflow:auto;color:#e4e9ef;font:14px/1.5 monospace}
+#dev-console{position:fixed;inset:0;z-index:10002;background:#0009;padding:clamp(6px,2vw,24px);overflow:auto;color:#e4e9ef;font:13px/1.4 Arial,sans-serif}
 #dev-console[hidden],#dev-lab-bar[hidden]{display:none}
-.dev-window{max-width:850px;margin:auto;padding:18px;border:1px solid #8e7955;background:#1a1712;box-shadow:0 12px 60px #000b}
-#dev-console header{display:flex;gap:8px;flex-wrap:wrap;align-items:center}#dev-console header strong{margin-right:auto}
+.dev-window{max-width:760px;margin:auto;padding:10px 12px;border:1px solid #8e7955;background:#1a1712;box-shadow:0 12px 60px #000b;display:flex;flex-direction:column;max-height:calc(100vh - 2*clamp(6px,2vw,24px));box-sizing:border-box}
+#dev-console header{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-bottom:6px;border-bottom:1px solid #5a4d3d}#dev-console header strong{margin-right:auto;font-size:15px;color:#f3e2b8}
 #dev-console button,#dev-lab-bar button{background:#383026;color:#fff;border:1px solid #728295;border-radius:3px;padding:7px 10px;cursor:pointer;font:inherit}
 #dev-console input,#dev-console select{box-sizing:border-box;min-width:0;width:100%;padding:7px;background:#0f0d0a;color:#ecf2f9;border:1px solid #728295;font:inherit}
 #dev-console input:focus,#dev-console select:focus,#dev-console button:focus-visible{outline:2px solid #ffe0a0;outline-offset:2px}
-#dev-console [data-dev-output]{height:clamp(150px,38vh,380px);overflow:auto;background:#0f0d0a;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #5a4d3d}
+#dev-console [data-dev-output]{height:clamp(56px,20vh,200px);overflow:auto;font:12px/1.4 monospace;background:#0f0d0a;padding:10px;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #5a4d3d}
 #dev-console [data-dev-output]>div{margin-bottom:8px}#dev-console .dev-error,#dev-console [data-dev-error]{color:#ff9d91}
-#dev-console [data-dev-form]{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;margin-top:10px}
+#dev-console [data-dev-form]{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;margin-top:6px}
 .dev-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.dev-grid label{display:grid;gap:4px}
 .dev-checks{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px}.dev-checks input[type=checkbox]{width:auto!important}
 .lab-presets{display:flex;align-items:end;flex-wrap:wrap;gap:8px;padding:12px 0;border-block:1px solid #5a4d3d;margin:12px 0}.lab-presets label{display:grid;gap:4px;min-width:180px;flex:1}
@@ -1570,7 +1573,18 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 #dev-console [data-dev-report]{max-height:72vh;overflow:auto}#dev-console .lab-report-scroll{max-height:34vh;overflow:auto}#dev-console [data-dev-report] table{border-collapse:collapse;font:12px monospace;width:max-content;min-width:100%}#dev-console [data-dev-report] th,#dev-console [data-dev-report] td{border:1px solid #657282;padding:5px;text-align:left;vertical-align:top}#dev-console [data-dev-report] thead{position:sticky;top:0;background:#27221b;white-space:nowrap}#dev-console [data-dev-report] th:nth-child(1){min-width:125px}#dev-console [data-dev-report] th:nth-child(8),#dev-console [data-dev-report] td:nth-child(8){min-width:155px}#dev-console [data-dev-report] th:nth-child(11),#dev-console [data-dev-report] td:nth-child(11){min-width:170px}#dev-console [data-dev-report] section{margin:12px 0}
 @media(max-width:680px){.lab-armies{grid-template-columns:1fr}}
 #dev-lab-bar{position:fixed;z-index:10001;bottom:calc(8px + var(--sa-b));left:50%;transform:translateX(-50%);display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:95vw;width:max-content;padding:8px;background:#1a1712ef;color:#ffe0a0;border:1px solid #8e7955;font:12px monospace}
-@media(max-width:520px){.dev-grid{grid-template-columns:1fr}#dev-console [data-dev-form]{grid-template-columns:1fr auto}#dev-console [data-dev-form]>label{grid-column:1/-1}}
+@media(max-width:520px){.dev-grid{grid-template-columns:1fr}}
+/* the developer tools' quick controls (ui/developer.js DEV_TOOLS): tabs, groups of one-tap buttons (a toggle lit while on), a short
+   log and command line, the bottom bar (nav: Back, Close) */
+#dev-console .dev-tabs{display:flex;gap:4px}#dev-console .dev-tabs button[aria-selected=true]{background:#6b5532;border-color:#d8b56a}
+#dev-console .dev-body{flex:1;min-height:0;overflow:auto;padding:6px 0}
+#dev-console .dev-quick{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:4px 12px;margin-bottom:6px}
+#dev-console .dev-group{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:6px}#dev-console .dev-group h3{margin:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#bfa774}
+#dev-console .dev-tools{display:flex;flex-wrap:wrap;gap:4px}#dev-console .dev-tools button{padding:5px 8px;font-size:12px}#dev-console .dev-tools select{width:auto;flex:1;padding:4px;font-size:12px}
+#dev-console .dev-tools button[aria-pressed=true]{background:#2f5a2a;border-color:#8fd07a;color:#eaffdf}
+#dev-console .dev-note{margin:2px 0 6px;color:#bfb39a;font-size:12px}
+#dev-console [data-dev-nav] .nav{margin:0;padding-top:6px;border-top:1px solid #5a4d3d}
+@media(max-height:430px){#dev-console{padding:4px}.dev-window{padding:6px 8px;max-height:calc(100vh - 8px)}#dev-console .dev-quick{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}#dev-console [data-dev-output]{height:52px}#dev-console .dev-tools button{padding:4px 7px}}
 
 /* March formation (the Army window's tab, ui/march.js): the switch of its two views (Field, By road) in the pane's head; each view
    its preview filling the pane and its controls beside it, scrolling. By road: the column a strip across its stage, the order a list */
@@ -1629,6 +1643,9 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .mobile-battle-hud .bcards .ucard{width:62px;height:60px}.mobile-battle-hud .bcards .ucard.all{width:48px;height:54px}.mobile-battle-hud .ucard .upic{width:26px;height:26px;top:6px}.mobile-battle-hud .ucard .csh{display:none}
 .mbh-dock{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;padding:5px;background:var(--hud-face);border:1px solid var(--trim-hi);border-radius:5px;box-shadow:var(--float)}
 .mbh-dock>div{display:flex;min-width:0}.mbh-dock button,.mbh-options button{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;width:100%;min-height:46px;padding:5px 2px;border:1px solid var(--line-2);border-radius:3px;background:linear-gradient(#30261d,#1a1612);color:var(--fg);font:700 11px Arial,sans-serif;cursor:pointer}.mbh-dock button[aria-expanded="true"]{border-color:var(--trim-hi);background:#423322}
+/* the action over the dock (End hunt in a hunt, input.js): its own button, right, as big as the dock's; none, no row */
+.mbh-action{display:flex;justify-content:flex-end;padding:0 0 4px}.mbh-action:not(:has(button:not([hidden]))){display:none}
+.mbh-action button,.mbh-action .btn.sm{min-height:46px;padding:5px 16px;border:1px solid var(--trim-hi);border-radius:3px;background:linear-gradient(#4a3520,#2a1e14);color:var(--accent);font:700 13px Arial,sans-serif;box-shadow:var(--float);cursor:pointer}
 .mbh-drawer{position:absolute;bottom:calc(100% + 8px);left:0;right:0;max-height:calc(100dvh - var(--mobile-battle-height,166px) - var(--e-t) - var(--e-b) - 16px);overflow:auto;overscroll-behavior:contain;padding:10px;background:#201b19f5;border:1px solid var(--trim-hi);border-radius:7px;box-shadow:var(--float);touch-action:pan-y}
 .mbh-drawer *{touch-action:pan-y}
 .mbh-drawer header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:7px;color:var(--fg-2);font-size:12px}.mbh-close{width:44px;min-height:44px;margin:-6px -5px -3px 0;border:0;background:none;color:var(--fg);font-size:23px;cursor:pointer}

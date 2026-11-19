@@ -13,6 +13,10 @@ Kit.suite(({ok,info})=>{
  const why=A.reduce((a,s)=>(a[s.why]=(a[s.why]||0)+1,a),{}),gap=Math.min(...A.flatMap((a,i)=>A.slice(i+1).map(b=>Math.hypot(a.tx-b.tx,a.ty-b.ty))));
  ok(A.length>=8&&A.every(s=>s instanceof t.Outpost&&W.sites.includes(s)&&t.FACS[s.realm]&&s.realm!=='player'),A.length+' outposts among the sites, each a realm\'s');
  {const bad=A.filter(s=>!(t.tAt(s.tx,s.ty)===t.T_OPEN&&!t.Outposts.built(s.tx,s.ty)&&t.Outposts.realmAt(s.tx,s.ty)===s.realm)).map(s=>s.name+' '+t.tAt(s.tx,s.ty)+' '+t.Outposts.built(s.tx,s.ty)+' '+t.Outposts.realmAt(s.tx,s.ty)+'/'+s.realm);ok(!bad.length,'each on open ground of its own realm\'s land, nothing built within '+SP.clear+' tiles'+(bad.length?': '+bad.join(', '):''))}
+ // (and nothing built on its body or picture or a tile round them, no lot's tile among its own; its body on ground, a ground a climber
+ // reaches by each side (Outposts.climbable): Karn Hold's centre lot under one tower, another on a river's spit, 2026-11-17)
+ {const lots=t.TOWNS.flatMap(h=>h.lots||[]),bad=A.filter(s=>!t.Outposts.climbable(s.tx,s.ty)||s.tiles().some(([x,y])=>lots.some(l=>x>=l.x&&x<l.x+(l.n||1)&&y>=l.y&&y<l.y+(l.n||1)))).map(s=>s.name);
+  ok(!bad.length,'off every lot, its body on ground, ground its holding reaches beside each side of it'+(bad.length?': '+bad.join(', '):''))}
  ok(gap>=SP.gap&&why.deposit>0&&Object.keys(why).length>=2,'at least '+SP.gap+' tiles apart ('+gap.toFixed(1)+'); at deposits and at crossings, fords or passes ('+JSON.stringify(why)+')');
  {const byP=new Map();for(const s of A){const p=t.Provinces.at(s.x,s.y);byP.set(p,(byP.get(p)||0)+1)}ok([...byP.values()].every(n=>n<=SP.most+1),'at most '+(SP.most+1)+' a province');
   const again=t.Outposts.place();ok(again.length===A.length&&again.every((s,i)=>s.tx===A[i].tx&&s.ty===A[i].ty&&s.name===A[i].name&&s.lv===A[i].lv),'the same outposts every time the world is reckoned (no draw)')}

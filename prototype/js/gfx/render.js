@@ -31,7 +31,8 @@ const snapV=v=>Math.round(v*VS)/VS;
 let SUBD=null;
 const subOf=o=>[snapV(o.x)-Math.round(o.x),snapV(o.y)-Math.round(o.y)];
 function subT(o){if(VS<=1)return;const d=subOf(o);if(!d[0]&&!d[1])return;ctx.translate(d[0],d[1]);SUBD=d}
-function drawMover(e){if(VS<=1){e.f();return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();try{e.f()}finally{ctx.restore()}
+function drawMover(e){const bs=e.x!=null&&typeof bridgeShift==='function'?bridgeShift(e.x,e.ly??e.y):null;// (on a bridge: drawn on its deck, worldways.js)
+  ON_DECK=!!(bs&&bs[2]);if(VS<=1){ctx.save();if(bs)ctx.translate(bs[0],bs[1]);try{liftDraw(e,true)}finally{ctx.restore();ON_DECK=false}return}const nt=TXTQ?TXTQ.length:0,nl=LIGHTQ.length;SUBD=null;ctx.save();if(bs)ctx.translate(bs[0],bs[1]);try{liftDraw(e,true)}finally{ctx.restore();ON_DECK=false}
   const d=SUBD;SUBD=null;if(!d)return;if(TXTQ)for(let i=nt;i<TXTQ.length;i++){TXTQ[i][1]+=d[0];TXTQ[i][2]+=d[1]}for(let i=nl;i<LIGHTQ.length;i++){LIGHTQ[i].x+=d[0];LIGHTQ[i].y+=d[1]}}
 /* the parties' tags over their armies (the owner, 2026-11-01: "remove a floating banner, show the banner detail only when you
    inspect them along with the detail window": no banner flies over an army, its banner is on its card: ui.js tipFlag). Each over
@@ -74,6 +75,7 @@ function armyTagAt(o,label,cam){const c=armyHome(o),d=VS>1?subOf(c):[0,0],x=Math
 // head (marched, your army's carrier, march.js; else your tag), x, y its top left; your badges (cover, then pace) in a row just
 // right of it, their feet level with its foot (bottom); screen px, a fixed size on the screen whatever the zoom: k)
 function heroTagAt(cam){const a=marchPicked(P),u=a&&a.carrier&&!a.carrier.dead?a.carrier:null,t=u?{x:snapV(u.x)-cam.x,y:snapV(u.y)+a.figure(u)[1]-cam.y}:armyTagAt(P,null,cam);
+  t.y-=u?liftAt(u.x,u.y):liftAt(t.c.x,t.c.y);// (drawn after the scene: up by the lift his ground is drawn at, as he is, worldterrain.js liftY)
   const k=dprOf()/VS,w=STEALTH_EYE.player*k,h=w*2/3;return{x:t.x-w/2,y:t.y-h-2*k,right:t.x+w/2,bottom:t.y-2*k,k}}
 // (a banner planted on a pole, your camp's (supply.js campPole), standing over o; null for what flies none (a site's banner()
 // is its camp flag's colour, structures.js); c: the point it stands over)
@@ -129,9 +131,10 @@ function travelDetectionShown(s){const S=detectSkill();if(S.near)return s;if(!S.
 const travelDetectionColor=state=>state.seen.length?state.danger?'#ef8c73':'#dbca91':state.exposure?'#d9ad57':'#82c6b3';
 function drawTravelDetection(cam){
   if(B||P.stay)return null;const state=travelDetectionShown(travelDetectionState());if(state.none)return state;const k=dprOf()/VS,V=vis(),markers=new Map(BANNERQ.filter(q=>q.marker).map(q=>[q.o,bandMarkerAt(q.o,q.marker,cam)])),labels=new Map(BANNERQ.map(q=>[q.o,q.label]));ctx.save();ctx.imageSmoothingEnabled=false;
-  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const m=markers.get(o)||o instanceof Party&&armyTagAt(o,labels.get(o),cam),w=STEALTH_EYE.size*k,h=w*2/3,x=m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=m?m.top:o.y-cam.y-18-h;
+  // (each eye up by the lift o's ground is drawn at: its marker and label are reckoned on the flat, as drawBanners lifts them)
+  for(const d of state.rows){const o=d.o;if(!inSight(o.x,o.y)||!o.inView(V))continue;const m=markers.get(o)||o instanceof Party&&armyTagAt(o,labels.get(o),cam),w=STEALTH_EYE.size*k,h=w*2/3,Lo=liftAt(o.x,o.y),x=m?m.right+STEALTH_EYE.gap*k:o.x-cam.x-w/2,y=(m?m.top:o.y-cam.y-18-h)-Lo;
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
-    const q=!d.sees&&detectSkill().near&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,q.y-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
+    const q=!d.sees&&detectSkill().near&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,liftY(q.x,q.y)-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
   const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player);ctx.restore();
   return state;
@@ -140,11 +143,48 @@ function drawTravelDetection(cam){
 // real time, still under reducedMotion (vfx.js), the only one drawn on the map: not a party's (a WorldObject), whose is on its card)
 function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine=q=>q.o===P||q.o.faction==='player'?1:0;
   BANNERQ.sort((a,b)=>mine(a)-mine(b)||a.o.y-b.o.y);
-  for(const q of BANNERQ){if(q.marker){if(!inSight(q.o.x,q.o.y))continue;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');continue}// (its count: dev mode only, ui/ui.js PREFS.dev)
-    // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
-    if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}continue}
-    const B=bannerAt(q.o,still?0:Math.floor(now/420+q.o.x*.13)%2);if(B){const d=VS>1?subOf(B.c):[0,0];ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
+  for(const q of BANNERQ){const LQ=q.lift??liftAt(q.o.x,q.o.y);if(LQ){ctx.save();ctx.translate(0,-LQ);try{drawBanner1(q,cam,now,still)}finally{ctx.restore()}}else drawBanner1(q,cam,now,still)}
   BANNERQ=[]}
+// (one banner, a marker or a label: drawBanners)
+function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
+    // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
+    if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}return}
+    // (at the lab's scale where the scene has fine px: bannerFine, its pole's foot where the banner's stands)
+    const f=still?0:Math.floor(now/420+q.o.x*.13)%2,B=bannerAt(q.o,f),r=sceneRes();if(!B)return;const d=VS>1?subOf(B.c):[0,0];
+    if(r>1){const s=bannerFine(q.o.banner(),f,r);ctx.drawImage(s,B.x+B.s.px-s.px/r-cam.x+d[0],B.y+B.s.py+1-s.py/r-cam.y+d[1],s.width/r,s.height/r)}else ctx.drawImage(B.s,B.x-cam.x+d[0],B.y-cam.y+d[1])}}
+/* a banner planted on a pole at the world lab's scale (engine/worldlab.js: a sprite's px a fine px): sprites.js bannerSprite's
+   (BANNER: its pole, finial, cloth of its shape, its device) r times finer at its own size: the pole lit on its left, a gilt knob
+   lit from the upper left, the cloth's folds shaded in three tones dithered where they meet and waving a game px (smoothly out
+   from the pole), its hem lit and its foot shaded, a banner's gilt fringe, its device r times its pattern, ringed a fine px in the
+   cloth's deepest shade; outlined inside as every figure is. Kept (spr); px, py: its pole's left and its foot's bottom edge */
+function bannerFine(b,f,r){f=f?1:0;const key='bnf'+b.k+b.col+b.dev+f+r;if(spr[key])return spr[key];
+  const N=BANNER,g=pgrid(N.w*r,N.h*r),s=(x,y,c)=>pset(g,x,y,c),Wd=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),trade=b.k==='trade',pen=b.k==='pennant'||trade,
+    top=(trade?N.trade:N.top)*r,foot=(N.foot+1)*r-1,p0=2*r,x0=p0+r,[c0,h0]=N.cloth[b.k]||N.cloth.banner,cw=c0*r,ch=h0*r,fly=N.fly*r,cut=cw-(N.notch||3)*r,m=ch>>1;
+  // (the pole, lit on its left, its foot darker; the finial: a collar, a knob lit from the upper left, a point)
+  for(let y=top-r;y<=foot;y++)for(let i=0;i<r;i++)s(p0+i,y,Wd[(y>foot-4*r?2:1)+(i>=r/2?1:0)]);
+  for(let i=-1;i<=r;i++)s(p0+i,top-r-1,G[2]);
+  const kx=p0+(r-1)/2,ky=top-r-1-1.5*r;for(let y=Math.floor(ky-r);y<=Math.ceil(ky+r);y++)for(let x=Math.floor(kx-r);x<=Math.ceil(kx+r);x++){const dx=x-kx,dy=y-ky;if(dx*dx+dy*dy<=r*r*1.1)s(x,y,G[dx+dy<-r*.6?0:dx+dy>r*.6?2:1])}
+  for(let y=Math.floor(ky-r)-r;y<Math.floor(ky-r);y++)s(Math.round(kx),y,G[0]);
+  // (the cloth: each column's rows by its shape, waving and shaded by its folds)
+  const rows=i=>{if(pen){const t=Math.round(i*(ch-1)/(cw-1));return[[0,ch-1-t]]}
+      if(b.k==='rag'){const d=[0,1,0,2,1,0,3,1,2,0,2][(Math.floor(i/r)+f*3)%11];return[[0,ch-1-Math.min(d*r,m)-(PX.hash(i,f,61)<.35?1:0)]]}
+      const n=i-cut;return n<0?[[0,ch-1]]:[[0,m-2-n],[m+1+n,ch-1]]},
+    ph=i=>(i/cw*N.fold+f*.5)*Math.PI,wave=i=>Math.round(r*Math.sin(ph(i))*clamp((i-fly+r)/(2*r),0,1)),at=new Map();
+  for(let i=0;i<cw;i++){const sl=Math.cos(ph(i)),tone=j=>{const v=i<r?.2:sl,a=v>.5?0:v>-.2?1:2,e=Math.abs(v-.5)<.1?1:Math.abs(v+.2)<.1?2:0;return e&&(i+j)&1?e-(a===e?1:0):a};
+    for(const [r0,r1] of rows(i)){if(r1<r0)continue;for(let j=r0;j<=r1;j++){const y=top+j+wave(i),k=tone(j);at.set(i+','+j,y);s(x0+i,y,R[j===r0?Math.max(0,k-1):j===r1?Math.min(3,k+1):k])}
+      if(b.k==='banner'&&i<cut&&r1===ch-1&&!(i&1))s(x0+i,top+ch+wave(i),G[(i>>1)%2?1:2])}}
+  // (the device in the middle of the field, r px a dot of its pattern, ringed in the deepest shade; a pennant's small)
+  let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
+  if(T){const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},
+      i0=(trade?1:pen?1:N.dev!=null?N.dev:(c0-T[0].length)>>1)*r,j0=(trade?0:pen?Math.min(2,h0-T.length):(h0-T.length)>>1)*r,dev=new Map();
+    T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')for(let v=0;v<r;v++)for(let u=0;u<r;u++)dev.set((i0+x*r+u)+','+(j0+y*r+v),C[c])}));
+    if(!trade)for(const p of dev.keys()){const [i,j]=p.split(',').map(Number);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(j+dj);if(!dev.has(q)&&at.has(q))s(x0+i+di,at.get(q),R[3])}}
+    for(const [p,c] of dev){const [i,j]=p.split(',').map(Number);if(at.has(p))s(x0+i,at.get(p),c)}}
+  g.edge=true;poutline(g);const c=pcanvas(g);c.px=p0;c.py=foot+1;return spr[key]=c}
+// (a banner planted on a pole, its foot at (x, y) in game px, waving on the clock: bannerFine where the scene has fine px, else the
+// map's flag (structures.js drawFlag))
+function drawPoleBanner(b,x,y,seed){const r=sceneRes();if(r<=1){drawFlag(b,x,y,seed);return}const s=bannerFine(b,Math.floor(performance.now()/400+(seed||0))%2,r);
+  ctx.drawImage(s,Math.round(x)-s.px/r,Math.round(y)+1-s.py/r,s.width/r,s.height/r)}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
@@ -166,8 +206,14 @@ const FACE=new WeakMap();
 let LIGHTQ=[];
 // the scene of buildings, camps and sites, before anyone is drawn over it, in game pixels on the camera's whole pixels (a pixel
 // more each way, for the camera's fraction): drawn onto the screen, and what you remember of the land outside your sight
-let MEM=null;const memCv=()=>MEM&&MEM.width===VW+1&&MEM.height===VH+1?MEM:(MEM=mkc(VW+1,VH+1,()=>{}));
-let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkc(VW+1,VH+1,()=>{}));
+// (the scene's resolution: fine px a game px where the screen has them (WORLD_VIEW), and only as many as divide the screen's own
+// (VS), so a fine px is always whole screen px and nothing is resampled; the scene canvas keeps its own, r)
+const resAt=s=>{const v=Math.floor(s);for(let r=Math.min(WORLD_VIEW.fine,RENDER.fine,v);r>1;r--)if(v%r===0)return r;return 1},sceneRes=()=>resAt(VS);
+// (how fine the map's chunks are painted: the scene's, or, before the map's zoom is on (the game loading), the scale the map will
+// open at (core.js MAPZOOM.auto), so a chunk painted while it loads is not painted again once it opens)
+const paintRes=()=>{const Z=typeof MAPZOOM!=='undefined'?MAPZOOM:null;return !Z||Z.map||!Z.auto?sceneRes():resAt(Z.auto)};
+let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.width===(VW+1)*r&&MEM.height===(VH+1)*r?MEM:(MEM=mkg((VW+1)*r,(VH+1)*r),MEM.r=r,MEM)};
+let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkg(VW+1,VH+1));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
 const MAP_LAYER={town:0,site:1,monster:2,lord:3,band:3,patrol:3,cparty:3,caravan:4,road:4};
@@ -204,10 +250,12 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
 /* the minimap a piece of the full map, zoomed in (the owner, 2026-11-08: "the map show on the worldmap should be a zoomed in version
    of new map"): the parchment of ui/map.js (fullMapPic: the ink wash, realms, coasts, the bare paper where you never were, its
    grain) cut round the screen's middle, tiles across (at least, else over x what the screen shows, never more than the map), the
-   holdings and places as their sprites (fmIcon, icon x the full map's sizes; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
+   holdings and places as their sprites (fmIcon, icon x the full map's sizes, iconMin px at least: small marks over the land, the
+   owner 2026-11-17 "The mini map icon seems too big", was .42; the marks by the minimap's width, 112 px one), the screen's own view inked on it (view), you as on
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
-   at most each refresh ms, what you have seen in it does. on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,icon:.42,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+   at most each refresh ms, what you have seen in it does. Its face drawn afresh at most each world ms on the map (battle ms in a fight),
+   the last one put up between (the owner, 2026-11-16: "The game performance lags on mobile"). on false: the whole map as before (WorldArt.mini and its dark) */
+const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -241,15 +289,19 @@ function camFollow(px,py){const F=CAM_FOLLOW,o=F.out,now=performance.now()/1000,
 // (a stage of the frame that fails is left out and the rest drawn, the canvas's state put back: its error told once, main.js loopError;
 //  the owner, 2026-11-15: one throw had cut a phone's frames short after the map, its fog, people, rain and night gone)
 function drawSafe(f,...a){const c=ctx;c.save();try{f(...a)}catch(e){loopError(e)}finally{c.restore()}}
+// (your siege camp: a camp's model (structures.js campSprite: seed, then one of looks by the holding), dx left and dy down of you)
+const SIEGE_CAMP={seed:77,looks:6,dx:24,dy:2};
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
-  ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
+  ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   try{
+  viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
   drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);
+  terrainEnts(ents,cam);// (the finer terrain's grass, laid now, and its nature among the buildings: worldterrain.js)
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights
@@ -261,8 +313,11 @@ function drawWorld(){
   for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
   drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
   // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
-  if(P.raid&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
-  if(P.siege&&!B?.world)ents.push({y:P.y-1,f:()=>{subT(P);const s=campSprite(77,'bandit'),X=Math.round(P.x-24-s.ax-cam.x),Y=Math.round(P.y+2-s.ay-cam.y);ctx.globalAlpha=SHADOW.a;ctx.drawImage(s.sh,X,Y);ctx.globalAlpha=1;ctx.drawImage(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],0);drawFlag(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+  if(P.raid&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
+  // (the siege camp: one of SIEGE_CAMP.looks by the holding besieged, of the ground's climate, at the lab's scale (gfx/campart.js
+  // CampArt.put: its model a fine px a px, at its own size) on its trampled yard, its fire lit and your banner planted)
+  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,st:true,f:()=>{subT(P);const S=SIEGE_CAMP,t=townBy(P.siege.town),s=campSprite(S.seed+((t&&t.seed)|0)%S.looks,'camp',climAt(P.x,P.y)),X=Math.round(P.x-S.dx-s.ax-cam.x),Y=Math.round(P.y+S.dy-s.ay-cam.y),f=CampArt.fine(s);
+    ctx.drawImage(f.gr||s.gr,X,Y,s.width,s.height);CampArt.put(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],(t&&t.seed)|0);drawPoleBanner(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
   if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
   if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);
   CampWake.draw(ents,cam);// (the camp a battle caught you in, on the field while it lasts: world/campsite.js)// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
@@ -270,8 +325,8 @@ function drawWorld(){
   // (marching: you are one of your army, in your own place in it: march.js)
   // (pitching camp: your men stand by while the tents go up, world/campsite.js)
   if(!P.stay&&(!P.camp||WORLD_BATTLE.on&&CampSite.pitching('you',partySize()))&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
-    else ents.push({y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}}); }
+    else{grassFoot(P.x,P.y,mapStepping(P,atGoal()),!!mountDef(),P);ents.push({x:P.x,y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}})} }
   GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)
   drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
   ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
@@ -281,25 +336,28 @@ function drawWorld(){
   // smoke and weather, the fog, the night and its lights, the way you walk, and over it all the banners and every label, the
   // quest marks, your goal and the pointer's brackets (worldui.js), and the minimap
   TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
-  drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());// (their shadows first, in one pass: structures.js)
+  drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
   drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
   nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
-  ctx.drawImage(low,-fx,-fy);ctx.save();ctx.translate(-fx,-fy);
+  ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
+  // (the clouds' shadows, smoke, snow and fireflies at the scene's fine px, before the fog: so only where you see (the owner,
+  //  2026-11-16: "draw them before the fog layer"))
+  drawSafe(drawEnv,cam,V,1);
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
   drawSafe(fogMem,low,cam,V);
-  drawSafe(drawEnv,cam,V,1);
   // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
   if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
+  drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  drawSafe(drawWorldFog,cam,V);
+  if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -319,6 +377,7 @@ function drawWorld(){
   drawBanners(cam);// (the parties' labels and the packs' markers, over all, their counts queued with the rest)
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   drawPlaques(cam);// (the holdings' bars, over all: structures.js)
+  drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
@@ -339,11 +398,11 @@ function drawWorld(){
 }
 // the minimap as a piece of the full map (MINIMAP): drawn on its own canvas at the screen's own pixels (MINI_FACE), then laid on the
 // map whole (no picture resampled on the map: tests/mapzoom.js)
-// (in a fight on the map its face drawn afresh at most each MINIMAP.battle ms, the last one put up between: its dots for every
-// fighter each frame cost a battle's frame 2 ms (the owner, 2026-11-15: "fix the battle performance"))
+// (its face drawn afresh at most each MINIMAP.world ms (MINIMAP.battle in a fight on the map), the last one put up between: its dots
+// for every fighter each frame cost a battle's frame 2 ms (the owner, 2026-11-15: "fix the battle performance"))
 let MINI_FACE=null,MINI_AT=-1e9;
 function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y:my,w:mw,h:mh,s:MS}=v,u=mw/112,pic=miniPic(v),T=ctx.getTransform(),K=Math.abs(T.a)||1,fw=Math.max(1,Math.round(mw*K)),fh=Math.max(1,Math.round(mh*K));
-  {const now=performance.now();if(B&&MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<M.battle){drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);return}MINI_AT=now}
+  {const now=performance.now();if(MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<(B?M.battle:M.world)){drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);return}MINI_AT=now}
   if(!MINI_FACE||MINI_FACE.width!==fw||MINI_FACE.height!==fh)MINI_FACE=mkc(fw,fh,()=>{});const g=MINI_FACE.getContext('2d'),X=x=>mx+(x/TILE-v.ox)*MS,Y=y=>my+(y/TILE-v.oy)*MS,
     dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(g,col,Math.floor(X(x))-(s>>1),Math.floor(Y(y))-(s>>1),s,s)};
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,fw,fh);g.setTransform(fw/mw,0,0,fh/mh,-mx*fw/mw,-my*fh/mh);g.imageSmoothingEnabled=false;
@@ -358,7 +417,7 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   // its realm's colour), the rest their dots
   const P0=TILE*8,in_=o=>o.x>=(v.ox*TILE-P0)&&o.y>=(v.oy*TILE-P0)&&o.x<=(v.ox+v.tw)*TILE+P0&&o.y<=(v.oy+v.th)*TILE+P0;
   mapDots(V,(o,d)=>{if(B?.world?.hides(o)||!in_(o))return;const town=o.mapKind==='town',ic=(town||o.mapKind==='site')&&fmIcon(o);
-    if(!ic){dot(o.x,o.y,d[0],d[1]);return}const k=town?(FULLMAP.kinds[o.kind]?o.kind:'village'):'site',w=Math.max(4,FULLMAP.icon[k]*M.icon*u),h=w*ic.h/ic.w,cx=X(o.x),cy=Y(o.y);
+    if(!ic){dot(o.x,o.y,d[0],d[1]);return}const k=town?(FULLMAP.kinds[o.kind]?o.kind:'village'):'site',w=Math.max(M.iconMin,FULLMAP.icon[k]*M.icon*u),h=w*ic.h/ic.w,cx=X(o.x),cy=Y(o.y);
     if(town){g.fillStyle=o._memCol||facCol(o);g.globalAlpha=.8;g.beginPath();g.ellipse(cx,cy+h/2-u,w*.36,1.5*u,0,0,Math.PI*2);g.fill();g.globalAlpha=1}
     g.drawImage(ic.cv,cx-w/2,cy-h/2,w,h)});
   drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)
@@ -427,10 +486,11 @@ function bowAim(u){const t=u.tgt;if(!t||t.hp<=0)return 0;const d=Math.hypot(t.x-
   // only for a long shot)
   const dh=(levelAt(u.x,u.y)-levelAt(t.x,t.y))*(PX.ROCK_PX||4),rise=Math.max(ARC_RISE.min,d*d/ARC_RISE.d2-dh*ARC_RISE.lvl),deg=Math.min(45,Math.atan(BOW_AIM.k*rise/d)*180/Math.PI);
   return BOW_AIM.steps.reduce((b,s)=>Math.abs(s-deg)<Math.abs(b-deg)?s:b,0)}
-function drawUnit(u){if(B.world)return reduced(()=>drawUnitAt(u));return drawUnitAt(u)}
+// (in a battle on the map, a man up by his ground's lift, as everyone on it: worldterrain.js liftAt; the field's px B.world.scale a game px)
+function drawUnit(u){if(B.world){const p=B.world.world(u),L=liftAt(p.x,p.y)*B.world.scale;if(!L)return reduced(()=>drawUnitAt(u));ctx.save();ctx.translate(0,-L);try{return reduced(()=>drawUnitAt(u))}finally{ctx.restore()}}return drawUnitAt(u)}
 function drawUnitAt(u){
   // (placed on the camera's pixels, not the field's: zoomed in, they glide instead of stepping)
-  const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;
+  const q=camPx(),big=u.s.big?2:1,s=actorSprite(u),w=s.width,h=s.ch,x=Math.round(u.x*q)/q,y=Math.round(u.y*q)/q;FX_FIG.set(u,h);// (his figure's height as drawn, where effects on him are born: vfx.js bodyY)
   if(B.world){const k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
   // (in a river (terrain.js groundAt; engine/ground.js paints it): deep water hides him to the waist, sunk 2 px, a ring of ripples
   // round him, its back half behind him; a ford wets his feet and splashes as he walks; a frozen ford (frost) is ice. From the
@@ -502,7 +562,7 @@ function waterRing(x,y,rx,u,half,moved){x=Math.round(x);y=Math.round(y);const ph
 // an attack's trail by its shape: a sweeping crescent, a darting streak, a chop and its shockwave, a full circle, claw marks
 function drawSlash(s){
   const p=1-s.life/(s.max||.2),fade=Math.min(1,s.life/(s.max||.2)*1.6),col=s.col||'255,255,255',st=a=>'rgba('+col+','+Math.max(0,a).toFixed(2)+')';
-  ctx.save();const scale=worldEffectScale();effectTransform(s.x,s.y,scale);s={...s,r:s.r/scale,area:s.area/scale};ctx.lineCap='round';
+  ctx.save();const scale=worldEffectScale(),A=fxA(s);effectTransform(s.x,s.y,scale,A.dz,A.up);s={...s,r:s.r/scale,area:s.area/scale};ctx.lineCap='round';
   if(s.kind==='arc'||s.kind==='spin'){const span=s.kind==='spin'?Math.PI*2:2*s.arc,q=Math.min(1,p*2.4),a0=s.kind==='spin'?s.a:s.a-s.dir*s.arc,a1=a0+s.dir*span*q,tail=Math.max(0,q-.55)*span;
     const lo=Math.min(a0+s.dir*tail,a1),hi=Math.max(a0+s.dir*tail,a1);
     for(let k=0;k<3;k++){ctx.strokeStyle=st(fade*(1-k*.3));ctx.lineWidth=Math.max(1,(s.w||3)-k);ctx.beginPath();ctx.arc(s.x,s.y,Math.max(.5,s.r-k*2),lo,hi);ctx.stroke()}
@@ -591,7 +651,7 @@ function drawBattle(){
   drawFormGhost();// (a line being dragged: formations.js)
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
-  if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe||m.am?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y,8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
+  if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe||m.am?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y-fieldLift(m.x,m.y),8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
   // (obstacles: their ground, then each in the depth order: sprites.js; on the world map (a world battle) each with the trees in front of
   // it drawn back over it, as the map's own figures are, those over your men faded: depth.js worldOverdraw; the owner, 2026-10-31:
   // "the forest seems not to cover units")
@@ -599,17 +659,25 @@ function drawBattle(){
     // (the overdraw reckons in the map scene's pixels, on the camera's whole pixels as drawWorld keeps the scene (a fraction there
     //  left every pixel of the cover's mask off its grid: no tree drawn over anyone): under that transform, each drawn under the field's own)
     if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(cam.x-w.x0),T.f+k*(cam.y-w.y0));
-      try{worldOverdraw(E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,f:()=>{ctx.setTransform(T);draw(o)}})),cam)}finally{ctx.restore()}}else E.forEach(draw)}
-  for(const a of B.arrows){if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
-      ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y),4*k,k);
-      ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-4-z));ctx.scale(k,k);
+      // (the fallen among them by their feet, just behind one standing where they lie: vfx.js corpseEnts)
+      const L=E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,f:()=>{ctx.setTransform(T);draw(o)}}));
+      // (each lying where he fell, up by its ground's lift as he stood; his blood apart, by its far edge, so the living standing in it are
+      //  drawn over it, the owner, 2026-11-18: "The blood is draw above characters")
+      for(const c of corpseEnts(camView())){const up=(c.corpse.pool*CORPSE_POOL.top+CORPSE_POOL.pad)*WORLD_BATTLE.sprite,at=f=>()=>{ctx.setTransform(T);ctx.translate(0,-fieldLift(c.x,c.y));drawBody(ctx,c.corpse,c.q,c.k,f)};
+        L.push({y:w.world({x:c.x,y:c.y-up}).y,nf:true,f:at(1)},{y:w.world(c).y,nf:true,f:at(2)})}
+      L.sort((a,b)=>a.y-b.y);
+      try{worldOverdraw(L,cam)}finally{ctx.restore()}}else E.forEach(draw)}
+  // (each missile and its shadow up by the lift of the ground under it, as the men it flies between: vfx.js fieldLift)
+  for(const a of B.arrows){const Lf=fieldLift(a.x,a.y);if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);
+      ctx.fillStyle='rgba(0,0,0,'+(.35-sc*.2).toFixed(2)+')';const k=B.world?WORLD_BATTLE.sprite:1;ctx.fillRect(Math.round(a.x-2*k),Math.round(a.y-Lf),4*k,k);
+      ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-arrowUp(a)-Lf));ctx.scale(k,k);
       // (its look by what it is: a spider's web a sticky white clot with loose strands, a sling's stone, a javelin's long shaft; else an arrow)
       if(kind==='web'){const sp=Math.floor(a.t*12)%2;ctx.fillStyle='#eef0f4';ctx.fillRect(-1,-1,3,3);ctx.fillStyle='#c8ccd6';if(sp){ctx.fillRect(-3,-2,2,1);ctx.fillRect(2,2,2,1)}else{ctx.fillRect(-3,2,2,1);ctx.fillRect(2,-2,2,1)}ctx.fillStyle='#ffffff';ctx.fillRect(0,-1,1,1)}
       else if(kind==='stone'){ctx.fillStyle='#7a776e';ctx.fillRect(-1,-1,2,2);ctx.fillStyle='#a8a498';ctx.fillRect(-1,-1,1,1)}
       // (an arrow or a javelin: its own picture at the nearest of its angles, pixel for pixel, its head barbed: weapons.js missileSprite)
       else{const m=missileSprite(kind==='javelin'?'javelin':'arrow',ang);ctx.drawImage(m,-m.ax,-m.ax)}
       ctx.restore();continue}
-    if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.save();effectTransform(a.x,a.y);ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);ctx.restore();continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y));const k=B.world?WORLD_BATTLE.sprite:1;ctx.scale(k,k);{const m=missileSprite('arrow',a.a);ctx.drawImage(m,-m.ax,-m.ax)}ctx.restore()}
+    if(a.magic){if(Math.random()<.6)vfx({k:'ember',x:a.x+rnd(-2,2),y:a.y+rnd(-2,2),vx:rnd(-12,12),vy:rnd(-12,6),life:rnd(.2,.4),col:a.col});const fl=Math.floor(performance.now()/80)%2;ctx.save();effectTransform(a.x,a.y);ctx.fillStyle=a.col;ctx.globalAlpha=.35;ctx.beginPath();ctx.arc(a.x,a.y,5+fl,0,7);ctx.fill();ctx.globalAlpha=1;ctx.beginPath();ctx.arc(a.x,a.y,2.5,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.fillRect(Math.round(a.x)-1,Math.round(a.y)-1,2,2);ctx.restore();continue}ctx.save();ctx.translate(Math.round(a.x),Math.round(a.y-Lf));const k=B.world?WORLD_BATTLE.sprite:1;ctx.scale(k,k);{const m=missileSprite('arrow',a.a);ctx.drawImage(m,-m.ax,-m.ax)}ctx.restore()}
   ambientBattle();// (birds out of the trees as it begins, crows over the field once it is over: ambient.js)
   // (the field's weather (gfx/weather.js), at the screen's scale, under the fog of war, as on the map; a battle on the map, whose
   // fog is the map's, drawn under the field (worldbattle.js base), has it over the field instead, below)
@@ -617,15 +685,15 @@ function drawBattle(){
   if(!B.world)fogDraw();// (the fog of war over the field outside your side's sight: battlefog.js)
   const h=B.hero;
   // No persistent short aim arc; selected shooters already have the shared range fan.
-  if(h&&h.hp>0&&B.blocking){ctx.strokeStyle='#9fc0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.x,h.y-6,13,B.aim-.9,B.aim+.9);ctx.stroke()}
-  for(const s of B.slashes){if(s.kind){drawSlash(s);continue}ctx.strokeStyle='rgba('+(s.col||'255,255,255')+','+Math.min(1,s.life*7).toFixed(2)+')';ctx.lineWidth=(s.w||3)*worldEffectScale();ctx.beginPath();ctx.arc(s.x,s.y,s.r||B.hero.s.reach,s.a-(s.arc||1.1),s.a+(s.arc||1.1));ctx.stroke()}
-  for(const r of B.rings){const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3*worldEffectScale();ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()}
+  if(h&&h.hp>0&&B.blocking){ctx.strokeStyle='#9fc0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(h.x,h.y-6-fieldLift(h.x,h.y),13,B.aim-.9,B.aim+.9);ctx.stroke()}
+  {const plain=B.slashes.filter(s=>!s.kind);for(const s of B.slashes)if(s.kind)drawSlash(s);fxEach(plain,s=>{ctx.strokeStyle='rgba('+(s.col||'255,255,255')+','+Math.min(1,s.life*7).toFixed(2)+')';ctx.lineWidth=(s.w||3)*worldEffectScale();ctx.beginPath();ctx.arc(s.x,s.y,s.r||B.hero.s.reach,s.a-(s.arc||1.1),s.a+(s.arc||1.1));ctx.stroke()})}
+  fxEach(B.rings,r=>{const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3*worldEffectScale();ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()})
   for(const p of B.parts){ctx.save();effectTransform(p.x,p.y);if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;ctx.restore();continue}
     ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);ctx.restore()}
   vfxAir();stateFxAir();heroFxAir();// (sparks, glows, embers, flying blood: vfx.js)
   if(DROPS.on)BattleDrops.of(B).draw();// (what falls: its dots and the icons on the ground, battle/drops.js)
   // (a number pops up big and settles)
-  for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1;if(k===1){txt(f.t,Math.round(f.x),Math.round(f.y),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(f.y));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
+  for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1,fy=f.y-fieldLift(f.x,f.y);if(k===1){txt(f.t,Math.round(f.x),Math.round(fy),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(fy));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field

@@ -48,7 +48,10 @@ try{
   b.over=true;b.endT=0;ev('B=null');t.fieldDone();Kit.world()}
  // ---- drawn at your figure, and saved
  reset();t.makeCamp();{const E=[];t.bandCampEnts(E,{x:Math.floor(P.x-t.VW/2),y:Math.floor(P.y-t.VH/2)});let err='';t.ctx.save();try{for(const e of E)e.f()}catch(x){err=x.message}t.ctx.restore();ok(!err&&E.length>=2,'the camp, its tents and a fire, is drawn ('+E.length+' pieces)'+(err?' ('+err+')':''));
-  ok(E.every(e=>e.nf&&!e.st&&Number.isFinite(e.y)),'each in the depth order by its feet, as everyone is: the trees in front drawn over it, none faded for it')}
+  // (its tents stand with the trees and houses since c463fba (the owner: walking behind things): each one in sight registered for the
+  //  overdraw (st), so a man behind it shows through; the fire, flat, never)
+  const F=E[E.length-1],tents=E.slice(0,-1);
+  ok(E.every(e=>e.nf&&Number.isFinite(e.y))&&tents.length&&tents.every(e=>!!e.st===!!t.inSight(e.x,e.y))&&!F.st,'each in the depth order by its feet, as everyone is: the trees in front drawn over it; its tents in sight standing things a man behind shows through, its fire not')}
  // ---- only on clear ground: beside a wood your band walks to the nearest and pitches there
  {const wood=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.tAt(tx,ty-1)===t.T_FOREST&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4)&&t.campSpot&&(Kit.goTo(x,y),(s=>s&&Math.hypot(s.x-x,s.y-y)>S.camp.hop*16)(t.campSpot())))return [x,y]}})();
   reset();Kit.goTo(wood[0],wood[1]);ok(!t.campGround(P.x,P.y),'(by a wood: the camp would stand over its trees)');ok(t.makeCamp()&&!P.camp&&P.tx!=null&&!!G.pitch,'Make camp there: your band walks to clear ground first ('+Math.round(Math.hypot(P.tx-P.x,P.ty-P.y))+' px)');

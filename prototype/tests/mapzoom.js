@@ -2,12 +2,14 @@
 // The world map's zoom (core.js MAPZOOM, mapZoom): the map drawn at a whole number of device pixels to a game pixel still, one
 // step at a time by the wheel, + and −, the buttons by Save (dimmed at the ends) and a two-finger pinch (never a tap), within its
 // range; clicks and picking read through it, the minimap keeps its size on the screen, the step is remembered (PREFS mapzoom,
-// Settings → Map zoom); the default is the window's own scale, closer on a phone; battles keep their own zoom and the window's scale. The screen
+// Settings → Map zoom); the default is the window's own scale in the fixed view (a window's map at the world lab's scale: core.js labScale); battles keep their own zoom and the window's scale. The screen
 // here a 3x one (devicePixelRatio 3: the fixed view's 576 x 360 game px at 3x or more), drawn at Full (RENDER.cap: the setting
 // Resolution, Balanced by default since 2026-10-29, draws a 3x screen at 2).
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m);
 const t=T,G=t.G,P=t.P,W=t.W,Z=t.MAPZOOM,ev=s=>(0,eval)(s),pn=performance.now,r0=Math.random,cv=document.querySelector('canvas');
 const dprD=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap0=t.RENDER.cap;
+// (the minimap's width on the screen, device px: on a desktop's map its frame's slot (ui/campaignhud.js miniRect), else 112 px a scale)
+const miniPx=()=>{const H=t.campaignHud;return H&&H.desktop?Math.round(H.slot.getBoundingClientRect().width*3):112*t.MAPZOOM.s0};
 try{
  try{localStorage.clear()}catch(e){}
  window.requestAnimationFrame=()=>0;Object.defineProperty(window,'devicePixelRatio',{get:()=>3,configurable:true});t.RENDER.cap=Infinity;
@@ -41,7 +43,11 @@ try{
  bIn.click();t.frame();const c1=t.VS;bIn.click();t.frame();const c2=t.VS;bOut.click();t.frame();
  ok(c1===Z.lo+1&&c2===Z.lo+2&&t.VS===Z.lo+1&&!bIn.disabled&&!bOut.disabled,'the + and − buttons zoom a step each');
  {const sc=inB('screen'),m0=sc.dataset.mode,shown=()=>getComputedStyle(bIn).display!=='none'&&getComputedStyle(bOut).display!=='none';sc.dataset.mode='world';const onMap=shown();sc.dataset.mode='battle';const inBat=shown();sc.dataset.mode='town';const inTown=shown();sc.dataset.mode=m0;
-  ok(onMap&&!inBat&&!inTown&&bIn.closest('.dockrow.sys')&&bOut.closest('.dockrow.sys'),'the buttons sit in the dock\'s bottom row, shown on the map only')}
+  // (on a desktop's map they sit on the minimap's frame (ui/campaignhud.js mapZoom, 3ed1193: "the upper-right minimap has zoom
+  //  buttons on its frame"); off the map they go back to the dock's bottom row)
+  const H=t.campaignHud,on=b=>H&&H.desktop?H.mapZoom.contains(b)&&!!b.closest('.campaign-survey'):!!b.closest('.dockrow.sys');H&&H.sync();const atMap=on(bIn)&&on(bOut);
+  G.mode='battle';H&&H.sync();const home=!!bIn.closest('.dockrow.sys')&&!!bOut.closest('.dockrow.sys');G.mode='world';H&&H.sync();
+  ok(onMap&&!inBat&&!inTown&&atMap&&home,'the buttons sit '+(H&&H.desktop?'on the minimap\'s frame':'in the dock\'s bottom row')+' on the map, in the dock\'s bottom row off it; shown on the map only')}
  // ---- a pinch: a step each time the fingers spread or close enough; never travels, never a long press
  {const r=()=>cv.getBoundingClientRect(),fire=(type,x,y,id)=>cv.dispatchEvent(new PointerEvent(type,{clientX:x,clientY:y,pointerId:id,isPrimary:id===1,pointerType:'touch',button:type==='pointermove'?-1:0,bubbles:true,cancelable:true}));
   const R=r(),cx=R.left+R.width/2,cy=R.top+R.height/2-40,tx0=P.tx,sel=G.chase;const v0=t.VS;
@@ -64,19 +70,22 @@ try{
   for(const s of [Z.lo,s0,Z.hi]){t.act('mapzoom',String(s===s0?0:s));world();P.x=Math.floor(P.x)+.4;frame();const S=t.VS;minis.push(miniW());
    const R=cv.getBoundingClientRect(),cl=(wx,wy)=>({clientX:R.left+(wx-G.cam.x)*R.width/t.VW,clientY:R.top+(wy-G.cam.y)*R.height/t.VH});
    // (the picture: what stands in whole S x S blocks on the camera's fraction; every picture at its own size, a whole S)
-   {const g=c.getImageData(0,0,t.cv.width,t.cv.height),d=g.data,W2=g.width,C=G.cam,off=((-Math.round(C.x*S))%S+S)%S,offy=((-Math.round(C.y*S))%S+S)%S,px=(x,y)=>d.subarray((y*W2+x)*4,(y*W2+x)*4+4).join();
-    let blocks=0,badB=0;for(let by=offy+S;by<60*S;by+=S)for(let bx=off+S;bx<200*S;bx+=S){const p0=px(bx,by);let same=true;for(let j=0;j<S&&same;j++)for(let i=0;i<S;i++)if(px(bx+i,by+j)!==p0){same=false;break}blocks++;if(!same)badB++}
+   // (the world drawn at fine px (data/world.js WORLD_VIEW.fine; render.js sceneRes, doc/OPEN_WORLD_DESIGN.md phase 1, 2026-11-15):
+   //  at a scale the fine px divide, the blocks a fine px each, S / sceneRes device px)
+   {const q=S/t.sceneRes(),g=c.getImageData(0,0,t.cv.width,t.cv.height),d=g.data,W2=g.width,C=G.cam,off=((-Math.round(C.x*S))%q+q)%q,offy=((-Math.round(C.y*S))%q+q)%q,px=(x,y)=>d.subarray((y*W2+x)*4,(y*W2+x)*4+4).join();
+    let blocks=0,badB=0;for(let by=offy+q;by<60*S;by+=q)for(let bx=off+q;bx<200*S;bx+=q){const p0=px(bx,by);let same=true;for(let j=0;j<q&&same;j++)for(let i=0;i<q;i++)if(px(bx+i,by+j)!==p0){same=false;break}blocks++;if(!same)badB++}
     const bad=calls.filter(([img,a,m])=>{const sz=a.length===2||(a.length===8&&a[2]===a[6]&&a[3]===a[7]);
      // (the awareness eyes: sized on the screen, not the map, so a whole number of device pixels to a pixel of
      // theirs (1 for the eyes), still at whole device pixels: render.js drawStealthEye)
      const k=a.length===4&&a[2]*S/img.width;if(k>=1&&isInt(k)&&Math.abs(a[3]*S/img.height-k)<EPS)return Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*a[0])||!isInt(m.f+m.d*a[1]);return !sz||Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*(a.length===8?a[4]:a[0]))||!isInt(m.f+m.d*(a.length===8?a[5]:a[1]))});
     ok(S===s&&view()&&blocks>1000&&!badB&&calls.length>5&&!bad.length,// (enough pictures to judge: more than 5, the floating banners over the armies gone, the owner, 2026-11-01: render.js drawBanners)
-     'at '+S+' ('+t.VW+' x '+t.VH+' game px) the map lies in whole '+S+' x '+S+' blocks ('+blocks+(badB?', '+badB+' not':'')+') and no picture of '+calls.length+' is resampled'+(bad.length?': '+bad.slice(0,2).map(([img,a,m])=>img.width+'x'+img.height+' @'+[m.a,m.e].map(v=>+v.toFixed(3))).join('; '):''))}
-   {const wx=P.x+37.3,wy=P.y-21.6,e=cl(wx,wy),p=t.toCanvas(e);t.cv.dispatchEvent(new PointerEvent('pointerdown',{...e,pointerType:'mouse',button:0,bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{...e,pointerType:'mouse',button:0,bubbles:true}));
-    ok(Math.abs(G.cam.x+p.x-wx)<1e-6&&Math.abs(P.tx-wx)<1e-6&&Math.abs(P.ty-wy)<1e-6,'at '+S+' a click travels to the map\'s point under it ('+P.tx.toFixed(2)+', '+P.ty.toFixed(2)+')');P.tx=null}
+     'at '+S+' ('+t.VW+' x '+t.VH+' game px) the map lies in whole '+q+' x '+q+' blocks, a fine px each ('+blocks+(badB?', '+badB+' not':'')+') and no picture of '+calls.length+' is resampled'+(bad.length?': '+bad.slice(0,2).map(([img,a,m])=>img.width+'x'+img.height+' @'+[m.a,m.e].map(v=>+v.toFixed(3))).join('; '):''))}
+   // (the ground drawn under the pointer: the land lifted by its height (worldterrain.js liftGround: the start's ground lifted since the bay, 2026-11-17))
+   {const wx=P.x+37.3,sy=P.y-21.6,wy=t.liftGround(wx,sy).y,e=cl(wx,sy),p=t.toCanvas(e);t.cv.dispatchEvent(new PointerEvent('pointerdown',{...e,pointerType:'mouse',button:0,bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{...e,pointerType:'mouse',button:0,bubbles:true}));
+    ok(Math.abs(G.cam.x+p.x-wx)<1e-6&&Math.abs(G.cam.y+p.y-sy)<1e-6&&Math.abs(P.tx-wx)<1e-6&&Math.abs(P.ty-wy)<1e-6,'at '+S+' a click travels to the map\'s point under it ('+P.tx.toFixed(2)+', '+P.ty.toFixed(2)+(wy!==sy?', its ground lifted '+(wy-sy).toFixed(1)+' px':'')+')');P.tx=null}
    {const L=W.lords.find(l=>!l.dead);Object.assign(L,{x:P.x+40.37,y:P.y+12.2,inside:null,fight:null,dir:1});frame();const p=t.toCanvas(cl(L.x+.3,L.y-6));
     ok(t.pickAt(G.cam.x+p.x,G.cam.y+p.y)===L,'at '+S+' the party under the pointer is picked');L.x=-9999;L.y=-9999}}
-  ok(minis.every(m=>m&&Math.abs(m[0]-112*s0)<=t.VS*2&&Math.abs(m[0]-minis[1][0])<=Z.hi*2),'the minimap keeps its size on the screen at every zoom ('+minis.map(m=>m&&m[0]).join(', ')+' device px across)');
+  ok(minis.every(m=>m&&Math.abs(m[0]-miniPx())<=t.VS*2&&Math.abs(m[0]-minis[1][0])<=Z.hi*2),'the minimap keeps its size on the screen at every zoom ('+minis.map(m=>m&&m[0]).join(', ')+' device px across, its frame '+miniPx()+')');
  }finally{c.drawImage=di0;unmarch()}
  // ---- remembered: the stored step comes back as the game loads; Settings offers Auto and every step
  {t.act('mapzoom',String(Z.hi));const st=localStorage.getItem('ashmark.mapzoom');Z.z=0;t.fitScreen();const auto=t.VS;Z.z=t.prefLoad('mapzoom');t.fitScreen();
@@ -99,14 +108,19 @@ try{
   t.act('mapzoom','0');world();t.frame();const plain=fight();
   ok(zoomed===plain,'a battle started from the zoomed map is the same as from the unzoomed one: its field, obstacles and drawing ('+plain.split('|').slice(0,8).join(',')+')'+(zoomed===plain?'':': '+zoomed.split('|').map((v,i)=>v===plain.split('|')[i]?'=':v.slice(0,80)+' vs '+plain.split('|')[i].slice(0,80)).join(' ')));
   ev('B=null');world();t.frame()}
- // ---- a phone (the window's shorter side MAPZOOM.SMALL CSS px or less; the fixed view here, so phone() is told so): the map
- // Auto starts closer, with the former default as the zoom-out limit; the HUD and the minimap
- // at the window's scale; a step from there stored, a step back Auto again; off the map the window's own scale
- {const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const A=Math.ceil(Z.lo*Z.PHONE_START);
-   ok(Z.auto===A&&A>s0&&t.VS===A&&Z.z===0&&t.HUD_PX===3/s0&&Math.abs(Z.k()-s0/t.VS)<1e-9&&view(),'on a phone the map is drawn at '+A+' by default, not the window\'s '+s0+' ('+t.VW+' x '+t.VH+' game px); the HUD at the window\'s scale');
-   const m=t.worldMiniRect();ok(Math.abs(m.w*t.VS-112*s0)<=t.VS*2,'the minimap keeps its size on the screen ('+m.w*t.VS+' device px across)');
+ // ---- a phone (the window's shorter side MAPZOOM.SMALL CSS px or less; the fixed view here, so phone() is told so). A window's map is
+ // at the world lab's scale (core.js labScale, data/world.js WORLD_VIEW; 2026-11-15, 7c4f44e: "Remove all old concepts that reduce
+ // the map scale"): a whole number of fine px a game px, closer on a phone-narrow window, never farther than it (lo), closer at most
+ // WORLD_VIEW.in times. The tests' fixed view keeps the window's own scale: on a phone too, the range by its PHONE_IN; the HUD and the
+ // minimap at the window's scale; a step from there stored, a step back Auto again; off the map the window's own scale
+ {const V=t.WORLD_VIEW,L=t.labScale,ls=[];for(const dp of [1,1.5,2,3])for(const w of [V.phone-1,V.phone,1280])ls.push([w,dp,L(w,dp)]);
+  ok(ls.every(([w,dp,s])=>s===V.fine*Math.max(1,Math.round((w<V.phone?V.phoneZoom:V.zoom)*dp))&&s%V.fine===0&&s>=V.fine)&&[1,1.5,2,3].every(dp=>L(V.phone-1,dp)<=L(V.phone,dp))&&L(1280,3)===V.fine*Math.round(V.zoom*3),
+   'a window\'s map at the lab\'s scale, a whole number of fine px a game px, a phone-narrow one closer ('+ls.map(([w,dp,s])=>w+'@'+dp+':'+s).join(' ')+')');
+  const ph=Z.phone;try{Z.phone=()=>true;t.act('mapzoom','0');world();t.fitScreen();t.frame();const A=s0,F=1;
+   ok(Z.auto===A&&t.VS===A&&Z.z===0&&t.HUD_PX===3/s0&&Math.abs(Z.k()-s0/t.VS)<1e-9&&view()&&Z.hi===Math.max(s0,Math.floor(Math.min(576*s0/Z.PHONE_IN,360*s0/Z.PHONE_IN_H))),'in the fixed view a phone\'s map is at the window\'s '+s0+' ('+t.VW+' x '+t.VH+' game px), in to '+Z.hi+'; the HUD at the window\'s scale');
+   const m=t.worldMiniRect();ok(Math.abs(m.w*t.VS-miniPx())<=t.VS*2,'the minimap keeps its size on the screen ('+m.w*t.VS+' device px across, its frame '+miniPx()+')');
    const a1=t.mapZoom(-1);t.frame();const v1=t.VS,st=localStorage.getItem('ashmark.mapzoom');const a2=t.mapZoom(1);t.frame();
-   ok(a1&&a2&&v1===A-1&&st===String(A-1)&&t.VS===A&&Z.z===0&&localStorage.getItem('ashmark.mapzoom')==='0','a step out from it is stored ('+st+'), a step back is Auto again');
+   ok(a1&&a2&&v1===A-F&&st===String(A-F)&&t.VS===A&&Z.z===0&&localStorage.getItem('ashmark.mapzoom')==='0','a step out from it is stored ('+st+'), a step back is Auto again');
    ok(document.getElementById('zoomIn').disabled===(A>=Z.hi)&&!document.getElementById('zoomOut').disabled,'the zoom buttons dimmed from the phone\'s default ('+A+', in to '+Z.hi+')');
    Z.map=false;t.fitScreen();const off=t.VS;Z.map=true;t.fitScreen();ok(off===s0&&t.VS===A,'off the map (a battle, a scene) the window\'s own scale, '+off)}
   finally{Z.phone=ph;t.act('mapzoom','0');world();t.fitScreen();t.frame()}

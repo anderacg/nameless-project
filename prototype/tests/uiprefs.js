@@ -12,7 +12,7 @@ try{
  const sp=[.5,1,2,5],OLD={bpause:s=>s!=='0',grid:s=>s==='1',bspeed:s=>sp.includes(+s)?+s:1,hpbars:s=>s==='1',blood:s=>s!=='0',guide:s=>s!=='0',bdeploy:s=>s!=='0',autoskills:s=>s!=='0',bauto:s=>s==='1',bfog:s=>s!=='0',ambient:s=>s!=='0',bshake:s=>s!=='0',bfx:s=>s==='light'?'light':'full',opaths:s=>['all','sel','off'].includes(s)?s:'sel'};
  const DEF={bpause:true,grid:false,bspeed:1,hpbars:false,blood:true,guide:true,bdeploy:true,autoskills:true,bauto:false,bfog:true,ambient:true,bshake:true,bfx:'full',opaths:'sel'};
  const VIEW={grid:['GRID','on'],bspeed:['BSPEED','v'],hpbars:['HPBARS','on'],blood:['BLOOD','on'],guide:['GUIDE','on'],bdeploy:['BDEPLOY','on'],autoskills:['AUTOSK','on'],bauto:['BAUTO','on'],bfog:['FOG','on'],ambient:['AMBIENT','on'],bshake:['SHAKE','on']};
- ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx','mapzoom','res','fps','keepform'].sort().join(),'the battle and world settings (fog of war: battlefog.js; order paths: ui/orderpaths.js; ambient life: gfx/ambient.js), the four of sound (audio.js), the map zoom (tests/mapzoom.js) and the resolution and frame rate (tests/render.js) in one table: '+Object.keys(t.PREFS).join(', '));
+ ok(Object.keys(t.PREFS).sort().join()===[...Object.keys(OLD),'mute','volmaster','volmusic','volsfx','mapzoom','res','fps','keepform','gfx','dev'].sort().join(),'the battle and world settings (fog of war: battlefog.js; order paths: ui/orderpaths.js; ambient life: gfx/ambient.js), the four of sound (audio.js), the map zoom (tests/mapzoom.js), the resolution and frame rate (tests/render.js) the graphics level (tests/quality.js) and the dev marks (ui/developer.js) in one table: '+Object.keys(t.PREFS).join(', '));
  const inputs=[null,'1','0','','junk','2','0.5','.5','5','7','true'];
  for(const k in OLD){const bad=inputs.filter(s=>{if(s==null)localStorage.removeItem('ashmark.'+k);else localStorage.setItem('ashmark.'+k,s);return t.prefLoad(k)!==OLD[k](s)});
    ok(!bad.length&&t.PREFS[k].def===DEF[k],k+' reads ashmark.'+k+' as before (default '+DEF[k]+')'+(bad.length?': differs for '+bad.join('|'):''))}
@@ -35,7 +35,7 @@ try{
    if(!(t.prefGet(a)===v&&key(a)===(typeof v==='boolean'?(v?'1':'0'):String(v))&&G.menu==='settings'&&b&&b.classList.contains('on')))bad.push(a+' '+arg)}
   ok(!bad.length,'each Settings button sets, stores and shows its setting'+(bad.length?': wrong for '+bad.join(', '):''))}
  ok(!document.querySelector('#panel [data-act="bpause"]')&&/Battle preparation.*Start Battle/.test(panel()),'battle preparation: no pause button, battles open paused for Start Battle (f8cfe32)');
- t.act('econmode','light');ok(t.ECON.mode==='light'&&localStorage.getItem('ashmark.econ')==='light'&&G.menu==='settings','the realm economy button still sets its mode');t.act('econmode','full');
+ ok(!/Realm economy/.test(panel())&&!document.querySelector('#panel [data-act="econmode"]'),'no Realm economy in Settings (the owner, 2026-11-18: a dev console tool now, tests/devtools.js)');
  ok(t.settingAct('autoskills','on')===false&&t.settingAct('bauto','on')===false&&t.settingAct('tab','trade')===false,'actions that are no Settings button pass on');
  // storage blocked: the settings still change for this session; reading gives the defaults
  SP.setItem=function(){throw new Error('blocked')};SP.getItem=function(){throw new Error('blocked')};

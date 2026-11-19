@@ -31,8 +31,8 @@ class Refugees extends WorldObject{
   // a few of them walking (people.js refugeeSprite: a step each WALK.foot px walked, each a little out of time), how many near you;
   // (MAP_FIGS) as the battle's figures, of their people, their bundles on their backs (people.js figRefugee); marched (WORLD_BATTLE)
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const r=this;
-    if(WORLD_BATTLE.on){marchDraw(ents,r,cam);if(DEV.on)ents.push({y:r.y,f:()=>{subT(r);if(r.fromYou()<90)txt('Refugees '+r.n,Math.round(r.x-cam.x),Math.round(r.y-cam.y)-18,r.fear?'#ff9a90':'#c8c2ae','center')}});return}
-    ents.push({y:r.y,f:()=>dressedIn(dressClimAt(r.x,r.y),()=>{subT(r);const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),go=mapStepping(r),fig=figsOn();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-6,sy-1,12,2);
+    if(WORLD_BATTLE.on){marchDraw(ents,r,cam);if(DEV.on)ents.push({x:r.x,y:r.y,f:()=>{subT(r);if(r.fromYou()<90)txt('Refugees '+r.n,Math.round(r.x-cam.x),Math.round(r.y-cam.y)-18,r.fear?'#ff9a90':'#c8c2ae','center')}});return}
+    ents.push({x:r.x,y:r.y,f:()=>dressedIn(dressClimAt(r.x,r.y),()=>{subT(r);const sx=Math.round(r.x-cam.x),sy=Math.round(r.y-cam.y),k=Math.min(6,Math.max(3,Math.ceil(r.n/3))),go=mapStepping(r),fig=figsOn();ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-6,sy-1,12,2);
       for(let i=0;i<k;i++){const px=sx-r.dir*((i%3)*4-4)+(i>2?-r.dir*2:0),py=sy-(i>2?2:0),fr=go?(frameOf(r,WALK.foot,WALK.n)+i*2)%WALK.n:0;if(fig){drawFig(figRefugee(i,r.race,figPose(fr,go)),px,py,r.dir);continue}
         const s=refugeeSprite(fr,i);ctx.save();ctx.translate(px,py);if(r.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-15);ctx.restore()}
       if(DEV.on&&r.fromYou()<90)txt('Refugees '+r.n,sx,sy-13,r.fear?'#ff9a90':'#c8c2ae','center')})})}

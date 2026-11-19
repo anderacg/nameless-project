@@ -20,7 +20,10 @@ const DROPS={on:true,art:14,loot:true,xp:8,dots:{xp:6,troop:3},speed:220,coin:{c
 // A thing lying to be taken (a carcass with something on it, world/carcasses.js; the field's drops, battle/drops.js): a soft glow round
 // it (col, rgb), breathing between a's alpha at speed, r px at the world's scale; a glint rising from it every 1/rise s (the owner,
 // 2026-11-15: "if there's item on ground and not picked yet, make sure we have a glowing or something noticeable")
-const LOOT_GLOW={on:true,r:12,a:[.3,.7],speed:2.6,rise:.7,col:'255,206,90'};// (added on the ground: it lights it)
+// (dimmer: the owner, 2026-11-16: "glowing item drop is too bright"; hid behind a building or a tree, its outline shows through in
+// outline's colour and strength: depth.js ghostOver; all: drawn whole whether hid or not, so what is still to be looted shows at a
+// glance, the owner, 2026-11-17: "un looted should be highlighted (same as highlight behind tree)")
+const LOOT_GLOW={on:true,r:9,a:[.1,.26],speed:2.6,rise:.7,col:'255,206,90',outline:{col:'#ffd66a',a:.85,all:true}};// (added on the ground: it lights it)
 const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
   // (looters (the owner, 2026-11-15: "make random looters loot or check body"): a band near the fallen walks to them, searches them
   //  check s of world time once within at px (its men round them), takes what is on them; while fresh ones (laid within fresh days) hold something and no band is near, a
@@ -34,9 +37,11 @@ const CARCASS={on:true,near:40,pick:8,most:240,seek:160,find:.35,
    can start rotting and finally turns into bones. This should be the same for all dead bodies"; world/carcasses.js BodyRot): the
    fallen of a fight (Carcass) and your own remains (world/death.js Remains) lie as they fell for rot days, then rot (their picture
    tinted tint; no flies of its own, those a sprite of their own to draw over) till bones days, then lie as bones; the fallen of a fight are gone at
-   gone days (your remains stay as bones till buried). box: the px of a body's picture, its foot foot px down; col: the bones' */
-const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',box:[64,40],foot:30,
-  col:{bone:'#e4dccb',bone2:'#b9ae97',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',hide:'#6b5038'}};
+   gone days (your remains stay as bones till buried). box: the px of a body's picture, its foot foot px down (game px: the picture
+   itself at the lab's scale, world/carcasses.js BodyRot); mottle: the share of a rotting body gone darker in blotches (mold, its
+   colour); col: the bones', lit (bone3) to dark, the rag's (cloth, cloth2 its folds) and the hide's (hide, hide2) */
+const BODY_ROT={on:true,rot:1,bones:3,gone:8,tint:'rgba(58,72,30,.45)',box:[64,40],foot:30,mottle:.2,mold:'rgba(30,38,18,.5)',
+  col:{bone:'#e4dccb',bone2:'#b9ae97',bone3:'#f6f1e4',dark:'#4a443a',stain:'rgba(52,40,26,.35)',cloth:'#5b4e40',cloth2:'#443a30',hide:'#6b5038',hide2:'#4f3a28'}};
 /* junk (the owner, 2026-11-13): broken pieces a fallen man leaves (DROPS.worn.junk), good for nothing but a few coins at any market,
    as a trophy is (data/monsters.js MATS: v its worth, icon and col its picture) */
 const JUNK={junk_blade:{n:'Broken Blade',v:3,icon:'blade',col:'#7d7b72'},junk_links:{n:'Rusted Mail Links',v:2,icon:'plate',col:'#8a6a4a'},

@@ -831,7 +831,84 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W7, W8 re-recorded 2026-11-14, on purpose: the owner, "reduce world moving speed for all": campaign travel 1.28 times the
 //  base, was 1.6 (data/world.js WORLD_SCALE.travel), so every party covers less ground in the 600 frames (W8) and the three days
 //  (W7). Proof: travel 1.6 gives both again (W1-W6, B2 held). Were W7 0cc26fac, W8 b871b922)
-const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa8216f',W6:'b43ed88c',W7:'7492cbf5',W8:'1ffe8f1a',B2:'c315aa9a'};
+// (W1, W3, W4, W5, W6, W7, W8, B2 re-recorded 2026-11-15, on purpose: two fixes of the owner's, "There's case where the city not build a bridge
+//  which is weird because it has a road connected to the edge" and "The farm tile or pasture tile should not overlap with water or
+//  invalid tile". Once every road is laid, a ford with a road joined to the holdings at both its ends and an end within 8 tiles of a
+//  town, city, castle or fort is built a bridge (worldplace.js PLACE.fordTown, placeTownBridges: its tiles road, not ford; 5 of
+//  seed 1's 38 fords; the roads as they were), so the tiles (W1) and all placed after them move; and a field keeps a tile of land
+//  from any water, ford or brook (lots.js FIELD_SHORE, fieldShore: no field tile of seed 1 by water now). W2 held. Proof:
+//  PLACE.fordTown 0 and FIELD_SHORE 0 give every value again. Were W1 a5992687, W3 841fec64, W4 74e5a11d, W5 6fa8216f, W6 b43ed88c, W7 7492cbf5, W8 1ffe8f1a, B2 c315aa9a)
+// (W5, W6 re-recorded 2026-11-15, on purpose: the owner, "what is that wooden with the line things, can we improve the visuals?
+//  Give it more detail": every ferry painted in detail (gfx/worldart.js FERRY_ART, ferryArt: planked landings on beams and piles,
+//  a tie post at each, the rope sagging between them with its shadow, a log raft with battens, a rail, its block on the rope and a
+//  crate or a barrel), so the painted world and its picture change. Proof: FERRY_ART.on false gives both again (all 16 hold). Were
+//  W5 039fbe31, W6 55f04aa1)
+// (all nine re-recorded 2026-11-17, on purpose, three steps measured apart: (1) the lab's generator in the game (6bceba2 "World
+//  generation from height" through a250c0a "New generator": land, height, rivers, climates from one height field) moved the world
+//  itself: before this round's work (40efd91^) and on its last commit before the bay (a08040e) W1 71cb3034, W2 4d6b8d38, W3 7888b7c2,
+//  W4 251c8b71, B2 da83ff96 alike. (2) This round's map work moved what is drawn and kept over it: W5 473ccdc1 to 4da5d171 and W6
+//  e98dd0d0 to e6127b5d (rocky cave ground, crops at the fine px, camps' tents and fires spaced, prints shaped as feet), W7 4a1b6e1a to
+//  2accd6df (the sites' warm-up flags no longer saved: SITE_WARM), W8 b4b6b059 to 866a0ccb (marchers beside a map fight at their own
+//  pace: marchPace). (3) The Classic world's land hints back (c630feb: worldgen.js genLandHints, the League's bay, the ports' inlets,
+//  Willowmere's isle; the fens' hint r 26) moved all nine to these. The fixes since (folk.js fieldStep, worldways.js bridgeOver) move
+//  none: measured the same before and after them. Were W1 fcc9be4a, W2 6ba3aa7f, W3 0ba097f2, W4 85a7d384, W5 2ca5f850, W6 b590379c,
+//  W7 a0041dfb, W8 4d549b20, B2 c916eeb1)
+// (all nine re-recorded 2026-11-17 again, on purpose, the owner's "Go ahead", two steps measured apart: (1) the Classic world's
+//  northern and Karn peaks and its great river past Stonebridge back (7570e2c: worldgen.js genElevHints, genValleyHint,
+//  genValleyCut; Karn's hint r 14) gave W1 2fc54212, W2 5d0e0087, W3 e7fea2d6, W4 5b745ba8, W5 3c41e30e, W6 7b3e5bf6, W7 deacd6c3,
+//  W8 129faf85, B2 173ecde0 alone; (2) the outposts off every lot and climbable on each side (3993b56: outposts.js built, climbable,
+//  OUTPOST_PLACE.body), goblin camps seeking hillsides (3993b56: GOBLINS.warren.share) and the outposts held before the sites are
+//  drawn (4651eae: Outposts.hold) move what stands on the land: W4 (the outposts' claims) and W5-W8, B2; W1-W3 hold. Were W1
+//  00614f13, W2 c353914d, W3 08463f33, W4 d2fafb20, W5 2245c050, W6 cde2ee8f, W7 76d16ba7, W8 ef39e9b9, B2 5ede72a2)
+// (W5, W6 re-recorded 2026-11-17 again, on purpose, the owner's map requests since: crops each its own plants in rows by the season
+//  and a date palm whole (worldart.js FARM, engine/worldnature.js PX.worldCropFine), no grass on fields, the flat props baked into
+//  the chunks' fine pictures (worldterrain.js p.bake) move the painted world (W5); and with them, in the view, the grass bent by every
+//  foot and drawn over a man's feet (grassFeet, grassOver), nothing drawn on land never seen and nothing moving out of your sight
+//  (fog.js VIEW_SEEN), the remembered scene cut at game px, pixel for pixel as before (fogMem) (W6). W1-W4, W7, W8, B2 and the sums
+//  hold. Were W5 c8fd11f3, W6 3939e37e)
+// (W5, W6 re-recorded 2026-11-18, on purpose, the owner's "Small water have a square shape around it", "The walkable path on river is
+//  not realistic": a pool's or lake's tiles slope down to the water with no flat square floor (worldterrain.js, WORLD_TERRAIN.shore.basin),
+//  the river's colour blended by its climates' shares, the ford a gravel bar with uneven, foamed edges and stepping stones
+//  (WORLD_WAYS.river.fordBar) move the painted world (W5) and the view (W6), with the view's effects lifted with the land at each man
+//  (effectcentre). W1-W4, W7, W8, B2 and the sums hold. Were W5 26f08294, W6 c306f4a3)
+// (W5-W8, B2 re-recorded 2026-11-18 again, on purpose, the owner's "the sites is not in the same level as building?", "sites such as
+//  stone pillar, abandon places, are too close to each other and even too close to the holding": sites cast their own shadows past their
+//  pictures and lift at their foot (structures.js siteCast, SITE_SHADOW) (W5, W6), and stand 14 tiles apart, 8 from any lot, 12 from a
+//  holding's centre, goblin warrens placed first (SITE_SPACE, SITE_AWAY.any) (W6-W8, B2). W1-W4 and the sums hold. Were W5 592981ea,
+//  W6 d987c67d, W7 a9fc5330, W8 93ccd29a, B2 1c3f6432)
+// (W5, W6 re-recorded 2026-11-18 again, on purpose, the owner's "Can you make river and lake, ponds colors and characteristics blend?":
+//  a river's colours the open water's by depth (WORLD_TERRAIN.water), a lake's shore measured to real land only (DLR) so a river's mouth
+//  eases into the still water, one broken foam on every shore and bank (waterRim), the mouth's plume circle gone and the river bed's
+//  glints back. W1-W4, W7, W8, B2 and the sums hold. Were W5 4e3a2019, W6 1d51b245)
+// (W6 re-recorded 2026-11-18 again, on purpose, the owner's "The jumping and animations should be based on the height": the water
+//  at a man's legs drawn smoothly by its depth and at his ankles on drawn water of no depth (march.js wadeCut), the moves over an edge
+//  by its height, at the edge (MARCH_ACT). W1-W5, W7, W8, B2 and the sums hold. Was W6 031dd03d)
+// (W6-W8 re-recorded 2026-11-18 again, on purpose, the owner's "If too high or too low then we cannot go down or go up" and "check
+//  the bridges": steps up over 9 px or down over 16 px block every mover (world/map.js LEDGE, router.js, world.js walk, MarchGround), and
+//  the river beside a bridge is shut to routes and formations (bridgeSide), which moves where every party is (W7, W8) and the view (W6).
+//  W1-W5, B2 and the sums hold. Were W6 76d8ceca, W7 2dafadb3, W8 1cdbeaf3)
+// (W6-W8, B2 re-recorded 2026-11-18 again, on purpose, the owner's "a duck ... when it move onto the land it doesnt have leg", "add
+//  more wildlife behavior and recheck correctness": herds drawn grazing, wary, bedded down, drinking, galloping (herdPose, PX.BEAST_GRAZE,
+//  BEAST_REST) (W6), wild game kept off holdings' lots and 48 px round them when placed and walking off them, and new moves between
+//  flights on the critters' own stream (WILD_LIFE) (W7, W8, B2). W1-W5 and the sums hold. Were W6 db7ef1b3, W7 cc683a1e, W8 ed3f924a,
+//  B2 9fa9d7f3)
+// (W5-W8 re-recorded 2026-11-18 again, on purpose, the owner's "Why bridge not connect to the land?", "make sure that the units
+//  avoid bridge edge/beam", "Why there's a human made brick when there's no bridge?": road masonry only on dry faces, none dropping to
+//  water, a deck's track no longer faded as a dead end at a T, ramps falling to the land (worldterrain.js, worldways.js waysOf,
+//  bridgePic) (W5, W6), and decks walked inside their rails, entered at their ends (router.js deckLane, map.js ledgeOk), which moves
+//  parties (W7, W8); with them the herds drawn as loose units (herdFlock) and the graphics quality (High in every test: unchanged).
+//  W1-W4, B2 and the sums hold. Were W5 7762de70, W6 6f514d91, W7 3abd9f22, W8 cd18c93b)
+// (W6 re-recorded 2026-11-19, on purpose, the owner's "The water lines sometimes float on the land", "more line on the big river":
+//  a streak or foam pixel kept only where its water row is still the picture's last drawn there (worldterrain.js DEPF), and wide rivers'
+//  lanes nearer the banks, longer, more lit (WORLD_WAYS.river.flow.wide) in the view's live water. W1-W5, W7, W8, B2 and the sums hold.
+//  Was W6 e1f4bf45)
+// (W6 re-recorded 2026-11-19 again, on purpose, the owner's "make sure that the tents in camps look like a fabrics": every canvas,
+//  awning and hide drawn as sewn cloth (engine/model.js clothTexel, CLOTHT), camp tents with guy ropes, cloth flaps and pennants
+//  (engine/build-camp.js), market awnings in the view with them. W1-W5, W7, W8, B2 and the sums hold. Was W6 a2ec191a)
+// (W5 re-recorded 2026-11-19, on purpose, the owner's "I see waterfall in big river looks weird": wide reaches, the last stretch into
+//  still water, a brook's tail in a bigger river and reaches by a bridge ease their levels to a slope with rapids, no white fall face
+//  across them (worldways.js riverRamp, riverLevel; WORLD_WAYS falls.rapid). W1-W4, W6-W8, B2 and the sums hold. Was W5 09703e6f)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'ff899fde',W6:'c2e6d9ef',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
@@ -890,7 +967,15 @@ const EXPECT={W1:'a5992687',W2:'6ba3aa7f',W3:'841fec64',W4:'74e5a11d',W5:'6fa821
 //  Normal s1 c05c2a0b, s2 71336fed, s3 88b17161, Large s1 66607a42)
 // (all five re-recorded 2026-11-14, on purpose: the holdings spread out (W1-W8 above). Proof: the old gaps give all five again.
 //  Were classic 376eb788, Normal s1 0620ac51, Normal s2 8d537d0c, Normal s3 3c103cb4, Large s1 1a0f554e)
-const SUMS={classic:'759ca6f8','Normal s1':'2d3eb194','Normal s2':'812260ff','Normal s3':'175fcc04','Large s1':'3b4ad7bf'};
+// (classic, Normal s1, Normal s3, Large s1 re-recorded 2026-11-15, on purpose: the fords by towns built bridges (W1-W8 above; Normal s2 has
+//  none such). Proof: PLACE.fordTown 0 gives them again. Were classic 759ca6f8, Normal s1 2d3eb194, Normal s3 175fcc04, Large s1 3b4ad7bf)
+// (all five re-recorded 2026-11-17, on purpose: the lab's generator (6bceba2 through a250c0a: W1-W8 above) makes every world
+//  anew; Normal s1-s3 and Large s1 are the same before this round (40efd91^) and now. The classic world moved again with its land
+//  hints back (c630feb: genLandHints; was b5072aae before it). Were classic 88f2e7f8, Normal s1 69fdd482, s2 812260ff, s3 4638513a,
+//  Large s1 127d2d4d)
+// (classic re-recorded 2026-11-17 again, on purpose: its peaks and great river back (7570e2c: W1-W8 above); the random presets'
+//  sums hold, the hints the classic world's alone. Was classic 943ffc16)
+const SUMS={classic:'cddc33f6','Normal s1':'91cae7e6','Normal s2':'3fd4482d','Normal s3':'43cecd26','Large s1':'37ce35ca'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance);
 try{
  try{localStorage.clear()}catch(e){}

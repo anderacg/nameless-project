@@ -42,7 +42,7 @@ try{
    const {C,R}=T0;let same=true,wn=0,en=0;for(let r=0;r<R;r++)for(let c=0;c<C;c++){const v=T0.clim[r*C+c];if(v!==T0.clim[r*C+C-1-c])same=false;if(v===b){if(c<C/2)wn++;else en++}}
    if(same&&wn===en&&T0.recipe.mix.mirror)mir++;if(hz)hzN++;else{vtN++;if(toward(T0,S))vt++}
    const off=at(x,y,true,false).T;if(toward(off,S))right++;dsh.push(Math.abs(share(T0,S)-share(off,S)));
-   by[S.c+'/'+S.mix.c]=(by[S.c+'/'+S.mix.c]||0)+1;if(/ on both halves/.test(T0.recipe.text)&&!/toward the/.test(T0.recipe.text))both++;if(/toward the (north|south|east|west)|patches of/.test(off.recipe.text)&&!/both halves/.test(off.recipe.text))words++}
+   by[S.c+'/'+S.mix.c]=(by[S.c+'/'+S.mix.c]||0)+1;if(/ on both halves/.test(T0.recipe.text)&&!/toward the (north|south|east|west)/.test(T0.recipe.text))both++;if(/toward the (north|south|east|west)|patches of/.test(off.recipe.text)&&!/both halves/.test(off.recipe.text))words++}
   const md=dsh.reduce((a,b)=>a+b,0)/Math.max(1,dsh.length);
   ok(mixed.length>=12&&cl>=mixed.length*.9&&mir===cl,'a fight at a climates\' edge mixes its field\'s ground, both armies\' halves alike (TERRAIN_MIX.mirror): '+cl+' of '+mixed.length+' fields with the other climate\'s cells, '+mir+' mirrored cell for cell across the middle line, the same count in each half ('+Object.entries(by).map(([k,v])=>k+' '+v).join(', ')+')');
   ok(!vtN||vt>=vtN*.9,'the world\'s north or south still shows: '+vt+' of '+vtN+' fields whose other climate lies north or south with more of it on that side ('+hzN+' east or west: alike across)');
@@ -133,7 +133,7 @@ try{
  // (no river by a pond: a frost field's frozen river by its chance ran over a spring's pool and marsh, none of it left (322,30), its
  // words naming it; a pond is water near, so no chance river)
  {const pd=scan((S,x,y)=>S.pond&&S.pond.kind!=='oasis'&&S.c!=='desert'&&S.kinds.every((k,i)=>k!==T_WATER||S.pond.at.includes(i))&&!S.river&&!S.brook,3,24);let ok1=0,mid=0,mar=0,wd=0;const kinds={};
-  for(const [x,y,S] of pd){const {g,T:T0}=at(x,y),P=T0.recipe.ponds;kinds[S.pond.kind]=(kinds[S.pond.kind]||0)+1;if(!g.river&&g.pond&&P&&P.length)ok1++;if(P&&P.every(p=>Math.abs(p.x-BW/2)<BW*.15))mid++;if(T0.kind.includes(K.marsh))mar++;if(new RegExp(t.TERRAIN_WORDS.pond[S.pond.kind]).test(T0.recipe.text))wd++}
+  for(const [x,y,S] of pd){const {g,T:T0}=at(x,y),P=T0.recipe.ponds;kinds[S.pond.kind]=(kinds[S.pond.kind]||0)+1;if(!g.river&&g.pond&&P&&P.length)ok1++;if(P&&P.every(p=>Math.abs(p.x-BW/2)<BW*.15))mid++;if(T0.kind.includes(K.marsh))mar++;if(new RegExp(t.TERRAIN_WORDS.pond[S.pond.kind],'i').test(T0.recipe.text))wd++}
   ok(pd.length>=8&&ok1===pd.length&&mid===pd.length&&mar===pd.length&&wd===pd.length,'a fight by a pond: its pool in a marsh on the field ('+ok1+' of '+pd.length+': '+Object.entries(kinds).map(([k,v])=>k+' '+v).join(', ')+'), in the middle of its width ('+mid+'), no river (its water none, and none by a swamp\'s or a frost field\'s chance); the words name it ('+wd+')');
   if(pd.length){const [x,y]=pd[0],{T:T0,env}=at(x,y),cv=t.PX.battleGround({...T0,climate:env.c}),d=cv.getContext('2d', { willReadFrequently: true }).getImageData(0,0,BW,BH).data,p=T0.recipe.ponds[0],o=(Math.round(p.y)*BW+Math.round(p.x))*4,W2=t.PX.GROUND_PAL[env.c].water.map(c=>[1,3,5].map(k=>parseInt(c.slice(k,k+2),16)));
    ok(W2.some(c=>Math.hypot(d[o]-c[0],d[o+1]-c[1],d[o+2]-c[2])<40),'painted: open water in its middle ('+[d[o],d[o+1],d[o+2]].join(',')+')')}

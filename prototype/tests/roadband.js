@@ -2,7 +2,7 @@
 // The road's band (world/roadband.js; the owner, 2026-10-23: "sometimes my character even stands on the road but the game still
 // reads it as swamp"): a road's speed follows the road as drawn (gfx/worldart.js artRoadSegs), not its tiles. On a diagonal stretch,
 // on the drawn line where the tile is the land's, road speed; over the shoulder, between the land's and the road's; far off,
-// the land's (the band's widths 0: the tile rule); water never passable; an estate's track a little slower (ROAD_BAND.trackSpeed);
+// the land's (the band's widths 0: the tile rule); water the water's (waded or swum by its depth), never the road; an estate's track a little slower (ROAD_BAND.trackSpeed);
 // regionAt names the road there. By road (world.js setByRoad: a mode, P.byRoad; the action ring's By road, key B): while it is
 // on, a plain click's way, drawn and walked, keeps to the roads between two holdings across a swamp, more of it on the road than
 // the plain way; it stays on for the next trip, and across a save and a load; the day bar shows it; with no road near, a trip
@@ -43,11 +43,13 @@ Kit.suite(({ok,info})=>{
   const was=bare(()=>pts.map(([x,y])=>[t.speedAt(x,y),t.speedAt(x,y,'human'),t.speedAt(x,y,'orc'),t.regionAt(x,y).name]));
   pts.forEach(([x,y],i)=>{const q=near(x,y);if(Math.min(q.road,q.est)<RB.great[0]+RB.great[1]+3||t.terrAt(x,y)===t.T_ROAD)return;n++;const w=was[i];if(t.speedAt(x,y)!==w[0]||t.speedAt(x,y,'human')!==w[1]||t.speedAt(x,y,'orc')!==w[2]||t.regionAt(x,y).name!==w[3])bad.push(Math.round(x)+','+Math.round(y))});
   ok(n>1000&&!bad.length,'far from every road ('+n+' points): the land\'s speed for anyone (orcs, humans, none) and its own name, as by the tiles'+(bad.length?': not at '+bad.slice(0,5).join(' '):''));
-  let wet=0,dry=[];for(let ty=0;ty<t.MH;ty++)for(let tx=0;tx<t.MW;tx++){if(t.tAt(tx,ty)!==t.T_WATER)continue;for(const [a,b] of [[2,2],[8,8],[14,14],[2,14],[14,2]]){const x=tx*TL+a,y=ty*TL+b;if(!t.RoadBand.at(x,y))continue;wet++;if(t.speedAt(x,y)!==0||t.speedAt(x,y,'human')!==0||t.regionAt(x,y).road)dry.push(tx+','+ty)}}
-  ok(wet>50&&!dry.length,'water within a road\'s band ('+wet+' points by bridges and shores): never passable, never the road'+(dry.length?': '+dry.slice(0,5).join(' '):''))}
+  // (water is waded and swum by its depth since 5677a03 (WATER.speed): the band leaves it the water's, as by the tiles)
+  const wp=[];for(let ty=0;ty<t.MH;ty++)for(let tx=0;tx<t.MW;tx++){if(t.tAt(tx,ty)!==t.T_WATER)continue;for(const [a,b] of [[2,2],[8,8],[14,14],[2,14],[14,2]]){const x=tx*TL+a,y=ty*TL+b;if(t.RoadBand.at(x,y))wp.push([x,y])}}
+  const ww=bare(()=>wp.map(([x,y])=>[t.speedAt(x,y),t.speedAt(x,y,'human')])),dry=wp.filter(([x,y],i)=>t.speedAt(x,y)!==ww[i][0]||t.speedAt(x,y,'human')!==ww[i][1]||t.regionAt(x,y).road).map(([x,y])=>Math.floor(x/TL)+','+Math.floor(y/TL));
+  ok(wp.length>50&&!dry.length,'water within a road\'s band ('+wp.length+' points by bridges and shores): the water\'s own speed, waded or swum ('+[...new Set(ww.map(v=>v[0].toFixed(2)))].slice(0,4).join(', ')+'), never the road\'s, never named the road'+(dry.length?': '+dry.slice(0,5).join(' '):''))}
  // ---- in the swamp (the owner's shot: "Swamp" read on the road): on the drawn line where the tile is swamp, its way's speed
  {const sw=R.concat(T2).filter(([x,y])=>t.climAt(x,y)==='swamp'),was=bare(()=>sw.map(([x,y])=>t.speedAt(x,y))),now=sw.map(([x,y])=>t.speedAt(x,y)),want=sw.map(([x,y])=>near(x,y).est<1?RB.trackSpeed:RB.speed);
-  ok(sw.length>=4&&now.every((v,i)=>v===want[i])&&was.every(v=>v<=.5),'on the drawn line through the swamp, where the tile is swamp ('+sw.length+' points): its way\'s speed ('+[...new Set(now)].join(', ')+'), by the tiles alone '+[...new Set(was)].join(', ')+'; regionAt '+[...new Set(sw.map(([x,y])=>t.regionAt(x,y).name))].join(', '))}
+  ok(sw.length>=4&&now.every((v,i)=>v===want[i])&&was.every(v=>v<=t.CLIMMUL.swamp),'on the drawn line through the swamp, where the tile is swamp ('+sw.length+' points): its way\'s speed ('+[...new Set(now)].join(', ')+'), by the tiles alone '+[...new Set(was)].join(', ')+'; regionAt '+[...new Set(sw.map(([x,y])=>t.regionAt(x,y).name))].join(', '))}
  // ---- an estate's track: a little slower than a road, its own name
  {const now=T2.map(([x,y])=>t.speedAt(x,y)),hum=T2.map(([x,y])=>t.speedAt(x,y,'human')),nm=T2.filter(([x,y])=>{const r=t.regionAt(x,y);return r.road===2&&r.name===t.TRACK_NAMES[r.c]}).length;
   ok(T2.length>=20&&now.every(v=>v===RB.trackSpeed)&&hum.every(v=>Math.abs(v-RB.trackSpeed*RB.human)<1e-9)&&RB.trackSpeed<RB.speed,'on the drawn line of an estate\'s track ('+T2.length+' points): '+RB.trackSpeed+' (humans '+(RB.trackSpeed*RB.human).toFixed(3)+'), a little slower than a road\'s '+RB.speed);
@@ -56,20 +58,22 @@ Kit.suite(({ok,info})=>{
  const pairs=[];for(const r of t.WM.roads){if(!r.a||!r.b||r.est)continue;const h1=t.townBy(r.a),h2=t.townBy(r.b);if(!h1||!h2)continue;const d=Math.hypot(h1.x-h2.x,h1.y-h2.y);if(d<15*TL||d>45*TL)continue;
   let s=0;for(let i=0;i<=40;i++)if(t.climAt(h1.x+(h2.x-h1.x)*i/40,h1.y+(h2.y-h1.y)*i/40)==='swamp')s++;if(s>=12&&t.clearLine(t.gateSpot(h1).x,t.gateSpot(h1).y,t.gateSpot(h2).x,t.gateSpot(h2).y))pairs.push([h1,h2,s/41])}// (the straight line between their gates open: no holding's walls across it, router.js holdShut, so the plain way goes by it)
  pairs.sort((a,b)=>b[2]-a[2]);
- const onShare=w=>w.X.filter((x,i)=>t.regionAt(x,w.Y[i]).road).length/w.n;
+ // (its share on the road up to the last stretch before g: within ROAD_GO.near tiles of the point the way may leave the road for it,
+ // cutting across sooner (world.js ROAD_GO.keep): Bonefang's gate, 2026-11-17)
+ const onShare=(w,g)=>{const R=t.ROAD_GO.near*TL,I=[...Array(w.n).keys()].filter(i=>Math.hypot(w.X[i]-g.x,w.Y[i]-g.y)>R);return I.filter(i=>t.regionAt(w.X[i],w.Y[i]).road).length/Math.max(1,I.length)};
  const march=n=>Kit.frames(n,.05,dt=>t.marchStep(dt*t.WORLD_PACE),()=>P.tx==null||G.mode!=='world');
  if(!pairs.length)info('no two holdings with a road between them across a swamp');
  const pill=()=>!!document.querySelector('#underway [data-k="road"]');
  // what was said on the screen since (system lines are toasts, not the journal: state.js toast)
  const told=()=>new Set(document.querySelectorAll('#log>div')),toldSince=s=>[...document.querySelectorAll('#log>div')].filter(d=>!s.has(d)).map(d=>d.textContent);
  for(const [h1,h2,sw] of pairs.slice(0,1)){const s1=t.gateSpot(h1),s2=t.gateSpot(h2),from=on=>{Kit.clear();Kit.world({encCool:99});Kit.goTo(s1.x,s1.y);G.lastTown=h1;P.bsta=100;P.stuck=0;G.chase=null;t.setByRoad(on)};
-  from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0);
-  const said=told();from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1);
-  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&toldSince(said).some(m=>/keeps to the roads/.test(m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
+  from(false);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w0=t.WUI.way,p0=onShare(w0,s2);
+  const said=told();from(true);t.worldGo(s2.x,s2.y);t.wuiSync(performance.now());const w1=t.WUI.way,p1=onShare(w1,s2);
+  ok(P.byRoad===true&&G.byRoad&&G.byRoad.on&&w1!==w0&&w1.ok&&p1>p0&&p1>.9&&toldSince(said).some(m=>/keeps to the roads/.test(m)),h1.name+' to '+h2.name+' ('+Math.round(sw*100)+'% swamp on the straight line): by-road mode on, a plain click\'s way drawn keeps to the roads, '+Math.round(p1*100)+'% of it on them up to the last '+t.ROAD_GO.near+' tiles (the plain way '+Math.round(p0*100)+'%), and the log says it is on');
   t.updateHUD(true);ok(pill(),'Under way shows By road while it is on ('+(document.querySelector('#underway [data-k="road"]')||{}).textContent+')');
   let on=0;const f1=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on++},()=>P.tx==null||G.mode!=='world'),end=Math.hypot(P.x-s2.x,P.y-s2.y);
   // (still on for the next trip: back the way you came, a plain click again)
-  const back=P.byRoad===true;G.lastTown=h2;t.worldGo(s1.x,s1.y);t.wuiSync(performance.now());const p2=onShare(t.WUI.way);
+  const back=P.byRoad===true;G.lastTown=h2;t.worldGo(s1.x,s1.y);t.wuiSync(performance.now());const p2=onShare(t.WUI.way,s1);
   from(false);t.worldGo(s2.x,s2.y);let on0=0;const f0=Kit.frames(20000,.05,dt=>{t.marchStep(dt*t.WORLD_PACE);if(t.regionAt(P.x,P.y).road)on0++},()=>P.tx==null||G.mode!=='world');
   ok(end<3&&on/f1>on0/f0,'your band walks it there: '+Math.round(on/f1*100)+'% of its steps on the road (the plain way '+Math.round(on0/f0*100)+'%), '+t.Clock.hoursIn(f1*.05*t.WORLD_PACE).toFixed(1)+' h (the plain way '+t.Clock.hoursIn(f0*.05*t.WORLD_PACE).toFixed(1)+' h)');
   ok(back&&p2>.9,'arrived, it stays on: the next plain click (back again) keeps to the roads too ('+Math.round(p2*100)+'% on them)');
@@ -97,8 +101,12 @@ Kit.suite(({ok,info})=>{
   else{Kit.clear();Kit.world({encCool:99});Kit.goTo(a[0],a[1]);t.setByRoad(true);const said=told(),said0=G.msgs.length;t.worldGo(b[0],b[1]);const plain=!t.byRoadTo(P.tx,P.ty),f=march(3000),said2=[...G.msgs.slice(said0).map(m=>m.m),...toldSince(said)].filter(m=>/road/i.test(m));
    ok(plain&&P.byRoad===true&&G.byRoad==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&!said2.length,'by-road mode on with no road within '+t.ROAD_GO.near+' tiles: the plain way there ('+f+' frames), still on, and nothing in the log'+(said2.length?': '+said2.join(' | '):''));t.setByRoad(false)}}
  // ---- the band follows the ways: an estate's track taken up and laid again (lots.js tracksUp, occRebuild) makes it again
- {const x=T2[0],b0=t.RoadBand.bytes(),v0=t.WAYV;t.tracksUp(t.WM);const up=t.speedAt(x[0],x[1]),b1=t.RoadBand.bytes();for(const h of t.TOWNS)if(h.lots)t.Layout.of(h).tracks(true);t.tracksDone();
-  ok(t.WAYV!==v0&&up<RB.trackSpeed&&b1<b0&&t.speedAt(x[0],x[1])===RB.trackSpeed&&t.RoadBand.bytes()===b0,'the estates\' tracks taken up (lots.js tracksUp): the band made again without them ('+up.toFixed(2)+' where one ran, '+b1+' bytes); laid again, with them ('+t.RoadBand.bytes()+' bytes)')}
+ {const b0=t.RoadBand.bytes(),v0=t.WAYV;t.tracksUp(t.WM);const ups=T2.map(([x,y])=>t.speedAt(x,y)),b1=t.RoadBand.bytes();for(const h of t.TOWNS)if(h.lots)t.Layout.of(h).tracks(true);t.tracksDone();
+  // (laid again all at once they may differ by a track from the first laying, town by town as each was placed (127 and 126 on
+  // the classic world, 2026-11-17): the band is the ways' as they now are, the points on a track laid again back at its speed)
+  const back=T2.map(([x,y])=>t.speedAt(x,y)===RB.trackSpeed),b2=t.RoadBand.bytes(),n=t.WM.roads.filter(r=>r.est).length,nb=back.filter(Boolean).length;t.RoadBand.build();
+  ok(t.WAYV!==v0&&ups.every(v=>v<RB.trackSpeed)&&b1<b0&&nb>=T2.length*.9&&b2>b1&&t.RoadBand.bytes()===b2,'the estates\' tracks taken up (lots.js tracksUp): the band made again without them (at most '+Math.max(...ups).toFixed(2)+' where they ran, '+b1+' bytes); laid again, with them ('+b2+' bytes, '+n+' tracks; '+nb+' of '+T2.length+' points on them back at '+RB.trackSpeed+'), the band the ways\' as they now are');
+  info('the tracks laid again '+(b2===b0?'as first laid':'differ from the first laying: '+b0+' bytes then, '+b2+' now'))}
  // ---- by-road mode is yours: saved with you and back on a load; off, nothing of it in the save (a new hero's is off)
  {Kit.clear();Kit.world({encCool:99});G.mode='world';t.setByRoad(true);t.saveGame(true,'quick');const sv=JSON.parse(localStorage.getItem(t.slotKey('quick')));t.setByRoad(false);t.loadGame('quick');const back=P.byRoad===true;t.updateHUD(true);const shown=pill();
   t.setByRoad(false);G.mode='world';t.saveGame(true,'quick');const sv0=JSON.parse(localStorage.getItem(t.slotKey('quick')));t.setByRoad(true);t.loadGame('quick');

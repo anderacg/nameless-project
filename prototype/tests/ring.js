@@ -16,8 +16,9 @@ try{
  const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<200)&&!t.nearWater(x,y,5)&&t.campGround(x,y))return [x,y]}})();// (clear ground: Make camp pitches there at once)
  const bag=g=>{for(const k of ['water','skin_empty','ale','liquor'])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
  const reset=()=>{t.ActionRing.close();t.hideTip();Kit.world();Kit.goTo(spot[0],spot[1]);ev('BAND=freshBand()');G.encCool=99;G.speed=1;G.chase=null;P.tx=null;t.bandits.length=0;W0();t.drawWorld()};
- // (client points of a world point; a pointer event on the canvas, or at a point of the window)
- const cl=(wx,wy)=>{const r=cv.getBoundingClientRect();return{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-G.cam.y)*r.height/t.VH}};
+ // (client points of a world point, where it is drawn: up by its land's lift (a press picks the ground the pointer shows: input.js
+ //  liftGround; the owner, 2026-11-16); a pointer event on the canvas, or at a point of the window)
+ const cl=(wx,wy)=>{const r=cv.getBoundingClientRect();return{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-t.liftAt(wx,wy)-G.cam.y)*r.height/t.VH}};
  const down=(p,more)=>cv.dispatchEvent(new PointerEvent('pointerdown',{...p,pointerType:'mouse',button:0,pointerId:1,bubbles:true,...more}));
  const up=(p,more)=>window.dispatchEvent(new PointerEvent('pointerup',{...p,pointerType:'mouse',button:0,pointerId:1,bubbles:true,...more}));
  const move=p=>cv.dispatchEvent(new PointerEvent('pointermove',{...p,pointerType:'mouse',pointerId:1,bubbles:true}));

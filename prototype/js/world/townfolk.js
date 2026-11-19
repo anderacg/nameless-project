@@ -163,9 +163,9 @@ class TownFolk{
   static draw(ents,cam,V){if(!this.of.size)return;const S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;
     for(const [t,C] of this.of){const cl=dressClimAt(t.x,t.y),tint=FACS[t.owner]?.col||'#bda882';
       for(const p of C.ppl){const sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y);if(p.hid||sx<-16||sy<-8||sx>VW+16||sy>VH+40||!S.sees(p.x,p.y,1.3)||B?.world?.hides(p))continue;
-        ents.push({y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.i):0,k=k0*(p.child?.72:1),
-          sp=p.trade?unitSprite(peasantKind(p.race,p.trade),0,false,p.v%6,pose,false,false,tint):personSprite(p.look,p.race,p.v,pose);
-          ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2);ctx.restore()})})}}}
+        ents.push({x:p.x,y:p.y,f:()=>dressedIn(cl,()=>{ctx.save();subT(p);const pose=p.moving?2+footFrame(p.walked,p.i):0,k=k0*(p.child?.72:1),u=peasantKind(p.race,p.trade||'farmer'),
+          sp=unitSprite(ST[u]?u:'militia',0,false,p.v%6,pose,false,!p.trade,tint);
+          ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.translate(sx,sy);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2);ctx.restore()})})}}}
 }
 const drawTownFolk=(ents,cam,V)=>TownFolk.draw(ents,cam,V);
 Systems.add({name:'town folk',order:{frame:143},frame:d=>TownFolk.step(d)});

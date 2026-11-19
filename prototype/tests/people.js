@@ -23,7 +23,8 @@ try{
  world();let g=mk();t.invAdd('good','grain',20);const rep0=t.repAt(src.name);t.interact(g);
  ok(G.rf===g&&/Refugees from/.test(panel()),'clicking refugees you reach opens a talk with them');
  t.act('rf-feed');ok(g.fed&&t.repAt(src.name)>rep0,'sharing food raises your name where they came from');t.act('dlg-ok');
- const lv=t.RACES[g.race].melee,had=P.troops[lv]||0,n0=g.n;world();t.interact(g);t.act('rf-recruit');ok((P.troops[lv]||0)>had&&g.n<n0,'some of them take up arms with you, and fewer arrive');t.act('dlg-ok');
+ // (as their people's Peasant Levy, not their spearmen: the owner, 2026-11-15, "the refugee should give player peasant troops instead of spearman": refugees.js)
+ const lv=t.peasantLevy(g.race),had=P.troops[lv]||0,n0=g.n;world();t.interact(g);t.act('rf-recruit');ok((P.troops[lv]||0)>had&&g.n<n0,'some of them take up arms with you, as their peasant levy ('+lv+'), and fewer arrive');t.act('dlg-ok');
  const fief=TW.find(x=>x!==src&&x!==dst&&x.kind==='village'),fo=fief.owner;fief.owner='player';world();t.interact(g);t.act('rf-settle');
  ok(g.to===fief.name,'they can be offered a home in your fief');t.act('dlg-ok');fief.owner=fo;
  g=mk();world();const gold0=P.gold,rep1=t.repAt(src.name),h0=t.honorWith(src.owner);t.interact(g);t.act('rf-rob');

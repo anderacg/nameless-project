@@ -38,9 +38,12 @@ Kit.suite(({ok,info})=>{
   const o1=off2();ok(over<.75&&o1<=o0+base,'the army faster (a road) or slower (woods): every man at its step, never faster (most '+over.toFixed(2)+' px over, the parting\'s nudge), none further behind ('+o0.toFixed(1)+' then '+o1.toFixed(1)+' px off his place)')}
  // (a body: from a standstill he gathers speed over his kind's time, never at once; a rider slower than a man on foot)
  {const ft=t.marchKind('hum_foot'),kt=t.marchKind('hum_knight');ok(ft.t>0&&kt.t>ft.t&&kt.turn<ft.turn,'his kind’s body: a footman comes up to pace in '+ft.t.toFixed(2)+' s and turns '+ft.turn+' rad/s, a knight '+kt.t.toFixed(2)+' s and '+kt.turn+' rad/s')}
- // (his walk's frames: by his walking time, about MARCH_MOVE.cadence a second, the battle's pace, never five strides a second)
- {let ch=0,n=0;const f=u=>t.marchSprite(u,P);for(let i=0;i<60;i++){const pr=new Map(A.units.map(u=>[u,f(u)]));P.x+=1.3;A.step(.05);for(const u of A.units){if(u.pivot||!u.walking)continue;n++;if(f(u)!==pr.get(u))ch++}}const fps=ch/n/.05;
-  ok(fps>4&&fps<=t.MARCH_MOVE.cadence+.5,'marching, a man’s walk steps about '+fps.toFixed(1)+' frames a second (an arena battle’s 8-9; by distance it was 21: "like running or shaking")')}
+ // (his walk's frames: by the way he has walked, a frame each WALK.foot x WALK.step px, so his feet keep to the ground (8340389, the
+ //  owner, 2026-11-07: "the sprite seems like they are floating due to speed and animation is not aligned"), a stride longer than a
+ //  foot's travel (WALK.step > 1: "it seems too fast"); once by his walking time, 9 a second, his legs out of step with the ground)
+ {let ch=0,n=0,px=0;const f=u=>t.marchSprite(u,P),S=t.WALK.foot*t.WALK.step;for(let i=0;i<60;i++){const pr=new Map(A.units.map(u=>[u,[f(u),u.walk||0]]));P.x+=1.3;A.step(.05);for(const u of A.units){if(u.pivot||!u.walking||!t.marchWalks(u))continue;const q=pr.get(u);n++;px+=(u.walk||0)-q[1];if(f(u)!==q[0])ch++}}
+  const fps=ch/n/.05,per=ch/(px/S);
+  ok(t.WALK.step>1&&per>.85&&per<=1.05,'marching, a man’s walk steps a frame each '+S.toFixed(2)+' px he walks ('+per.toFixed(2)+' frames to that; '+fps.toFixed(1)+' a second at this pace): his feet on the ground, his stride a little longer than his foot\'s travel')}
  // (a pack's man at its middle (no one's, march.js): he steps too, not sliding on one frame)
  {const m=t.asMonster({id:'wolf',x:P.x,y:P.y-60,hx:P.x,hy:P.y-60,lv:1,n:4,t:0,a:0,cool:0});t.W.monsters.push(m);const B3=t.MarchArmy.of(m),pv=B3.units.find(u=>u.row===B3.rows[0].id),fr=new Set();for(let i=0;i<30;i++){m.x+=1.3;B3.step(.05);fr.add(t.marchSprite(pv,m))}
   ok(pv&&pv.walking&&fr.size>=3,'a pack’s man at its middle walks as the pack moves ('+fr.size+' frames in 1.5 s; frozen on one, he slid)');t.W.monsters.splice(t.W.monsters.indexOf(m),1)}

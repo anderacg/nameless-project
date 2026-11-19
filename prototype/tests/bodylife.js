@@ -15,8 +15,10 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
  ok(px(spr('chief',7))!==px(spr('militia',7)),'a two-handed axe: both hands on it');
  {const r=[0,6,7,8].map(p=>px(spr('horse',p)));ok(r[1]===r[0]&&r[2]===r[0],'a rider\'s blows: his body as it stands (his mount is not rigged)')}
  // ======== the small life: struck, glancing, shifting
- {const st=px(spr('militia',0));ok([t.FLINCH_POSE,t.LOOK_POSE,t.SHIFT_POSE].every(p=>px(spr('militia',p))!==st),'struck, a flinch; standing, a glance back and the weight shifted: each its own frame');
-  ok(spr('militia',t.FLINCH_POSE).rig&&spr('militia',t.SHIFT_POSE).hand[0]===spr('militia',0).hand[0]-1,'the weapon stays in his hand as he moves (the shift: his hand a pixel back)')}
+ // (the dolls are rigid (96b6711, 2026-11-07, the owner: a doll's head and body never moved against each other, "no lean, glance or weight
+ //  shift of the head and shoulders"): the glance and the shift are his standing body, pixel for pixel; struck, still a flinch of his own)
+ {const st=px(spr('militia',0));ok(px(spr('militia',t.FLINCH_POSE))!==st&&[t.LOOK_POSE,t.SHIFT_POSE].every(p=>px(spr('militia',p))===st),'struck, a flinch, its own frame; standing about, the glance and the shift his standing body (rigid: head and body never apart)');
+  ok(spr('militia',t.FLINCH_POSE).rig&&[t.LOOK_POSE,t.SHIFT_POSE].every(p=>spr('militia',p).hand.join()===spr('militia',0).hand.join()),'the weapon stays in his hand as he moves (struck: on the rig; glancing, shifting: where it is as he stands)')}
  // ======== standing about (the owner, 2026-10-31: idle animation, "breathing + fidgets"; then no bob, "floating"): on foot a
  // glance and a shift; a horse tosses its head; a beast sways; the whole body never lifted
  {const L=t.idleLife,ts=[...Array(200)].map((_,i)=>i*.05),share=(id,k)=>ts.filter(x=>L(id,x,k).dy<0).length/ts.length,flat=k=>ts.map(x=>L(7,x,k).dx);

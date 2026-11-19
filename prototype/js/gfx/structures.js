@@ -8,7 +8,7 @@
 
 /* placed buildings */
 // a lot's model as it stands (lots.js lotSpec: its culture, people, seed, facing, land, level, the centre's walls) with its snow
-function lotModel(t,l){const s=lotSpec(t,l);s.snow=lotSnow(l);return s.tier?PX.centreModel(s):s.kind?PX.clusterModel(s):PX.buildingModel(s)}
+function lotModel(t,l,detail){const s=lotSpec(t,l);s.snow=lotSnow(l);if(detail>1)s.detail=detail;return s.tier?PX.centreModel(s):s.kind?PX.clusterModel(s):PX.buildingModel(s)}
 // the snow on a lot: the frost's whole, and toward it the frost's cover there (worldart.js snowCover; the model keeps it to thirds).
 // (The seasons' hook: a season's snow would scale it, and the overlays change without the models being built again)
 function lotSnow(l){const x=(l.x+l.n/2)*TILE,y=(l.y+l.n/2)*TILE;return climAt(x,y)==='frost'?1:WorldArt.ensure().snow[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]}
@@ -25,21 +25,70 @@ function lotSprite(t,l){
   if(l._gimg&&l._gimg!==m.img)relot(l);
   cv.flag=m.flag;cv.rot=l.st==='ruined'?null:m.rotors;cv.sh=l._sh=m.shadow;l._st=l.st;l._lv=l.lv;l._fort=F;l._yw=l.yaw;return l._s=cv;
 }
+// (its picture at the scene's finer resolution (render.js sceneRes, r px a game px): a holding's centre, at its own size, the same
+// model made r times finer, kept on its game-px picture, made ahead (LOT_AHEAD: a model takes tens of ms); every other building at
+// WORLD_VIEW.house (lotDrawBox): at its own size the same, else its own picture, a model's px a fine px)
+function lotFine(t,l,r){const s=lotSprite(t,l);if(r<=1||lotK(l)<1)return s;if(s._f&&s._fr===r)return s._f;
+  const m=lotModel(t,l,r),N=m.cell;let cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});if(l.st==='ruined')cv=charred(cv,l.seed);s._f=cv;s._fr=r;return cv}
+// (a lot's scale, and where its picture stands: [x, y (its corner), n (its size), k], X the lot's left, Y its front edge, N its picture's
+// size: on the lot's front middle)
+const lotK=l=>l.k==='centre'?1:WORLD_VIEW.house;
+function lotDrawBox(l,X,Y,N){const k=lotK(l),n=N*k;return [X+(N-n)/2,Y-n,n,k]}
+// (whether map point (wx, wy) falls on lot l's building as drawn: an opaque px of its picture there, or within LOT_PICK.slack game px of one;
+// its opaque box on the map, [x0, y0, x1, y1], for the pointer's brackets (worldui.js))
+const LOT_PICK={slack:1};
+function lotAlpha(s){if(s._al)return s._al;const w=s.width,h=s.height,d=s.getContext('2d',{willReadFrequently:true}).getImageData(0,0,w,h).data,A=new Uint8Array(w*h);for(let i=0;i<w*h;i++)A[i]=d[i*4+3]>40?1:0;return s._al=A}
+function lotPicBox(t,l){const N=l.n*TILE,[bx,by,bn]=lotDrawBox(l,l.x*TILE,(l.y+l.n)*TILE,N),s=lotSprite(t,l),b=opaqueBox(s),q=bn/s.width;return b?[bx+b[0]*q,by+b[1]*q,bx+(b[2]+1)*q,by+(b[3]+1)*q]:[bx,by,bx+bn,by+bn]}
+function lotPicHit(t,l,wx,wy){const N=l.n*TILE,[bx,by,bn]=lotDrawBox(l,l.x*TILE,(l.y+l.n)*TILE,N),sl=LOT_PICK.slack;if(wx<bx-sl||wy<by-sl||wx>=bx+bn+sl||wy>=by+bn+sl)return false;
+  const s=lotSprite(t,l),w=s.width,h=s.height,q=w/bn,A=lotAlpha(s),r=Math.ceil(sl*q),cx=Math.floor((wx-bx)*q),cy=Math.floor((wy-by)*q);
+  for(let y=Math.max(0,cy-r);y<=Math.min(h-1,cy+r);y++)for(let x=Math.max(0,cx-r);x<=Math.min(w-1,cx+r);x++)if(A[y*w+x])return true;return false}
+function drawLot(t,l,s,X,Y,n){const r=sceneRes(),N=s.width;n=n||N;if(n===N&&r>1&&s._f&&s._fr===r)ctx.drawImage(s._f,X,Y,N,N);else ctx.drawImage(s,X,Y,n,n)}
+// (a picture taken down to k of its size, for what reads game px (the depth overdraw, the shadows): kept on it)
+const scaledPic=(s,k)=>k===1||!s?s:(s._k&&s._kk===k?s._k:(s._kk=k,s._k=mkc(Math.max(1,Math.round(s.width*k)),Math.max(1,Math.round(s.height*k)),g=>{g.imageSmoothingEnabled=false;g.drawImage(s,0,0,s.width*k,s.height*k)})));
 /* a building's rotors over its picture at (X, Y), its corner (the owner, 2026-11-08: "draw mills separately from the building to
    animate it"): a windmill's sails and a watermill's wheel turning (engine PX.ROTORS.spin turns a second, from the clock and its
    seed); still (at its seed's angle) where it stands outside your sight, as you last saw it */
-function drawRotors(s,X,Y,seed,still){if(!s.rot)return;const t=still?0:performance.now()/1000;
-  for(const r of s.rot){const f=PX.rotorFrame(r,(seed||0)+t*PX.ROTORS.spin[r.kind]*Math.PI*2);ctx.drawImage(f.img,X+f.ox,Y+f.oy);depthPic(f.img,X+f.ox,Y+f.oy)}}
+function drawRotors(s,X,Y,seed,still,k=1){if(!s.rot)return;const t=still?0:performance.now()/1000;
+  for(const r of s.rot){const f=PX.rotorFrame(r,(seed||0)+t*PX.ROTORS.spin[r.kind]*Math.PI*2);ctx.drawImage(f.img,X+f.ox*k,Y+f.oy*k,f.img.width*k,f.img.height*k);if(k>=1)depthPic(f.img,X+f.ox,Y+f.oy)}}
 // a lot's yard for the painted world (worldart.js townGround): its model's ground layer with its snow's over it, {d: RGBA, N, key:
 // its material (groundKey)}, kept with the model; the lot remembers which model it was painted from (_gimg)
 function lotYard(t,l){const m=lotModel(t,l),N=m.cell,h=m.snow||m.ground;l._gimg=m.img;
   if(!h._gd)h._gd={N,key:m.groundKey,d:mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0)}).getContext('2d', { willReadFrequently: true }).getImageData(0,0,N,N).data};
   return h._gd}
 // the models of the lots near you made ahead, a few ms a frame (LOT_AHEAD: how far past the view, how long), the nearest holdings
-// first, so a town comes into view already built (its chunks are painted ahead with its yards: worldart.js)
+// first, so a town comes into view already built (its chunks are painted ahead with its yards: worldart.js); then the settled camps'
 const LOT_AHEAD={r:600,ms:3};
-function lotsAhead(V){const t0=performance.now();for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+LOT_AHEAD.r).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
-  for(const l of t.lots){if(l._s&&l._gimg)continue;lotSprite(t,l);lotYard(t,l);if(performance.now()-t0>LOT_AHEAD.ms)return}}
+// (the sites asked for at their fine scale, and the camps warmed, at the scene's resolution: kept apart from the sites themselves, which
+// are saved as they stand (core/save.js), so a loaded game warms them again)
+const SITE_WARM=new WeakMap();
+function lotsAhead(V){const t0=performance.now(),R=performance.now()-LOT_WARM.at<250?LOT_WARM.near:LOT_AHEAD.r;for(const t of TOWNS.filter(q=>q.lots&&Math.hypot(q.x-P.x,q.y-P.y)<V+R).sort((a,b)=>Math.hypot(a.x-P.x,a.y-P.y)-Math.hypot(b.x-P.x,b.y-P.y)))
+  for(const l of t.lots){if(l._s&&l._gimg&&(sceneRes()<=1||l._s._fr===sceneRes()))continue;lotSprite(t,l);lotYard(t,l);lotFine(t,l,sceneRes());if(performance.now()-t0>LOT_AHEAD.ms)return}
+  // (the sites near you asked for at their fine scale before they come into view (sites.js draw's k), made with the rest: no site drawn
+  //  coarse its first frames, its yard with it)
+  const rs=sceneRes();if(rs>1)for(const s of W.sites){if(SITE_WARM.get(s)===rs||s.warm||!s.draw||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;SITE_WARM.set(s,rs);try{fineOf(siteSprite(s),rs*Math.round(siteK(s)))}catch(e){}if(performance.now()-t0>LOT_AHEAD.ms)return}
+  for(const cv of FINE_Q){FINE_Q.delete(cv);const w=cv._want||sceneRes();if(w>1)buildFine(cv,w);if(performance.now()-t0>LOT_AHEAD.ms)return}
+  // (the settled camps near you too: their tents and pieces (encampments.js warm), so none is made the frame it comes into view)
+  const r=sceneRes();for(const s of W.sites){if(!s.warm||SITE_WARM.get(s)===r||Math.hypot(s.x-P.x,s.y-P.y)>V+LOT_AHEAD.r)continue;if(s.warm(t0,LOT_AHEAD.ms))SITE_WARM.set(s,r);if(performance.now()-t0>LOT_AHEAD.ms)return}}
+// (a site's picture at the scene's finer resolution: its model made r times finer by its maker (siteCanvas mk), with its own touches
+// (deco) drawn r times larger; asked for when it is drawn (fineOf), made ahead with the lots (FINE_Q), drawn where it is made (drawFine),
+// else the picture itself)
+/* a holding's buildings made ahead in the frame's spare time (main.js paintIdle, by quality.js frameSpare; the owner, 2026-11-18: "go
+   ahead with 1-3"): the lots of the holdings within r px past your sight, the nearest the way you go first (ahead: how much a px
+   of it the way you face counts), one lot a call at most (a fine model can take a hundred ms: never two in one slice), none while the
+   frame has under min ms left. While it works (called in the last 250 ms: at) lotsAhead makes in the frame only what lies within near
+   px past your sight (where lots are drawn), what is not ready when it comes there. n: lots made so far */
+const LOT_WARM={on:true,r:1400,near:340,ahead:.6,min:4,n:0,at:0,way:null};
+const lotReady=(l,rs)=>!!(l._s&&l._gimg&&(rs<=1||lotK(l)<1||l._s._fr===rs));
+function lotWarm(ms){const W=LOT_WARM;if(!W.on||typeof TOWNS==='undefined')return false;W.at=performance.now();if(!(ms>=W.min))return false;const rs=sceneRes(),V=vis(),w=W.way||(W.way={x:P.x,y:P.y,dx:0,dy:0});
+  {const mx=P.x-w.x,my=P.y-w.y,m=Math.hypot(mx,my);if(m>2){w.dx=mx/m;w.dy=my/m;w.x=P.x;w.y=P.y}}
+  let best=null,bs=Infinity;for(const t of TOWNS){if(!t.lots)continue;const dx=t.x-P.x,dy=t.y-P.y,d=Math.hypot(dx,dy);if(d>V+W.r)continue;const sc=d-W.ahead*(dx*w.dx+dy*w.dy);
+    if(sc<bs&&t.lots.some(l=>!lotReady(l,rs))){bs=sc;best=t}}
+  if(!best)return false;const l=best.lots.find(l=>!lotReady(l,rs));lotSprite(best,l);lotYard(best,l);lotFine(best,l,rs);W.n++;return true}
+const FINE_Q=new Set();
+function fineOf(cv,r){if(r<=1||!cv.mk)return null;if(cv._f&&cv._fr===r)return cv._f;cv._want=r;FINE_Q.add(cv);return null}
+function buildFine(cv,r){const m=cv.mk(r),N=m.cell;cv._f=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(cv.deco){g.scale(r,r);cv.deco(g,cv.width)}});if(cv.gr)cv._fg=siteYard(m,r);cv._fr=r}
+// (k times its size: under 1 its own picture taken down; else made k times finer again (a whole k), drawn k times its size)
+function drawFine(cv,X,Y,k=1){if(k<1){ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k);return}const f=fineOf(cv,sceneRes()*Math.round(k));if(f)ctx.drawImage(f,X,Y,cv.width*k,cv.height*k);else ctx.drawImage(cv,X,Y,cv.width*k,cv.height*k)}
 // burnt: every pixel darkened toward soot, a scatter of ash and the last embers (still whole pixels, never half-see-through)
 function charred(src,seed){return mkc(src.width,src.height,g=>{g.drawImage(src,0,0);const d=g.getImageData(0,0,src.width,src.height),a=d.data;
   for(let i=0;i<a.length;i+=4){if(a[i+3]<255)continue;const k=(i>>2),h=hash(k%src.width,k/src.width|0,seed);const f=h<.08?.25:.45;a[i]=a[i]*f+30*(1-f)|0;a[i+1]=a[i+1]*f+24*(1-f)|0;a[i+2]=a[i+2]*f+20*(1-f)|0;if(h>.995){a[i]=232;a[i+1]=106;a[i+2]=42}}
@@ -52,7 +101,22 @@ const FLAG_POLE=15;
 function flagSprite(b,f){const k='fl'+b.k+b.col+b.dev+f;if(spr[k])return spr[k];const Q=BATTLE_BANNER,[cw]=Q.cloth[b.k]||Q.cloth.banner,h=FLAG_POLE,g=pgrid(cw+4,h+3),W=PPAL.wood;
   for(let y=2;y<=h+1;y++)pset(g,1,y,W[y>h-2?2:1]);pset(g,1,1,PPAL.gold[1]);pset(g,1,0,PPAL.gold[0]);bannerCloth((x,y,c)=>pset(g,x,y,c),2,3,b,f,Q.cloth,1,Q);
   g.edge=true;poutline(g);const c=pcanvas(g);c.ax=1;c.ay=h+1;return spr[k]=c}
-const drawFlag=(b,x,y,seed)=>{const s=flagSprite(b,Math.floor(performance.now()/400+(seed||0))%2);ctx.drawImage(s,Math.round(x)-s.ax,Math.round(y)-s.ay)};
+/* (the flag on the map at the lab's scale (WORLD_VIEW.build: a picture's px a fine px), as the battle's men carry theirs: its pole
+   z fine px a game px, two across, lit on its left, a round gilt knob; the same cloth (bannerCloth) z times as large, its fly waving z
+   times as deep, its device z px a pixel (the cloth's own pixels where its device lies, from the cloth painted with it and without);
+   at the old flag's size: ax, ay in game px, drawn back to it (drawFlag). The UI's flags stay flagSprite's) */
+function flagFine(b,f){const k='flf'+b.k+b.col+b.dev+f;if(spr[k])return spr[k];const z=Math.round(1/WORLD_VIEW.build),Q=BATTLE_BANNER,[cw]=Q.cloth[b.k]||Q.cloth.banner,h=FLAG_POLE,W=PPAL.wood,G=PPAL.gold;
+  const S2={},o={...Q,fly:Q.fly*z,notch:(Q.notch||3)*z},g=pgrid((cw+4)*z,(h+3)*z),x0=2*z,top=3*z;for(const q in Q.cloth)S2[q]=Q.cloth[q].map(v=>v*z);
+  for(let y=2*z;y<(h+2)*z;y++){const foot=y>=(h-1)*z;pset(g,z,y,W[foot?1:0]);pset(g,z+1,y,W[foot?3:y%5?1:2])}
+  for(const [x,y,c] of [[z,0,G[0]],[z+1,0,G[1]],[z-1,1,G[0]],[z,1,G[0]],[z+1,1,G[1]],[z+2,1,G[2]],[z-1,2,G[1]],[z,2,G[1]],[z+1,2,G[2]],[z+2,2,G[3]],[z,3,G[2]],[z+1,3,G[3]]])pset(g,x,y,c);
+  // (its fly's wave: z times the cloth's own, the column's sine as bannerCloth works it)
+  const ph=(i,n)=>(i/n*Q.fold+f*.5)*Math.PI,wv=(i,n,fly,a)=>i<fly?0:Math.round(a*Math.sin(ph(i,n)));
+  bannerCloth((x,y,c)=>{const i=x-x0;pset(g,x,y+wv(i,cw*z,o.fly,z)-wv(i,cw*z,o.fly,1),c)},x0,top,{...b,dev:null},f,S2,1,o);
+  if(b.dev){const A=new Map(),B=new Map();bannerCloth((x,y,c)=>A.set(x+','+y,c),0,0,b,f,Q.cloth,1,Q);bannerCloth((x,y,c)=>B.set(x+','+y,c),0,0,{...b,dev:null},f,Q.cloth,1,Q);
+    for(const [p,c] of A){if(B.get(p)===c)continue;const [i,y]=p.split(',').map(Number),r=y-wv(i,cw,Q.fly,1);
+      for(let dx=0;dx<z;dx++)for(let dy=0;dy<z;dy++){const j=i*z+dx;pset(g,x0+j,top+r*z+dy+wv(j,cw*z,o.fly,z),c)}}}
+  g.edge=true;poutline(g);const c=pcanvas(g);c.ax=1;c.ay=h+1;c.z=z;return spr[k]=c}
+const drawFlag=(b,x,y,seed)=>{const s=flagFine(b,Math.floor(performance.now()/400+(seed||0))%2);ctx.drawImage(s,Math.round(x)-s.ax,Math.round(y)-s.ay,s.width/s.z,s.height/s.z)};
 // (a holding's flag: its realm's banner and device, yours with the crown, none held a grey one)
 const holdingFlag=(t,col)=>({k:'banner',col,dev:t.owner==='player'?'crown':t.owner||null});
 // a camp's fire, its foot at (x, y): as it burns (fire.js fireCamp); FLAMES off, its flame through the engine's four frames
@@ -61,25 +125,27 @@ const drawFire=(x,y,seed)=>{if(FLAMES.on){fireCamp(x,y,seed);return}const f=Math
 function drawLotGround(cam,V){
   lotsAhead(V);
   for(const t of TOWNS){if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>V+340)continue;
-    for(const k in bldSpots(t)){const lv=bldLv(t,k);if(!lv)continue;const s=estateGround(t,k,lv);if(!s)continue;const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y);
-      if(sx>VW||sy>VH||sx+s.width<0||sy+s.height<0)continue;ctx.drawImage(s,sx,sy)}}
+    // (each at its land's lift, as the land, its buildings and its herd are drawn: worldterrain.js liftAt; flat, the pen's animals stood
+    //  above their fence on raised ground (the owner, 2026-11-16: "Why pasture animals are outside of fence"))
+    for(const k in bldSpots(t)){const lv=bldLv(t,k);if(!lv)continue;const s=estateGround(t,k,lv);if(!s)continue;const p=bldSpots(t)[k],sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y-(typeof liftAt==='function'?liftAt(p.x,p.y):0));
+      const w=s.width/s.z,h=s.height/s.z;if(sx>VW||sy>VH||sx+w<0||sy+h<0)continue;ctx.drawImage(s,sx,sy,w,h)}}
 }
 // the buildings themselves among the parties, each by its front edge: every holding's (HoldingObject draw, estates.js)
 function lotEnts(ents,cam,V){for(const t of TOWNS)t.draw(ents,cam,V)}
 // one holding's buildings; the centre flies the owner's flag and carries the name
 function holdingEnts(t,ents,cam,V){
   if(!t.lots||Math.hypot(t.x-P.x,t.y-P.y)>V+340)return;const now=facCol(t),live0=inSight(t.x,t.y);if(live0)t._memCol=now;const col=live0?now:t._memCol||now;
-    for(const l of t.lots){const N=l.n*TILE,X=Math.round(l.x*TILE-cam.x),Y=Math.round((l.y+l.n)*TILE-cam.y);if(X>VW||X+N<0||Y-N>VH+20||Y<-12)continue;
+    for(const l of t.lots){const N=l.n*TILE,X=Math.round(l.x*TILE-cam.x),Y=Math.round((l.y+l.n)*TILE-cam.y);if(X>VW||X+N<0||Y-N>VH+20||Y<-12)continue;const [bx,by,bn,k]=lotDrawBox(l,X,Y,N);
       // (its shadow, in the shadow pass: where its building is drawn, as you last saw it outside your sight; none while it is going up)
       const live=inSight((l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE),sm=live?l.st!=='building'&&lotSprite(t,l):(seenTile(l.x,l.y)||seenTile(l.x+l.n-1,l.y+l.n-1))&&(l._mem||lotSprite(t,l));
-      ents.push({y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[sm.sh,X,Y-N]:null,f:()=>{
+      ents.push({x:(l.x+l.n/2)*TILE,y:(l.y+l.n)*TILE-1,sh:sm&&sm.sh?[scaledPic(sm.sh,k),bx,by]:null,f:()=>{
         // outside your sight: the building as you last saw it (fog.js), or nothing if you never saw its ground
-        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);ctx.drawImage(m,X,Y-N);depthPic(m,X,Y-N);drawRotors(m,X,Y-N,l.seed,true);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),X+m.flag[0],Y-N+m.flag[1],t.seed);holdingPlaque(t,cam,Y-N+Math.min(0,m.flag?m.flag[1]:0),false)}return}
+        if(!live){if(!seenTile(l.x,l.y)&&!seenTile(l.x+l.n-1,l.y+l.n-1))return;const m=l._mem||lotSprite(t,l);drawLot(t,l,m,bx,by,bn);depthPic(scaledPic(m,k),bx,by);drawRotors(m,bx,by,l.seed,true,k);if(l.k==='centre'&&(l._memSt||l.st)!=='ruined'){if(m.flag)drawFlag(holdingFlag(t,col),bx+m.flag[0]*k,by+m.flag[1]*k,t.seed);holdingPlaque(t,cam,by+Math.min(0,m.flag?m.flag[1]*k:0),false)}return}
         const s=lotSprite(t,l),w=t.work&&(t.work.lot?t.work.lot===l.id:t.work.k===l.k||t.work.k==='wall'&&l.k==='centre'),p=w?workProg(t):0;l._mem=s;l._memSt=l.st;
-        if(l.st==='building')drawSite(s,X,Y,N,p,false,l.seed,t.races?.[0]);else{ctx.drawImage(s,X,Y-N);depthPic(s,X,Y-N);drawRotors(s,X,Y-N,l.seed);if(w&&l.st==='built')drawSite(s,X,Y,N,p,true,l.seed,t.races?.[0])}
-        if(ESTATES[l.k]&&sabotaged(t,l.k)){const now=performance.now()/1000;for(let i=0;i<6;i++){const ph=(now*.35+i/6)%1;ctx.globalAlpha=(1-ph)*.6;rect(ctx,ph<.3?'#4a4440':'#7a7470',Math.round(X+N/2-1+Math.sin(ph*6+i)*3+ph*5),Math.round(Y-N*.6-ph*20),2,2)}ctx.globalAlpha=1}
-        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),X+s.flag[0],Y-N+s.flag[1],t.seed);holdingLabel(t,cam,X,Y,N,s.flag?s.flag[1]:0)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
-      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({y:o.y,f:()=>drawMoored(o,cam)});
+        if(l.st==='building')drawSite(s,bx,Y,bn,p,false,l.seed,t.races?.[0]);else{drawLot(t,l,s,bx,by,bn);depthPic(scaledPic(s,k),bx,by);drawRotors(s,bx,by,l.seed,false,k);if(w&&l.st==='built')drawSite(s,bx,Y,bn,p,true,l.seed,t.races?.[0])}
+        if(ESTATES[l.k]&&sabotaged(t,l.k))smokePuffs(X+N/2,Y-N*.6);
+        if(l.k==='centre'&&l.st!=='ruined'){if(s.flag)drawFlag(holdingFlag(t,col),bx+s.flag[0]*k,by+s.flag[1]*k,t.seed);holdingLabel(t,cam,bx,Y,bn,s.flag?s.flag[1]*k:0)}}});// (no estate's name under it near you: no words on the map's places, the owner, 2026-11-08; its tip names it)
+      if(l.k==='port'&&l.st==='built')for(const o of estateBoats(t,bldLv(t,'port')))ents.push({x:o.x,y:o.y,f:()=>drawMoored(o,cam)});
       if(l.k==='pasture'&&l.st==='built'&&live)penEnts(t,PEN_ENTS,cam)}// (its herd, inside its fence: critters.js; with those who move, PEN_ENTS)
   TownWall.ents(t,ents,cam);// (its ring of walls: world/townwalls.js)
 }
@@ -92,10 +158,8 @@ function holdingEnts(t,ents,cam,V){
 const SITE={walk:1.2,swing:.42,swings:3,spots:5,crew:[[16,1,0],[32,1,1],[999,2,1]],carry:5};
 function drawSite(s,X,Y,N,p,full,seed,race){
   const now=performance.now(),top=Math.round(N*.82),h=full?N:Math.max(2,Math.round(top*p));race=race||'human';
-  if(!full&&h>0)ctx.drawImage(s,0,N-h,N,h,X,Y-h,N,h);
-  const x0=full?X+(N>>1):X+1,x1=X+N-2,poles=full?[x0,x1]:N>16?[x0,X+(N>>1),x1]:[x0,x1];
-  for(const px of poles){rect(ctx,'#1a1512',px-1,Y-top-1,3,top+1);rect(ctx,'#8a6a42',px,Y-top,1,top)}
-  for(let y=Y-4;y>Y-top;y-=6){rect(ctx,'#1a1512',x0-1,y-1,x1-x0+3,3);rect(ctx,'#a07e54',x0,y,x1-x0+1,1)}
+  if(!full&&h>0){const c=s._f&&s._fr===sceneRes()?s._f:s,q=c.width/N;ctx.drawImage(c,0,c.width-h*q,c.width,h*q,X,Y-h,N,h)}// (a centre's at its finer picture: lotFine)
+  const x0=full?X+(N>>1):X+1,x1=X+N-2,poles=full?[x0,x1]:N>16?[x0,X+(N>>1),x1]:[x0,x1];scaffold(poles,x0,x1,Y,top,seed);
   const ly=full?Y-Math.round(top/2):Math.max(Y-top+2,Y-h-1),span=Math.max(1,x1-x0-4);
   if(!figsOn()){const wx=x0+2+Math.round((Math.sin(now/900+seed)*.5+.5)*span),f=Math.floor(now*PEOPLE_STEPS/720)%PEOPLE_STEPS;
     ctx.drawImage(workerSprite('builder',f,race,seed%4),wx-8,ly-14);if(Math.floor(now/180+seed)%7===0)rect(ctx,'#ffe090',wx+4,ly-8,1,1);return}
@@ -103,17 +167,31 @@ function drawSite(s,X,Y,N,p,full,seed,race){
   for(let i=0;i<nb;i++){/* a builder: walking to his spot, then hammering there */
     const t=now/1000+(seed%97)*.37+i*1.9,n=Math.floor(t/T),c=t-n*T,a=spot(i,n-1),b=spot(i,n),y=i?Math.min(Y-2,ly+6):ly;let x,pose,face=b>=a?1:-1;
     if(c<S.walk){x=Math.round(a+(b-a)*c/S.walk);pose=b===a?0:figPose(Math.floor(c*6),true)}
-    else{x=b;const q=(c-S.walk)/S.swing,f=Math.floor((q%1)*3);pose=12+f;if(f===1&&(q%1)<.45)rect(ctx,'#ffe090',x+face*5,y-9,1,1)}
+    else{x=b;const q=(c-S.walk)/S.swing,f=Math.floor((q%1)*3);pose=12+f;if(f===1&&(q%1)<.45)spark(x+face*5,y-9)}
     drawFig(figWorker('builder',race,(seed+i)%4,pose),x,y,face)}
   if(carry){/* the plank carrier: in from the side, loaded, and back out for more */
     const t=now/1000+(seed%53)*.41,L=S.carry,n=Math.floor(t/L),c=(t-n*L)/L,inw=n%2===0,sx=X-6,ex=X+(N>>1),x=Math.round(inw?sx+(ex-sx)*c:ex+(sx-ex)*c);
     drawFig(figWorker('builder',race,(seed+3)%4,figPose(Math.floor(t*6),true),inw),x,Y+1,inw?1:-1)}
 }
+// (a hammer's spark at (x, y): a fine px's bright heart, its arms orange)
+const spark=(x,y)=>{const u=1/sceneRes();rect(ctx,'#ffb040',x-u,y,3*u,u);rect(ctx,'#ffb040',x,y-u,u,3*u);rect(ctx,'#fff4c0',x,y,u,u)};
+/* (its scaffolding at the lab's scale (a fine px u: render.js sceneRes): poles two fine px across, lit on their left, lashed where
+   the planks cross them; a plank every 6 px up, lit on its top, its shade under it; a brace across every other bay. SCAFFOLD: its
+   colours, pole lit and shaded, plank top, face and shade, lashing, brace) */
+const SCAFFOLD={pole:['#a8845a','#6a4a30'],plank:['#c8a272','#8e6a44','rgba(20,16,12,.35)'],lash:'#3e2e22',brace:'#7a5a38'};
+function scaffold(poles,x0,x1,Y,top,seed){const u=1/sceneRes(),S=SCAFFOLD;
+  for(let i=0;i+1<poles.length;i++){if((i+(seed|0))%2)continue;const a=poles[i]+2*u,b=poles[i+1],h=Math.min(top-2,12),n=Math.round((b-a)/u);for(let j=0;j<=n;j++)rect(ctx,S.brace,a+j*u,Y-2-Math.round(j*h/n/u)*u,u,u)}
+  for(const px of poles){rect(ctx,S.pole[0],px,Y-top,u,top);rect(ctx,S.pole[1],px+u,Y-top,u,top);rect(ctx,S.pole[0],px,Y-top-u,2*u,u)}
+  for(let y=Y-4;y>Y-top;y-=6){rect(ctx,S.plank[0],x0-u,y,x1-x0+4*u,u);rect(ctx,S.plank[1],x0-u,y+u,x1-x0+4*u,u);rect(ctx,S.plank[2],x0,y+2*u,x1-x0+2*u,u);for(const px of poles)rect(ctx,S.lash,px,y+2*u,2*u,u)}}
+// (smoke over a sabotaged estate from (x, y): puffs rising, drifting and fading, each a lump of fine px lit along its top)
+function smokePuffs(x,y){const now=performance.now()/1000,u=1/sceneRes();
+  for(let i=0;i<8;i++){const ph=(now*.35+i/8)%1,q=v=>Math.round(v/u)*u,px=q(x-1+Math.sin(ph*6+i)*3+ph*5),py=q(y-ph*20),s=(ph<.3?2:3)*u,dk=ph<.3;ctx.globalAlpha=(1-ph)*.6;
+    rect(ctx,dk?'#4a4440':'#7a7470',px,py+u,s+2*u,s);rect(ctx,dk?'#5e5854':'#948e88',px+u,py,s,u)}ctx.globalAlpha=1}
 // placing a building by hand: its ghost under the pointer, its tiles green where it may stand and red where not
 function drawPlace(cam){
-  const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(G.cam.x+G.mouse.x,G.cam.y+G.mouse.y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
+  const pl=G.place,t=townBy(pl.town);if(!t||!G.mouse.in)return;const n=pl.n,N=n*TILE,{x,y}=placeAt(G.cam.x+G.mouse.x,liftGround(G.cam.x+G.mouse.x,G.cam.y+G.mouse.y).y,n),ok=placeOk(t,pl.k,x,y,n),X=x*TILE-cam.x,Y=y*TILE-cam.y;
   if(!pl._s){const s={culture:holdingCulture(t),people:t.races[0],seed:pl.seed,env:climAt(t.x,t.y)},b=PX.MODEL_SIZES.types[pl.type]?PX.buildingModel({...s,type:pl.type}):PX.clusterModel({...s,kind:pl.type});pl._s=b.img}
-  ctx.fillStyle=ok?'rgba(120,220,110,.28)':'rgba(230,90,80,.32)';ctx.fillRect(X,Y,N,N);ctx.globalAlpha=.75;ctx.drawImage(pl._s,X,Y);ctx.globalAlpha=1;
+  ctx.fillStyle=ok?'rgba(120,220,110,.28)':'rgba(230,90,80,.32)';ctx.fillRect(X,Y,N,N);ctx.globalAlpha=.75;const [bx,by,bn]=lotDrawBox({k:pl.k},X,Y+N,N);ctx.drawImage(pl._s,bx,by,bn,bn);ctx.globalAlpha=1;// (as it will stand: drawLot's box)
   ctx.strokeStyle=ok?'#78dc6e':'#e65a50';ctx.lineWidth=1;ctx.strokeRect(X+.5,Y+.5,N-1,N-1);
   txt('Place the '+(pl.k==='house'?'house':ESTATES[pl.k].n.toLowerCase())+' of '+t.name+', click to build, Esc to stop',VW/2,VH-8,'#e8b94a','center');
 }
@@ -139,7 +217,7 @@ const HOLD_PLAQUE={on:false,h:30,pad:11,gap:5,over:10,most:4,art:2,text:15,full:
 let PLAQUE_FONT=null;
 const plaqueFont=()=>PLAQUE_FONT||(PLAQUE_FONT=(typeof getComputedStyle==='function'&&getComputedStyle(document.documentElement).getPropertyValue('--display').trim())||'Georgia, serif');
 let PLAQUEQ=[];
-function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y,live})}
+function holdingPlaque(t,cam,top,live){PLAQUEQ.push({t,top:top+cam.y-LIFT_NOW,live})}
 function lockPic(){const L=GATE_LOCK;if(!L.pic)L.pic=mkc(L.art[0].length,L.art.length,g=>L.art.forEach((r,y)=>[...r].forEach((c,x)=>{if(L.col[c]){g.fillStyle=L.col[c];g.fillRect(x,y,1,1)}})));return L.pic}
 // (its owner's shield: a heater, flat-topped, in its colours with a pale down it, gold-rimmed, lit on its left; made once a colour)
 const PLAQUE_SHIELD=['ooooooooo','orrrrrrro','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','oxxxpxxdo','.oxxpxdo.','.oxxpxdo.','..oxpdo..','...oxo...','....o....'],SHIELD_PICS=new Map();
@@ -194,60 +272,86 @@ function pierOf(t){
 const FURROW={frost:[[228,234,242],.85],swamp:[[70,92,96],.3]},EDGE_SOFT=4;
 const PEN={grass:{a:[[132,152,72],[150,164,84]],b:[[118,100,62],[100,86,54]]},frost:{a:[[112,124,92],[94,108,78]],b:[[190,198,212],[166,176,194]]},
   desert:{a:[[170,160,84],[142,134,66]],b:[[156,124,80],[138,108,68]]},swamp:{a:[[86,112,56],[70,94,46]],b:[[70,60,40],[84,106,108]]}};
-// the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map; kept on its lot (l._eg) until its level
-// changes: an estate pulled down and placed again elsewhere, or another world's holding of the same name, draws its own
+// (a pen's rail fence at the lab's scale: its rail lit along its top, its shade beside it, a post every PEN_FENCE.post fine px, lit
+// at its left, its cap pale; rail, post, cap, shade)
+const PEN_FENCE={post:8,rail:['#b08a5a','#7a5a38'],posts:['#9a7444','#5a3e24'],cap:'#c8a070',shade:'rgba(30,24,12,.3)'};
+// the flat part of an estate at its level, as one picture placed at (cv.x, cv.y) on the map, at the lab's scale (cv.z fine px a game
+// px: WORLD_VIEW.build; drawn back to its size, drawLotGround); kept on its lot (l._eg) until its level changes: an estate pulled
+// down and placed again elsewhere, or another world's holding of the same name, draws its own
 function estateGround(t,k,lv){
-  const l=lotAt(t,k),p=bldSpots(t)[k];if(!l||!p)return null;if(l._eg!==undefined&&l._egLv===lv)return l._eg;l._egLv=lv;
+  const l=lotAt(t,k),p=bldSpots(t)[k],se=k==='farm'?farmSeason():'';if(!l||!p)return null;if(l._eg!==undefined&&l._egLv===lv&&l._egSe===se)return l._eg;l._egLv=lv;l._egSe=se;// (a farm's again each season: its crops grow, worldart.js FARM.grow)
   const c=climAt(p.x,p.y),plots=plotsAt(t,k,lv),pier=k==='port'?pierOf(t):null,plen=pier?10+lv*6:0,tiles=[[l.x,l.y],[l.x+l.n-1,l.y+l.n-1],...plots];
   let x0=Math.min(...tiles.map(q=>q[0]))*TILE-2,y0=Math.min(...tiles.map(q=>q[1]))*TILE-2,x1=(Math.max(...tiles.map(q=>q[0]))+1)*TILE+2,y1=(Math.max(...tiles.map(q=>q[1]))+1)*TILE+2;
   if(pier){x0=Math.min(x0,pier.x-plen-6);x1=Math.max(x1,pier.x+plen+6);y0=Math.min(y0,pier.y-plen-6);y1=Math.max(y1,pier.y+plen+6)}
-  const has=(x,y)=>plots.some(q=>q[0]===x&&q[1]===y),h=(x,y,s)=>hash(x,y,t.seed*7+s),SC=WorldArt.ensure().snow;
+  const has=(x,y)=>plots.some(q=>q[0]===x&&q[1]===y),h=(x,y,s)=>hash(x,y,t.seed*7+s),SC=WorldArt.ensure().snow,z=Math.round(1/WORLD_VIEW.build),n2=TILE*z;
   // (a plot's land: how far into the frost by the snow's cover (0 the grass, 1 the frost), and its pen's colours there)
   const frOf=(tx,ty)=>c==='grass'||c==='frost'?Math.max(0,Math.min(1,(SC[ty*MW+tx]-.3)/.4)):0,penOf=fr=>{const A=PEN[c==='frost'?'grass':c],B=PEN.frost;return{a:A.a.map((q,i)=>mixc(q,B.a[i],fr)),b:A.b.map((q,i)=>mixc(q,B.b[i],fr))}};
-  const cv=mkc(x1-x0,y1-y0,g=>{const r=(col,x,y,w,hh)=>rect(g,col,Math.round(x-x0),Math.round(y-y0),w||1,hh||1);
-    for(const [tx,ty] of plots){const X=tx*TILE,Y=ty*TILE,edge=(a,b)=>!has(tx+a,ty+b);// (against its building too: ragged into its yard)
-      // (how far a pixel of the plot lies from an edge with no plot beyond, px)
-      const eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=frOf(tx,ty),px=(col,x,y)=>r(hex(col),X+x,Y+y);
-      if(k==='farm')farmPlot(t,tx,ty,c,fr,ed,px);// a field: its crop in rows of plants, what stands on it (gfx/worldart.js farmPlot)
+  const cv=mkc((x1-x0)*z,(y1-y0)*z,g=>{
+    for(const [tx,ty] of plots){const FX=tx*n2,FY=ty*n2,edge=(a,b)=>!has(tx+a,ty+b),f=(col,x,y,w,hh)=>rect(g,col,FX+x-x0*z,FY+y-y0*z,w||1,hh||1);// (against its building too: ragged into its yard; f: a fine px of the plot)
+      // (how far a game px of the plot lies from an edge with no plot beyond, px)
+      const eN=edge(0,-1),eS=edge(0,1),eW=edge(-1,0),eE=edge(1,0),ed=(x,y)=>Math.min(eW?x:9,eE?15-x:9,eN?y:9,eS?15-y:9),fr=frOf(tx,ty),hh=(x,y,s)=>h(FX+x,FY+y,s);
+      if(k==='farm')farmPlot(t,tx,ty,c,fr,ed,(col,x,y)=>f(hex(col),x*z,y*z,z,z),z,(col,x,y)=>f(hex(col),x,y,1,1));// a field: its crop in rows of plants, what stands on it (gfx/worldart.js farmPlot, shaded by the fine px)
       else if(k==='pasture'){// grazing ground behind a rail fence (its herd walks on it: critters): the land's own ground, grazed,
-        // trodden and fouled in patches (PEN), fewer toward an open edge
-        const pn=penOf(fr);for(let y=0;y<16;y++)for(let x=0;x<16;x++){const X1=X+x,Y1=Y+y,n=wnoise2(X1/5,Y1/5,(t.seed%997)+61),q=h(X1,Y1,6),soft=Math.min(1,(ed(x,y)+1)/EDGE_SOFT);
-          if(n>.58&&q<.8*soft)px(pn.a[q<.4*soft?0:1],x,y);else if(n<.34&&q<.6*soft)px(pn.b[h(X1>>1,Y1,7)<.3?1:0],x,y);else if(q<.07*soft)px(pn.a[1],x,y)}
-        const fence=(fx,fy,w,hh)=>{r('#8a6a42',fx,fy,w,hh);for(let i=0;i<Math.max(w,hh);i+=4)r('#5a3e24',fx+(w>1?i:0),fy+(hh>1?i:0)-1,1,2)};
-        if(eN)fence(X,Y+1,16,1);if(eS)fence(X,Y+15,16,1);if(eW)fence(X,Y+1,1,15);if(eE)fence(X+15,Y+1,1,15);
-}
-      else if(k==='quarry'){// an open pit cut into the ground: its corners rounded and its rim ragged so the ground shows round it,
-        // pale spoil thrown up about the rim, the back wall cut in strata, terraces stepping down to a dark floor, the left wall
-        // lit and the right in shadow, cut blocks waiting. Plots side by side make one pit (edges only where it ends)
-        // (in the frost, snow on its spoil and its rim, more the deeper in it)
-        const st=PX.MAT[ROCK_MAT[c]],x0=eW?2:0,x1=eE?13:15,y0=eN?2:0,y1=eS?13:15,hh=(x,y,s)=>h(tx*16+x,ty*16+y,s);
-        const rim=(x,y)=>x===x0&&eW||x===x1&&eE||y===y0&&eN||y===y1&&eS;
-        const inside=(x,y)=>x>=x0&&x<=x1&&y>=y0&&y<=y1&&!((x===x0&&eW||x===x1&&eE)&&(y===y0&&eN||y===y1&&eS))&&!((x===x0+1&&eW||x===x1-1&&eE)&&(y===y0&&eN||y===y1&&eS)&&hh(x,y,2)<.5)&&!(rim(x,y)&&hh(x,y,3)<.18);
-        for(let y=0;y<16;y++)for(let x=0;x<16;x++){
+        // trodden and fouled in patches (PEN) by the fine px, fewer toward an open edge
+        const pn=penOf(fr),A=pn.a.map(hex),B=pn.b.map(hex);for(let y=0;y<n2;y++)for(let x=0;x<n2;x++){const n=wnoise2((FX+x)/z/5,(FY+y)/z/5,(t.seed%997)+61),q=hh(x,y,6),soft=Math.min(1,(ed(x/z|0,y/z|0)+1)/EDGE_SOFT);
+          if(n>.58&&q<.8*soft)f(A[q<.4*soft?0:1],x,y);else if(n<.34&&q<.6*soft)f(B[hh(x>>1,y,7)<.3?1:0],x,y);else if(q<.07*soft)f(A[1],x,y)}
+        const F=PEN_FENCE,S=F.post;
+        for(const [on,y] of [[eN,2],[eS,n2-3]])if(on){f(F.rail[0],0,y,n2,1);f(F.rail[1],0,y+1,n2,1);f(F.shade,0,y+2,n2,1);for(let x=1;x<n2;x+=S){f(F.posts[0],x,y-2,1,4);f(F.posts[1],x+1,y-2,1,4);f(F.cap,x,y-2,2,1)}}
+        for(const [on,x] of [[eW,1],[eE,n2-3]])if(on){f(F.rail[0],x,2,1,n2-2);f(F.rail[1],x+1,2,1,n2-2);f(F.shade,x+2,3,1,n2-3);for(let y=2+S;y<n2;y+=S){f(F.posts[0],x,y-1,1,3);f(F.posts[1],x+1,y-1,1,3);f(F.cap,x,y-2,2,1)}}}
+      else if(k==='quarry'){/* an open pit cut into the ground: its corners rounded and its rim ragged so the ground shows round it,
+        pale spoil thrown up about the rim, the back wall cut in strata, terraces stepping down to a dark floor, the left wall lit
+        and the right in shadow, cut blocks waiting, rubble, now and then a ladder down its back wall. Plots side by side make one pit
+        (edges only where it ends). In the frost, snow on its spoil and its rim, more the deeper in it. By the fine px */
+        const st=PX.MAT[ROCK_MAT[c]],a0=eW?2*z:0,a1=eE?n2-1-2*z:n2-1,b0=eN?2*z:0,b1=eS?n2-1-2*z:n2-1,R=3,snow=hex(FURROW.frost[0]);
+        const cut=(x,y)=>{const cx=eW&&x<a0+R?a0+R:eE&&x>a1-R?a1-R:null,cy=eN&&y<b0+R?b0+R:eS&&y>b1-R?b1-R:null;return cx!=null&&cy!=null&&Math.hypot(x-cx,y-cy)>R+.3},
+          rim=(x,y)=>x===a0&&eW||x===a1&&eE||y===b0&&eN||y===b1&&eS,inside=(x,y)=>x>=a0&&x<=a1&&y>=b0&&y<=b1&&!cut(x,y)&&!(rim(x,y)&&hh(x,y,3)<.25);
+        for(let y=0;y<n2;y++)for(let x=0;x<n2;x++){
           if(!inside(x,y)){// spoil: gravel about the rim
-            if((eN&&y<y0||eW&&x<x0||eE&&x>x1||eS&&y>y1)&&hh(x,y,4)<.22){const sn=fr&&hh(x,y,12)<fr*.7;if(sn)px(FURROW.frost[0],x,y);else r(hh(x,y,5)<.5?st[0]:st[1],X+x,Y+y)}continue}
-          const d=eN?y-y0:9+y;let col;// d: how far below the back rim
-          if(d===0)col=st[0];else if(d<4)col=(d+(hh(x,0,6)<.3?1:0))%2?st[1]:st[2];else if(d===4)col=st[0];else if(d<7)col=st[2];else if(d===7)col=st[1];
-          // the floor: worked rock, mottled, with rubble and a further terrace every few rows down a long pit
-          else if(d>8&&(d-8)%6===0)col=st[1];else if(d>8&&(d-8)%6===1)col=st[0];else{const n=hh(x,y,9);col=n<.12?st[1]:n<.55?st[2]:st[3]}
-          if(x===x0&&eW&&d>0)col=st[1];if(x===x1&&eE&&d>0)col=st[3];if(y===y1&&eS)col=st[2];
-          if(d===0&&fr&&hh(x,y,13)<fr*.75||d===4&&fr&&hh(x,y,14)<fr*.35)col=hex(FURROW.frost[0]);
-          r(col,X+x,Y+y)}
-        // a cut block or two on the floor
-        for(let i=0;i<1+(hh(0,0,7)<.5?1:0);i++){const bx=X+x0+2+Math.floor(hh(i,1,8)*Math.max(1,x1-x0-6)),by=Y+Math.max(y0+9,Math.min(y1-3,y0+9+Math.floor(hh(i,2,8)*3)));r(st[0],bx,by,3,1);r(st[1],bx,by+1,3,1);r(st[3],bx,by+2,3,1)}}}
+            if((eN&&y<b0||eW&&x<a0||eE&&x>a1||eS&&y>b1)&&hh(x,y,4)<.22)f(fr&&hh(x,y,12)<fr*.7?snow:hh(x,y,5)<.5?st[0]:st[1],x,y);continue}
+          const d=eN?y-b0:18+y,s=Math.floor((d+(hh(x>>3,0,6)<.35?1:0))/2);let col;// d: how far below the back rim; s its stratum
+          if(d<2)col=st[0];else if(d<8)col=s%2?st[1]:st[2];else if(d<10)col=d===8?st[0]:st[1];else if(d<14)col=st[2];else if(d<16)col=st[1];
+          // the floor: worked rock, mottled, a pebble lit over its shade, and a further terrace every few rows down a long pit
+          else if((d-16)%12<2)col=st[1];else if((d-16)%12<4)col=st[0];else{const n=hh(x,y,9);col=n<.04?st[0]:n<.14?st[1]:n<.55?st[2]:st[3]}
+          if(eW&&x<a0+2&&d>1)col=x===a0?st[0]:st[1];if(eE&&x>a1-2&&d>1)col=st[3];if(eS&&y>b1-2)col=st[2];
+          if(d<2&&fr&&hh(x,y,13)<fr*.75||d>=8&&d<10&&fr&&hh(x,y,14)<fr*.35)col=snow;
+          f(col,x,y)}
+        // a cut block or two on the floor, lit on top, shaded at its right and under it
+        for(let i=0;i<1+(hh(0,0,7)<.5?1:0);i++){const bx=a0+4+Math.floor(hh(i,1,8)*Math.max(1,a1-a0-14)),by=Math.max(b0+18,Math.min(b1-6,b0+18+Math.floor(hh(i,2,8)*6)));
+          f(st[0],bx,by,6,1);f(st[1],bx,by+1,5,2);f(st[2],bx+5,by+1,1,2);f(st[3],bx,by+3,6,1);f(st[3],bx+6,by+1,1,3)}
+        if(eN&&hh(1,1,21)<.35){const lx=a0+6+Math.floor(hh(2,1,21)*Math.max(1,a1-a0-16));f('#8a6a42',lx,b0+1,1,15);f('#5a3e24',lx+3,b0+1,1,15);for(let y=b0+2;y<b0+16;y+=3)f('#b08a5a',lx+1,y,2,1)}}}
     // (what lies about its building is the model's: its yard, its dressing)
-    if(pier){const pi=PX.pier({dir:pier.dir,len:plen,seed:t.seed});g.drawImage(pi.img,Math.round(pier.x-pi.ox-x0),Math.round(pier.y-pi.oy-y0))}
+    if(pier){const pi=pierPic(pier.dir,plen,t.seed,z);g.drawImage(pi.img,Math.round((pier.x-pi.ox-x0)*z),Math.round((pier.y-pi.oy-y0)*z))}
   });
-  cv.x=x0;cv.y=y0;return l._eg=cv;
+  cv.x=x0;cv.y=y0;cv.z=z;return l._eg=cv;
 }
+/* a port's pier at the lab's scale (z fine px a game px; the engine's PX.pier's ground and offsets): a deck of planks across it, lit
+   along its near edge, each its own tone (an old one weathered dark), nailed; its side's beam, piles under it every PIER.pile fine px,
+   lit at their left, the water foaming at their feet; a bollard at its end, more along a long one. {img, ox, oy: game px} */
+const PIER={pile:10,foam:'#d8ecf0',ripple:'#9cc4d2',nail:'#3a3028'};
+function pierPic(dir,len,seed,z){len=Math.max(8,len|0);const ver=dir==='n'||dir==='s',Pk=PX.MAT.plank,Lg=PX.MAT.log,Tm=PX.MAT.timber,Q=PIER,m=z,hs=(a,b)=>PX.hash(a,b,seed);
+  const post=(f,x,y,h)=>{f(Tm[0],x,y,1,h);f(Tm[1],x+1,y,1,h);f(Tm[3],x+2,y,1,h);f(Pk[0],x,y,3,1)};
+  if(!ver){const L=len*z,img=mkc((len+3)*z,13*z,g=>{const f=(c,x,y,w=1,h=1)=>rect(g,c,m+x,m+y,w,h);
+      for(let x=0;x<L;x++){const i=x>>2,u=x&3,tone=hs(i,1)<.1?PX.mix(Pk[1],Pk[2],.5):hs(i,2)<.5?Pk[0]:PX.mix(Pk[0],Pk[1],.5);for(let y=4;y<12;y++)f(u===3?Pk[2]:y===4?PX.mix(tone,Pk[2],.5):y===11?PX.mix(tone,'#ffffff',.1):tone,x,y);if(u===1&&hs(i,3)<.5){f(Q.nail,x,5);f(Q.nail,x,10)}}
+      for(let x=0;x<L;x++){f(Pk[1],x,12);f(Pk[2],x,13,1,2);f(Pk[3],x,15)}
+      for(let x=dir==='e'?6:2;x<L-1;x+=Q.pile){f(Lg[0],x,16,1,5);f(Lg[1],x+1,16,1,5);f(Lg[3],x+2,16,1,5);f(Q.ripple,x-1,21,5,1);f(Q.foam,x,21,3,1)}
+      post(f,dir==='e'?L-3:0,0,12);if(len>=24)post(f,Math.round(L/2),1,4)});
+    return{img,ox:(dir==='e'?0:len)+1,oy:6}}
+  const L=len*z,img=mkc(11*z,(len+5)*z,g=>{const f=(c,x,y,w=1,h=1)=>rect(g,c,m+x,m+y,w,h);
+    for(let y=0;y<L;y++){const i=y>>2,u=y&3,tone=hs(1,i)<.1?PX.mix(Pk[1],Pk[2],.5):hs(2,i)<.5?Pk[0]:PX.mix(Pk[0],Pk[1],.5);for(let x=2;x<14;x++)f(u===3?Pk[2]:x===2?PX.mix(tone,'#ffffff',.1):x===13?PX.mix(tone,Pk[2],.4):tone,x,y);if(u===1&&hs(3,i)<.5){f(Q.nail,3,y);f(Q.nail,12,y)}f(Pk[2],14,y);f(Pk[3],15,y)}
+    // (its piles' heads along both sides, seen from over them)
+    for(let y=4;y<L;y+=Q.pile)for(const x of [0,16]){f(Lg[0],x,y,2,1);f(Lg[1],x,y+1,1,2);f(Lg[2],x+1,y+1,1,2);f(Lg[3],x,y+3,2,1)}
+    if(dir==='s'){f(Pk[1],2,L,14,1);f(Pk[2],2,L+1,14,2);f(Pk[3],2,L+3,14,1);for(const x of [4,11]){f(Lg[0],x,L+4,1,2);f(Lg[3],x+1,L+4,1,2);f(Q.foam,x-1,L+5,4,1)}}
+    else{f(Tm[0],2,0,12,1);f(Tm[1],2,1,12,1)}});
+  return{img,ox:4+1,oy:(dir==='s'?0:len)+1}}
 // boats moored at a port's pier, drawn as the ships that sail (ships.js shipSprite, moored): a rowing boat (16 x 16) for each
 // level up to two, and at a port of the third level a cog (32 x 32) with its sail furled in place of the second. Along a pier
 // that runs east or west a boat lies alongside: a rowing boat in front of the deck, a cog (or a second rowing boat) behind
 // it, a little water between its waterline and the deck's far edge; along one that runs north or south a boat lies bow on to
 // the pier, a little off its side. Each is kept only where its whole hull floats on water, clear of the other boat (else the
-// next place along the pier or on its other side; a cog that fits nowhere gives way to a rowing boat). Each: {b:{img,ax,ay},
-// x, y (the middle of its waterline), seed, big, box (its hull on the map: [left, top, right, bottom]), ropes (its mooring
-// lines, from its posts to the pier: [x0, y0, x1, y1], the boat's end first)}; kept on the port's lot (l._bt) by its level and flag
+// next place along the pier or on its other side; a cog that fits nowhere gives way to a rowing boat). Each: {b:{img,hi,ax,ay}
+// (hi: its picture at the lab's scale, drawn at img's size), x, y (the middle of its waterline), seed, big, box (its hull on the
+// map: [left, top, right, bottom]), ropes (its mooring lines, from its posts to the pier: [x0, y0, x1, y1], the boat's end first)};
+// kept on the port's lot (l._bt) by its level and flag
 function estateBoats(t,lv){
   const pr=pierOf(t),l=lotAt(t,'port');if(!pr||!lv||!l)return[];const col=t.owner&&FACS[t.owner]?FACS[t.owner].col:null,key=lv+(col||'');if(l._bt&&l._btK===key)return l._bt;l._btK=key;
   const len=10+lv*6,v=pr.dir==='n'||pr.dir==='s',sg=pr.dir==='s'||pr.dir==='e'?1:-1,out=[];
@@ -269,20 +373,21 @@ function estateBoats(t,lv){
         const box=[L+hx0,y-hh,L+hx1,y],up=[box[0],y-top,box[2],y];let ok=v||Math.min(box[2],span[1])-Math.max(box[0],span[0])>=8;
         for(let x=box[0];x<=box[2]+7&&ok;x+=8){const xx=Math.min(x,box[2]);if(!wet(xx,y)||!wet(xx,y-hh))ok=false}
         if(!ok||out.some(o=>up[0]<=o.up[2]+2&&up[2]>=o.up[0]-2&&up[1]<=o.up[3]+2&&up[3]>=o.up[1]-2))continue;
-        const fk='shf'+(big?1:0)+(big&&col||'')+seed%3,img=face>0?sp:(spr[fk]||(spr[fk]=mkc(n,n,g=>{g.translate(n,0);g.scale(-1,1);g.drawImage(sp,0,0)})));
+        const fk='shf'+(big?1:0)+(big&&col||'')+seed%3,flip=(k,c)=>spr[k]||(spr[k]=mkc(c.width,c.height,g=>{g.translate(c.width,0);g.scale(-1,1);g.drawImage(c,0,0)})),img=face>0?sp:flip(fk,sp),hi=sp.hi&&(face>0?sp.hi:flip(fk+'h'+sp.hi.width,sp.hi));
         // the mooring lines: the bow's to the side of a north-south pier; along an east-west pier, each end's to the deck's edge
         const posts=sp.posts.map(([px,py])=>[L+(face>0?px:n-1-px),y-(n-1)+py]),ropes=[];
         if(v){const p=posts[1];ropes.push([p[0],p[1],pr.x+side*4,p[1]+2])}
         else for(const p of posts){const ex=Math.max(span[0]+1,Math.min(span[1]-1,p[0]-face*2));if(Math.abs(ex-p[0])<8)ropes.push([p[0],p[1],ex,side>0?pr.y+2:pr.y-3])}
-        out.push({b:{img,ax:n>>1,ay:n-1},x:L+(n>>1),y,seed,big,box,up,ropes});done=true;break}}}
+        out.push({b:{img,hi,ax:n>>1,ay:n-1},x:L+(n>>1),y,seed,big,box,up,ropes});done=true;break}}}
   return l._bt=out;
 }
-// a moored boat rocks gently at its lines (a pixel, slower than one under way)
+// a moored boat rocks gently at its lines (a pixel, slower than one under way): its picture at the lab's scale (hi), its lines a fine
+// px thick (u: render.js sceneRes), sagging a little between
 function drawMoored(o,cam){
-  const bob=Math.floor(performance.now()/700+o.seed)%2,X=Math.round(o.x-o.b.ax-cam.x),Y=Math.round(o.y-o.b.ay-cam.y)+bob;
-  ctx.drawImage(o.b.img,X,Y);depthPic(o.b.img,X,Y);ctx.fillStyle='#4c3c34';
-  for(const [x0,y0,x1,y1] of o.ropes){const a=[x0,y0+bob],k=Math.max(Math.abs(x1-a[0]),Math.abs(y1-a[1]),1);
-    for(let j=1;j<k;j++)ctx.fillRect(Math.round(a[0]+(x1-a[0])*j/k-cam.x),Math.round(a[1]+(y1-a[1])*j/k-cam.y),1,1)}
+  const bob=Math.floor(performance.now()/700+o.seed)%2,X=Math.round(o.x-o.b.ax-cam.x),Y=Math.round(o.y-o.b.ay-cam.y)+bob,n=o.b.img.width,u=1/sceneRes(),q=v=>Math.round(v/u)*u;
+  ctx.drawImage(o.b.hi||o.b.img,X,Y,n,n);depthPic(o.b.img,X,Y);ctx.fillStyle='#4c3c34';
+  for(const [x0,y0,x1,y1] of o.ropes){const a=[x0,y0+bob],k=Math.max(Math.abs(x1-a[0]),Math.abs(y1-a[1]),1)/u;
+    for(let j=1;j<k;j++){const s=j/k;ctx.fillRect(q(a[0]+(x1-a[0])*s-cam.x),q(a[1]+(y1-a[1])*s+Math.sin(s*Math.PI)*.8-cam.y),u,u)}}
 }
 
 /* shadows: each standing structure's ground shadow is a picture of its own (sh: solid, the shadow's colour where it falls), and the
@@ -292,7 +397,7 @@ function drawMoored(o,cam){
 const SHADOW={a:PX.MODEL_SHADE,col:[20,24,12]};let SHM=null;
 // the shadow pass: the entries' sh ([picture, x, y] on the screen) as one mask, laid once
 function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;break}if(!any)return;const W=ctx.canvas.width,H=ctx.canvas.height;
-  if(!SHM||SHM.width!==W||SHM.height!==H)SHM=mkc(W,H,()=>{});const g=SHM.getContext('2d', { willReadFrequently: true });g.clearRect(0,0,W,H);for(const e of list)if(e.sh)g.drawImage(e.sh[0],e.sh[1],e.sh[2]);
+  if(!SHM||SHM.width!==W||SHM.height!==H)SHM=mkc(W,H,()=>{});const g=SHM.getContext('2d', { willReadFrequently: true });g.clearRect(0,0,W,H);for(const e of list)if(e.sh)g.drawImage(e.sh[0],e.sh[1],e.sh[2]-(e.x!=null?liftAt(e.x,e.ly??e.y):0));
   ctx.globalAlpha=SHADOW.a;ctx.drawImage(SHM,0,0);ctx.globalAlpha=1}
 
 /* camps and sites (sites.js), each its model (engine/buildmodels.js) in its climate's make, the frost's snow on it: a bandits' camp
@@ -305,19 +410,46 @@ function drawShadows(list){let any=false;for(const e of list)if(e.sh){any=true;b
 const SITE_KIND={bandit:'camp',camp:'camp',hideout:'hideout',travelers:'travelers',goblins:'hideout'};
 // (a camp built in a culture's style, by its kind: a goblin camp the Ashgor Horde's, its yurts in a ring of stakes; the rest the generic)
 const SITE_CULTURE={goblins:'ashgor'};
-function siteCanvas(m,ax,ay){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0)});cv.ax=ax;cv.ay=ay;cv.sh=m.shadow;
-  cv.gr=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)});
+// (a site's picture as drawn (sites.js draw: k of its size, WORLD_VIEW.house and its kind's own), its opaque px's box on the map:
+// [x0, y0, x1, y1]; what a click picks and its ring stands round (world.js pickAt, worldui.js wuiBox))
+// (a site's picture drawn k of its size: WORLD_VIEW.house, its kind's own times it (sites.js draw); its footing, reach and box with it)
+const siteK=s=>WORLD_VIEW.house*((WORLD_VIEW.sites||{})[s&&s.type]||1);
+function sitePicBox(o,sp){const k=siteK(o),b=opaqueBox(sp)||[0,0,sp.width-1,sp.height-1],X=o.x-sp.ax*k,Y=o.y+8-sp.ay*k;return [X+b[0]*k,Y+b[1]*k,X+(b[2]+1)*k,Y+(b[3]+1)*k]}
+// (a site's yard: its model's ground, the frost's snow on it, its own shadow shaded into it, its edge frayed into the land round it over
+// SITE_YARD.fray game px (r px a game px: a chamfer distance from its bare px, dithered by its hash: whole px, no square patch))
+const SITE_YARD={fray:3,grain:.7};
+function siteYard(m,r){const N=m.cell,c=mkc(N,N,g=>{g.drawImage(m.ground,0,0);if(m.snow)g.drawImage(m.snow.ground,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=SHADOW.a;g.drawImage(m.shadow,0,0)}),
+    g=c.getContext('2d',{willReadFrequently:true}),d=g.getImageData(0,0,N,N),A=d.data,D=new Float32Array(N*N),F=SITE_YARD.fray*r,at=(x,y)=>x<0||y<0||x>=N||y>=N?0:D[y*N+x];
+  for(let i=0;i<N*N;i++)D[i]=A[i*4+3]?1e9:0;
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const i=y*N+x;if(D[i])D[i]=Math.min(D[i],at(x-1,y)+1,at(x,y-1)+1,at(x-1,y-1)+1.41,at(x+1,y-1)+1.41)}
+  for(let y=N-1;y>=0;y--)for(let x=N-1;x>=0;x--){const i=y*N+x;if(D[i])D[i]=Math.min(D[i],at(x+1,y)+1,at(x,y+1)+1,at(x+1,y+1)+1.41,at(x-1,y+1)+1.41)}
+  for(let i=0;i<N*N;i++){if(!A[i*4+3]||D[i]>=F)continue;const f=D[i]/F+(hash(i%N,(i/N)|0,977)-.5)*SITE_YARD.grain;if(hash(i%N,(i/N)|0,978)>f)A[i*4+3]=0}
+  g.putImageData(d,0,0);return c}
+/* (a site's shadow as the buildings' fall (the models' light, engine/model.js: a px of height sun[0] px right, sun[1] down): each
+   opaque px of its picture its height over its column's foot, laid on the ground along the light, off the picture, on a canvas
+   with room for it; with the model's own. A site's model fills its cell, so the model's shadow, kept within the cell, was all but
+   none (a ruin's 11 px, a camp's 2, a shrine's 0, a house's 44): the sites stood flat beside the buildings (the owner, 2026-11-17:
+   "the sites is not in the same level as building?"). A cave keeps its model's: it is cut into its hill) */
+const SITE_SHADOW={sun:[.6,.15],room:[14,6]};
+function siteCast(cv,own){const N=cv.width,H=cv.height,S=SITE_SHADOW,W=N+S.room[0],Hh=H+S.room[1],a=cv.getContext('2d',{willReadFrequently:true}).getImageData(0,0,N,H).data,o=new Uint8ClampedArray(W*Hh*4),op=(x,y)=>a[(y*N+x)*4+3]>0;
+  for(let x=0;x<N;x++){let f=-1;for(let y=H-1;y>=0;y--)if(op(x,y)){f=y;break}if(f<0)continue;
+    for(let y=0;y<=f;y++){if(!op(x,y))continue;const z=f-y,X=Math.round(x+z*S.sun[0]),Y=Math.round(f+z*S.sun[1]);for(const [u,v] of [[X,Y],[X+1,Y]]){if(u>=W||v>=Hh||u<N&&v<H&&op(u,v))continue;const i=(v*W+u)*4;o[i]=20;o[i+1]=24;o[i+2]=12;o[i+3]=255}}}
+  return mkc(W,Hh,g=>{g.putImageData(new ImageData(o,W,Hh),0,0);if(own){g.globalCompositeOperation='destination-over';g.drawImage(own,0,0);g.globalCompositeOperation='source-over'}})}
+function siteCanvas(m,ax,ay,mk,deco){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(deco)deco(g,N)});cv.ax=ax;cv.ay=ay;cv.sh=siteCast(cv,m.shadow);cv.mk=mk;cv.deco=deco;
+  cv.gr=siteYard(m,1);
   cv.fire=m.marks&&m.marks.fire||null;cv.flag=m.flag||(cv.fire&&[cv.fire[0]+7,cv.fire[1]+1]);return cv}
 // a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
 function campSprite(i,kind,c){c=c||'grass';const k='camp'+i+(kind||'')+c;if(spr[k])return spr[k];
-  const m=PX.clusterModel({kind:SITE_KIND[kind||'bandit'],culture:SITE_CULTURE[kind],seed:i*131+7,env:c,snow:c==='frost'?1:0}),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell)}
+  const mk=d=>PX.clusterModel({kind:SITE_KIND[kind||'bandit'],culture:SITE_CULTURE[kind],seed:i*131+7,env:c,snow:c==='frost'?1:0,detail:d}),m=mk(1),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell,mk)}
 // (a bandit lair: a cave's outcrop round its mouth, or a timbered tunnel's head (sites.js Hideout lairLook), bones before it and the band's banner on a pole, on its tile as a hideout stands;
 // the banner the band's (lairCol: [cloth, its shade]; a goblin warren's green), else the bandits' red)
 const LAIR_COL=['#8a2a22','#5a1a16'];
-function lairSprite(s,c){const look=s.lairLook,L=s.lairCol||LAIR_COL,k='lair'+look+s.seed+c+L[0];if(spr[k])return spr[k];const m=PX.buildingModel({type:look==='cave'?'cave':'minehead',seed:s.seed,env:c,snow:c==='frost'?1:0});
-  const cv=siteCanvas(m,m.cell/2,m.cell),g=cv.getContext('2d'),N=m.cell,x=Math.round(N*.78),y=N-4;
-  g.fillStyle='#3a2a1a';g.fillRect(x,y-18,2,18);g.fillStyle=L[0];g.fillRect(x+2,y-18,8,6);g.fillStyle=L[1];g.fillRect(x+2,y-12,8,1);
-  g.fillStyle='#d8d0bc';g.fillRect(Math.round(N*.3),y-2,4,1);g.fillRect(Math.round(N*.36),y-1,2,2);cv.flag=null;return spr[k]=cv}
+function lairSprite(s,c){const look=s.lairLook,L=s.lairCol||LAIR_COL,k='lair'+look+s.seed+c+L[0];if(spr[k])return spr[k];
+  const mk=d=>PX.buildingModel({type:look==='cave'?'cave':'minehead',seed:s.seed,env:c,snow:c==='frost'?1:0,detail:d}),m=mk(1);
+  // (its banner on a pole and the bones before it, drawn over the model at its own size)
+  const deco=(g,N)=>{const x=Math.round(N*.78),y=N-4;g.fillStyle='#3a2a1a';g.fillRect(x,y-18,2,18);g.fillStyle=L[0];g.fillRect(x+2,y-18,8,6);g.fillStyle=L[1];g.fillRect(x+2,y-12,8,1);
+    g.fillStyle='#d8d0bc';g.fillRect(Math.round(N*.3),y-2,4,1);g.fillRect(Math.round(N*.36),y-1,2,2)};
+  const cv=siteCanvas(m,m.cell/2,m.cell,mk,deco);cv.flag=null;return spr[k]=cv}
 function siteSprite(s){s=siteOf(s);// (plain data too)
   if(s.type==='rest')return s.picture();// (a resting place: its finest grave's picture, world/lineage.js RestSite)
   if(s.type===OUTPOST_TYPE)return s.sprite();// (a realm's outpost and its tower: world/outposts.js outpostSprite)
@@ -331,5 +463,5 @@ function siteSprite(s){s=siteOf(s);// (plain data too)
   const big=s.type==='ruins'||s.type==='cave',bad=(x,y)=>tAt(x,y)===T_ROAD||occAt(x,y)>0?1:0,B=big?bad(s.tx,s.ty-1):0,
     R=big?bad(s.tx+1,s.ty)+bad(s.tx+1,s.ty-1)+B:0,L=big?bad(s.tx-1,s.ty)+bad(s.tx-1,s.ty-1)+B:0,side=!big||!(R+L-B)?0:L<R?-1:1;
   const k='site'+s.type+s.seed+c+side;if(spr[k])return spr[k];
-  const m=PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:c==='frost'?1:0,glow:c==='desert'?'#e8c040':'#7fd8e8'});
-  return spr[k]=siteCanvas(m,side>0?TILE/2:side<0?m.cell-TILE/2:m.cell/2,m.cell+(s.mouth?8+CAVE_MOUTH:0))}
+  const mk=d=>PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:c==='frost'?1:0,glow:c==='desert'?'#e8c040':'#7fd8e8',detail:d}),m=mk(1),cv=siteCanvas(m,side>0?TILE/2:side<0?m.cell-TILE/2:m.cell/2,m.cell+(s.mouth?8+CAVE_MOUTH:0),mk);
+  if(s.type==='cave')cv.sh=m.shadow;return spr[k]=cv}

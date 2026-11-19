@@ -230,10 +230,33 @@
         face(F,[a,b,ap],{cls:'roof',mat:rf.mat,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:null,prio:2,rf,part:p.name});if(rf.lip!==0)face(F,[sub(a,[0,0,1]),sub(b,[0,0,1]),b,a],{cls:'lip',mat:rf.mat,out:[m[0],m[1],0],O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name})}}
   }
 
+  /* cloth (the owner, 2026-11-19: "make sure that the tents in camps look like a fabrics"): a tent's canvas, hides and awnings drawn
+     as cloth, never as a building's courses, speckle, moss, slipped tiles or a hard dark eave. Its slopes in panels between seams
+     (seam px apart), each sagging between them (its middle a shade deeper toward the eave), a crease now and then running down from
+     a seam, lit along the ridge, weathered low (a stain); its walls in soft vertical folds (fold: the share of 2 px columns a shade
+     deeper), a hem at the foot and a shade under the roof; its edge at the eave a hem, scalloped; an awning keeps its stripes, a
+     hide its stitches. The tones as every texture's (0 lit .. 3 deep) */
+  const CLOTH={canvas:1,canvasR:1,canvasB:1,awning:1,awningB:1,awningG:1,hide:1},CLOTHT={seam:7,fold:.16,crease:.12,stain:.14};
+  function clothTexel(f,u,v,b,sd,m,tx,iu,iv,h){const T=CLOTHT,ds=sd+(f.sd|0),stripe=tx.startsWith('awning'),hide=tx==='hide',st=(a,t)=>stripe&&(iu>>1)%2?['linen',cl(t)]:[a,cl(t)];
+    if(f.cls==='lip')return st(m,b+1+(iu%3===1?1:0)-(f.n&&f.n[0]<-.3?1:0));// (the hem along its eave, scalloped)
+    if(f.cls==='roof'){const top=f.fh-v,P=T.seam,pu=((u%P)+P)%P,mid=Math.abs(pu-P/2)<P*.2,seam=pu<1,low=v<f.fh*.4;
+      if(top<1)return st(m,b-1);// (lit along the ridge, where it lies over the pole)
+      const cu=((u-v*.35)%P+P)%P,crease=!seam&&v<f.fh*.8&&Math.abs(cu-1.5)<.6&&H(Math.floor((u-v*.35)/P),0,ds+71)<T.crease,stain=v<2&&h<T.stain;
+      return st(m,b+(seam&&!hide?1:0)+(mid&&low?1:0)+(crease?1:0)+(stain?1:0)+(hide?hidePatch(iu,iv,ds):0)-(h>.97&&b>0?1:0))}
+    if(f.cls==='top'||f.cls==='floor')return st(m,b);
+    // (a fold: a thin crease down the cloth here and there, and the cloth hanging a shade deeper in broad drapes low on it)
+    const fold=!hide&&H(iu,0,ds+53)<T.fold,drape=v<f.hz*.6&&H(iu>>2,0,ds+57)<.3,hem=v<1,under=f.hz&&v>=f.hz-1&&!f.gable,stain=v<2&&h<T.stain;
+    return st(m,b+(fold||drape?1:0)+(hem||under?1:0)+(stain?1:0)+(hide?hidePatch(iu,iv,ds):0))}
+  // (hides sewn together: irregular patches, a few a shade deeper, a dotted stitch up their sides and now and then across; never
+  // boards in rows)
+  const hidePatch=(iu,iv,ds)=>{const pr=Math.floor(iv/4),off=Math.floor(H(pr,0,ds+61)*5),pc=Math.floor((iu+off)/5),e=(iu+off)%5===0||iv%4===0&&H(pc,pr,ds+73)<.35;
+    return (H(pc,pr,ds+67)<.3?1:0)+(e&&(iu+iv)%2===0?1:0)};
+
   /* textures: the material and tone (0 lit .. 3 deep) a face shows at (u, v), from its tone by the light b. Every surface has its
      courses and a little 2-tone speckle inside them (never a flat fill), within its 4-tone ramp */
   const H=PX.hash,cl=t=>t<0?0:t>3?3:t;
   function texel(f,u,v,b,sd){const m=f.mat,iu=Math.floor(u),iv=Math.floor(v),h=H(iu,iv,sd+f.sd),sp=h<.07?1:h>.96?-1:0;
+    {const tx=TEX[m]||m;if(CLOTH[tx])return clothTexel(f,u,v,b,sd,m,tx,iu,iv,h)}// (a tent's cloth: folds and sags, no courses or speckle)
     if(f.cls==='lip'){const lit=f.n[0]<-.3?-1:0;// (the sun side's edge caught by the light)
       return m==='thatch'?[m,cl(b+1+lit+(iu%3===0&&iv<1?1:0))]:m==='shingle'?['timber',cl(b+1+lit)]:[m,cl(3+lit)]}
     if(f.cls==='roof'){const top=f.fh-v;// (v up the slope from the eave; top: how far below the ridge)
@@ -262,7 +285,7 @@
         default:return[m,cl(b+sp)]}}
     if(f.cls==='floor')return[m,cl(b+sp+(H(iu>>1,iv>>1,sd+4)<.1?1:0))];
     if(f.cls==='top'){if(m==='iron')return[m,3];if(m==='ember')return h<.25?['flame',2]:['iron',h<.6?3:2];// (a fire's ash and embers: the game's flame stands over it)
-      if(m==='crop')return iv%2?['soil',cl(b+1)]:[m,cl(b+(h<.2?1:0))];if(m==='logend')return['log',(iu+iv)%2?0:2];
+      if(m==='crop')return iv%2?['soil',cl(b+1)]:[m,cl(b+(h<.2?1:0))];if(m==='logend')return['log',iu%3===2?2:H(iu,iv>>1,sd+7)<.25?1:0];
       if(m==='water')return[m,h<.08?0:1];return[m,cl(b-1+sp)]}
     // walls: the chimney's cap, the band of shade under the eaves, the footing, weathering at the foot, the frame, the wall's courses
     if(f.cap&&v>=f.hz-1)return[m,0];
@@ -318,7 +341,7 @@
     Sign:['tttt..','...t..','.bbbbb','.byrrb','.bbbbb'],Lamp:['tt','.y','.y'],Cross:['.y.','yyy','.y.','.y.'],Bell:['.lll.','l###l','l#y#l','lyyyl','lllll'],
     Rune:['.llll.','lddddl','ldyydl','ldeedl','ldyedl','ldeedl','ldekdl','ldeedl','ldeedl','pppppp'],Slit:['h','h','h','h'],Hatch:['ttttt','tbebt','tbebt','tbebt','ttttt'],Beams:['t...t...t...t...t...t'],
     Barn:barnDoors(11,11),Gate:archOf(12,16,true),Arch:archOf(7,10,false),Ivy:['v.v.v','vvv.v','.vvvv','v.vv.','vv.vv','.v.v.','v..v.','..v..'],
-    Logs:gen(10,5,(c,r)=>(c+r)%2?'M':'L'),Goods:['rycrycry','bbbbbbbb','bbbbbbbb'],Crate:['tttt','t..t','t..t','tttt'],Hoop:['iiiiii'],Flap:['..n..','.n#n.','n###n','n###n','n###n'],
+    Logs:gen(10,5,(c,r)=>{const o=(r>>1)%2?1:0,q=(c+o*2)%3;return q===2?'D':r%2===0&&q===0?'L':'M'}),Goods:['rycrycry','bbbbbbbb','bbbbbbbb'],Crate:['tttt','t..t','t..t','tttt'],Hoop:['iiiiii'],Flap:['..n..','.n#n.','n###n','n###n','n###n'],
     Cave:['...XXX.....','..XDDDXX...','.XDDDDDDX..','XDDDDDDDDX.','XDDDDDDDDDX','XDDDDDDDDDX','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDDX'],
     Cave2:['.....XX....','...XXDDX...','..XDDDDDXX.','.XDDDDDDDDX','XDDDDDDDDDX','XDDDDDDDDX.','XDDDDDDDDX.','XDDDDDDDDDX'],
     Adit:['.XDDDX.','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XDDDDDX','XiDDDiX'],
@@ -392,7 +415,7 @@
     const {F,G,yaw,base,beds}=build(spec,sc),N=spec.cell||16,sd=spec.seed|0;
     for(const f of F){if(f.cls==='roof'){const tp=f.P.reduce((a,q)=>q[2]>a[2]?q:a),d=sub(tp,f.O),pe=dot(d,f.eu);
         f.ev=nrm(sub(d,f.eu.map(x=>x*pe)));f.fh=dot(d,f.ev);f.fw=f.P.reduce((a,q)=>Math.max(a,dot(sub(q,f.O),f.eu)),0)*f.su}}
-    let di=0;for(const d of spec.decals||[]){di++;const f=F.find(q=>q.name===d.wall&&!q.gable===!d.gable),rows=DECAL[d.kind],w=rows[0].length,h=rows.length;
+    let di=0;for(const d of spec.decals||[]){di++;const f=F.find(q=>q.name===d.wall&&!q.gable===!d.gable),rows=bigRows(DECAL[d.kind],spec.detail),w=rows[0].length,h=rows.length;
       if(f){f.dec.push({id:di,kind:d.kind,rows,w,h,u0:Math.round((d.at==null?.5:d.at)*f.fw-w/2),v0:Math.max(f.foot&&!DOORISH.test(d.kind)?1:0,G.Z(d.z||0)),onGable:!!d.gable});continue}
       // (a round tower's side by its letter, 'name.S': the decal on its facets round the curve there, turned with the building)
       const dot=d.wall.lastIndexOf('.'),pn=d.wall.slice(0,dot),s=d.wall.slice(dot+1),fs=F.filter(q=>q.part===pn&&q.round);if(!fs.length||!SIDES[s])continue;
@@ -482,23 +505,29 @@
     for(const across of [true,false])for(let a=0;a<N;a++){let s=0;for(let b=1;b<=N;b++){const c0=across?a*N+s:s*N+a,c=across?a*N+b:b*N+a;
       if(b<N&&body[c]===1&&body[c0]===1&&same(c0*4,c*4))continue;
       const L=b-s;if(L>X.len&&body[c0]===1){const o=X.at+hsh(across?s:a,across?a:s)%X.step;for(let k=o;k<L-1;k+=X.step){const p=s+k;shade(across?a*N+p:p*N+a,across?p:a,across?a:p)}}s=b}}};
-  PX.model=spec=>{const t0=performance.now(),N=spec.cell||16,fit=N-2,sd=spec.seed|0;
+  // (detail: the model drawn that many times finer: its fit found at its own cell as ever, then drawn at the fit's scale times
+  // detail on a cell detail times its px: the same building, its walls, roofs and props with that many times the pixels (the
+  // world drawn finer: the game's WORLD_VIEW); a decal's pixel art each pixel detail px square)
+  const bigRows=(rows,k)=>!(k>1)?rows:rows.flatMap(r=>{const w=[...r].map(c=>c.repeat(k)).join('');return Array(k).fill(w)});
+  PX.model=spec=>{const t0=performance.now(),DK=spec.detail>1?spec.detail|0:1,N0=spec.cell||16,N=N0*DK,fit0=N0-2,fit=N-2,sd=spec.seed|0;
     // the scale: the first of the fit's choices whose points fit the cell (in every facing of spec.fitYaws, so a building turned is
     // the same building at the same scale); then drawn, and smaller again if its pixels do not
     // (W4: several facings are judged on their pixels together, and the scale kept for the plan, so a facing whose pixels run a pixel
     // over never draws the building smaller than its other facings)
-    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit&&b.y1-b.y0+1<=fit},key=yaws.length>1?JSON.stringify(Object.assign({},spec,{yaw:0,snow:0})):null;
+    // (the scale kept by the spec as it is fitted, at detail 0, so its finer picture takes the scale its coarse one found, never searched
+    //  again; a spec of one facing kept by that facing)
+    const yaws=spec.fitYaws||[spec.yaw|0],at=y=>y===(spec.yaw|0)?spec:Object.assign({},spec,{yaw:y}),fits=R=>{clean(R);const b=bnd(R);return b.x1-b.x0+1<=fit0&&b.y1-b.y0+1<=fit0},key=JSON.stringify(Object.assign({},spec,{yaw:yaws.length>1?0:spec.yaw|0,snow:0,detail:0}));
     let sc=key&&FITS.get(key),R,bx,last=null;
     // (the fit's next choice when the pixels run over its points, up to three; then smaller all over. Its own facing's pixels at the
     // scale it ends on, already drawn and cleaned for the test, kept (last): never drawn again, the same pixels)
     // (lead: the facing that last ran over, tried first: it most often runs over again, so a scale is turned down after one build, not
     // up to all of them; the same scale found)
-    if(!sc){let i=-1,lead=0;const over=(y,S)=>{const B=build(at(y),S),[w,h]=extent(B.F),k=B.G.d?1:0;return!(w<=fit-k&&h<=fit-k)},
+    if(!sc){let i=-1,lead=0;const at0=y=>Object.assign({},at(y),{detail:0}),over=(y,S)=>{const B=build(at0(y),S),[w,h]=extent(B.F),k=B.G.d?1:0;return!(w<=fit0-k&&h<=fit0-k)},
         next=()=>{for(i++;i<SCALES.length;i++){if(over(yaws[lead],SCALES[i]))continue;let j=0;for(;j<yaws.length;j++)if(j!==lead&&over(yaws[j],SCALES[i])){lead=j;break}if(j===yaws.length)return SCALES[i]}return null},
-        test=y=>{const r=render(at(y),sc),ok=fits(r);if(y===(spec.yaw|0))last={sc,r};return ok};
+        test=y=>{const r=render(at0(y),sc),ok=fits(r);if(y===(spec.yaw|0)&&DK===1)last={sc,r};return ok};
       sc=next()||SCALES[SCALES.length-1];
       for(let k=0;k<12;k++){if(yaws.every(test)||sc.u<.2)break;sc=(k<3&&next())||{u:sc.u*.92,v:sc.v*.92,z:sc.z*.92,o:0}}if(key){if(FITS.size>2000)FITS.clear();FITS.set(key,sc)}}
-    if(last&&last.sc===sc)R=last.r;else{R=render(spec,sc);clean(R)}bx=bnd(R);
+    if(last&&last.sc===sc)R=last.r;else{R=render(spec,DK>1?{u:sc.u*DK,v:sc.v*DK,z:sc.z*DK,o:(sc.o||0)*DK}:sc);clean(R)}bx=bnd(R);
     const {M,A,col,DEC,FL,GZ,F}=R,cw=bx.x1-bx.x0+1,dx=bx.x0-1-Math.floor((fit-cw)/2),dy=bx.y1-(N-2);
     // the picture: the body and its navy outline round it (not round what lies low and flat: fences, beds), cropped to the cell
     const img=PX.canvas(N,N),g=img.getContext('2d', { willReadFrequently: true }),im=g.createImageData(N,N),D=im.data,body=new Uint8Array(N*N),fine=new Uint8Array(N*N),gap=new Uint8Array(N*N),gz=new Uint8Array(N*N),nv=hx(NAVY);

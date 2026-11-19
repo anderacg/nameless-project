@@ -10,43 +10,62 @@
    picture with them only till the game is closed: their fall as the fight drew it, corpse; after a load a plain one) ---------- */
 /* ---------- how every body on the map rots (data/drops.js BODY_ROT; the owner, 2026-11-15: "after a while the corpse can start
    rotting and finally turns into bones. This should be the same for all dead bodies"): the fallen of a fight (Carcass) and your
-   remains (world/death.js Remains, an unburied Grave) lie as they fell, then rot (tinted; flies, if any, are another sprite's to draw over), then lie as bones.
-   Each one's picture made once into a canvas of its own (pic, never saved); the bones by kind and length (bonesOf) ---------- */
+   remains (world/death.js Remains, an unburied Grave) lie as they fell, then rot (tinted, blotched; flies, if any, are another sprite's to draw over), then lie as bones.
+   Each one's picture made once into a canvas of its own (pic, never saved), the bones by kind and length (bonesOf): at the lab's
+   scale, 1/WORLD_VIEW.build px a game px (a fight's fallen at their own sprites' px), drawn back at WORLD_VIEW.build ---------- */
 class BodyRot{
   static age(day){return G.day+Clock.frac-day}
   // (fresh, rot or bones by how long ago it fell (day: G.day + Clock.frac then); gone: past BODY_ROT.gone)
   static stage(day){const R=BODY_ROT,a=this.age(day);return !R.on||a<R.rot?'fresh':a<R.bones?'rot':'bones'}
   static gone(day){return BODY_ROT.on&&this.age(day)>=BODY_ROT.gone}
   static pics=new WeakMap();
-  // (o's picture as it fell, paint(g) drawing it with its foot at g's origin, in a box of its own; that rotted; w: its length, px)
-  static pic(o,paint){let p=this.pics.get(o);if(p)return p;const R=BODY_ROT,[W,H]=R.box,mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c},c=mk(),g=c.getContext('2d');
-    g.translate(W>>1,R.foot);try{paint(g)}catch(e){}let [w]=artBox(c);
-    if(!w){const C=R.col;g.setTransform(1,0,0,1,0,0);g.fillStyle=C.stain;g.fillRect((W>>1)-5,R.foot,10,2);g.fillStyle=C.cloth;g.fillRect((W>>1)-4,R.foot-3,8,3);w=10}// (no picture to be had: a plain shape)
-    const r=mk(),q=r.getContext('2d');q.drawImage(c,0,0);q.globalCompositeOperation='source-atop';q.fillStyle=R.tint;q.fillRect(0,0,W,H);
-    p={fresh:c,rot:r,w};this.pics.set(o,p);return p}
+  // (o's picture as it fell, paint(g) drawing it in game px with its foot at g's origin, in a box of its own (W x H px, its foot F px
+  // down); that rotted; w: its length, game px)
+  static pic(o,paint){let p=this.pics.get(o);if(p)return p;const R=BODY_ROT,k=WORLD_VIEW.build,W=Math.round(R.box[0]/k),H=Math.round(R.box[1]/k),F=Math.round(R.foot/k),
+      mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c},c=mk(),g=c.getContext('2d');
+    g.imageSmoothingEnabled=false;g.translate(W>>1,F);g.scale(1/k,1/k);try{paint(g)}catch(e){}let [w]=artBox(c);
+    if(!w){g.setTransform(1,0,0,1,0,0);this.lump(g,W>>1,F);w=20}// (no picture to be had: a plain shape)
+    const r=mk(),q=r.getContext('2d');q.drawImage(c,0,0);q.globalCompositeOperation='source-atop';q.fillStyle=R.tint;q.fillRect(0,0,W,H);this.mottle(q,W,H,Math.abs(Math.round(o.x*3+o.y*7)));
+    p={fresh:c,rot:r,w:w*k,W,H,F};this.pics.set(o,p);return p}
+  // (a rotting body's blotches: BODY_ROT.mottle of it in small patches gone darker, mold)
+  static mottle(q,W,H,seed){const R=BODY_ROT,h=(x,y,i)=>PX.hash(x,y,seed+i);q.globalCompositeOperation='source-atop';q.fillStyle=R.mold;
+    for(let y=0;y<H;y+=2)for(let x=0;x<W;x+=2)if(h(x,y,5)<R.mottle)q.fillRect(x+(h(x,y,6)<.5?0:1),y,h(x,y,7)<.5?2:1,h(x,y,8)<.6?2:1);q.globalCompositeOperation='source-over'}
+  // (one with no picture at all: a bundle of clothes on a dark stain, a pale hand out of it; at the picture's px, its foot at (x, y))
+  static lump(g,x,y){const C=BODY_ROT.col,r=(a,b,w,h,c)=>{g.fillStyle=c;g.fillRect(x+a,y+b,w,h)};r(-10,0,20,3,C.stain);r(-8,3,16,1,C.stain);
+    r(-8,-6,16,6,C.cloth);r(-8,-6,16,1,PX.shade(C.cloth,1.2));r(-8,-1,16,1,C.cloth2);for(const a of [-4,1,5])r(a,-5,1,4,C.cloth2);r(8,-4,3,3,C.bone2);r(8,-4,2,1,C.bone)}
   // (one with no picture of its fall (after a load, or never seen to fall): its kind lying as the battle's fallen lie (sprites.js
   // corpseOf), at the map's scale; u: {type, team, v})
   static plain(g,u){const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,c=corpseOf({face:1,hero:false,...u});g.scale(k,k);
     if(c.beast){const s=c.down||c.beast;g.drawImage(s,-(s.width>>1),-s.height+2)}else g.drawImage(c.body,-c.ax,1-c.ay)}
-  // (bones lying len px long, head to the right, on ground darkened under them: a man's (skull, ribs, limbs, a rag of his clothes)
-  // or a beast's (a long skull, its spine arched with ribs, four legs, a scrap of hide); kept by kind, length and seed)
+  // (bones lying len game px long, head to the right, on ground darkened under them, at the picture's px: a man's (his skull, ribs
+  // and spine, his hips, his limbs knobbed at the joints, a rag of his clothes) or a beast's (a long skull with its teeth, its spine
+  // knobbed and its ribs arched, four legs bent at the joint, a scrap of hide); kept by kind, length and seed)
   static BONES=new Map();
-  static bonesOf(beast,len,seed){const key=(beast?'b':'m')+len+':'+seed;let s=this.BONES.get(key);if(s)return s;const C=BODY_ROT.col,W=len+4,H=beast?Math.round(len*.3)+6:7,y0=H-2,
-      c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)))},h=k=>PX.hash(k,seed,41);
-    r(2,y0+1,len-1,1,C.stain);
-    if(beast){const sk=Math.max(3,Math.round(len*.22)),sp=len-sk,rib=Math.max(1,len*.1);r(3,y0,sp*.5,1,C.hide);r(2,y0-2,sp,1,C.bone);
-      for(let i=Math.round(sp*.3);i<sp*.75;i+=2){const t=Math.round(1+Math.sin((i-sp*.3)/(sp*.45)*Math.PI)*rib);r(2+i,y0-2-t,1,t,C.bone2)}
-      r(2+sp,y0-3,sk,2,C.bone);r(2+sp+sk-1,y0-1,1,1,C.bone2);r(2+sp+1,y0-3,1,1,C.dark);
-      for(const f of [.1,.25,.75,.9])r(2+sp*f-1,y0-1+(h(f*10)<.5?0:1),Math.max(2,len*.14),1,C.bone2)}
-    else{const L=len;r(2+L*.3,y0-1,L*.4,2,C.cloth);r(1+L-2,y0-3,2,2,C.bone);r(1+L-2,y0-3,1,1,C.dark);
-      r(3,y0-1,L-5,1,C.bone2);for(let x=Math.round(L*.5);x<L-2;x+=2)r(1+x,y0-2,1,2,C.bone);r(1+L*.3,y0-2,2,1,C.bone);
-      r(1,y0-1+(h(1)<.5?0:1),L*.3,1,C.bone);r(1,y0,L*.25,1,C.bone2);r(1+L*.55,y0+(h(2)<.5?0:-2),L*.25,1,C.bone2)}
+  static bonesOf(beast,len,seed){const key=(beast?'b':'m')+len+':'+seed;let s=this.BONES.get(key);if(s)return s;const C=BODY_ROT.col,L=Math.round(len/WORLD_VIEW.build),W=L+8,H=beast?Math.round(L*.3)+12:16,y0=H-4,
+      c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d'),r=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(h)))},
+      px=(x,y,col)=>r(x,y,1,1,col),h=k=>PX.hash(k,seed,41),b=C.bone,b2=C.bone2,b3=C.bone3,dk=C.dark,
+      bone=(x0,x1,y)=>{r(x0,y,x1-x0+1,1,b);px(x0,y-1,b3);px(x1,y-1,b);px(x0,y+1,b2);px(x1,y+1,b2)};// (a long bone, knobbed at both ends)
+    r(3,y0,L+2,2,C.stain);r(6,y0+2,L-4,1,C.stain);
+    if(beast){const sk=Math.max(6,Math.round(L*.22)),sp=L-sk,rib=Math.max(2,Math.round(L*.1)),x0=4,kx=x0+sp,hw=Math.round(sp*.5);
+      r(x0+2,y0-2,hw,3,C.hide);r(x0+2,y0,hw,1,C.hide2);for(let i=0;i<hw;i+=2)px(x0+2+i,y0-2+(h(i)<.5?0:1),C.hide2);
+      for(const f of [.1,.24,.74,.88]){const x=x0+Math.round(sp*f)-2,d=h(f*10)<.5?0:2,lw=Math.max(4,Math.round(L*.14));r(x,y0-1+d,lw,1,b2);px(x,y0-2+d,b);px(x+lw-1,y0-2+d,b3);r(x+lw,y0+d,Math.max(3,lw-2),1,b2);px(x+lw,y0-1+d,b)}
+      r(x0,y0-4,sp,2,b2);for(let i=0;i<sp;i+=2)px(x0+i,y0-4,b);
+      for(let i=Math.round(sp*.3);i<sp*.78;i+=2){const t=Math.round(2+Math.sin((i-sp*.3)/(sp*.48)*Math.PI)*rib);r(x0+i,y0-4-t,1,t,b);px(x0+i,y0-4-t,b3);px(x0+i+1,y0-5,b2)}
+      r(kx,y0-7,sk,4,b);r(kx+1,y0-8,sk-3,1,b3);r(kx+sk-2,y0-5,2,2,b2);px(kx+2,y0-6,dk);px(kx+3,y0-6,dk);r(kx+1,y0-3,sk-2,1,b2);for(let i=2;i<sk-1;i+=2)px(kx+i,y0-4,b3);px(kx+sk-1,y0-6,b2)}
+    else{const X=f=>4+Math.round(L*f),cx=X(.3),cw=X(.6)-cx,sx=X(.84),arm=h(2)<.5?2:-7;
+      bone(X(0),X(.19),y0-1);bone(X(.2),X(.37),y0-2);const up=h(1)<.5;bone(X(.03),X(.18),up?y0+1:y0-4);bone(X(.19),X(.36),up?y0:y0-3);
+      r(X(.38),y0-4,4,4,b);r(X(.38),y0-4,4,1,b3);px(X(.38)+1,y0-3,dk);px(X(.38)+2,y0-2,dk);
+      r(cx,y0-3,cw,4,C.cloth);r(cx,y0-3,cw,1,PX.shade(C.cloth,1.2));r(cx+1,y0,cw-2,1,C.cloth2);for(let i=2;i<cw-1;i+=3+(h(i)<.5?1:0))r(cx+i,y0-2,1,2,C.cloth2);if(h(3)<.6)r(cx+cw,y0-1,2,2,C.cloth);
+      r(X(.42),y0-1,X(.8)-X(.42),1,b2);for(let x=X(.42);x<X(.8);x+=2)px(x,y0-1,b);
+      for(let x=X(.5);x<X(.8);x+=2){r(x,y0-5,1,4,b);px(x,y0-5,b3);px(x,y0-2,b2)}
+      bone(X(.48),X(.66),y0+arm);px(X(.66)+2,y0+arm,b2);px(X(.66)+2,y0+arm+1,b2);
+      r(sx,y0-5,4,4,b);r(sx+1,y0-6,2,1,b3);px(sx,y0-5,b3);px(sx+3,y0-5,b2);px(sx+1,y0-4,dk);px(sx+2,y0-4,dk);px(sx+3,y0-3,dk);r(sx+1,y0-1,3,1,b2);px(sx+2,y0-2,b3)}
     s={cv:c,ax:W>>1,ay:y0};this.BONES.set(key,s);return s}
-  // o at screen (x, y), fallen on day, as its stage has it: its picture (paint), rotted, or its bones (beast: a
-  // beast's; face: the way its head lies)
-  static draw(o,x,y,day,paint,beast,face){const st=this.stage(day),R=BODY_ROT,p=this.pic(o,paint);x=Math.round(x);y=Math.round(y);
-    if(st==='bones'){const b=this.bonesOf(beast,Math.max(7,Math.min(40,Math.round(p.w))),Math.abs(Math.round(o.x*3+o.y*7))%5);ctx.save();ctx.translate(x,y);if(face<0)ctx.scale(-1,1);ctx.drawImage(b.cv,-b.ax,-b.ay);ctx.restore();return}
-    ctx.drawImage(st==='rot'?p.rot:p.fresh,x-(R.box[0]>>1),y-R.foot)}
+  // o at screen (x, y), fallen on day, as its stage has it: its picture (paint), rotted, or its bones (beast: a beast's; face: the
+  // way its head lies); each at the lab's scale (WORLD_VIEW.build)
+  static draw(o,x,y,day,paint,beast,face){const st=this.stage(day),k=WORLD_VIEW.build,p=this.pic(o,paint);x=Math.round(x);y=Math.round(y);
+    if(st==='bones'){const b=this.bonesOf(beast,Math.max(7,Math.min(40,Math.round(p.w))),Math.abs(Math.round(o.x*3+o.y*7))%5);ctx.save();ctx.translate(x,y);if(face<0)ctx.scale(-1,1);ctx.scale(k,k);ctx.drawImage(b.cv,-b.ax,-b.ay);ctx.restore();return}
+    ctx.drawImage(st==='rot'?p.rot:p.fresh,x-(p.W>>1)*k,y-p.F*k,p.W*k,p.H*k)}
 }
 class Carcass extends WorldObject{
   static list=[];
@@ -136,12 +155,12 @@ const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.ty
   paint(g){const c=this,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;// (in a fight on the map drawBody makes it the fight's size itself)
     if(c.corpse?.sp){g.scale(k,k);g.translate(-c.corpse.x,-c.corpse.y);drawBody(g,c.corpse,1,1)}else BodyRot.plain(g,{type:c.wild?wildTroop(c.wild):c.type,team:c.ours?0:1,v:Math.abs(Math.round(c.x+c.y))%6})}
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
-    ents.push({y:c.y,f:()=>{const x=c.x-cam.x,y=c.y-cam.y;BodyRot.draw(c,x,y,c.day,g=>c.paint(g),c.beast,c.face);
-      if(!c.empty())lootGlow(x,y-2,LOOT_GLOW.r*(B?.world?WORLD_BATTLE.sprite/2:1),performance.now()/1000,c.x*.13+c.y*.07)}})}// (something on it: its glow, battle/drops.js)
+    ents.push({x:c.x,y:c.y,nf:1,loot:!c.empty(),f:()=>{const x=c.x-cam.x,y=c.y-cam.y;BodyRot.draw(c,x,y,c.day,g=>c.paint(g),c.beast,c.face);
+      if(!c.empty())lootGlow(x,y-2,LOOT_GLOW.r*(B?.world?WORLD_BATTLE.sprite/2:1),performance.now()/1000,c.x*.13+c.y*.07,WORLD_VIEW.build)}})}// (something on it: its glow, battle/drops.js)
   static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V);
     // (the clearers: their holding's folk (folk.js workerAppearance), walking, or at the fallen swinging their tools)
     const S=yourSight(V),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;for(const f of this.diggers){if(!S.sees(f.x,f.y))continue;
-      ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+footFrame(f.walk),sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
+      ents.push({x:f.x,y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{const L=workerAppearance(f),pose=f.st==='dig'?6+Math.floor(performance.now()/260)%3:2+footFrame(f.walk),sp=unitSprite(L.type,0,false,L.v,pose,false,false,L.tint);
         ctx.save();ctx.translate(Math.round(f.x-cam.x),Math.round(f.y-cam.y));ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(-2,-1,5,2);ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-(sp.width>>1),-sp.height+2);ctx.restore()})})}}
   static save(){return this.list.length?this.list.map(c=>{const o={...c};delete o.corpse;delete o.digger;return o}):undefined}// (its picture only what you see)
   static load(v){this.list=(v||[]).map(o=>asCarcass(o))}

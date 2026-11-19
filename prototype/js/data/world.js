@@ -2,14 +2,155 @@
 /* ---------- data: the world's scale: its named distances, one lever for how fast everything moves on screen, and how many wild
    things each size of map holds. Arrival and touch radii (8-20 px) are not here: they follow the figures, not the world.
    Units: px unless the group says tiles. ---------- */
+/* the world drawn finer (doc/OPEN_WORLD_DESIGN.md phase 1, the owner, 2026-11-15: "apply this to the game"): fine screen-art px
+   a game px for the world's scene (its ground, what lies flat, its buildings, the scene remembered under the fog), wherever the
+   screen has that many (render.js sceneRes): a soldier then shows at his own 17 px, a house at 64. The simulation keeps its px.
+   */
+/* build: how large a building, a camp or a site stands to its game px: the world lab's scale (the owner, 2026-11-15: "Lab scale (~2
+   men)"): a model's px a fine px, a cottage some two men tall; a holding's centre (its walls on the world's ways) at its own size.
+   house: how large the holdings' other buildings and the sites stand (1: their own size, their models made finer, a model's px a
+   fine px; the owner, 2026-11-16: "House scale too small need to change the sprite to be bigger"); sites: a kind of site's own
+   times that (a whole number: its model made as many times finer again), the shrine's standing stones else no taller than a man */
+/* zoom: CSS px a fine px on the map, the world lab's (engine/worldlab.js LAB.zoom), phoneZoom on a window narrower than phone CSS px
+   (its phoneZoom, phone); the map never shows the world smaller than this (the owner, 2026-11-15: "Remove all old concepts that
+   reduce the map scale"), and closer at most in times it */
+const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,phone:700,in:2};
+/* the map painted round you as you play (gfx/worldart.js WorldArt; the owner, 2026-11-18: "after i walk my character to new areas it
+   seems to have long load time"): a chunk takes a second or more to paint (several on a phone), so in play none is painted whole in
+   one frame. One in view not painted yet shows the minimap's colours while it is painted, view ms a frame; those queued ahead get
+   what their deadline asks: the work left (est ms a chunk at first, then as measured, eased by learn; rest of it at least for one
+   begun) over the time before the view reaches them at its speed (speed game px a second at least; soon ms at the least), safety
+   times over, slice ms a frame at least, most at most. The view's speed and the frame's length eased by ease. A chunk half painted
+   is kept, keep of them at most, while it stays near the view. In play while the game's loop drew within alive ms (one slow frame,
+   a model made, never makes the next paint a chunk whole) */
+const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2,alive:2000};
+// the map's painter workers (gfx/worldart.js ArtWorkers): on in play; how many on a phone, and at most elsewhere (never more than the
+// device's cores less one; each worker holds a whole second copy of the game and its world, about 300 MB at a phone's size, so one on a
+// phone); help: ms a chunk in view may wait for a worker before it is painted here too (the first done kept)
+// (phone 0: none on a phone till one is measured there (each worker holds a whole second game, ~300 MB; Safari may close the tab), ?workers
+//  for one: the owner, 2026-11-18)
+const ART_WORKERS={on:true,phone:0,most:4,help:400};
+/* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
+   read at a place warped climWarp game px by noise, each px's picked from their shares (climPick: by a slow noise at sc game px, spread k, grain at its edge: ragged
+   tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from
+   lo to hi eased in, grain at its edge, its tones by noise at shade fine px, tufts the share of its grass clumps gone under it);
+   what the game painted over the ground (over: the trampled patches and yards) keep of the fine ground's own colour in it, grain its
+   grain, feather the game px over which it thins into the ground round it, blur the game px its
+   colours are blurred over (a yard meets the worn ground round it softly); the grass's clumps thinned over a lot's
+   tiles read at a place warped warp game px; open land meadow where a slow noise (with quick of a quicker one in it) passes
+   meadow.at, the grass shading into it over band either side, grain at its edge; the sea's and lakes' shores a smooth curve over their tiles, read at a place warped shore.warp game px (noise at
+   shore.sc), shore.bias toward the water so no water tile's middle is land; a wide river's banks the same curve over its tiles, shore.river toward the water
+   (so its own curves lie inside it), its dirt bank along that curve to shore.bank of the field past it; a river's water shore.lip fine px under its banks, its dirt edge (an earth face) along it; no terrace
+   step within shore.unstep banks' width of a river (its bank one smooth slope, never stairs); the dry land within a lake's or a pool's tiles
+   eased from the land round it down to its water over shore.basin game px (the generator holds such a tile at its water's level: a flat
+   square floor stepped up at the tile's edge); its curves read reach game px further out, so the smooth bank is never cut short; the land drawn lifted up the screen by its height, up to liftMax levels; lh fine px of
+   face a level (the lab's 8); the land's levels between the tiles' (worldgen.js reliefOf) roughened by detail levels (noise of sc
+   fine px; a mountain's mount times more); steps: stepped (a terrace, its face hanging over the land south of it) where its slope
+   (levels a game px) is from or more, wholly by to; a face only where it steps min levels or more at once (a river so stepped a fall: its white water falls.lip game px above it, its foam pool falls.pool below, seen whichever way it runs, across falls.wide of its half-width only; a reach of falls.rapid.hw game px of half-width or more, within rapid.mouth px along it of still water or a wider river it runs into, or within rapid.bridge px of a bridge's ends, no fall but rapids: its levels eased over rapid.ramp px, white streaks rapid.streak long, full at a slope of rapid.white levels a px, rapid.join px the way back a mouth is told by); rim: where the ground falls away north, west or east more than drop fine px (a face unseen), its crest px darkened to north (north) or side; gentle ground is shaded; never within flat game px of a road, a
+   holding's lot or a ford. Rock shows on land from rock levels up, snow from snow (each by noise of a level or two); the shore:
+   wet sand within wet fine px of the sea, the beach within sand, dunes within dune (on land below a level); a river's bank within
+   bank (shore widths in lab px: the lab's wet 5, sand 34, dunes 80); oasis: the desert green within it of a river; pools: the swamp's
+   (its noise past at at sc lab px, on land under lo levels, as deep as its excess times deep); blend: the lab's (r lab px, k, warp);
+   decor: the small things' colours. Water: depth (levels) a tile's depth step (the plan's dep 0-9), the bed showing to clear levels;
+   water: one look for the rivers, lakes, pools and the sea (the owner, 2026-11-18: "make river and lake, ponds colors and
+   characteristics blend"): a river's colours the open water's by depth with murk of its own kept, its bed showing to clear levels;
+   where it runs into still water it eases into it over mouth game px (its depth to the still water's, a lake's measured to the land
+   that is no river's water either, its colours and bed, its current's streaks); at every shore and bank a broken foam within rim game px
+   (a river's by its half-width: rim of it at hw game px and over), at most foam white; the foam riding a river's banks on bankFoam
+   of its edge px (a lake's on all) */
+/* the world's nature drawn finer (gfx/worldterrain.js terrainProps; the world lab's, engine/worldflora.js): per climate its look (the
+   flora's rock tones, bush leaves, moss, snow on everything), its trees by where they stand (lowland, waterside: a river within a
+   tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
+   fine px by the ground: woods (a forest tile; trees at woods, thinner at its edge), open ground (grass and meadow), hills, the
+   mountains, the banks, the swamp's pools (lily: a pad's chance on one, reeds: round its edge, the lab's); grass: a clump's chance by the ground and the clumps' kinds (the flora's GRASS_KINDS); how it moves (gfx/worldterrain.js
+   grassFeet): wind, gust, push (fine px a foot bends it within), lean (its most, px), way (game px a frame across the screen a walker
+   bends it his way, else away from him), back ([s it eases back upright in, never past it; s more for each s it was trodden; the most
+   s counted]), flat ([the share of push under a foot it is pressed within, the most of its height pressed down, s to rise again]),
+   stay ([the share of clumps trodden at least stay[1] s that stay down]), feet ([a man standing's share of a walker's push, a rider's
+   or beast's push times]) */
+const WORLD_FLORA={step:9,
+  look:{grass:{rock:'grey',bush:'oak',snow:false,moss:1},desert:{rock:'sand',bush:'dry',snow:false,moss:0},frost:{rock:'cold',bush:'dark',snow:true,moss:0},swamp:{rock:'grey',bush:'dark',snow:false,moss:1.6}},
+  trees:{grass:{lowland:{oak:5,beech:3,birch:2.5,ash:2,maple:.6,poplar:.4,dead:.25},waterside:{willow:4,alder:3,birch:1,poplar:1},hills:{pine:4,fir:3,birch:1.5,oak:1,dead:.3},mountain:{fir:4,spruce:4,pine:1,dead:.5},village:{apple:3,oak:1,poplar:1}},
+    desert:{lowland:{acacia:4,dead:2,palm:.5},waterside:{palm:6,acacia:1},hills:{acacia:2,dead:2},mountain:{dead:1,acacia:1},village:{palm:4,acacia:1}},
+    frost:{lowland:{spruce:4,fir:3,winterbirch:2,dead:.6},waterside:{winterbirch:3,spruce:2},hills:{spruce:4,fir:2,dead:.4},mountain:{spruce:3,fir:2,dead:1},village:{spruce:2,winterbirch:1}},
+    swamp:{lowland:{bogtree:4,alder:3,willow:2,dead:2},waterside:{willow:3,bogtree:3,alder:1},hills:{alder:2,birch:2,oak:1,dead:1},mountain:{fir:2,spruce:1,birch:1,dead:1},village:{willow:1,alder:1}}},
+  chance:{grass:{woods:.6,open:{tree:.012,bush:.012,boulder:.002,stone:.006,flowers:.02,fern:0},hills:{tree:.05,bush:.02,boulder:.012,stone:.02},mountain:{tree:.02,boulder:.03,stone:.05},woods2:{bush:.08,log:.012,stump:.008,fern:.06,mushroom:.014},bank:{cattail:.08,stone:.04}},
+    desert:{woods:.25,open:{tree:.01,bush:.006,boulder:.004,stone:.014,agave:.012,bones:.002},hills:{tree:.02,boulder:.02,stone:.03,agave:.01},mountain:{boulder:.03,stone:.05},woods2:{bush:.07,agave:.02},bank:{cattail:.05}},
+    frost:{woods:.6,open:{tree:.01,bush:.008,boulder:.003,stone:.006},hills:{tree:.05,bush:.01,boulder:.012,stone:.02},mountain:{tree:.015,boulder:.03,stone:.05},woods2:{bush:.05,log:.01,stump:.01},bank:{cattail:.03,stone:.03}},
+    swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2},pool:{lily:.1,reeds:.12}}},
+  grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
+    kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
+    patch:38,wind:1,gust:[90,.65],push:12,lean:3,way:.15,back:[1.6,1.2,8],flat:[.5,.55,3],stay:[.3,2.5],feet:[.4,1.6]}};
+/* the world's ways drawn finer (gfx/worldways.js; the owner, 2026-11-15: "make the lab river several sizes, there can be a big
+   river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
+   generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
+   size (a brook's first), a ford's share of it; a river's ford as a gravel bar (fordBar: band game px beside the road it runs out, its
+   edge warp px ragged, the ford's tiles blended over blend of a tile's B-spline (no tile's square), gravel its bed's share showing, riffle
+   the noise over which its edge runs white, stone the share of cell fine px cells with a stepping stone); how far it wanders off its tiles' line (meander, px, never out of them); its last
+   stretch into the sea or a lake mouth times wider (its water easing into the still water's: WORLD_TERRAIN.water); a river rising
+   from tarn.lv levels up rises from a tarn (its head tarn.w times wide); its surface stepped step levels at a time, a fall at each
+   (the lab's; 0: smooth). A brook rises from a spring, a pool spring times its width at its head. A river's line simplified within simp of a tile of
+   its tiles' middles, then wandering in bends meanderL px long, up to meanderBig px off it (a brook's 26 long, meander off), so no river runs
+   dead straight along a row of its tiles. Its current (flow, the owner: "make a water effect like water"): streaks running down it,
+   len px long every period px along lanes lane px apart across it, at speed px a second; a lane's streaks only where noise gate px
+   long along it is over on, and within edge of its half-width of its middle, fewer farther out (period must divide 30000); its
+   line smoothed over smooth times its half-width each way for it. wide: by its half-width (game px, hw a stream's to a big river's),
+   its lanes out to edge of it, lit where the gate's noise is over on, its streaks len px long in its middle (mid less at its edge),
+   speed times as quick, each every per times its length at least (the owner, 2026-11-18: "more line on the big river/stream");
+   stride: a chunk's flow record's numbers a px. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
+   half-widths (a track, a road: both the lab's 13, 26 wide), its width wandering vary of it along it, its corners rounded (bend
+   more cuts of its line); its worn look: a packed crown in
+   patches, no wheel ruts (the bands' tracks are drawn: world/tracks.js; track: the wear down a bridge's deck), gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px,
+   a stone wall only on faces within wall px of its edge (the lab's; its shoulders' faces earth or rock).
+   road grade: levels a game px it climbs at most (the lab's 1 in 34 lab px), its shoulders cut or banked to it.
+   Its look by the land it runs through (biome, the climates' order: grass, frost, desert, swamp; the owner: "make it blend more
+   naturally with biomes"): mix of the ground's colour in it, and the ground over it in patches where its noise passes patch (snow,
+   sand drifts, mud); at a dead end it narrows and fades into the land over fade game px.
+   bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; along its road's line
+   across the water, over game px onto each bank; over open space (water, or more than open px under its beams) a pile every pile px
+   at most (a stone bridge's arch every arch), evenly, nothing under it where its bank carries it; rails rail px tall, a
+   post every post px; its shadow shade px to the south-east, shadow its alpha (0-255); the road's fill under only abut game px of each
+   end, its open span the river and its banks as they are (worldways.js bridgeOpen); a brook under a road: a small bridge along
+   the road, the brook's width and brook.span px of bank each side, its deck brook.clear levels over the water at least, none within
+   brook.apart px of another bridge; on a track or over a brook under brook.ford px wide, a natural ford instead (shallow over gravel);
+   a stone deck's flagstones flag.w by flag.h lab px, staggered, mortar their seams' shade, a kerb kerb lab px along each side, vary
+   their tones; a bridge running north and south: its piers cutwaters out cut.out lab px past its sides, cut.half lab px half-wide;
+   its ends run on past the water as drawn to dry ground (reach game px at most), its deck at the higher bank, a ramp falling to the
+   lower at slope (fine px a fine px) over a stone abutment; where its river runs on a slant (within diag radians
+   of the diagonal), it is turned to cross it square, on the slant; walked only inside its rails, walk game px in from each side (world/router.js
+   deckLane) */
+const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,fordBar:{band:3,warp:3,blend:.42,gravel:.42,riffle:.6,stone:.2,cell:5},meander:6,mouth:1.6,tarn:{lv:3,w:3.2},
+  flow:{lane:1.5,gate:22,on:.55,speed:10,period:30,len:7,edge:.7,smooth:2.5,stride:5,
+    wide:{hw:[1.5,9],edge:[.55,.88],on:[.62,.34],len:[5,15],mid:.45,speed:[1.3,.8],per:3.2}}},
+  road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
+  bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
+    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:28,slope:.4,diag:.45,walk:2}};
+// (prints: footprints, the lab's: one every step px a man walks (a foot's stride: left, then right), side px off his way, fading over
+// fade s, max kept; on snow, sand, the marsh, and ground within bank px of drawn water, in their colours, a print's rim rim of its
+// strength: worldterrain.js stepPrint; each a foot's shape (PRINT_FOOT), pointing the way he walks)
+/* a footprint's shape (worldterrain.js printFoot; the owner, 2026-11-17: "Tracks footprints is in the wrong position and not realistic"):
+   at 2 fine px a game px, its sole (the ball and toes: its middle along the foot, its half-length, its half-width) a little to its
+   inner side (inner), its heel apart behind it, the same; turned to one of dirs ways, a left foot the right one mirrored; deep within
+   deep of its middle. The way's prints (worldui.js wuiFoot) and the tracks men leave (stepPrint) both */
+const PRINT_FOOT={sole:[1.2,1.7,1.2],heel:[-1.7,.8,.7],inner:.3,deep:.55,dirs:16};// (its heel smaller than its sole, so at 8-9 px a print it points the way walked on the slant too)
+/* rocky ground round a cave's mouth (gfx/worldterrain.js caveRocks, caveShare; the owner, 2026-11-16: "add rocky area that blend the
+   caves"): whole within r - feather game px of its mouth (up px above its site's middle), thinning to the land over feather, its edge
+   warped warp px by noise and grained; flat (y times flat); bare rock in patches over rock of it (its noise), the ground stony past bare
+   (pebbles, no grass clumps, no trees); boulders and stones as props by their chance at its full share */
+const CAVE_ROCK={r:30,feather:16,warp:11,grain:3,up:6,flat:1.3,rock:.55,bare:.55,boulder:.05,stone:.12};
+const WORLD_TERRAIN={prints:{step:2.6,side:.8,rim:.5,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16,basin:7},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2,rapid:{hw:8,mouth:48,join:16,bridge:14,ramp:22,white:.09,streak:5}},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+  decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,water:{murk:.3,clear:.6,mouth:18,rim:1.6,hw:6,foam:.5,bankFoam:.4},shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
   // read the unscaled paces, so this changes how fast things look, never who outruns whom. .68 (D9): a band on foot some 9 px a
   // second on open ground at 1x, 100 tiles (25 km) a day
   // Campaign travel is 1.28 times the base pace (was twice, then 1.6: the owner, 2026-10-31, "drop campaign speed about 20%", and
-  // 2026-11-14, "reduce world moving speed for all", 20% more); everything on the map moves by it, you and the world alike; world
-  // combat explicitly keeps the base scale.
-  move:.68,travel:1.28,
+  // 2026-11-14, "reduce world moving speed for all", 20% more); everything on the map moves by it, you and the world alike, a fight
+  // on the map too (battle.js; the owner, 2026-11-16: "the speed between battle and world seems weird": it kept the base scale).
+  // (the world lab's walk (the owner, 2026-11-15: "the lab's walking speed"): a man on open ground some 19 game px a second at 1x (the
+  // lab's 38 lab px), 1.63 times the 11.7 measured before; a day as many times longer (core.js DAY_SECONDS), so a day's march is
+  // the same ground and everything counted in days keeps its pace)
+  move:1.11,travel:1.28,
   // how far each kind sees you, before your cover cuts it (Brain.sight, hiddenAt)
   sight:{lord:90,band:95,monster:70,caravan:80,refugee:70},
   // what the parties weigh (brains.js, monsters.js, critters.js, folk.js, companions.js, patrols.js)
@@ -126,7 +267,15 @@ const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','hou
 // how far (tiles) a site of a kind stands from every holding (world/sites.js siteSpot; the owner, 2026-11-14: "camps are not too close
 // to the holding. Caves, monster lair should be more far away as well"): any (were all 6), caves 20, camps where people live 14 (a kind
 // may set its own: data/encampments.js away)
-const SITE_AWAY={any:6,cave:20,travelers:14};
+const SITE_AWAY={any:12,cave:20,travelers:14};
+// how far a site stands from the others and from a holding's lots (world/sites.js siteSpot; the owner, 2026-11-17: "sites such as stone
+// pillar, abandon places, are too close to each other and even too close to the holding"): gap tiles from every other site (was 9;
+// past half its tries relax of it), lots tiles from any holding's lots, its fields, farms and works too (none before: only SITE_AWAY
+// from its middle, a ruin 2 tiles from a town's farms); SITE_AWAY.any 12 (was 6); own: a kind's own gap (the outlaws', deep in the
+// wilds and kept from each other by their own SITE_GAP: the wider gap only cost them their wild spots; the places drawn after them keep
+// theirs from them); first: kinds placed ahead of the others (the goblins' warrens want the wild land's few tiles among hills, which
+// the hideouts, on wild ground first, took before them)
+const SITE_SPACE={gap:14,relax:.6,lots:8,own:{hideout:9,goblins:9},first:['goblins']};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},

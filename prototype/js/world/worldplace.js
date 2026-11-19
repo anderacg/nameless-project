@@ -65,9 +65,12 @@ const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][
    holding has is wider (sqrt(land / holdings)), reach and room grow with it (Normal's 27 x1.18, Huge's 66 x1.75); room, a new
    holding's liking for room, up to room[0] for room[1] tiles (x that growth) clear past its spacing; pull, its pull toward its
    capital, a share a hundred tiles; regrow, the realms grown from their capitals at most this many times a try (placeEven; 5 since
-   the centres keep to dry ground, placeDry, 2026-10-22: Large s2 balanced at its fourth) */
+   the centres keep to dry ground, placeDry, 2026-10-22: Large s2 balanced at its fourth). fordTown: a ford with an end within this
+   many tiles (the larger of dx, dy) of a town, city, castle or fort is built a bridge (the owner, 2026-11-15: "There's case where
+   the city not build a bridge which is weird because it has a road connected to the edge": a road down to a ford by a castle read
+   as a road into the river); 0: fords anywhere, as before */
 const PLACE={reach:40,cap:.3,skew:.25,suit:.6,day:60,land:2000,landR:90,lords:[[37,4],[55,6],[90,9],[200,18]],bridge:3,ford:3,ferry:12,gap:60,apart:3,spread:.3,even:.24,
-  capMin:.6,space:54,room:[.3,30],pull:.05,regrow:5};
+  capMin:.6,space:54,room:[.3,30],pull:.05,regrow:5,fordTown:8};
 // the land a realm's holdings will claim, reckoned as territory.js does at the start (placeRealmLand): its travel cost by tile kind
 // (its LAND_COST, which loads after the generator runs; 0 closed) and a holding's first growth past its kind's reach (its GROW0)
 const PLACE_CLAIM={cost:[1,1.7,1.5,0,.8,4,1.5],grow:4};
@@ -409,8 +412,10 @@ function placeLords(R,n){if(n<=4)return null;const used=new Set(PLACE_REALMS.fla
 
 /* 8. roads (above). The search's buffers kept for the stage; a tile's cost: open 1, forest 1.8, hill 2.2, a road or ford 0.5,
    x4 in a wild region, x0.8-1.25 by a noise (so a road wanders as the land leads it), +1.5 a terrace climbed or
-   descended; peaks, water (but straight across, below) and cliff edges closed */
-const PLACE_ROAD={hm:1,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
+   descended, +brook a stream's tile (the owner, 2026-11-15: "Make the road avoid streams so fewer bridges": a road goes round a
+   brook's head or along it where it can, crossing it where it must, at a ford or a small bridge: worldways.js); peaks, water (but
+   straight across, below) and cliff edges closed */
+const PLACE_ROAD={hm:1,grade:2.5,brook:5,pull:40,slack:1.04,round:[6,3,1.5,.75],xing:{bridge:[2,8,12],ford:[1.5,4],ferry:[2,16],reuse:.5}};
 // (a holding's centre as lots.js lays it (centreBox): a village's hall 2 x 2, any other's 4 x 4, its bottom row on the holding's
 // tile, its gate the tile below: {x, y, n})
 const placeBox=h=>{const n=h.kind==='village'?2:4;return{x:h.tx-(n>>1),y:h.ty-n+1,n}};
@@ -426,6 +431,9 @@ function* genRoads(g){
   {const salt=genSalt(g.rng('roads',0));for(const h of Hd)placeClear(m,h,salt)}
   const X=new Int32Array(N).fill(-1),LI=new Int32Array(N).fill(-1),lines=[],jit=new Float32Array(N),ter=new Uint8Array(N),ferry=new Uint8Array(N),nearH=new Uint8Array(N);
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;jit[i]=.8+.45*fbm(x/9,y/9,salt);ter[i]=clamp((m.elev[i]-64)>>5,0,3)}
+  // (the land's height at each tile's middle, the lab's (worldgen.js landHeight): a step pays the square of its grade (PLACE_ROAD.grade), so
+  //  a road climbs a hillside aslant and in turns, as the lab's switchbacks, rather than straight up it)
+  const LHt=new Float32Array(N);{const hf=typeof landHeight==='function'?landHeight(m):null;if(hf)for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;LHt[i]=K[i]===T_WATER?0:hf(x*32+16,y*32+16)}}
   // ferries land within 8 tiles of a town, a city or a port; nearH: within 6 tiles of a holding (the larger of dx, dy)
   for(const h of Hd)for(let b=-6;b<=6;b++)for(let a=-6;a<=6;a++)if(m.has(h.tx+a,h.ty+b))nearH[(h.ty+b)*W+h.tx+a]=1;
   for(const h of Hd)if(h.kind==='town'||h.kind==='city'||h.style==='port')for(let b=-8;b<=8;b++)for(let a=-8;a<=8;a++)if(a*a+b*b<=64&&m.has(h.tx+a,h.ty+b))ferry[(h.ty+b)*W+h.tx+a]=1;
@@ -434,7 +442,7 @@ function* genRoads(g){
   // so nothing leads it round the centre (once a road from behind was led round it over the river beside it)
   const boxed=new Uint8Array(N);for(const h of Hd){const b=placeBox(h);for(let y=b.y-1;y<=h.ty;y++)for(let x=b.x-1;x<=b.x+b.n;x++)if(m.has(x,y))boxed[y*W+x]=1}
   for(const h of Hd)boxed[(h.ty+1)*W+h.tx]=0;
-  const tc=(i,great)=>great&&K[i]===T_FORD?Infinity:cost[i],cost=new Float32Array(N),price=i=>{const k=K[i];cost[i]=boxed[i]?Infinity:(k===T_ROAD||k===T_FORD?.5:k===T_OPEN?jit[i]:k===T_FOREST?1.8*jit[i]:k===T_HILL?2.2*jit[i]:Infinity)*(m.region[i]?4:1)};
+  const tc=(i,great)=>great&&K[i]===T_FORD?Infinity:cost[i],cost=new Float32Array(N),price=i=>{const k=K[i];cost[i]=boxed[i]?Infinity:(k===T_ROAD||k===T_FORD?.5:k===T_OPEN?jit[i]:k===T_FOREST?1.8*jit[i]:k===T_HILL?2.2*jit[i]:Infinity)*(m.region[i]?4:1)*(m.slope?[1,1.4,2.8,4][m.slope[i]]:1)+(genBrook(m,i)?PLACE_ROAD.brook:0)};
   for(let i=0;i<N;i++)price(i);
   const shut=i=>K[i]===T_WATER||K[i]===T_MOUNT,cut=(i,dx,dy)=>dx>0&&E[i]&1||dx<0&&E[i]&4||dy>0&&E[i]&2||dy<0&&E[i]&8,DX=DIR8.map(d=>d[0]),DY=DIR8.map(d=>d[1]);
   // (the crossing a straight run of k water tiles from land tile i (step s) would be: [kind, its cost]; kind 0 none, and none new
@@ -458,7 +466,7 @@ function* genRoads(g){
       const x=i%W,y=(i-x)/W,gi=G[i],te=ter[i];
       for(let d=0;d<8;d++){const dx=DX[d],dy=DY[d],nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>x1||ny>y1)continue;const j=ny*W+nx;let c=tc(j,great);
         if(c===Infinity||E[i]&&cut(i,dx,dy))continue;if(d&1){if(shut(i+dx)||shut(i+dy*W))continue;c*=1.4142}
-        relax(i,j,gi+c+1.5*(ter[j]>te?ter[j]-te:te-ter[j]))}
+        const dz=LHt[j]-LHt[i],ln=d&1?1.4142:1;relax(i,j,gi+c+1.5*(ter[j]>te?ter[j]-te:te-ter[j])+PLACE_ROAD.grade*dz*dz/ln)}
       // over water: straight on, 4 ways, from land to land
       if(K[i]!==T_WATER)for(let d=0;d<8;d+=2){const dx=DX[d],dy=DY[d],s=dx+dy*W;if(K[i+s]!==T_WATER)continue;let k=0,nx=x+dx,ny=y+dy;
         while(k<=PLACE.ferry&&nx>=x0&&ny>=y0&&nx<=x1&&ny<=y1&&K[ny*W+nx]===T_WATER){k++;nx+=dx;ny+=dy}
@@ -598,6 +606,7 @@ function* genRoads(g){
   if(!m.classic)for(const f of PLACE_REALMS){if(Hd.some(h=>h.realm===f&&h.style==='bridge'))continue;let best=null,bd=99;
     for(const h of Hd)if(h.realm===f&&h.kind==='town'&&!h.style)for(const c of m.crossings)if(c.kind==='bridge')for(const i of [c.i,c.j,...c.tiles]){const [x,y]=xy(i),d=Math.max(Math.abs(x-h.tx),Math.abs(y-h.ty));if(d<=3&&d<bd){bd=d;best=h}}
     if(best)best.style='bridge'}
+  placeTownBridges(m,Hd);
   yield 1}
 // (corners rounded: at each inner point k, a curve (quadratic, its control the corner) from rs[k] tiles back along each leg (at most
 // .45 of it); 0 keeps the corner)
@@ -614,6 +623,20 @@ function placeCross(m,F,X,a,b,tiles,kind,great,Hd,rid){
   let toll=null,td=65;if(kind!==1)for(const h of Hd)if(h.kind!=='village')for(const i of [a,b]){const x=i%W,y=(i-x)/W,d=(x-h.tx)*(x-h.tx)+(y-h.ty)*(y-h.ty);if(d<td){td=d;toll=h.name}}
   m.crossings.push({i:a,j:b,kind:kinds[kind],river,tiles:tiles.slice(),stone:kind===2&&(great||tiles.length>1),toll,when:null});
   for(const i of tiles){X[i]=c;if(kind===1)m.kind[i]=T_FORD;else if(kind===2){m.kind[i]=T_ROAD;m.feat[i]|=32}}}
+/* (the fords by a town, city, castle or fort built bridges: each ford with an end within PLACE.fordTown tiles of one (placeByTown),
+   once every road and track is laid, so the ways stay as they were and only the crossing changes, and only where a road joined to
+   the holdings reaches both its ends (the road that reads as running into the river): its tiles road with the
+   bridge's mark, stone over more than a tile, its toll the nearest such holding within 8 tiles, as placeCross makes a bridge) */
+function placeTownBridges(m,Hd){const W=m.w,K=m.kind;if(!PLACE.fordTown)return;
+  // (the roads joined to the holdings: from each gate over road and ford tiles, 8 ways; a ford one of whose ends they do not reach is
+  // a track's or nobody's, and stays a ford: a bridge has a road at both its ends)
+  const on=new Uint8Array(W*m.h),q=[];for(const h of Hd){const i=(h.ty+1)*W+h.tx;if(!on[i]){on[i]=1;q.push(i)}}
+  for(let a=0;a<q.length;a++){const i=q[a],x=i%W,y=(i-x)/W;for(const [dx,dy] of DIR8){const nx=x+dx,ny=y+dy,j=ny*W+nx;if(m.has(nx,ny)&&!on[j]&&(K[j]===T_ROAD||K[j]===T_FORD)){on[j]=1;q.push(j)}}}
+  for(const c of m.crossings){if(c.kind!=='ford'||!on[c.i]||!on[c.j]||!placeByTown(m,c.i,c.j,Hd))continue;c.kind='bridge';c.stone=c.tiles.length>1;for(const i of c.tiles){m.kind[i]=T_ROAD;m.feat[i]|=32}
+    let td=65;for(const h of Hd)if(h.kind!=='village')for(const i of [c.i,c.j]){const x=i%W,y=(i-x)/W,d=(x-h.tx)*(x-h.tx)+(y-h.ty)*(y-h.ty);if(d<td){td=d;c.toll=h.name}}}}
+// (whether an end of a crossing from tile a to tile b lies within PLACE.fordTown tiles of a town, city, castle or fort of Hd)
+function placeByTown(m,a,b,Hd){const R=PLACE.fordTown,W=m.w;if(!R)return false;
+  for(const h of Hd)if(h.kind!=='hamlet'&&h.kind!=='village')for(const i of [a,b]){const x=i%W,y=(i-x)/W;if(Math.max(Math.abs(x-h.tx),Math.abs(y-h.ty))<=R)return true}return false}
 // (no crossing's end within PLACE.apart tiles (the larger of dx, dy) of tile i: crossings kept apart, a ford never right by a
 // bridge's end)
 function placeApart(m,i){const W=m.w,x=i%W,y=(i-x)/W,a=PLACE.apart;for(const c of m.crossings)for(const e of [c.i,c.j]){const ex=e%W;if(Math.abs(ex-x)<=a&&Math.abs((e-ex)/W-y)<=a)return false}return true}

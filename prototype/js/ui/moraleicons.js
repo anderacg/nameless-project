@@ -151,13 +151,16 @@ const iconPx=v=>{const k=bview().k;return Math.round(v*k)/k};
 const ICON_FAN={contact:30,gap:2,ease:.25,follow:15,snap:120,under:.7,again:6};
 const atBlows=(a,b)=>a.m.some(u=>{const t=u.tgt;return !u.rout&&t&&t.hp>0&&t.grp===b.g&&Math.hypot(t.x-u.x,t.y-u.y)<ICON_FAN.contact});
 // rt: real seconds since the last (the fan's easing); returns the icons as drawn, bottom first
+// (a fight on the map: its men drawn up by the land's lift there (render.js drawUnit), their banner with them, field px; else none. Its
+// banner stood on them on raised ground, over the hero's body: the owner, 2026-11-17, "sometimes my character disappears while Fighting")
+function iconLift(p){if(!B.world||typeof liftAt!=='function')return 0;const w=B.world.world(p);return liftAt(w.x,w.y)*B.world.scale}
 function iconLayout(rt){
   const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1,rm=reducedMotion(),IP=B.iconPos||(B.iconPos={}),dt=Math.max(0,B.t-(B.iconT??B.t)),sel=selGroups(),items=[];B.iconT=B.t;
   // (an enemy group your side does not see has no icon; one partly seen, over those seen: terrain.js seenBy)
   for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,cy=at.reduce((a,u)=>a+u.y,0)/at.length,top=Math.min(...at.map(u=>u.y));
     let p=IP[g];if(!p||rm||B.deploy||B.muster&&(B.muster.active||B.ready)||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
-    const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=flagH()*K,sp=fromField({x:p.x,y:p.y});
+    const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=flagH()*K,sp=fromField({x:p.x,y:p.y-iconLift(p)});
     if(sp.x<-W||sp.x>BVW+W||sp.y<0||sp.y>BVH+40)continue;// (off the view: none)
     items.push({g,m,mo,st,W,H,cx,cy,p,team:m[0].team,bx:sp.x-S*K/2,y:Math.max(4,sp.y-UICON.lift*z*(B.world?WORLD_BATTLE.sprite:1)-H),tier:sel.includes(g)?3:B.iconHov===g?2:m[0].team?0:1})}
   const hit=(a,b)=>a.bx<b.bx+b.W&&b.bx<a.bx+a.W&&a.y<b.y+b.H&&b.y<a.y+a.H,up=items.map((_,i)=>i),root=i=>up[i]===i?i:(up[i]=root(up[i]));
@@ -197,7 +200,7 @@ function drawUnitIcons(){
    faint dashed ring on the ground under it; drawn on the screen as the icons, but no icon of B.icons (nothing to click) */
 function drawFogGhosts(){
   const Gs=B.fog&&B.sight&&B.sight.ghost;if(!Gs||!Gs.size)return;const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1;
-  for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y}),x=iconPx(p.x-S*K/2),y=iconPx(p.y-UICON.lift*z-flagH()*K);
+  for(const [g,q] of Gs){const m=grpUnits(g),a=ghostFade(q);if(!m.length||a<=0)continue;const p=fromField({x:q.x,y:q.y-iconLift(q)}),x=iconPx(p.x-S*K/2),y=iconPx(p.y-UICON.lift*z-flagH()*K);
     if(p.x<-40||p.x>BVW+40||p.y<0||p.y>BVH+60)continue;
     ctx.save();ctx.globalAlpha=.75*a;ctx.strokeStyle='#b8bcc4';ctx.setLineDash([3,3]);ctx.lineWidth=1;const rr=Math.max(8,Math.sqrt(m.length)*5)*z;ctx.beginPath();ctx.ellipse(Math.round(p.x),Math.round(p.y),rr,rr*.5,0,0,7);ctx.stroke();ctx.setLineDash([]);
     ctx.translate(x,y);ctx.scale(K,K);drawFlag0(S,['#6a6e78','#7a7e88','#585c66'],'#2a2d33');

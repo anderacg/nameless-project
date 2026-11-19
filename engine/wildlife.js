@@ -6,14 +6,14 @@
    tall): a deer's shoulder 9 px, a cow's 9, a sheep's 6, a pig's 5, a rabbit's 3. Three coats a kind (v). The birds (a hen, a marsh
    fowl) drawn here on two legs. Kinds 'w_' + the animal's id: PX.beast('w_deer', {v, pose, team}); PX.WILD_KINDS lists them. */
 (function(PX){
-  const K=PX._beastKit,{put,mask,shade,flat,R,quad,quadDead,KINDS}=K;
+  const K=PX._beastKit,{put,mask,shade,flat,R,quad,quadDead,quadRest,KINDS}=K;
   // (an antler: a beam from (x, y) up and back, a tine forward at each of tines' rows; c its two tones)
   const antler=(g,x,y,up,tines,c,back=1)=>{for(let k=0;k<up;k++){const ax=x-Math.round(k*back*.5);put(g,ax,y-k,c[k%2?1:0]);if(tines.includes(k))put(g,ax+1,y-k-1,c[0])}};
   // (a horn curving back: from (x, y) its points in order)
   const horn=(g,x,y,pts,c)=>pts.forEach(([dx,dy],k)=>put(g,x+dx,y+dy,c[Math.min(c.length-1,k>>1)]));
   // a hoofed beast: its shape (S, the beasts' quad's: hip and shoulder x, the back's heights, the belly's, the body's radii, legs, head)
   // made from its coat C and variant v by shape(C, v) (a coat a colour, its ramp made (R), or its own four tones); its ground the canvas's
-  const hoofed=(W,H,coats,shape,dx)=>({W,H,coats,dx,draw(g,F,o){const v=o.v%3,c=this.coats[v],C=typeof c==='string'?R(c):c,S={...shape(C,v),Y:g.h-2};return F.dead?quadDead(g,S,o,F.how):quad(g,S,F,o)}});
+  const hoofed=(W,H,coats,shape,dx)=>({W,H,coats,dx,draw(g,F,o){const v=o.v%3,c=this.coats[v],C=typeof c==='string'?R(c):c,S={...shape(C,v),Y:g.h-2};return F.dead?quadDead(g,S,o,F.how):F.a==='rest'?quadRest(g,S,o):quad(g,S,F,o)}});
   const DK=R('#2e2620'),HOOF=R('#3a302a'),PALE=R('#ece4d2'),HORN=['#e8e0cc','#c8bca0','#9a8e74'],DARKHORN=['#5a4e40','#3e342c','#2a2420'];
   const W={
     // a hind: slender, long-legged, a pale belly and rump, big ears
@@ -80,14 +80,15 @@
       tail:(g,x,y)=>{put(g,x+1,y,'#ffffff')}}),2)};
   /* the birds, on two legs: a round body, the head up ahead of it, a tail up behind, the legs walking under (F.legs' near pair);
      dead on its side, on its back (its feet up), or its head tucked under it */
-  const bird=(W,H,coats,B)=>({W,H,coats,draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Y=g.h-2,b=F.dead?0:F.bob||0,dead=F.dead?F.how:null;
+  const bird=(W,H,coats,B)=>({W,H,coats,draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),rest=F.a==='rest',Y=g.h-2+(rest?2:0),b=F.dead?0:F.bob||0,dead=F.dead?F.how:null;
+    if(F.a==='graze')F={...F,head:[1+F.i,3-F.i]};// (grazing: its head down to the ground ahead of it; resting: sat down on its folded legs, rest)
     const legs=()=>{const L=B.leg;for(const [i,dx] of [[2,0],[3,2]]){const [ox,lift]=F.legs[i]||[0,0],x0=B.x+dx-1,fx=x0+Math.round(ox/2);put(g,x0,Y-2+b,L);put(g,fx,Y-1-lift,L);put(g,fx,Y-lift,L);put(g,fx+1,Y-lift,L)}};
     if(dead){const lie=mask().ell(B.x,Y-B.ry*.7,B.rx+.5,B.ry*.75);shade(g,lie,C);
       if(dead==='back'){put(g,B.x-1,Y-B.ry*1.5,B.leg);put(g,B.x-1,Y-B.ry*1.5-1,B.leg);put(g,B.x+1,Y-B.ry*1.5,B.leg);put(g,B.x+2,Y-B.ry*1.5-1,B.leg)}
       else{put(g,B.x-B.rx,Y-B.ry,C[2]);put(g,B.x-B.rx-1,Y-B.ry-1,C[3])}
       if(dead==='slump'){B.head(g,B.x+1,Y-B.ry,C,true);return}
       B.head(g,B.x+B.rx+2,Y-1,C,true);return}
-    legs();const body=mask().ell(B.x,Y-B.y+b,B.rx,B.ry);if(B.tail)B.tail(g,B.x-B.rx,Y-B.y+b,C);shade(g,body,C);if(B.marks)B.marks(g,body,C);
+    if(!rest)legs();const body=mask().ell(B.x,Y-B.y+b,B.rx,B.ry);if(B.tail)B.tail(g,B.x-B.rx,Y-B.y+b,C);shade(g,body,C);if(B.marks)B.marks(g,body,C);
     const lean=F.a==='run'?1:0;B.head(g,B.x+B.hx+lean,Y-B.hy+b+(F.head?F.head[1]:0),C,false)}});
   W.w_hen=bird(16,15,['#c87a3a','#e8dcc8','#5a4a40'],{x:6,y:4,rx:3.2,ry:2.4,hx:3,hy:7,leg:'#d8a838',
     tail:(g,x,y,C)=>{put(g,x,y-2,C[2]);put(g,x-1,y-3,C[3]);put(g,x,y-3,C[2]);put(g,x+1,y-1,C[2])},

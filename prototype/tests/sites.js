@@ -13,6 +13,19 @@ try{
  // (as many as the world holds, data/world.js density: at least 9 in 10; the camps where people live by kind, data/encampments.js)
  const nEnc=t.ENCAMP_KINDS.reduce((n,K,i)=>n+t.Encampment.count(i,t.WM),0);
  ok(want.every(ty=>{const n=of(ty).length,w=t.SITE_TYPES[ty].spots?t.CAMP_SPOTS.length:ty==='travelers'?nEnc:t.density(t.WM).sites[ty];return n<=w&&n>=w*.9}),'every kind placed: '+want.map(ty=>of(ty).length+' '+ty).join(', '));
+ // (apart, and off the holdings (data/world.js SITE_SPACE; the owner, 2026-11-17: "sites such as stone pillar, abandon places, are too
+ // close to each other and even too close to the holding"): each placed site SITE_SPACE.gap tiles from the sites before it (relax of it at
+ // the least, past half its tries; a kind's own gap: own), SITE_SPACE.lots from every holding's lots, SITE_AWAY.any from its middle)
+ {const SP=t.SITE_SPACE,placed=S.filter(s=>!['camp','outpost','rest'].includes(s.type)),lotD=s=>{let m=1e9;for(const h of t.TOWNS)for(const l of h.lots||[]){const dx=Math.max(l.x-s.tx,0,s.tx-(l.x+l.n-1)),dy=Math.max(l.y-s.ty,0,s.ty-(l.y+l.n-1));m=Math.min(m,Math.hypot(dx,dy))}return m};
+  const ld=Math.min(...placed.map(lotD)),cd=Math.min(...placed.map(s=>Math.min(...t.TOWNS.map(h=>Math.hypot(h.tx-s.tx,h.ty-s.ty))))),gap=s=>(SP.own[s.type]??SP.gap)*SP.relax;
+  const close=placed.filter((s,i)=>S.slice(0,S.indexOf(s)).some(o=>o.type!=='outpost'&&Math.hypot(o.tx-s.tx,o.ty-s.ty)<gap(s)-1e-9));
+  const ap=placed.map(s=>Math.min(...S.filter(o=>o!==s&&o.type!=='outpost').map(o=>Math.hypot(o.tx-s.tx,o.ty-s.ty)))).sort((a,b)=>a-b);
+  ok(!close.length&&ld>SP.lots&&cd>=t.SITE_AWAY.any,placed.length+' sites apart (the nearest '+ap[0].toFixed(1)+' tiles, the middle '+ap[ap.length>>1].toFixed(1)+'; '+SP.gap+' asked, '+(SP.gap*SP.relax).toFixed(1)+' at the least), '+ld.toFixed(1)+' tiles at the least from a holding\'s lots ('+SP.lots+' asked), '+cd.toFixed(1)+' from its middle ('+t.SITE_AWAY.any+')'+(close.length?'; too close: '+close.slice(0,3).map(s=>s.type+'@'+s.tx+','+s.ty).join(' '):''))}
+ // (on the ground as the buildings stand: a site casts its shadow off its picture as a house does, along the models' light (structures.js
+ // siteCast), not the scrap its model's cell kept; a cave its model's, cut into its hill)
+ {const px=c=>{const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data;let n=0;for(let i=3;i<d.length;i+=4)if(d[i])n++;return n},kinds=['ruins','shrine','travelers','hideout'];
+  const rows=kinds.map(k=>{const s=of(k).find(s=>!s.tunnel);if(!s)return null;const sp=t.siteSprite(s),own=px(sp.mk(1).shadow),now=px(sp.sh);return[k,own,now,sp.sh.width>sp.width]}).filter(Boolean);
+  ok(rows.length===kinds.length&&rows.every(r=>r[2]>=Math.max(20,r[1]*2)&&r[3]),'each site casts its shadow past its picture: '+rows.map(r=>r[0]+' '+r[2]+' px (its model\'s '+r[1]+')').join(', '))}
  // (the camps where people live (doc/ENCAMPMENTS_DESIGN.md §9; the owner: "at least one for each and scale based on the world"):
  // each kind as many as the land gives, one at least, each on its kind's ground, SITE_GAP's tiles from another and from the outlaws'
  // camps and hideouts)

@@ -19,8 +19,8 @@ class EstateWorker extends WorldObject{
   // World combat uses the trade's real battle unit, with stable variant and holding cloth; legacy mode keeps folkSprite; loaded
   // (MAP_FIGS), the same man with his load on his back, his tool left behind (people.js figCarrier). His fraction of a pixel
   // (subT) kept inside save/restore
-  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;
-    ents.push({y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),carry=f.st==='out'||f.load,s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),carry),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
+  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const f=this;grassFoot(f.x,f.y,f.moving,false,f);
+    ents.push({x:f.x,y:f.y,f:()=>dressedIn(dressClimAt(f.x,f.y),()=>{ctx.save();subT(f);const fr=f.moving&&mapStepping(f)?(frameOf(f,WALK.foot,WALK.n)+Math.floor(f.ph*WALK.n))%WALK.n:0,t=townBy(f.home),carry=f.st==='out'||f.load,s=WORLD_BATTLE.on?null:folkSprite(f.job,fr,t&&t.races?t.races[0]:'human',Math.floor(f.ph*7),carry),sx=Math.round(f.x-cam.x),sy=Math.round(f.y-cam.y);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy);if(WORLD_BATTLE.on){const L=workerAppearance(f),pose=f.moving&&mapStepping(f)?2+footFrame(WALKED.get(f)):0,sp=carry&&figsOn()?figCarrier(L.type,L.v,L.tint,f.job,pose):unitSprite(L.type,0,false,L.v,pose,false,false,L.tint),k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale;ctx.scale(f.dir<0?-k:k,k);ctx.drawImage(sp,-Math.floor(sp.width/2),-sp.height+2)}else{if(f.dir<0)ctx.scale(-1,1);ctx.drawImage(s,-8,-14)}ctx.restore();ctx.restore()})})}
   tip(){return '<b>'+(this.name?this.name+', '+this.job:cap1(this.job))+'</b><small>Of '+this.home+'</small><span class="act">Click: talk</span>'}
 }
@@ -132,9 +132,9 @@ function fieldPlan(t,f){
     else{let best=[],run=[];for(let j=0;j<16;j++){const s=ring[j%8];if(s.ok&&(!run.length||leg[(j+7)%8])){run.push(s);if(run.length>best.length&&run.length<=8)best=run.slice()}else run=s.ok?[s]:[]}best.forEach(s=>loop.push(s))}
     if(!loop.length)loop.push(front())}
   else{const n=FIELD.spots[0]+Math.floor(R()*(FIELD.spots[1]-FIELD.spots[0]+1));for(let i=0;i<n;i++)loop.push(front())}
-  // (home: the stop nearest the door, a herder's one he reaches from it clear of the pens by a pixel)
+  // (home: the stop nearest the door that he reaches in a clear line (a pond by Pearlbay's pens), a herder's one clear of the pens by a pixel)
   const pen=s=>{if(f.k!=='pasture')return false;const n=Math.ceil(Math.hypot(s.x-door.x,s.y-door.y)*4);for(let k=0;k<=n;k++){const x=door.x+(s.x-door.x)*k/n,y=door.y+(s.y-door.y)*k/n;if(fs.some(c=>Math.abs(x-c[0]*TILE-8)<9&&Math.abs(y-c[1]*TILE-8)<9))return true}return false},
-    by=s=>Math.hypot(s.x-door.x,s.y-door.y)+(pen(s)?1e4:0);
+    by=s=>Math.hypot(s.x-door.x,s.y-door.y)+(pen(s)?1e4:0)+(clearLine(door.x,door.y,s.x,s.y)?0:2e4);
   loop.forEach((s,i)=>{if(by(s)<by(loop[pl.home]))pl.home=i});
   // (pens hemming the door in, no stop clear of them from it: his way to home and back round their fences (out); none, he works
   // at the door)
@@ -170,8 +170,8 @@ function goField(t,f,now){const pl=f.plan&&f.plan.day===G.day?f.plan:f.plan=fiel
   if(now){const i=Math.floor(pl.R()*pl.loop.length);f.si=i;f.x=pl.loop[i].x;f.y=pl.loop[i].y;f.wp=[];fieldRest(f)}else{f.si=-1;f.wp=pl.out.concat(fieldWay(pl,pl.home,pl.home))}}
 // a stop: a while, and maybe a turn the other way partway through
 function fieldRest(f){const R=f.plan.R,w=f.plan.loop[f.si].w;f.wait=w[0]+R()*(w[1]-w[0]);f.turn=R()<.6?f.wait*R():0}
-// a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way),
-// a fisher's over the planks; true once there
+// a step toward the next point of his way (in haste on his way in), on the land's ways (world.js walk: round what is in the way,
+// on dry ground: never wading a pond as walkAt lets one, Pearlbay's by its door), a fisher's over the planks; true once there
 function fieldStep(f,d,fast,s=footStep(fast?FIELD.hurry:f.load?FIELD.carry:FIELD.gait,d)){const p=f.wp[0],dx=p.x-f.x,dy=p.y-f.y,dd=Math.hypot(dx,dy);
   if(Math.abs(dx)>.2)f.dir=dx>0?1:-1;f.moving=true;
   if(dd<=s){WALKED.set(f,(WALKED.get(f)||0)+dd);f.x=p.x;f.y=p.y;f.wp.shift();if(p.i>=0)f.si=p.i;return true}
@@ -179,7 +179,7 @@ function fieldStep(f,d,fast,s=footStep(fast?FIELD.hurry:f.load?FIELD.carry:FIELD
   // straight for it, as one barred does, onto ground he can walk. f.fb: the nearest he has come to it, f.fst: how long since)
   if(f.fp!==p){f.fp=p;f.fb=dd;f.fst=0}
   const go=()=>{const x=f.x+dx/dd*s,y=f.y+dy/dd*s;return passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))};
-  if(f.plan.pier||f.fst>FIELD.stall&&go()||!walk(f,dx,dy,s,f.plan.pens&&((x,y)=>!inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
+  if(f.plan.pier||f.fst>FIELD.stall&&go()||!walk(f,dx,dy,s,(x,y)=>passable(terrAt(x,y))&&!(f.plan.pens&&inPen(f.plan.pens,x,y,1)))){WALKED.set(f,(WALKED.get(f)||0)+s);f.x+=dx/dd*s;f.y+=dy/dd*s}
   const nd=Math.hypot(p.x-f.x,p.y-f.y);if(nd<f.fb-.5){f.fb=nd;f.fst=0}else f.fst+=d;return false}
 // at work out of doors: home by his round and in at the door when the hours end, his day is inside or danger comes; else stop to
 // stop, carrying what he got from a stop to the next

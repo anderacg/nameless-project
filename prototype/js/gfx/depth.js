@@ -20,9 +20,12 @@
    hidden, as a wall hides him; a tree still fades over anyone's, as before); what covers one of yours fades to fade, and his hidden
    part shows through it as a ghost (ghost: its colour, alpha; one hidden min px or more, most a frame; on false: none), his figure drawn again flat in that colour through
    what covers him, so he reads as behind it, never on its roof */
-const WDEPTH={on:true,fade:.5,ghost:{on:true,col:'#fff1c4',a:.62,min:8,most:30},gcv:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
-// a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet
-function depthPic(img,x,y){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y)])}
+const WDEPTH={on:true,ghosting:false,rcv:null,fade:.5,ghost:{on:true,col:'#fff1c4',a:.62,min:8,most:30},gcv:null,trk:false,di:null,fr:null,pics:[],al:new Map(),cov:new Set(),t:0,cv:null,img:null,C:[],box:[0,0,0,0],boxes:[]};
+// a structure's picture as drawn this frame at (x, y) on the screen (before the shake): its opaque pixels stand by their feet; foot
+// (its row in the picture), one foot for all of it: a tree, a tent or a grave stands whole where it stands (a crown in front of a man
+// behind its trunk, though the crown's own columns end above his feet; the owner, 2026-11-16: "When character walk behind buildings,
+// tree, etc. bring those concept in")
+function depthPic(img,x,y,foot){if(img&&WDEPTH.on)WDEPTH.pics.push([img,Math.round(x),Math.round(y-LIFT_NOW),foot==null?null:Math.round(foot),Math.round(LIFT_NOW)])}// (up by the lift it is drawn at: worldterrain.js liftDraw; its feet compared on the ground, the lift put back)
 // (a picture's feet: for each opaque pixel the row its column's run of opaque pixels ends on, -1 where it is clear; kept on it)
 function picFeet(img){if(img._df)return img._df;const w=img.width,h=img.height,d=img.getContext('2d', { willReadFrequently: true }).getImageData(0,0,w,h).data,F=new Int16Array(w*h).fill(-1);let top=h,mx=-1;
   for(let x=0;x<w;x++)for(let y=0;y<h;y++){if(d[(y*w+x)*4+3]<250)continue;let y1=y;while(y1+1<h&&d[((y1+1)*w+x)*4+3]>=250)y1++;for(let k=y;k<=y1;k++)F[k*w+x]=y1;if(y<top)top=y;if(y1>mx)mx=y1;y=y1}
@@ -40,10 +43,10 @@ function dbRect(x,y,w,h){dbAdd(x,y,w,h);return WDEPTH.fr.call(this,x,y,w,h)}
 // own: what covers it is marked to fade; nf: nothing is (ambient life: gfx/ambient.js, a hare in a wood fades no crown)
 function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
   const w=x1-x0+1,h=y1-y0+1,wx0=x0+ox,wy0=y0+oy,wx1=x1+ox,wy1=y1+oy,C=WDEPTH.C,AL=WDEPTH.al;C.length=0;
-  WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])});
-  for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+D.foot>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
+  WorldArt.standing(wx0,wy0,wx1,wy1,(S,k)=>{const f=S.Y+S.E[k*4+3];if(f>fy)C.push([f,S,k])},WorldArt.live());// (in play a chunk not painted yet skipped: nothing of it stands in front yet)
+  for(const p of WDEPTH.pics){const D=picFeet(p[0]),px=p[1]+cam.x,py=p[2]+cam.y;if(py+p[4]+(p[3]??D.foot)>fy&&px<=wx1&&px+D.w>wx0&&py+D.top<=wy1&&py+D.h>wy0)C.push([py+D.foot,null,p])}
   if(!C.length)return;C.sort((a,b)=>a[0]-b[0]);
-  if(!WDEPTH.img||WDEPTH.img.width<w||WDEPTH.img.height<h){const W=Math.max(w,WDEPTH.img?WDEPTH.img.width:0,64),H=Math.max(h,WDEPTH.img?WDEPTH.img.height:0,64);WDEPTH.img=new ImageData(W,H);WDEPTH.cv=mkc(W,H,()=>{})}
+  if(!WDEPTH.img||WDEPTH.img.width<w||WDEPTH.img.height<h){const W=Math.max(w,WDEPTH.img?WDEPTH.img.width:0,64),H=Math.max(h,WDEPTH.img?WDEPTH.img.height:0,64);WDEPTH.img=new ImageData(W,H);WDEPTH.cv=mkg(W,H)}
   const I=WDEPTH.img,M=I.data,st=I.width;for(let y=0;y<h;y++)M.fill(0,y*st*4,(y*st+w)*4);let any=0,hid=0;
   for(const [,S,k] of C){let key,n=0;
     if(S){const E=S.E,o=k*4,dx=S.X+E[o],dy=S.Y+E[o+1],r=E[o+2];key=(S.Y*MW*TILE+S.X)*65536+k;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
@@ -51,22 +54,32 @@ function overdrawBox(x0,y0,x1,y1,ox,oy,fy,own,cam,nf){
       if(r<0){if(dx<cx0||dx>cx1)continue;for(let y=Math.max(cy0,dy);y<=Math.min(cy1,dy-r-1);y++){M[((y-wy0)*st+dx-wx0)*4+3]=A;n++}}
       else{const s=PX.WN_SPR[r],N=s.width,a=s.a,b=s.box;for(let y=Math.max(cy0,dy+b[1]);y<=Math.min(cy1,dy+b[3]);y++){const ro=(y-dy)*N-dx,mo=(y-wy0)*st-wx0;
         for(let x=Math.max(cx0,dx+b[0]);x<=Math.min(cx1,dx+b[2]);x++)if(a[ro+x]){M[(mo+x)*4+3]=A;n++}}}}
-    else{const [img,px,py]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
-      for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+f>fy){M[(mo+x)*4+3]=A;n++}}}}
+    else{const [img,px,py,ft,L]=k,D=picFeet(img),F=D.F,X=px+cam.x,Y=py+cam.y;key=img;const A=Math.round((AL.has(key)?AL.get(key):1)*255);
+      for(let y=Math.max(wy0,Y+D.top);y<=Math.min(wy1,Y+D.h-1);y++){const ro=(y-Y)*D.w-X,mo=(y-wy0)*st-wx0;for(let x=Math.max(wx0,X);x<=Math.min(wx1,X+D.w-1);x++){const f=F[ro+x];if(f>=0&&Y+L+(ft??f)>fy){M[(mo+x)*4+3]=A;n++}}}}
     if(n){any=1;hid+=n;if(!nf&&(S||own))WDEPTH.cov.add(key)}}
   if(!any)return false;
-  const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true });g.putImageData(I,0,0,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(memCv(),x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
+  const cv=WDEPTH.cv,g=cv.getContext('2d', { willReadFrequently: true }),mem=memCv(),r=mem.r||1;g.putImageData(I,0,0,0,0,w,h);
+  if(r>1){// (the scene finer than a game px (render.js sceneRes): the mask brought up to it, the scene's own fine px kept in it)
+    const W=w*r,H=h*r;if(!WDEPTH.fcv||WDEPTH.fcv.width<W||WDEPTH.fcv.height<H)WDEPTH.fcv=mkg(Math.max(W,WDEPTH.fcv?WDEPTH.fcv.width:0,64),Math.max(H,WDEPTH.fcv?WDEPTH.fcv.height:0,64));
+    const f=WDEPTH.fcv.getContext('2d');f.clearRect(0,0,W,H);f.imageSmoothingEnabled=false;f.drawImage(cv,0,0,w,h,0,0,W,H);f.globalCompositeOperation='source-in';f.drawImage(mem,x0*r,y0*r,W,H,0,0,W,H);f.globalCompositeOperation='source-over';
+    ctx.drawImage(WDEPTH.fcv,0,0,W,H,x0,y0,w,h);return hid}
+  g.globalCompositeOperation='source-in';g.drawImage(mem,x0,y0,w,h,0,0,w,h);g.globalCompositeOperation='source-over';
   ctx.drawImage(cv,0,0,w,h,x0,y0,w,h);return hid}
 // (yours, covered: his figure drawn again on its own (e.f, into a canvas of the box's screen pixels, the queues it fills put back),
 // made flat in the ghost's colour, kept only where something covers him (the mask overdrawBox made), and laid over him)
-function ghostOver(e,x0,y0,w,h){const G=WDEPTH.ghost;if(!G.on||typeof ctx==='undefined')return;const m=ctx.getTransform(),k=m.a||1,W=Math.ceil(w*k),H=Math.ceil(h*k);if(W<1||H<1||W*H>4e6)return;
-  if(!WDEPTH.gcv||WDEPTH.gcv.width<W||WDEPTH.gcv.height<H)WDEPTH.gcv=mkc(Math.max(W,WDEPTH.gcv?.width||0),Math.max(H,WDEPTH.gcv?.height||0),()=>{});
+function ghostOver(e,x0,y0,w,h,ring){const G=ring||WDEPTH.ghost;if(!(ring||G.on)||typeof ctx==='undefined')return;const m=ctx.getTransform(),k=m.a||1,W=Math.ceil(w*k),H=Math.ceil(h*k);if(W<1||H<1||W*H>4e6)return;
+  if(!WDEPTH.gcv||WDEPTH.gcv.width<W||WDEPTH.gcv.height<H)WDEPTH.gcv=mkg(Math.max(W,WDEPTH.gcv?.width||0),Math.max(H,WDEPTH.gcv?.height||0));
   const cv=WDEPTH.gcv,g=cv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.setTransform(m.a,m.b,m.c,m.d,-m.a*x0,-m.d*y0);
   const q=[typeof TXTQ!=='undefined'&&TXTQ,typeof LIGHTQ!=='undefined'&&LIGHTQ,typeof BANNERQ!=='undefined'&&BANNERQ,typeof PLAQUEQ!=='undefined'&&PLAQUEQ].map(a=>a?[a,a.length]:null),was=ctx;
-  ctx=g;try{drawMover(e)}catch(err){}finally{ctx=was;for(const p of q)if(p)p[0].length=p[1]}
-  // (flat in its colour, then kept where the cover is: the cover's own picture, overdrawBox's, its alpha the cover's fade)
-  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-in';g.fillStyle=G.col;g.fillRect(0,0,W,H);g.globalCompositeOperation='destination-in';g.imageSmoothingEnabled=false;g.drawImage(WDEPTH.cv,0,0,w,h,0,0,W,H);g.globalCompositeOperation='source-over';
-  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=Math.min(1,G.a/WDEPTH.fade);ctx.drawImage(cv,0,0,W,H,Math.round(m.a*x0+m.e),Math.round(m.d*y0+m.f),W,H);ctx.restore()}
+  WDEPTH.ghosting=true;ctx=g;try{drawMover(e)}catch(err){}finally{ctx=was;WDEPTH.ghosting=false;for(const p of q)if(p)p[0].length=p[1]}
+  // (ring: only its rim, a fine px out round it (something lying to be taken, hid: LOOT_GLOW.outline), not its whole shape)
+  if(ring){const R=WDEPTH.rcv&&WDEPTH.rcv.width>=W&&WDEPTH.rcv.height>=H?WDEPTH.rcv:(WDEPTH.rcv=mkg(Math.max(W,WDEPTH.rcv?.width||0),Math.max(H,WDEPTH.rcv?.height||0))),rg=R.getContext('2d'),d=Math.max(1,Math.round(k/2));
+    rg.setTransform(1,0,0,1,0,0);rg.clearRect(0,0,W,H);for(const [a,b] of [[d,0],[-d,0],[0,d],[0,-d]])rg.drawImage(cv,0,0,W,H,a,b,W,H);rg.globalCompositeOperation='destination-out';rg.drawImage(cv,0,0,W,H,0,0,W,H);rg.globalCompositeOperation='source-over';
+    g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,W,H);g.drawImage(R,0,0,W,H,0,0,W,H)}
+  // (flat in its colour, then kept where the cover is: the cover's own picture, overdrawBox's, its alpha the cover's fade; a ring with
+  //  all, whole, seen or hid)
+  g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-in';g.fillStyle=G.col;g.fillRect(0,0,W,H);if(!(ring&&ring.all)){g.globalCompositeOperation='destination-in';g.imageSmoothingEnabled=false;g.drawImage(WDEPTH.cv,0,0,w,h,0,0,W,H)}g.globalCompositeOperation='source-over';
+  ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=ring?G.a:Math.min(1,G.a/WDEPTH.fade);ctx.drawImage(cv,0,0,W,H,Math.round(m.a*x0+m.e),Math.round(m.d*y0+m.f),W,H);ctx.restore()}
 // the figures, by their feet (render.js drawWorld's ents that move: {y, f, own, top}), each with what stands in front of it put
 // back over it; those in flight after them all; each at its own place to the screen's pixel (render.js drawMover). The context's
 // transform: the kept scene's game pixels onto the screen. The fades step first, toward what covered your own last frame
@@ -74,15 +87,19 @@ function worldOverdraw(list,cam){
   const now=performance.now(),st=WDEPTH.t?Math.min(.1,Math.max(0,now-WDEPTH.t)/1000)*PROPFADE.rate:1,AL=WDEPTH.al,cov=WDEPTH.cov;WDEPTH.t=now;
   for(const k of cov)if(!AL.has(k))AL.set(k,1);
   for(const [k,a] of AL){const to=cov.has(k)?WDEPTH.fade:1,v=a<to?Math.min(to,a+st):Math.max(to,a-st);if(v>=1&&to>=1)AL.delete(k);else AL.set(k,v)}
-  cov.clear();WDEPTH.boxes.length=0;let ghosts=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width,ch=mem.height,B=WDEPTH.box;
+  cov.clear();WDEPTH.boxes.length=0;let ghosts=0;const top=[],m=ctx.getTransform(),k=m.a||1,mem=memCv(),cw=mem.width/(mem.r||1),ch=mem.height/(mem.r||1),B=WDEPTH.box;
   const own=k=>Object.prototype.hasOwnProperty.call(ctx,k),di=own('drawImage'),fr=own('fillRect');WDEPTH.di=ctx.drawImage;WDEPTH.fr=ctx.fillRect;if(WDEPTH.on){ctx.drawImage=dbImage;ctx.fillRect=dbRect}
   // (one that fails to draw is left out, the canvas as it was, the rest drawn: its error told, main.js loopError)
   const one=e=>{try{drawMover(e);return true}catch(err){ctx.setTransform(m);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';loopError(err);return false}};
   try{for(const e of list){if(e.top){top.push(e);continue}if(!WDEPTH.on){one(e);continue}
     B[0]=B[1]=1e9;B[2]=B[3]=-1e9;WDEPTH.trk=true;const ok=one(e);WDEPTH.trk=false;if(!ok)continue;
     const x0=Math.max(0,Math.floor((B[0]-m.e)/k)),y0=Math.max(0,Math.floor((B[1]-m.f)/k)),x1=Math.min(cw,Math.ceil((B[2]-m.e)/k))-1,y1=Math.min(ch,Math.ceil((B[3]-m.f)/k))-1;
-    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const hid=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);if(e.own&&hid>=WDEPTH.ghost.min&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1)}}}
+    if(x1>=x0&&y1>=y0){WDEPTH.boxes.push([x0,y0,x1,y1,e.y,!!e.own]);const hid=overdrawBox(x0,y0,x1,y1,cam.x,cam.y,e.y,!!e.own,cam,!!e.nf);if(e.own&&hid>=WDEPTH.ghost.min&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1);else if(e.loot&&(LOOT_GLOW.outline.all||hid>0)&&ghosts++<WDEPTH.ghost.most)ghostOver(e,x0,y0,x1-x0+1,y1-y0+1,LOOT_GLOW.outline)}}}
   finally{WDEPTH.trk=false;if(di)ctx.drawImage=WDEPTH.di;else delete ctx.drawImage;if(fr)ctx.fillRect=WDEPTH.fr;else delete ctx.fillRect}
-  for(const e of top)one(e);WDEPTH.pics.length=0}
+  // (the structures' pictures kept while a fight on the map is drawn after the map, its men and fallen overdrawn by them too: render.js
+  //  drawBattle; drawWorld clears them as it begins)
+  for(const e of top)one(e);if(!fightOnMapDrawn())WDEPTH.pics.length=0}
+// (a fight on the map being drawn: the battle's B, not the box above)
+function fightOnMapDrawn(){return typeof B!=='undefined'&&!!B&&!!B.world}
 // a world goes in: no fades carried over
 onWorld(()=>{WDEPTH.al.clear();WDEPTH.cov.clear();WDEPTH.t=0});

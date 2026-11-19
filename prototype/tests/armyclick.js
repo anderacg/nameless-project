@@ -7,7 +7,7 @@
 // MARCH_PICK.tap CSS px of slack; with the world's battles off, the old circle
 Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W,TILE=t.TILE;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
- const home=Kit.goHome('Ashford');Kit.goTo(home.x+240,home.y+200);const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);
+ const home=Kit.goHome('Ashford');Kit.goTo(...Kit.field(home));/* (open land clear of the holdings' lots: since the bay, 2026-11-17, Wardenhall's lie by the old spot) */const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);
  for(let y=ty-25;y<=ty+25;y++)for(let x=tx-25;x<=tx+30;x++)if(t.WM.has(x,y)){const i=y*t.MW+x;t.WM.kind[i]=t.T_OPEN;t.WM.edge[i]=0;t.WM.elev[i]=64}
  W.sites=W.sites.filter(s=>Math.hypot(s.x-P.x,s.y-P.y)>400);t.reveal();
  // (you see some 110 px about you: the armies within it)
@@ -22,8 +22,9 @@ Kit.suite(({ok,info})=>{
  const ring=(o,x,y)=>Math.hypot(o.x-x,o.y-4-y)<10;
  const scan=(b,pred,step=1)=>{const out=[];for(let y=Math.floor(b[1]);y<=b[3];y+=step)for(let x=Math.floor(b[0]);x<=b[2];x+=step)if(pred(x,y))out.push([x,y]);return out};
  const around=(a,m=30)=>{const b=a.figBox(),c=a.box();return[Math.min(b[0],c[0])-m,Math.min(b[1],c[1])-m,Math.max(b[2],c[2])+m,Math.max(b[3],c[3])+m]};
- // a real click on the canvas at a world point (pressed and let go: ring.js), or a finger's tap
- const press=(wx,wy,type='mouse')=>{t.drawWorld();const r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-G.cam.y)*r.height/t.VH,e={clientX:x,clientY:y,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true,bubbles:true};
+ // a real click on the canvas at a world point (pressed and let go: ring.js), or a finger's tap: on the screen where that point is
+ // drawn, up by its land's lift (a click picks the ground the pointer shows: input.js, worldterrain.js liftGround; the owner, 2026-11-16)
+ const press=(wx,wy,type='mouse')=>{t.drawWorld();const r=cv.getBoundingClientRect(),x=r.left+(wx-G.cam.x)*r.width/t.VW,y=r.top+(wy-t.liftAt(wx,wy)-G.cam.y)*r.height/t.VH,e={clientX:x,clientY:y,pointerType:type,pointerId:type==='touch'?7:1,isPrimary:true,bubbles:true};
   cv.dispatchEvent(new PointerEvent('pointerdown',e));window.dispatchEvent(new PointerEvent('pointerup',e));return{x,y}};
  const ringOn=()=>{const q=t.PARTY_CLICK.last,o=t.ActionRing.now&&q&&t.ActionRing.now===q.R?q.o:null;t.ActionRing.close();t.PARTY_CLICK.last=null;return o};
  P.troops={hum_foot:6};P.comps={};form(P);
@@ -33,23 +34,25 @@ Kit.suite(({ok,info})=>{
  {const far=A.units.filter(u=>!u.dead).map(u=>({u,d:Math.hypot(u.x-lord.x,u.y-lord.y)})).sort((p,q)=>q.d-p.d)[0],[fx,fy]=mid(rect(A,far.u));
   const old=Math.hypot(fx-lord.x,fy-4-lord.y)<10;
   ok(far.d>20&&!old&&t.pickAt(fx,fy)===lord,'a man on the flank of a lord\'s army of '+lord.troops.length+', '+far.d.toFixed(0)+' px off its middle (past the old circle\'s 10): picked ('+(t.pickAt(fx,fy)?.mapKind)+')');
-  press(fx,fy);{const R=t.ActionRing.now,r=t.cv.getBoundingClientRect(),ex=r.left+(fx-G.cam.x)*r.width/t.VW,ey=r.top+(fy-G.cam.y)*r.height/t.VH;
+  press(fx,fy);{const R=t.ActionRing.now,r=t.cv.getBoundingClientRect(),ex=r.left+(fx-G.cam.x)*r.width/t.VW,ey=r.top+(fy-t.liftAt(fx,fy)-G.cam.y)*r.height/t.VH;
    ok(!!R&&Math.hypot(R.cx-ex,R.cy-ey)<2,'(the owner, 2026-11-01) and it opens where you clicked his flank man, not at his army middle ('+(R?Math.round(Math.hypot(R.cx-ex,R.cy-ey)):'none')+' px off)')}
   ok(ringOn()===lord,'clicked: the lord\'s ring opens (Approach, Follow, Look)')}
  // ---- in the outline's gap between his men; just outside it
  {const gaps=scan(around(A),(x,y)=>{const h=hit(A,x,y);return h&&h.kind==='outline'},2);
   const bad=gaps.filter(([x,y])=>t.pickAt(x,y)!==lord);
   ok(gaps.length>20&&!bad.length,'inside his outline, between his men (on none of them): picked, at '+gaps.length+' points ('+bad.length+' not)');
-  const out=scan(around(A,12),(x,y)=>!hit(A,x,y),2),wrong=out.filter(([x,y])=>t.pickAt(x,y)===lord);
+  // (off his small ring too, which answers as ever: his middle may stand by the edge of his men, 2026-11-17)
+  const out=scan(around(A,12),(x,y)=>!hit(A,x,y)&&!ring(lord,x,y),2),wrong=out.filter(([x,y])=>t.pickAt(x,y)===lord);
   const edge=out.filter(([x,y])=>hit(A,x,y,6));
   ok(out.length&&edge.length&&!wrong.length,'just outside his outline and his men (at '+edge.length+' points within 6 px of them): not picked ('+wrong.length+' were)')}
  // ---- hover: the same army a click picks, its tooltip his; the brackets round all his men
- {const [fx,fy]=mid(rect(A,A.units[A.units.length-1]));Object.assign(G.mouse,{x:fx-G.cam.x,y:fy-G.cam.y,in:true,type:'mouse'});G.modal=false;
-  t.WUI.hp.t=-1e9;t.wuiHover(performance.now(),1);const fb=A.figBox(),h=t.WUI.hov;
-  ok(t.WUI.hp.o===lord&&h&&h.b[0]<=fb[0]+1&&h.b[2]>=fb[2]-1&&h.b[1]<=fb[1]+1&&h.b[3]>=fb[3]-1,'hover on his man: the lord, the brackets round all his men ('+(h?h.b.map(v=>v.toFixed(0)).join(','):'none')+'; his men '+Array.from(fb).map(v=>v.toFixed(0)).join(',')+')');
-  t.drawWorld();const r=cv.getBoundingClientRect(),cx=r.left+(fx-G.cam.x)*r.width/t.VW,cy=r.top+(fy-G.cam.y)*r.height/t.VH;cv.dispatchEvent(new PointerEvent('pointermove',{clientX:cx,clientY:cy,pointerType:'mouse',bubbles:true}));
+ {const [fx,fy]=mid(rect(A,A.units[A.units.length-1])),fl=t.liftAt(fx,fy);Object.assign(G.mouse,{x:fx-G.cam.x,y:fy-fl-G.cam.y,in:true,type:'mouse'});G.modal=false;// (the pointer where he is drawn: up by the land's lift there, worldterrain.js liftAt)
+  t.WUI.hp.t=-1e9;t.wuiHover(performance.now(),1);const L=t.liftAt(lord.x,lord.y),fb=Array.from(A.figBox()).map((v,i)=>i&1?v-L:v),h=t.WUI.hov;// (the brackets stand where he is drawn: up by his land's lift, worldui.js wuiHover)
+  ok(t.WUI.hp.o===lord&&h&&h.b[0]<=fb[0]+1&&h.b[2]>=fb[2]-1&&h.b[1]<=fb[1]+1&&h.b[3]>=fb[3]-1,'hover on his man: the lord, the brackets round all his men ('+(h?h.b.map(v=>v.toFixed(0)).join(','):'none')+'; his men '+fb.map(v=>v.toFixed(0)).join(',')+')');
+  t.drawWorld();const r=cv.getBoundingClientRect(),cx=r.left+(fx-G.cam.x)*r.width/t.VW,cy=r.top+(fy-fl-G.cam.y)*r.height/t.VH;cv.dispatchEvent(new PointerEvent('pointermove',{clientX:cx,clientY:cy,pointerType:'mouse',bubbles:true}));
   const tip=document.getElementById('tip');ok(!tip.hidden&&tip.innerHTML===t.tipFor(lord),'and the tooltip is his');tip.hidden=true;
-  const pts=scan(around(A,8),()=>true,3);let diff=0;for(const [x,y] of pts){Object.assign(G.mouse,{x:x-G.cam.x,y:y-G.cam.y});t.wuiHover(performance.now(),1);if((t.WUI.hp.o||null)!==(t.pickAt(x,y)||null))diff++}
+  // (a click picks the ground the pointer shows (input.js, liftGround): the hover the same, at each screen point)
+  const pts=scan(around(A,8),()=>true,3);let diff=0;for(const [x,y] of pts){Object.assign(G.mouse,{x:x-G.cam.x,y:y-G.cam.y});t.wuiHover(performance.now(),1);const g=t.liftGround(x,y);if((t.WUI.hp.o||null)!==(t.pickAt(g.x,g.y)||null))diff++}
   ok(!diff,'hover picks what a click picks, at '+pts.length+' points round his army ('+diff+' apart)')}
  // ---- two armies touching: a figure over an outline, then the nearer man
  const band=t.asParty({kind:'bandits',troops:Array(10).fill('militia'),x:lord.x+120,y:lord.y,t:0,a:0,idle:true,cool:9,n:10});t.bandits.push(band);let Bd=form(band);
@@ -80,7 +83,7 @@ Kit.suite(({ok,info})=>{
   ok(mineN.length&&!mw.length&&his.length&&!hw.length,'a lord\'s outline over yours (off his small ring): your man nearer, ground ('+mineN.length+' points, '+mw.length+' the lord); his nearer, the lord ('+his.length+', '+hw.length+' not)');
   move(lord,x0-70-lord.x,y0-lord.y)}
  // ---- a phone's tap: a little slack round his men and his outline
- {const tol=t.MARCH_PICK.tap*t.VW/(cv.clientWidth||t.VW),near=scan(around(A,12),(x,y)=>!hit(A,x,y)&&hit(A,x,y,tol),2);
+ {const tol=t.MARCH_PICK.tap*t.VW/(cv.clientWidth||t.VW),near=scan(around(A,12),(x,y)=>!hit(A,x,y)&&!ring(lord,x,y)&&hit(A,x,y,tol),2);
   mouse('touch');const tap=near.filter(([x,y])=>t.pickAt(x,y)===lord);mouse('mouse');const click=near.filter(([x,y])=>t.pickAt(x,y)===lord);
   ok(near.length&&tap.length===near.length&&!click.length,'just off his men and outline ('+near.length+' points, within '+tol.toFixed(1)+' px): a tap picks him ('+tap.length+'), a click does not ('+click.length+')');
   const [qx,qy]=near[near.length>>1];press(qx,qy,'touch');ok(ringOn()===lord,'tapped with a finger there: his ring opens');mouse('mouse')}
@@ -101,10 +104,13 @@ Kit.suite(({ok,info})=>{
   t.MARCH_RING.on=false;try{ok(t.pickAt(lord.x,lord.y-4)===lord&&t.pickAt(fx,fy)===lord,'the outline off (its circles): his circle and his men')}finally{t.MARCH_RING.on=true}}
  // ---- an army on a holding's lot: the building's picture over his outline, as ever
  {const h=t.townBy('Ashford');Kit.goTo(h.x,h.y+24);const c=l=>[(l.x+l.n/2)*TILE,(l.y+l.n/2)*TILE];
-  const l=(h.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&Math.hypot(c(l)[0]-P.x,c(l)[1]-P.y)<80).sort((p,q)=>q.n-p.n)[0];
+  // (the biggest in sight of the gate; none there (the bay's Ashford, 2026-11-17), the nearest, you by it)
+  const ls=(h.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'),far=l=>Math.hypot(c(l)[0]-P.x,c(l)[1]-P.y);
+  const l=ls.filter(l=>far(l)<80).sort((p,q)=>q.n-p.n)[0]||ls.sort((p,q)=>far(p)-far(q))[0];if(l&&far(l)>=80)Kit.goTo(c(l)[0],c(l)[1]+24);
   if(!l)info('no lot of Ashford in sight');else{move(lord,c(l)[0]-lord.x,c(l)[1]-lord.y);const lb=[l.x*TILE,l.y*TILE,(l.x+l.n)*TILE-1,(l.y+l.n)*TILE-1];
-   const pts=scan(lb,(x,y)=>{const q=hit(A,x,y);return q&&q.kind==='outline'&&!ring(lord,x,y)},2),won=pts.filter(([x,y])=>{const o=t.pickAt(x,y);return o===lord||!o});
-   ok(lord.inView(t.vis())&&pts.length&&!won.length,'a lord\'s army on Ashford\'s '+l.k+': inside his outline on the building\'s lot (off his small ring), the building ('+pts.length+' points, '+won.length+' the lord or nothing)')}}
+   // (where the building's picture is drawn: a lot is picked by its picture's own px, its clear ground by what stands there: structures.js lotPicHit)
+   const pts=scan(lb,(x,y)=>{const q=hit(A,x,y);return q&&q.kind==='outline'&&!ring(lord,x,y)&&t.lotPicHit(h,l,x,y)},2),won=pts.filter(([x,y])=>{const o=t.pickAt(x,y);return o===lord||!o});
+   ok(lord.inView(t.vis())&&pts.length&&!won.length,'a lord\'s army on Ashford\'s '+l.k+': inside his outline, on the building\'s picture (off his small ring), the building ('+pts.length+' points, '+won.length+' the lord or nothing)')}}
  // ---- a few frames drawn and hovered: no errors
  {for(let i=0;i<20;i++){Object.assign(G.mouse,{x:t.VW/2+i*3,y:t.VH/2,in:true,type:'mouse'});t.wuiHover(performance.now(),.05);t.drawWorld()}ok(!ERR.length,'drawn and hovered: no errors ('+ERR.length+')')}
 });

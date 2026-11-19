@@ -47,9 +47,10 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
    ok(more.every(([,n])=>n>=2),'each mount shaded in more tones ('+more.map(([m,n])=>m+' +'+n).join(', ')+')')}
   // ---- no lone speck (2026-11-07, the owner: "check distort pixel"): in every mount's every frame, ridden, empty or barded, no
   // pixel set alone in a field of one other colour, but an eye
+  // (each in the grid the game draws it in: a wolf's or a warg's 40 x 36 since cd8d095, people.js mountMetrics, sprites.js)
   {const eyes=new Set(['#27272c','#ffdc04','#2a1e18']),bad=[];for(const m of ['horse','stag','ram','wolf','warg'])for(const brd of [0,1])for(const sd of [0,1])for(let w=-1;w<8;w++){
-     const g=t.pgrid(32,32);t.drawMount(g,{mount:m,team:'blue',saddled:!!sd,barded:!!brd},w);g.edge=true;t.poutline(g);const at=(x,y)=>x>=0&&y>=0&&x<32&&y<32?g.p[y*32+x]:null;
-     for(let y=0;y<32;y++)for(let x=0;x<32;x++){const c=at(x,y),n=[at(x-1,y),at(x+1,y),at(x,y-1),at(x,y+1)];if(c&&!eyes.has(c)&&n.every(q=>q&&q===n[0]&&q!==c))bad.push(m+' '+w+': '+x+','+y)}}
+     const {w:W,h:H}=t.mountMetrics(m),g=t.pgrid(W,H);t.drawMount(g,{mount:m,team:'blue',saddled:!!sd,barded:!!brd},w);g.edge=true;t.poutline(g);const at=(x,y)=>x>=0&&y>=0&&x<W&&y<H?g.p[y*W+x]:null;
+     for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=at(x,y),n=[at(x-1,y),at(x+1,y),at(x,y-1),at(x,y+1)];if(c&&!eyes.has(c)&&n.every(q=>q&&q===n[0]&&q!==c))bad.push(m+' '+w+': '+x+','+y)}}
    ok(!bad.length,'no lone speck on any mount, but its eye'+(bad.length?' ('+bad.slice(0,5).join('; ')+')':''))}
   // ---- the detail (2026-11-07, the owner: "make sure mount have more details"): a steel bit, a studded breast strap, a cloth of
   // the side's colour under the saddle he sits in; none of it with HORSE_TACK.on false; a stag's rack joined to its head
@@ -151,7 +152,12 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');
  // (re-recorded 2026-11-08, on purpose: the owner, "for the unit sprites that have cape, make sure it just a small pixel and look
  // like cape": a rider's cape a pixel's fall behind his shoulder, fastened at the neck (engine/doll.js cloak). Proof: 251bed8 gives
  // cccbf9dd and c560a3b2 again. Were cccbf9dd, c560a3b2)
- const OLD='af13280f',FIRST='1fbe3000';
+ // (both re-recorded 2026-11-17, on purpose, for the owner's own changes since 44bccf0 (which gives af13280f and 1fbe3000 again): every
+ // figure centred on its point (ac2e82e: f1786faf, b623aad0); then the approved wolf and warg mounts and their riders (97fbe68,
+ // 7ce306d, 3315d4a, cd8d095 the alpha's larger mount, 4662a8a, 4b3d633, 1703e02 the rider's lean, 442840a, d772b9e the ram's wool
+ // round the seat: afaf8568, 66fd6d1f); then no lone speck in the wolf's coat from the alpha's 1.25 scale (engine/wolf.js mount,
+ // tested above). Proof: d772b9e gives afaf8568 and 66fd6d1f; with that despeckle line out, again. Were af13280f, 1fbe3000)
+ const OLD='ac399810',FIRST='633db5b';
  {A.on=false;const off=hash(pics());A.on=true;A.tall=false;const first=hash(pics());A.tall=true;const by=[0,1,2].map(n=>{A.leg=n;return hash(pics())});A.leg=LEG;
   info('pictures off '+off+', the first pass '+first+', leg +0 +1 +2 '+by.join(' ')+' (HORSE_ART.leg '+LEG+')');
   ok(off===OLD,'HORSE_ART.on false: the pre-horse horses, pixel for pixel ('+off+', recorded '+OLD+')');

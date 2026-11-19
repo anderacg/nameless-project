@@ -18,6 +18,8 @@ Kit.suite(({ok,info})=>{
   // (an army of each class: data/matchups.js unitClass; set as tests/marchstyles.js sets one)
   const kind=(race,c,f)=>Object.keys(t.ST).find(k=>t.ST[k].race===race&&!t.ST[k].beast&&!t.ST[k].big&&t.unitClass(t.ST[k])===c&&t.unitSize(k)>=6&&(!f||f(t.lookOf(k,0,false,0))));
   const H={cav:kind('human','cav'),spear:kind('human','spear',L=>!!t.shieldLook(L)),ranged:kind('human','ranged')};info('kinds: '+JSON.stringify(H));
+  // (on open ground, Kit.field: since the bay came back (2026-11-17) water lies by the start, and a man in it is drawn cut, fewer pictures)
+  {const [fx,fy]=Kit.field(t.townBy('Ashford'));Kit.goTo(fx-60,fy)}
   const lord=W.lords.find(l=>t.FACS[l.fac].races[0]==='human')||W.lords[0];Object.assign(lord,{inside:null,x:P.x+60,y:P.y,state:'march'});
   const set=(o,tc)=>{o.army={nextId:1,groups:[]};o.tc={...tc};o.changed();t.MARCH_ARMIES.delete(o);const A=t.MarchArmy.of(o);A.sync();return A};
   let A=set(lord,{[H.cav]:6,[H.spear]:15,[H.ranged]:10});

@@ -37,8 +37,8 @@ try{
   ok(pr.join()==='classic 448x320 37,normal 448x320 27,large 640x448 40,huge 1024x768 66,frontier 640x448 28,crowded 448x320 40'&&Object.keys(t.WORLD_PRESETS).every(p=>{const d=t.defaultSettings(p),n=N(d);return K.every(k=>n[k]===d[k])}),'the presets clamp to themselves: '+pr.join(', '));
   ok(t.settingsKey(N({seed:'a'}))===t.settingsKey({seed:'a',foo:2})&&t.settingsKey(N({seed:'a'}))!==t.settingsKey(N({seed:'b'}))&&t.settingsKey(null)==='','settingsKey: equal for equal clamped settings, different for different ones; empty for none');
   ok(t.seedNum('')===2166136261&&t.seedNum('a')===0xe40c292c&&t.seedNum('CLASSIC')>>>0===t.seedNum('CLASSIC')&&t.seedNum('ab')!==t.seedNum('ba'),'seedNum: FNV-1a 32 of the text (CLASSIC: '+t.seedNum('CLASSIC')+')')}
- // ---- T_FORD in every table indexed by kind
- ok(t.T_FORD===6&&t.SPEEDMUL[6]===.5&&t.LAND_COST[6]===1.5&&t.passable(t.T_FORD)&&t.CLIMS.every(c=>typeof t.REGION_NAMES[c][6]==='string'&&/^#[0-9a-f]{6}$/.test(t.PAL[c].mini[6]))&&t.PX.WN_KIND.ford===6&&t.terrainRecipeOf(t.T_FORD,'grass',0)==='open',
+ // ---- T_FORD in every table indexed by kind (x0.6 since the lab's ground speeds, 8a595a1; was .5)
+ ok(t.T_FORD===6&&t.SPEEDMUL[6]===.6&&t.LAND_COST[6]===1.5&&t.passable(t.T_FORD)&&t.CLIMS.every(c=>typeof t.REGION_NAMES[c][6]==='string'&&/^#[0-9a-f]{6}$/.test(t.PAL[c].mini[6]))&&t.PX.WN_KIND.ford===6&&t.terrainRecipeOf(t.T_FORD,'grass',0)==='open',
   'T_FORD (6): passable at x'+t.SPEEDMUL[6]+', land cost '+t.LAND_COST[6]+', named ('+t.CLIMS.map(c=>t.REGION_NAMES[c][6]).join(', ')+'), on the minimap, painted as open ground (PX.WN_KIND.ford), an open field in battle');
  // ---- the classic anchors and hints (§8.15)
  {const A=t.classicAnchors(),at=n=>A.find(a=>a.name===n),names=new Set(t.CLASSIC_PLACES.map(p=>p.name));
@@ -55,8 +55,8 @@ try{
  const once=pn(),R1=t.genWorld(t.classicSettings()),ms=pn()-once;Math.random=r0;
  info('the classic world in '+ms.toFixed(0)+' ms; by stage (ms): '+times.join(', '));
  ok(ms<=4000,'the classic world (Normal) generates within 4 s here ('+ms.toFixed(0)+' ms)');
- ok(J(steps.map(s=>s.id))===J(t.GEN_STAGES.map(s=>s.id))&&steps.every((s,k)=>s.label===t.GEN_STAGES[k].label&&s.w>0)&&J(steps.map(s=>s.id))===J(['land','elev','climate','rivers','forest','ponds','regions','holdings','hamlets','roads','sites','glades','graph']),
-  'genWorldSteps: the twelve stages in order (the hamlets after the holdings), each with its label and weight ('+steps.map(s=>s.label).join(', ')+')');
+ ok(J(steps.map(s=>s.id))===J(t.GEN_STAGES.map(s=>s.id))&&steps.every((s,k)=>s.label===t.GEN_STAGES[k].label&&s.w>0)&&J(steps.map(s=>s.id))===J(['land','elev','climate','rivers','forest','ponds','valleys','regions','holdings','hamlets','roads','sites','glades','relief','graph']),
+  'genWorldSteps: the fifteen stages in order (the hamlets after the holdings; relief since 756bbbc, valleys since 2fca856), each with its label and weight ('+steps.map(s=>s.label).join(', ')+')');
  ok(!back&&fr.length>=10,'each stage yields its share done, 0-1, never going back ('+fr.length+' yields)');
  ok(!calls,'generating draws no Math.random ('+calls+' calls)');
  {const m=R1.map,s=t.classicSettings();

@@ -30,9 +30,9 @@ const WEATHER={on:true,
   // begins in spring): n its name; mul each kind's chance x there; add more chance of a kind in a climate (winter's snow on the
   // grass and in the swamps, summer's rain in the frost, winter's in the desert)
   seasons:[
-    {k:'spring',n:'Spring',mul:{rain:1.4,storm:1.1,fog:1.2,clear:.9,snow:.6,blizzard:.4,heat:.5}},
+    {k:'spring',n:'Spring',mul:{rain:1.15,storm:1,fog:1.2,clear:.9,snow:.6,blizzard:.4,heat:.5}},
     {k:'summer',n:'Summer',mul:{clear:1.3,heat:2.2,storm:1.4,sandstorm:1.4,rain:.7,fog:.4,snow:.4,blizzard:.2},add:{frost:{rain:1.2}}},
-    {k:'autumn',n:'Autumn',mul:{rain:1.5,fog:1.8,cloudy:1.3,storm:1.1,clear:.8,heat:.3}},
+    {k:'autumn',n:'Autumn',mul:{rain:1.2,fog:1.8,cloudy:1.3,storm:1.1,clear:.8,heat:.3}},
     {k:'winter',n:'Winter',mul:{snow:1.8,blizzard:1.8,fog:1.3,cloudy:1.2,clear:.8,rain:.5,storm:.4,heat:0,sandstorm:.7},add:{grass:{snow:1.6},swamp:{snow:.8,fog:.6},desert:{rain:.6}}}],
   // the skills a field's weather touches (the owner, 2026-11-08: "make weather effect battle and some of the skill such as rain
   // affect fire arrow which cannot be used"; world/weather.js skillBan, skillMul): no, the weathers it cannot be used in and why
@@ -42,17 +42,19 @@ const WEATHER={on:true,
     fire:{no:{rain:'Too wet: the pitch will not light',storm:'Too wet: the pitch will not light',snow:'The snow puts out the pitch',blizzard:'The blizzard puts out the pitch'}},
     fireball:{mul:{rain:.7,storm:.6,snow:.85,blizzard:.7,heat:1.15}},
     nova:{mul:{snow:1.2,blizzard:1.3,heat:.75}}},
-  // each climate's weights (a kind missing never comes there: no sandstorm in the frost, no blizzard in the desert)
+  // each climate's weights (a kind missing never comes there: no sandstorm in the frost, no blizzard in the desert); rain and storms
+  // halved, clear skies longer and showers shorter (the owner, 2026-11-16: "reduce the weather happen on the world, i still find raining is
+  // too much on spring")
   climates:{
-    grass:{clear:5,cloudy:3,rain:2.5,storm:.8,fog:1.2},
+    grass:{clear:5,cloudy:3,rain:1.3,storm:.4,fog:1.2},
     frost:{clear:2.5,cloudy:3,fog:1,snow:3.5,blizzard:1.3},
     desert:{clear:6,cloudy:1,heat:2,sandstorm:1.3,storm:.2},
-    swamp:{clear:2.5,cloudy:3,rain:3,storm:1,fog:2.5}},
+    swamp:{clear:2.5,cloudy:3,rain:1.8,storm:.5,fog:2.5}},
   kinds:{
-    clear:{n:'Clear',day:'Sunny',like:'clear',hours:[6,14],say:'The sky clears.',speed:1,sight:1},
+    clear:{n:'Clear',day:'Sunny',like:'clear',hours:[8,18],say:'The sky clears.',speed:1,sight:1},
     cloudy:{n:'Overcast',like:'clear',hours:[4,10],say:'Clouds roll in.',speed:1,sight:.95,
       art:{dim:[40,46,60,.12]}},
-    rain:{n:'Rain',like:'rain',hours:[3,8],say:'Rain begins to fall.',speed:.85,sight:.8,
+    rain:{n:'Rain',like:'rain',hours:[2,6],say:'Rain begins to fall.',speed:.85,sight:.8,
       battle:{spd:.95,range:.9,spread:2,aim:.04,sight:.85},
       art:{dim:[30,38,56,.18],fall:{n:110,vx:-40,vy:300,len:6,col:'#aebfda'}}},
     storm:{n:'Storm',like:'storm',hours:[2,5],say:'A storm breaks over you.',speed:.7,sight:.65,

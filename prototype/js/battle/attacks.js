@@ -37,10 +37,10 @@ class Fighter{
   // ---- struck: a wound of amt (m: the matchup, for its colour; dt: its damage type; source: who dealt it; missile: a shot)
   wound(amt,m,dt,source,missile){const t=this.u;
     if(B.sight)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
-    if(this.dodging()>0){B.floats.push({x:t.x,y:t.y-16,t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
+    if(this.dodging()>0){B.floats.push({x:t.x,y:t.y-fxUp(16),t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
     amt=Dismount.share(t,this.taken(amt),source,missile,dt);// (a rider's horse takes its share: battle/dismount.js)
     amt=Math.max(1,Math.round(amt));const wasHp=t.hp,effective=Math.min(Math.max(0,wasHp),amt);if(B.opts.sandbox&&BattleLab.active)BattleLab.damage(t,effective,source);t.hp-=amt;B.lastHit=B.t;if(B.inside||B.holds)Interior.din(t);t.flash=.1;t.hitAt=B.t;Duel.struck(t,amt);moraleHurt(t,effective,source,missile);
-    B.floats.push({x:t.x,y:t.y-14,t:String(amt),life:.7,c:m>=1.25?'#ffb04a':m&&m<=.8?'#9aa3ad':isMagical(dt)?'#c8a0ff':t.team?'#ffe08a':'#ff9a90'});// (telling: orange, dulled: grey, magic: violet)
+    B.floats.push({x:t.x,y:t.y-fxUp(14),t:String(amt),life:.7,c:m>=1.25?'#ffb04a':m&&m<=.8?'#9aa3ad':isMagical(dt)?'#c8a0ff':t.team?'#ffe08a':'#ff9a90'});// (telling: orange, dulled: grey, magic: violet)
     if(BLOOD.on&&!undead(t))for(let i=0;i<2;i++)vfx({k:'blood',x:t.x,y:t.y,z:7,vx:(Math.random()-.5)*60,vy:(Math.random()-.5)*30,vz:20+Math.random()*50,life:1.2});// (gfx/vfx.js; none with Blood off)
     B.sides?.damage(t,effective,source);
     if(t.hp<=0){
@@ -64,7 +64,7 @@ class Fighter{
   // ---- striking: a blow of dm on t (dt: its damage type)
   hit(t,dm,dt){
     const att=this.u,m=matchup(att.s,t.s,dt);dm*=m*(att.buffT>0?1.3:1)*groundHit(att,t);/* (from high ground harder, from marsh softer: terrain.js) */if(att.comp)compTrain(att.type,compMeleeSk(att.type),2);
-    if(Actor.of(t).guards(Math.atan2(att.y-t.y,att.x-t.x),dm)){dm*=blockMul();fx(t.x+Math.cos(B.aim)*10,t.y-6,'#cfe0ff',5);B.floats.push({x:t.x,y:t.y-14,t:'Block',life:.5,c:'#9fc0ff'})}
+    if(Actor.of(t).guards(Math.atan2(att.y-t.y,att.x-t.x),dm)){dm*=blockMul();fx(t.x+Math.cos(B.aim)*10,t.y-6,'#cfe0ff',5);B.floats.push({x:t.x,y:t.y-fxUp(14),t:'Block',life:.5,c:'#9fc0ff'})}
     const was=t.hp;Actor.of(t).wound(dm*formTaken(t,att)*flankMul(t,att),m,dt||dtOf(att.s),att,false);vfxHit(att,t,dm);this.earnXp(t,was);// (its formation: formations.js; the side it is hit on: morale.js)
     if(sfxOn())blowSound(att,t,false,isMagical(dt||dtOf(att.s)));
   }
@@ -84,7 +84,7 @@ class Fighter{
   steady(){const s=this.u.s;return Math.max(AIM.floor,1-AIM.tier*((s.tier||1)-1))}
   shotSkill(){const u=this.u,k=u.s.magic?'spell':'archery';return u.unit&&u.unit.isChar?u.unit.skill(k):0}
   weaponTier(){const u=this.u,id=u.unit&&u.unit.isChar&&u.unit.o.gear&&u.unit.o.gear.weapon,I=id&&ITEMS[id];return I&&I.tier||0}
-  outOfAmmo(){const u=this.u;u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10*meleeK()),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-20,t:'Out of ammo',life:.7,c:'#9aa3ad'})}
+  outOfAmmo(){const u=this.u;u.s={...u.s,range:0,reach:Math.max(u.s.reach||0,10*meleeK()),dmg:u.s.dmg*.6};u.empty=true;B.floats.push({x:u.x,y:u.y-fxUp(20),t:'Out of ammo',life:.7,c:'#9aa3ad'})}
   // a shot from his quiver (s: his stats as he loosed)
   useAmmo(s){const u=this.u;if(u.ammo==null)u.ammo=quiverOf(s);if(--u.ammo<=0)this.outOfAmmo()}
   attack(t){
@@ -105,7 +105,7 @@ class Fighter{
   // (each moment wound up: true while it holds him, and the moment it lands; false, spoilt: he goes on as ever)
   winding(dt){const u=this.u,W=u.wind;if(u.rout||withdrawing(u)||W.e.hp<=0||relocating(u,u.grp&&B.groups[u.grp])){u.wind=null;return false}
     u.spdNow=0;u.shot=null;if((W.t-=dt)>0)return true;u.wind=null;const e=W.e,d=Math.hypot(e.x-u.x,e.y-u.y)-(e.s.big?12:0);
-    if(d<=(u.s.reach||11)+2+MOVESETS.slack)this.hardBlow(e,W.H);else B.floats.push({x:u.x,y:u.y-20,t:'Miss',life:.5,c:'#9aa3ad'});return true}
+    if(d<=(u.s.reach||11)+2+MOVESETS.slack)this.hardBlow(e,W.H);else B.floats.push({x:u.x,y:u.y-fxUp(20),t:'Miss',life:.5,c:'#9aa3ad'});return true}
   // a troop's or a beast's hard blow: his blow × H.dmg, its throw (physics on: may throw down), a stomp's on all round t too
   hardBlow(t,H){
     const u=this.u,s=u.s,a=Math.atan2(t.y-u.y,t.x-u.x),dm=s.dmg*H.dmg*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='overhead';u.face=Math.cos(a)>=0?1:-1;fatigueBlow(u);
@@ -128,7 +128,7 @@ class Fighter{
     for(const e of spatialOn()?SG.near(u.x,u.y,96,u.team,true):B.units){if(e.hp<=0||!battleEnemy(u,e))continue;const ea=Math.atan2(e.y-u.y,e.x-u.x),df=angGap(ea,a);
       if(df<.5&&Math.hypot(e.x-u.x,e.y-u.y)<95)this.hit(e,14*(.8+Math.random()*.4)*(tagsOf(e.s).includes('ward')?.6:1))}
     for(let i=0;i<34;i++){const j=a+(Math.random()-.5)*.9,v=70+Math.random()*90;B.parts.push({x:ox,y:oy,vx:Math.cos(j)*v,vy:Math.sin(j)*v-20,life:.5,c:Math.random()<.5?'#ff7a30':'#ffd24a'})}
-    B.floats.push({x:u.x,y:u.y-30,t:'FIRE',life:.6,c:'#ff9a50'});shakeIt(3);
+    B.floats.push({x:u.x,y:u.y-fxUp(30),t:'FIRE',life:.6,c:'#ff9a50'});shakeIt(3);
   }
   // a shooter's sidearm (Melee Mode): his melee damage, a blade's pace
   blade(e){const u=this.u,s=u.s,dm=meleeDmgOf(s)*(.8+Math.random()*.4)*tiredMul(u).dmg;u.cd=s.cd*BLADE.cd*(.9+Math.random()*.2);u.atkAt=B.t;u.atkStyle='swing';fatigueBlow(u);u.face=e.x>=u.x?1:-1;Duel.meet(u,e);Duel.look(u,e);if(Defence.stops(u,e))return this.follow(e,dm,true);this.hit(e,dm);this.follow(e,dm)}

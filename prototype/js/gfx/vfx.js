@@ -5,20 +5,31 @@
    dust, a moment of slow motion), a death (the body falls, a puff of dust). Glowing things are drawn added to what is under
    them ('lighter'), so they shine. ---------- */
 const VFX={max:700,slow:.35,grav:260};
-function vfx(o){if(!B)return;const L=B.vfx||(B.vfx=[]);if(L.length>=VFX.max)L.splice(0,L.length-VFX.max+1);o.age=0;o.max=o.life;L.push(o);return o}
+/* (an effect born on a man (inside vfxOn, or fxAt) is drawn by FX_AT, beside it: dz, how far over the ground under him it was born,
+   so on a hill in a fight on the map it is lifted by that ground, not the ground up the screen where it is drawn on his body; up, how
+   much higher than its own point it is drawn, so it is born on his figure as drawn (a rider's, his height on the map: bodyY) while
+   its point stays the one the battle has always kept (the battle fingerprints hash B.vfx, B.rings, B.slashes); zs, blood's height
+   by his: effectTransform, fxEach. Drawing only, beside the effect, never in it) */
+const FX_AT=new WeakMap();let FX_ON=null;
+const fxAt=(o,dz,up=0,zs)=>{FX_AT.set(o,{dz,up,zs});return o};
+function vfxOn(u,f,up=0,zs){const was=FX_ON;FX_ON={u,up,zs};try{return f()}finally{FX_ON=was}}
+function vfx(o){if(!B)return;const L=B.vfx||(B.vfx=[]);if(L.length>=VFX.max)L.splice(0,L.length-VFX.max+1);o.age=0;o.max=o.life;if(FX_ON&&!FX_AT.has(o))fxAt(o,FX_ON.u.y-o.y,FX_ON.up,FX_ON.zs);L.push(o);return o}
+const fxA=p=>FX_AT.get(p)||p;
 const rnd=(a,b)=>a+Math.random()*(b-a);
 // a blow lands on t from src (a unit, or a missile's point): its direction, how hard, what kind of hit
 function vfxHit(src,t,dm,o){
-  if(!B||!t||!src)return;o=o||{};const a=Math.atan2(t.y-src.y,t.x-src.x),x=t.x,y=t.y-7,big=dm>=14||o.crit,beast=!!(t.s&&(t.s.beast||t.s.big));
+  if(!B||!t||!src)return;return vfxOn(t,()=>vfxHitOn(src,t,dm,o),t.y-7-bodyY(t,FX_BODY.hit),bodyZ(t,FX_BODY.hit)/7)}
+function vfxHitOn(src,t,dm,o){
+  o=o||{};const a=Math.atan2(t.y-src.y,t.x-src.x),x=t.x,y=t.y-7,big=dm>=14||o.crit,beast=!!(t.s&&(t.s.beast||t.s.big));
   if(o.magic){vfx({k:'glow',x,y,r:10+dm*.4,life:.25,col:o.col||'#8fb8ff'});for(let i=0;i<8;i++){const b=rnd(0,6.283),v=rnd(30,90);vfx({k:'ember',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v-30,life:rnd(.3,.6),col:o.col||'#8fb8ff'})}return}
-  if(o.arrow&&tagsOf(t.s||{}).includes('shield')&&B&&sideOf(t,src)==='front'){for(let i=0;i<4;i++){const b=a+Math.PI+rnd(-.8,.8),v=rnd(30,80);vfx({k:'spark',x:x+Math.cos(a)*-3,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v-20,life:rnd(.15,.3),col:'#c8945a'})}return}// (into the shield: splinters)
+  if(o.arrow&&tagsOf(t.s||{}).includes('shield')&&B&&sideOf(t,src)==='front'){for(let i=0;i<4;i++){const b=a+Math.PI+rnd(-.8,.8),v=rnd(30,80);vfx({k:'spark',x:x-Math.cos(a)*fxUp(3),y,vx:Math.cos(b)*v,vy:Math.sin(b)*v-20,life:rnd(.15,.3),col:'#c8945a'})}return}// (into the shield: splinters)
   const blunt=!o.arrow&&src.s&&(src.s.big||/hammer|club|bigaxe/.test((PEOPLE_LOOK[src.type]||{}).weapon||''));
   // steel on steel: sparks thrown back past the one hit; a heavy blow: dust
   if(!blunt&&!beast)for(let i=0;i<3+Math.min(6,dm/3|0);i++){const b=a+rnd(-.7,.7),v=rnd(70,170);vfx({k:'spark',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v-rnd(10,50),life:rnd(.12,.26),col:i%3?'#ffe9a8':'#ffffff'})}
-  if(blunt||big)for(let i=0;i<4;i++){const b=a+rnd(-1,1),v=rnd(20,60);vfx({k:'dust',x:x+Math.cos(b)*3,y:t.y-2,vx:Math.cos(b)*v,vy:Math.sin(b)*v*.4,r:rnd(2,4),grow:10,life:rnd(.35,.6),col:'200,184,150'})}
+  if(blunt||big)for(let i=0;i<4;i++){const b=a+rnd(-1,1),v=rnd(20,60);vfx({k:'dust',x:x+Math.cos(b)*fxUp(3),y:t.y-fxUp(2),vx:Math.cos(b)*v,vy:Math.sin(b)*v*.4,r:rnd(2,4),grow:10,life:rnd(.35,.6),col:'200,184,150'})}
   if(BLOOD.on&&!undead(t))for(let i=0;i<(big?5:2);i++){const b=a+rnd(-.5,.5),v=rnd(15,big?60:40);vfx({k:'blood',x,y:t.y,z:7,vx:Math.cos(b)*v,vy:Math.sin(b)*v*.5,vz:rnd(25,55),life:1.2})}
   // (the blow itself: a flash where it lands, bigger for a big one)
-  vfx({k:'glow',x:x-Math.cos(a)*3,y,r:big?13:7,life:big?.14:.08,col:big?'#ffffff':'#fff4d0'});
+  vfx({k:'glow',x:x-Math.cos(a)*fxUp(3),y,r:big?13:7,life:big?.14:.08,col:big?'#ffffff':'#fff4d0'});
 }
 // a charge strikes home: a ring of dust on the ground, dust thrown out, a jolt, a moment of slow motion
 function vfxCharge(u,t,m){
@@ -74,6 +85,8 @@ function vfxDeath(t,corpse){
 // (DYING: how far through his fall (q) each frame of a man's dying lasts: the stagger, to his knees, the landing a pixel up)
 const DYING={stagger:.25,kneel:.6,land:.75};
 const GORE={fall:.65,pool:2.5,col:['#4a0c0c','#68140f','#7e1c14'],tile:256};
+// (a fight on the map: a pool drawn as ground, among the living by its far edge, top of its size and pad field px above his feet: render.js)
+const CORPSE_POOL={top:.5,pad:4};
 const undead=u=>!!(u&&(breedOf(u.type)==='slime'||u.s&&(u.s.undead||u.s.race==='undead')||/skel|ghoul|wraith|golem|zomb/.test(u.type||'')));
 /* the blood layer (B.gore, R16): by tiles of GORE.tile px, each made only where blood falls or one of the fallen is painted in, and
    kept for the battle (blood is never painted twice; the ground's tiles come and go apart from it). each(x0,y0,x1,y1,f): f(g) for
@@ -108,9 +121,10 @@ function poolSprite(r,seed,bl){const red=!bl||bl.key==='red',key=r+'_'+seed+(red
    turning, to where it lands (fly: its arc, px high, turns over its flight); a paper doll's thin, as he held it */
 const FALLS=['over','back','knees'],FALL_FLY={h:9,turns:1.5};
 const fallOf=c=>c.fall||(c.fall=FALLS[(Math.round(c.x)*7+Math.round(c.y)*3)%3]);
-function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFor(c):null;if(V&&!V.beast&&!V.horse)return drawFallen(g,c,V,q,k);const S=V||c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
+function drawBody(g,c,q,k,part){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFor(c):null;if(V&&!V.beast&&!V.horse)return drawFallen(g,c,V,q,k,part);const S=V||c.sp,X=Math.round(c.x),Y=Math.round(c.y),how=S.beast||S.mount?'over':fallOf(c),bk=how==='back'?-1:1;if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
   const bl=V?V.blood===undefined?{key:'red'}:V.blood:undefined;// (his kind's blood: sprites.js bloodOf; null none)
-  if(k>0&&BLOOD.on&&(V?bl:!c.dry)){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,bl),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
+  if(part!==2&&k>0&&BLOOD.on&&(V?bl:!c.dry)){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,bl),px=S.beast?0:S.mount?2*c.face:7*c.face*bk,py=S.beast||S.mount?2:3;g.globalAlpha=.85;g.drawImage(p,X+px-(p.width>>1),Y+py-(p.height>>1));g.globalAlpha=1}
+  if(part===1){if(B?.world)g.restore();return}// (part 1: his pool alone, the ground under the living; 2: him alone: render.js, a fight on the map)
   g.save();g.translate(X,Y);if(c.face<0)g.scale(-1,1);
   // (a beast, a mount: slumped low where it stood; its rider thrown forward of it)
   if(S.beast){const sp=S.beast,w=sp.width,h=sp.height,x0=-Math.floor(w/2),Q=q*q;
@@ -128,9 +142,10 @@ function drawBody(g,c,q,k){const V=DEATHS.on?c.sp?.horse?horseDeathOf(c):deathFo
 /* one of the fallen as his death says (sprites.js deathOf): he goes down into it (over: forward; back: over backwards; knees: to
    his knees, there to stay), his weapon flung the side it drops (wd), his shield and his helm by him once he lies; a rider's mount
    sinks (on its side or its belly) and he lies clear of it, across it or pinned under it (at: from its middle) */
-function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mount,at=M?V.at:[0,0],f=c.face;fallOf(c);
+function drawFallen(g,c,V,q,k,part){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mount,at=M?V.at:[0,0],f=c.face;fallOf(c);
   if(B?.world){g.save();g.translate(X,Y);g.scale(WORLD_BATTLE.sprite,WORLD_BATTLE.sprite);g.translate(-X,-Y)}
-  if(k>0&&BLOOD.on&&V.blood){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,V.blood);g.globalAlpha=.85;g.drawImage(p,X+(at[0]+V.pool[0])*f-(p.width>>1),Y+at[1]+V.pool[1]-(p.height>>1));g.globalAlpha=1}
+  if(part!==2&&k>0&&BLOOD.on&&V.blood){const r=Math.max(1,Math.round(c.pool*Math.sqrt(k))),p=poolSprite(r,c.seed,V.blood);g.globalAlpha=.85;g.drawImage(p,X+(at[0]+V.pool[0])*f-(p.width>>1),Y+at[1]+V.pool[1]-(p.height>>1));g.globalAlpha=1}
+  if(part===1){if(B?.world)g.restore();return}
   g.save();g.translate(X,Y);if(f<0)g.scale(-1,1);
   const mount=()=>{if(q<1){const s=1-.5*q*q;g.drawImage(M,-Math.floor(M.width/2),Math.round(1-(M.height-1)*s),M.width,Math.max(1,Math.round(M.height*s)))}else g.drawImage(V.down,-Math.floor(V.down.width/2),3-V.down.height)};
   if(M&&V.ride!=='under')mount();
@@ -145,12 +160,19 @@ function drawFallen(g,c,V,q,k){const X=Math.round(c.x),Y=Math.round(c.y),M=V.mou
 // all of them: the settled painted into the layer once (into each of its tiles the body reaches), and the layer drawn; those still
 // falling or bleeding drawn as they are
 function drawCorpses(){
-  if(!B.corpses)return;const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0)*(B.world?WORLD_BATTLE.sprite:1);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
+  // (on the world map each is drawn among the living, by its feet: corpseEnts)
+  if(!B.corpses||B.world)return;const L=goreLayer(),bake=c=>{const X=Math.round(c.x),Y=Math.round(c.y),S=c.sp,r=Math.max(48,S&&S.beast?Math.max(S.beast.width,S.beast.height)+12:0)*(B.world?WORLD_BATTLE.sprite:1);L.each(X-r,Y-r,X+r,Y+r,g=>drawBody(g,c,1,1))};
   if(B.goreOn!==BLOOD.on){B.goreOn=BLOOD.on;L.clear();for(const c of B.corpses)if(c.baked)bake(c)}// (blood switched: painted again)
   const live=[];
   for(const c of B.corpses){if(c.baked||!c.sp)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));
     if(k>=1||q>=1&&(!BLOOD.on||c.dry)){bake(c);c.baked=true}else live.push([c,q,k])}
   drawLayer(L);for(const [c,q,k] of live)drawBody(ctx,c,q,k)}
+/* the fallen of a fight on the world map (B.world), each drawn by its feet among the living, so the map's trees and buildings in front
+   of one are drawn back over it (depth.js worldOverdraw; nf: none fades for a body behind it), never a body over a crown behind
+   which it lies (the owner, 2026-11-16: "Recheck dead, corpse layer when draw near tree"); its fall and its pool as drawCorpses' */
+function corpseEnts(v){if(!B.corpses)return [];const out=[],x0=v.x-48,x1=v.x+v.w+48,y0=v.y-48,y1=v.y+v.h+48;
+  for(const c of B.corpses){if(!c.sp||c.x<x0||c.x>x1||c.y<y0||c.y>y1)continue;const t=B.t-(c.td||0),q=Math.min(1,t/GORE.fall),k=Math.min(1,Math.max(0,(t-GORE.fall)/GORE.pool));
+    out.push({x:c.x,y:c.y-.5,corpse:c,q,k})}return out}
 /* ---------- C: movement. Feet kick up dust as they run (riders and big beasts a cloud), the colour of the ground; arrows stay
    where they strike, in the ground or in a man (in his shield, with splinters, when it takes them from the front) ---------- */
 const dustCol=()=>({desert:'214,190,140',frost:'232,238,244',swamp:'118,118,92'}[B&&B.env&&B.env.c]||'170,152,112');
@@ -163,12 +185,15 @@ function stickArrow(e,a){if(!e||e.hp<=0)return;const ang=Math.atan2(a.vy||0,a.vx
 function drawStuck(u,x,y){if(!u.stuckA||!u.stuckA.length)return;for(const s of u.stuckA){const age=B.t-s.t;if(age>5)continue;const a=s.f===(u.face||1)?s.a:Math.PI-s.a,dx=s.f===(u.face||1)?s.dx:-s.dx;
   ctx.save();ctx.translate(x+dx,y+s.dy);ctx.rotate(a);ctx.globalAlpha=Math.min(1,(5-age)/1.5);ctx.fillStyle='#6a4a2a';ctx.fillRect(-3,0,3,1);ctx.fillStyle='#f2efe6';ctx.fillRect(-4,-1,1,1);ctx.fillRect(-4,1,1,1);ctx.restore()}}
 /* ---------- D: the skills, each its own: helpers ---------- */
+// (how far up an arrow in flight is drawn over its point: from the bowman's hand, 4 of a man's px, and its arc's rise; render.js,
+// fire.js, unitabilities.js)
+const arrowUp=a=>a.arc?fxUp(4)+Math.max(0,a.z):0;
 function vfxRing(x,y,r,col,life){vfx({k:'shock',x,y,r,life:life||.45,col,area:true})}
 // (fire: a fire's embers, coloured as they cool: marked so (fire.js fireMark), each vfx itself as it was)
 function vfxBurst(x,y,n,col,v0,v1,k,up,fire){for(let i=0;i<n;i++){const b=rnd(0,6.283),v=rnd(v0,v1),p=vfx({k:k||'ember',x,y,vx:Math.cos(b)*v,vy:Math.sin(b)*v*(k==='spark'?.6:1)-(up||0),life:rnd(.3,.7),col});if(fire)fireMark(p)}}
 function vfxCracks(x,y,n,len){for(let i=0;i<n;i++){const a=i/n*6.283+rnd(-.3,.3);vfx({k:'crack',x,y,a,len:len*rnd(.6,1.1),br:rnd(-.6,.6),life:rnd(1.2,1.8)})}}
 function vfxSmoke(x,y,n){for(let i=0;i<n;i++)vfx({k:'dust',x:x+rnd(-6,6),y:y+rnd(-4,2),vx:rnd(-8,8),vy:rnd(-22,-10),r:rnd(3,5),grow:10,life:rnd(.7,1.1),col:'120,116,110'})}
-function vfxGhost(u){const sp=actorSprite(u,0,true);vfx({k:'ghost',x:u.x,y:u.y-(u.z||0),face:u.face||1,sp,life:.22,col:sideCol(u,'say')})}
+function vfxGhost(u){const sp=actorSprite(u,0,true),z=u.z||0;vfxOn(u,()=>vfx({k:'ghost',x:u.x,y:u.y-z,face:u.face||1,sp,life:.22,col:sideCol(u,'say')}),fxUp(z)-z)}
 // a spell's explosion: a flash, a ring of fire, embers and smoke; as fire burns (FLAMES.on), its embers cooling from yellow to red
 // and a blaze left a moment where it burst (fire.js fireBlazeAt: drawn only, off the battle's own effects; the same draws of
 // Math.random either way)
@@ -186,12 +211,34 @@ function vfxStep(dt){
   B.vfx=L.filter(p=>p.life>0)}
 // Cosmetic geometry grows around its own origin, never moving the effect or changing combat radii.
 const worldEffectScale=()=>B?.world?WORLD_BATTLE.sprite:1;
-function effectTransform(x,y,k=worldEffectScale()){ctx.translate(x,y);ctx.scale(k,k);ctx.translate(-x,-y)}
+/* (a point on a man as he is drawn, in field px, where an effect on him is born: f of his figure's height up from his feet (his
+   mount's with him), up by his leap; and n of his figure's px in field px. In a battle on the map each man is drawn WORLD_BATTLE.sprite
+   times his size round his feet, so a blow's flash 7 px up on him is 21 there, on his body, not at his knees. His figure's height: as
+   last drawn (render.js drawUnitAt: u._fh), else by his kind (FX_BODY.fig). FX_BODY: where on him each effect is born, of his height:
+   a foot soldier's 16 px gives the classic field's old offsets, a rider and a beast their own) */
+const FX_BODY={hit:.44,swing:.375,chest:.5,cast:.625,star:.5,banner:.875,lying:.4,fig:{foot:16,mounted:24,big:30,beast:12}};
+const fxUp=n=>n*worldEffectScale();
+const FX_FIG=new WeakMap();
+function fxFig(u){const h=FX_FIG.get(u);if(h>0)return h;const F=FX_BODY.fig,S=u.s||{};return S.mounted?F.mounted:S.big?F.big:S.beast?F.beast:F.foot}
+const bodyZ=(u,f)=>(u.z||0)+f*fxFig(u);
+const bodyY=(u,f)=>u.y-fxUp(bodyZ(u,f));
+// (in a battle on the map, field px up the screen at field px (x, y): the lift of its ground, as each man there is drawn (render.js
+// drawUnit), so what is drawn on him or at his feet stays on him on a hill; 0 on a field of its own)
+function fieldLift(x,y){const w=B?.world;if(!w||typeof liftAt!=='function')return 0;return liftAt(w.x0+x/w.scale,w.y0+y/w.scale)*w.scale}
+// (the field y of the ground drawn at field point (x, y) of the screen: up the lift there, the land's own (a tap means the ground it
+// lands on); y itself on a field of its own)
+function fieldGround(x,y){if(!B?.world)return y;let g=y;for(let i=0;i<4;i++)g=y+fieldLift(x,g);return g}
+// (each of list drawn by f, up by the lift at its x, y: its own context while lifted; those sized(p) says are on a man (not a reach
+// over the ground) also drawn at his size round their point, as vfxAir's are: effectTransform)
+function fxEach(list,f,sized){const k=worldEffectScale();for(const p of list){const A=fxA(p),L=fxRaise(p),s=k!==1&&!!sized&&sized(p);if(!L&&!s){f(p);continue}ctx.save();if(s)effectTransform(p.x,p.y,k,A.dz,A.up);else ctx.translate(0,-L);try{f(p)}finally{ctx.restore()}}}
+const fxOnMan=p=>!p.area;
+function effectTransform(x,y,k=worldEffectScale(),dz=0,up=0){ctx.translate(x,y-(up||0)-fieldLift(x,y+(dz||0)));ctx.scale(k,k);ctx.translate(-x,-y)}
+const fxRaise=p=>{const A=fxA(p);return(A.up||0)+fieldLift(p.x,p.y+(A.dz||0))};
 const vfxA=p=>Math.max(0,Math.min(1,p.life/p.max));
 // the ground layer: under the fighters
 function vfxGround(){
   const L=B&&B.vfx;if(!L)return;
-  for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k==='dust'||p.k==='frost'||p.k==='shock'&&!p.area)effectTransform(p.x,p.y,k);
+  for(const p of L){const a=vfxA(p),k=worldEffectScale(),A=fxA(p);ctx.save();if(p.k==='dust'||p.k==='frost'||p.k==='shock'&&!p.area)effectTransform(p.x,p.y,k,A.dz,A.up);else ctx.translate(0,-fxRaise(p));
     if(p.k==='crack'){const al=Math.min(1,a*2)*.7;ctx.strokeStyle='rgba(58,40,24,'+al.toFixed(2)+')';ctx.lineWidth=k;const mx=p.x+Math.cos(p.a)*p.len*.55,my=p.y+Math.sin(p.a)*p.len*.55*.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(mx,my);ctx.lineTo(p.x+Math.cos(p.a+p.br*.4)*p.len,p.y+Math.sin(p.a+p.br*.4)*p.len*.5);ctx.moveTo(mx,my);ctx.lineTo(mx+Math.cos(p.a+p.br)*p.len*.35,my+Math.sin(p.a+p.br)*p.len*.35*.5);ctx.stroke()}
     else if(p.k==='frost'){ctx.fillStyle='rgba(200,230,255,'+(.5*Math.min(1,a*2)).toFixed(2)+')';ctx.fillRect(Math.round(p.x),Math.round(p.y),2,1)}
     else if(p.k==='shock'){const q=1-a;ctx.strokeStyle='rgba('+p.col+','+(a*.8).toFixed(2)+')';ctx.lineWidth=(2+2*a)*(p.area?k:1);ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.9*q),p.r*(.3+.9*q)*.45,0,0,6.283);ctx.stroke()}
@@ -200,9 +247,9 @@ function vfxGround(){
 // (first the fire arrows in flight, burning (fire.js fireArrows), and a blaze left where a spell burst, drawn as they are, not added)
 function vfxAir(){
   fireArrows();fireBlazes();const L=B&&B.vfx;if(!L)return;
-  for(const p of L)if(p.k==='blood'){ctx.save();effectTransform(p.x,p.y);ctx.fillStyle='#c03232';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z),1,1);ctx.restore()}
+  for(const p of L)if(p.k==='blood'){const A=fxA(p);ctx.save();effectTransform(p.x,p.y,undefined,A.dz);ctx.fillStyle='#c03232';ctx.fillRect(Math.round(p.x),Math.round(p.y-p.z*(A.zs||1)),1,1);ctx.restore()}
   ctx.save();ctx.globalCompositeOperation='lighter';
-  for(const p of L){const a=vfxA(p),k=worldEffectScale();ctx.save();if(p.k!=='swirl'&&!p.area)effectTransform(p.x,p.y,k);
+  for(const p of L){const a=vfxA(p),k=worldEffectScale(),A=fxA(p);ctx.save();if(p.k!=='swirl'&&!p.area)effectTransform(p.x,p.y,k,A.dz,A.up);else ctx.translate(0,-fxRaise(p));
     if(p.k==='spark'){ctx.strokeStyle=p.col;ctx.globalAlpha=a;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*.05,p.y-p.vy*.05);ctx.stroke()}
     else if(p.k==='ember'){ctx.fillStyle=FLAMES.on&&FIRE_EMBERS.has(p)?fireAge(a):p.col;ctx.globalAlpha=a*(Math.random()<.2?.4:1);ctx.fillRect(Math.round(p.x),Math.round(p.y),1+(a>.6),1+(a>.6))}
     else if(p.k==='swirl'){ctx.lineWidth=2*k;for(let k=0;k<3;k++){const b=p.a+k*2.094;ctx.strokeStyle=k?p.col:'#ffffff';ctx.globalAlpha=a*(k?.6:.9);ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.7+.3*(1-a)),b,b+1.1);ctx.stroke()}}
@@ -222,13 +269,14 @@ function vfxAir(){
    Line), a gold burst from its men; flanked, a red flash on the side it is struck from; its leader down, a ring of shock round
    him and his men shaken. Light (Settings, Battle effects: fxLite): the rings, colours and stars only, no particles */
 const STATE_FX={on:true,pulse:1.6,flare:1.4,shock:.45,col:{cry:'236,104,64',banner:'120,170,255',stand:'236,200,110',rally:'255,220,120'},pale:.35,grey:.1};
-const fxLite=()=>prefGet('bfx')==='light',FX_LITE=new Set(['ring','flash','trail','streak','wave','star']);
-const STATE_MARKS=new WeakMap(),FXP=[];let FXR=1,FXT=0;
+const fxLite=()=>prefGet('bfx')==='light'||typeof Quality!=='undefined'&&Quality.now.fx==='light',FX_LITE=new Set(['ring','flash','trail','streak','wave','star']);
+const STATE_MARKS=new WeakMap(),FXP=[],FXP_CAP=300;let FXR=1,FXT=0;// (FXP_CAP: its particles at once, the graphics level's at most: gfx/quality.js)
 const fxr=()=>(FXR=(FXR*1103515245+12345)%2147483648)/2147483648;
 const stateMark=o=>{let m=STATE_MARKS.get(o);if(!m){m={};STATE_MARKS.set(o,m)}return m};
 // (a moment's own particle: k ring, spark (rising), dust, flash, and the hero's (herofx.js); drawn in the air but rings and dust,
-// which lie on the ground. Light keeps FX_LITE's only)
-function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&!FX_LITE.has(o.k))return;if(FXP.length>300)FXP.shift();o.age=0;FXP.push(o)}
+// which lie on the ground. Light keeps FX_LITE's only. fol: the man it is on, whom it goes with as he moves, is thrown, leaps (fxpStep);
+// area: a reach over the ground (a group's ring, a landing's wave), drawn at the field's size, the rest at the men's: fxOnMan)
+function fxp(o){if(FXP.b!==B){FXP.length=0;FXP.b=B}if(fxLite()&&!FX_LITE.has(o.k))return;if(FXP.length>(typeof Quality!=='undefined'?Quality.now.fxCap:FXP_CAP))FXP.shift();o.age=0;if(o.fol){o.fx=o.fol.x;o.fy=o.fol.y-fxUp(o.fol.z||0)}const g=o.on||o.fol;if(g&&o.dz==null)o.dz=g.y-o.y;FXP.push(o)}
 // (his rings: what lifts him now)
 function stateRings(u){const C=STATE_FX.col,out=[],r=resolveOf(u);if(u.buffT>0)out.push(C.cry);
   const b=B.banner;if(b&&battleFriend(b.team,u)&&Math.hypot(u.x-b.x,u.y-b.y)<b.r)out.push(C.banner);if(r&&r.standing&&r.standing())out.push(C.stand);return out}
@@ -247,25 +295,27 @@ function stateShake(u){if(!STATE_FX.on||B.noMorale||u.mor==null)return[0,1];cons
   if(m&&m.shock!=null&&B.t-m.shock<STATE_FX.shock)dx=(Math.floor(t*30+(u.id||0))%2?1:-1);
   else if(!u.rout&&u.mor<MORALE.waver){a=.78+.22*(Math.floor(t*5+(u.id||0)*.7)%2);if(Math.floor(t*3+(u.id||0)*.31)%7===0)dx=Math.floor(t*24)%2?1:-1}
   return[dx,a]}
-// (over him: a stunned man's stars, a spent man's sweat, a router's dust behind him)
-function stateAir(u,x,y,h){if(!STATE_FX.on||u.hp<=0)return;const t=performance.now()/1000;
-  if(u.stun>0)for(let i=0;i<3;i++){const a=t*5+i*2.094;ctx.fillStyle=i?'#ffe08a':'#ffffff';ctx.fillRect(Math.round(x+Math.cos(a)*4),Math.round(y-h-1+Math.sin(a)*1.5),1,1)}
-  if(fxLite())return;
-  if(staOf(u)<FATIGUE.spent&&fxr()<.012)fxp({k:'sweat',x:x+(u.face<0?-2:2),y:y-h+4,life:.7});
-  if(u.rout&&!u.left&&u.spdNow>5&&fxr()<.15)fxp({k:'dust',x:x-(u.face||1)*3,y,vx:-(u.face||1)*(6+fxr()*8),r:1.5,life:.5})}
+// (over him: a stunned man's stars (over him lying, knocked down: FX_BODY.lying of his height), a spent man's sweat, a router's dust
+// behind him. x, y his drawn point (y up by his leap), h his figure's height, in his own px: drawn in his figure's own frame (k times the
+// field's on the map), the particles born in the field's, where his own px land: k of them each)
+function stateAir(u,x,y,h){if(!STATE_FX.on||u.hp<=0)return;const t=performance.now()/1000,lie=u.stun>0&&typeof physDownPose==='function'&&physDownPose(u)!=null,sh=lie?h*FX_BODY.lying:h;
+  if(u.stun>0)for(let i=0;i<3;i++){const a=t*5+i*2.094;ctx.fillStyle=i?'#ffe08a':'#ffffff';ctx.fillRect(Math.round(x+Math.cos(a)*4),Math.round(y-sh-1+Math.sin(a)*1.5),1,1)}
+  if(fxLite())return;const k=worldEffectScale(),z=Math.round(u.z||0),fy=y+z-z*k;
+  if(staOf(u)<FATIGUE.spent&&fxr()<.012)fxp({k:'sweat',on:u,x:x+(u.face<0?-2:2)*k,y:fy-(h-4)*k,life:.7});
+  if(u.rout&&!u.left&&u.spdNow>5&&fxr()<.15)fxp({k:'dust',x:x-(u.face||1)*3*k,y:fy+z*k,vx:-(u.face||1)*(6+fxr()*8),r:1.5,life:.5})}
 // (a moment: a group breaks, rallies, is flanked, its leader falls; marks and particles only)
 battleOn((type,d)=>{if(!STATE_FX.on||!B)return;const men=r=>r?B.units.filter(u=>u.hp>0&&resolveOf(u)===r):[];
-  if(type==='rout'){const m=stateMark(d.r);m.shock=B.t;const ms=d.m||men(d.r);if(ms.length){const c=ms.reduce((a,u)=>[a[0]+u.x/ms.length,a[1]+u.y/ms.length],[0,0]);fxp({k:'ring',x:c[0],y:c[1],r:24,col:'190,190,200',life:.6})}}
-  if(type==='rally'){stateMark(d.r).rally=B.t;for(const u of men(d.r))for(let i=0;i<2;i++)fxp({k:'spark',x:u.x+(fxr()-.5)*6,y:u.y-4-fxr()*6,vy:-(14+fxr()*16),col:'#ffd76a',life:.6+fxr()*.4})}
-  if(type==='flank'&&d.u&&d.src){const a=Math.atan2(d.src.y-d.u.y,d.src.x-d.u.x);fxp({k:'flash',x:d.u.x+Math.cos(a)*4,y:d.u.y-6+Math.sin(a)*2,r:7,col:'255,80,60',life:.25})}
-  if(type==='leader'&&d.u){const r=resolveOf(d.u);if(r)stateMark(r).shock=B.t;fxp({k:'ring',x:d.u.x,y:d.u.y,r:36,col:'255,120,100',life:.8})}
+  if(type==='rout'){const m=stateMark(d.r);m.shock=B.t;const ms=d.m||men(d.r);if(ms.length){const c=ms.reduce((a,u)=>[a[0]+u.x/ms.length,a[1]+u.y/ms.length],[0,0]);fxp({k:'ring',x:c[0],y:c[1],r:24,col:'190,190,200',life:.6,area:true})}}
+  if(type==='rally'){stateMark(d.r).rally=B.t;for(const u of men(d.r))for(let i=0;i<2;i++)fxp({k:'spark',on:u,x:u.x+fxUp((fxr()-.5)*6),y:u.y-fxUp(4+fxr()*6),vy:-(14+fxr()*16),col:'#ffd76a',life:.6+fxr()*.4})}
+  if(type==='flank'&&d.u&&d.src){const a=Math.atan2(d.src.y-d.u.y,d.src.x-d.u.x);fxp({k:'flash',x:d.u.x+fxUp(Math.cos(a)*4),y:bodyY(d.u,FX_BODY.swing)+fxUp(Math.sin(a)*2),r:7,col:'255,80,60',life:.25,fol:d.u})}
+  if(type==='leader'&&d.u){const r=resolveOf(d.u);if(r)stateMark(r).shock=B.t;fxp({k:'ring',x:d.u.x,y:d.u.y,r:36,col:'255,120,100',life:.8,area:true})}
   if(type==='power'&&d.id==='rally')for(const g of d.gs||[])if(g.resolve)stateMark(g.resolve).rally=B.t});
 // (their particles, by the real clock: rings and dust on the ground (stateGround), the rest in the air (stateFxAir))
-function fxpStep(){const now=performance.now()/1000,dt=FXT?Math.min(.1,now-FXT):0;FXT=now;for(const p of FXP){p.age+=dt;if(p.g){p.vz-=p.g*dt;p.z=Math.max(0,p.z+p.vz*dt);if(!p.z&&p.vz<0)p.vx=p.vy=0}if(p.vy)p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt}for(let i=FXP.length-1;i>=0;i--)if(FXP[i].age>=FXP[i].life)FXP.splice(i,1)}
-function stateGround(){if(!B||!FXP.length)return;fxpStep();for(const p of FXP){const a=1-p.age/p.life;
+function fxpStep(){const now=performance.now()/1000,dt=FXT?Math.min(.1,now-FXT):0;FXT=now;for(const p of FXP){p.age+=dt;if(p.fol){const u=p.fol,nx=u.x,ny=u.y-fxUp(u.z||0),dx=nx-p.fx,dy=ny-p.fy;if(dx||dy){p.x+=dx;p.y+=dy;if(p.tx!=null){p.tx+=dx;p.ty+=dy}p.fx=nx;p.fy=ny}}if(p.g){p.vz-=p.g*dt;p.z=Math.max(0,p.z+p.vz*dt);if(!p.z&&p.vz<0)p.vx=p.vy=0}if(p.vy)p.y+=p.vy*dt;if(p.vx)p.x+=p.vx*dt}for(let i=FXP.length-1;i>=0;i--)if(FXP[i].age>=FXP[i].life)FXP.splice(i,1)}
+function stateGround(){if(!B||!FXP.length)return;fxpStep();fxEach(FXP,p=>{const a=1-p.age/p.life;
   if(p.k==='ring'){const q=p.age/p.life;ctx.strokeStyle='rgba('+p.col+','+(a*.7).toFixed(2)+')';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(p.x,p.y,p.r*(.3+.8*q),p.r*(.3+.8*q)*.42,0,0,6.283);ctx.stroke()}
-  else if(p.k==='dust'){ctx.fillStyle='rgba(196,180,140,'+(a*.4).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age*4,0,6.283);ctx.fill()}}}
-function stateFxAir(){if(!B||!FXP.length)return;ctx.save();ctx.globalCompositeOperation='lighter';for(const p of FXP){const a=1-p.age/p.life;
+  else if(p.k==='dust'){ctx.fillStyle='rgba(196,180,140,'+(a*.4).toFixed(2)+')';ctx.beginPath();ctx.arc(p.x,p.y,p.r+p.age*4,0,6.283);ctx.fill()}},fxOnMan)}
+function stateFxAir(){if(!B||!FXP.length)return;ctx.save();ctx.globalCompositeOperation='lighter';fxEach(FXP,p=>{const a=1-p.age/p.life;
   if(p.k==='spark'){ctx.fillStyle=p.col;ctx.globalAlpha=a;ctx.fillRect(Math.round(p.x),Math.round(p.y),1,1)}
-  else if(p.k==='flash'){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);g.addColorStop(0,'rgba('+p.col+','+a.toFixed(2)+')');g.addColorStop(1,'rgba('+p.col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill()}}
-  ctx.globalCompositeOperation='source-over';for(const p of FXP)if(p.k==='sweat'){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle='#bfe4ff';ctx.fillRect(Math.round(p.x),Math.round(p.y+p.age*8),1,1)}ctx.restore()}
+  else if(p.k==='flash'){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);g.addColorStop(0,'rgba('+p.col+','+a.toFixed(2)+')');g.addColorStop(1,'rgba('+p.col+',0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.283);ctx.fill()}},fxOnMan);
+  ctx.globalCompositeOperation='source-over';for(const p of FXP)if(p.k==='sweat'){ctx.globalAlpha=1-p.age/p.life;ctx.fillStyle='#bfe4ff';ctx.fillRect(Math.round(p.x),Math.round(p.y+p.age*8-fxRaise(p)),1,1)}ctx.restore()}

@@ -125,10 +125,10 @@ battleOn((type,d)=>{if(type==='power'&&!d.team)B.cmdShow={id:d.id,until:performa
 function drawCommandPowers(){
   if(!powersOn())return;const pulse=.55+.25*Math.sin(performance.now()/180);
   for(const g of Object.values(B.groups)){const r=g.resolve;if(!r||!r.standing())continue;ctx.fillStyle='rgba(255,214,110,'+(.3*pulse+.15).toFixed(3)+')';
-    for(const u of r.live())if(seenBy(0,u)){ctx.beginPath();ctx.ellipse(Math.round(u.x),Math.round(u.y),10,5,0,0,7);ctx.fill()}}
+    for(const u of r.live())if(seenBy(0,u)){ctx.beginPath();ctx.ellipse(Math.round(u.x),Math.round(u.y-fieldLift(u.x,u.y)),10,5,0,0,7);ctx.fill()}}
   const sh=B.cmdShow&&performance.now()<B.cmdShow.until?B.cmdShow.id:null,id=B.cmdHov==='rally'||B.cmdHov==='stand'?B.cmdHov:sh,c=id&&commanderOf(0);if(!c)return;
   const R=commandRadius(0),tg=powerWhyNot(0,id)&&!sh?[]:id==='rally'?rallyTargets(0):standTargets(0);
-  ctx.save();ctx.fillStyle='rgba(255,224,138,.07)';ctx.beginPath();ctx.arc(c.x,c.y,R,0,6.283);ctx.fill();
+  ctx.save();ctx.fillStyle='rgba(255,224,138,.07)';ctx.beginPath();ctx.arc(c.x,c.y-fieldLift(c.x,c.y),R,0,6.283);ctx.fill();
   ctx.setLineDash([6,4]);ctx.strokeStyle='rgba(255,224,138,.85)';ctx.lineWidth=1.5;ctx.stroke();ctx.setLineDash([]);
-  ctx.strokeStyle='rgba(159,224,154,.95)';ctx.lineWidth=1.5;for(const g of tg)for(const u of g.resolve.live()){ctx.beginPath();ctx.ellipse(Math.round(u.x)+.5,Math.round(u.y)+.5,9,4.5,0,0,7);ctx.stroke()}
+  ctx.strokeStyle='rgba(159,224,154,.95)';ctx.lineWidth=1.5;for(const g of tg)for(const u of g.resolve.live()){ctx.beginPath();ctx.ellipse(Math.round(u.x)+.5,Math.round(u.y-fieldLift(u.x,u.y))+.5,9,4.5,0,0,7);ctx.stroke()}
   ctx.restore()}

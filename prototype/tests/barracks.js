@@ -8,7 +8,7 @@ Kit.suite(({ok})=>{
  Kit.begin('soldier',1);Kit.clear();Kit.world();P.gold=5000;P.sk.lead.lv=6*PROF.per;const W=window.matchMedia,r=t.partyRoster(P);
  try{screen.style.cssText=orig+';width:844px;height:390px';window.matchMedia=()=>({matches:true});
   const town=t.TOWNS.find(x=>x.T.tabs.includes('recruit')&&!t.hostileTo(x.owner)&&t.townBy(x.name));P.rep[town.name]=100;town.vol=80;t.enterTown(town);t.act('tab','recruit');
-  ok(!q('[data-act="rec-add"]')&&!q('.rec-n')&&!q('[data-act="rec-fill"]')&&!q('[data-act="rec-groups"]')&&q('[data-act="rec-unit"]'),'whole units only: no counters, no Fill band, no group picker');
+  ok(!q('[data-act="rec-add"]')&&!q('[data-act="rec-fill"]')&&!q('[data-act="rec-groups"]')&&q('[data-act="rec-unit"]')&&(!q('.rec-n')||q('[data-act="rec-amt"]')),'a unit at a time: no Fill band, no group picker; how many by each row\'s own stepper (the owner, 2026-11-18: "hire only 1/10": hiredesk.js)');
   const b=[...document.querySelectorAll('#panel [data-act="rec-unit"]')].find(x=>!x.disabled),k=b.dataset.arg,n=t.unitSize(k),s0=r.slots,m0=P.troops[k]||0,v0=town.vol;b.click();
   const g=r.groups.find(x=>x.type===k);ok(r.slots===s0+1&&P.troops[k]===m0+n&&g&&g.count===n&&town.vol===v0-n,'Recruit unit: one whole unit of '+n+' '+t.ST[k].n+' into a new slot, '+n+' from the willing');
   r.remove(k,3,g.id);t.act('tab','recruit');const f=q('[data-act="rec-refill"][data-arg="'+g.id+'"]');ok(f&&!f.disabled&&/\+3/.test(f.textContent),'a unit short of 3: its Refill row, +3');

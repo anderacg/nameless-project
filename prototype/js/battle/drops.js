@@ -11,10 +11,13 @@
    Numbers: data/drops.js DROPS ---------- */
 const DROP_OF=new WeakMap(),DROP_BY=new WeakMap();
 // (a thing lying to be taken: a soft glow round x, y (radius r), breathing, and a glint rising from it now and then (LOOT_GLOW,
-//  data/drops.js); seed: its own beat)
-function lootGlow(x,y,r,t,seed){const L=LOOT_GLOW;if(!L.on)return;const b=(Math.sin(t*L.speed+seed)+1)/2,a=L.a[0]+(L.a[1]-L.a[0])*b,R=r*(1+.15*b);
+//  data/drops.js); seed: its own beat; q: its glint's px (on the map a fine px, WORLD_VIEW.build: the lab's scale), a little cross
+//  of them while it is new)
+function lootGlow(x,y,r,t,seed,q=1){const L=LOOT_GLOW;if(!L.on||WDEPTH.ghosting)return;// (none in its outline: depth.js ghostOver)
+  const b=(Math.sin(t*L.speed+seed)+1)/2,a=L.a[0]+(L.a[1]-L.a[0])*b,R=r*(1+.15*b),sn=v=>Math.round(v/q)*q;
   ctx.save();ctx.globalCompositeOperation='lighter';const g=ctx.createRadialGradient(x,y,0,x,y,R);g.addColorStop(0,'rgba('+L.col+','+a.toFixed(3)+')');g.addColorStop(1,'rgba('+L.col+',0)');ctx.fillStyle=g;ctx.fillRect(x-R,y-R,2*R,2*R);ctx.globalCompositeOperation='source-over';
-  const p=((t*L.rise+seed)%1+1)%1;ctx.globalAlpha=1-p;ctx.fillStyle='#fff6d0';ctx.fillRect(Math.round(x+Math.sin(seed*7)*r*.4),Math.round(y-2-p*r),1,1);ctx.restore()}
+  const p=((t*L.rise+seed)%1+1)%1,gx=sn(x+Math.sin(seed*7)*r*.4),gy=sn(y-2-p*r);ctx.globalAlpha=1-p;ctx.fillStyle='#fff6d0';ctx.fillRect(gx,gy,q,q);
+  if(q<1&&p<.35){ctx.globalAlpha=(1-p)*.6;ctx.fillRect(gx-q,gy,q,q);ctx.fillRect(gx+q,gy,q,q);ctx.fillRect(gx,gy-q,q,q);ctx.fillRect(gx,gy+q,q,q)}ctx.restore()}
 class BattleDrops{
   constructor(){this.ground=[];this.orbs=[];this.done=new WeakSet();this.tally={gold:0,gear:0,mats:{},names:[]}}
   static of(b){if(!b)return null;let d=DROP_OF.get(b);if(!d)DROP_OF.set(b,d=new BattleDrops());return d}

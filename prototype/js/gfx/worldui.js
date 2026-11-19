@@ -25,7 +25,7 @@
    the arrows and chevrons of the battle are (ui/orderpaths.js). Real time. Under reducedMotion all holds still: no ripple or
    puff, the arrow and brackets standing, the dots not marching ---------- */
 const WUI_K={swords:11,ripple:.42,drop:.3,land:.13,bob:1.3,poof:.42,ping:1.2,breathe:1.4,march:10,draw:.35,ease:20,repick:120,steps:8000,stride:2,off:8,rebuild:250,
-  col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#ece6d4',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
+  col:{foe:'#ff5a48',friend:'#76d86a',neutral:'#d6c69a',comp:'#e8b94a',hold:'#e8b94a',ground:'#f2ecd8',gold:'#e8b94a',enc:'#4aa0f0'},dark:'#140e08'};
 // (its state: the effects playing (ripples, puffs), the goal you walk to and when it was set, what you chase or follow (f), the
 // way there, its prints this frame (dots: screen x, y, alpha each; feet: the way each points (wuiFoot's d), 1 a left print), the
 // brackets (b: where they stand now, world px; to: where they go) and what the pointer was last picked on)
@@ -40,10 +40,13 @@ function wuiKind(o){const k=objKind(o);if(!k)return 'ground';
 /* ---- pictures, made once each ---- */
 const WUIP=new Map(),wuiMix=(h,t)=>'#'+[1,3,5].map(i=>{const v=parseInt(h.slice(i,i+2),16);return Math.round(t>0?v+(255-v)*t:v*(1+t)).toString(16).padStart(2,'0')}).join('');
 // a ring on the ground: an ellipse rx by ry, a pixel wide, its shadow a pixel under it; (cx, cy) its middle in the picture
-function wuiRing(rx,ry,col){const k='r'+rx+','+ry+col;let c=WUIP.get(k);if(c)return c;const pts=new Set(),n=Math.max(24,10*rx);
-  for(let i=0;i<n;i++){const a=i/n*6.2832;pts.add((Math.round(rx+1+Math.cos(a)*rx))+','+(Math.round(ry+1+Math.sin(a)*ry)))}
-  c=mkc(2*rx+3,2*ry+4,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
-  c.cx=rx+1;c.cy=ry+1;WUIP.set(k,c);return c}
+const wuiZ=()=>Math.max(1,Math.round(typeof sceneRes==='function'?sceneRes():1));// (fine px a game px the scene is drawn at)
+function wuiRing(rx,ry,col){const z=wuiZ(),k='r'+rx+','+ry+col+z;let c=WUIP.get(k);if(c)return c;const pts=new Set(),n=Math.max(48,20*rx*z);
+  // (by the fine px, as the land and the men are (WORLD_VIEW.fine px a game px; wuiPut draws it back to its size): a line one fine px
+  //  wide, its shade a fine px under it; the owner, 2026-11-17: the ring blocky and white); z: wuiZ)
+  for(let i=0;i<n;i++){const a=i/n*6.2832;pts.add((Math.round((rx+1)*z+Math.cos(a)*rx*z))+','+(Math.round((ry+1)*z+Math.sin(a)*ry*z)))}
+  c=mkc((2*rx+3)*z,(2*ry+4)*z,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
+  c.cx=rx+1;c.cy=ry+1;c.k=1/z;WUIP.set(k,c);return c}
 // the arrow, pointing down, outlined dark, lit on its upper left: standing, falling (drawn out), landing (squashed). tip: the
 // row of its point in the picture, cx its middle
 const WUI_ARROW={stand:['..###..','..###..','..###..','#######','.#####.','..###..','...#...'],fall:['.###.','.###.','.###.','.###.','.###.','#####','.###.','..#..'],squash:['..#####..','..#####..','#########','.#######.','...###...']};
@@ -59,26 +62,26 @@ function wuiSwords(){let c=WUIP.get('x');if(c&&(c.uiIcon||!uiIconReady('attack')
     for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,I.p[M[y][x]],x+1,y+1)});
   c.cx=(w+2)>>1;c.tip=h;WUIP.set('x',c);return c}
 // (a picture with its point (px, py) at the screen's (x, y))
-const wuiPut=(c,x,y,px,py)=>ctx.drawImage(c,x-px,y-py);
-/* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing), drawn by hand
-   as pixels: a right foot pointing north (N) and north-east (NE), its ball (the big toe on its inner side) and its heel apart; the
-   other ways turned from them by quarter turns, a left one mirrored along its length. d: one of WUI_FOOT.dirs (8) ways, 0 east,
+const wuiPut=(c,x,y,px,py)=>c.k?ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c.k):ctx.drawImage(c,x-px,y-py);// (k: a picture by the fine px, drawn back to its size)
+/* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing): a foot's shape
+   (worldterrain.js printFoot: its sole, the ball a little to its inner side, and its heel apart), a left one mirrored along its
+   length. d: one of WUI_FOOT.dirs (16) ways, 0 east,
    on clockwise; a pixel edge round it in the dark at WUI_FOOT.edge, its toe's tip lit. gap: px from one print to the next along
    the way (a left, then a right); side: px each sits off the way's middle; look: px before and after it the way's heading is read
    over. Its middle at (cx, cy) in the picture */
 // (shorter, 2026-11-05, the owner: "make footprint a bit shorter, currently look like a line": 4 px long, 10 apart, was 6 and 8;
 // closer and shorter, 2026-11-12, the owner: "make a step guide path a bit more closer for each foot", "make the footprints track a
 // bit short right now it's like a long dash": 7 apart, 3 px long (its ball, a gap, its heel), were 10 and 4)
-const WUI_FOOT={gap:7,side:2,look:4,dirs:8,edge:.55,N:['##','..','.#'],NE:['.##','...','#..']};
-function wuiFoot(d,left,col){const key='f'+d+(left?'l':'r')+col;let c=WUIP.get(key);if(c)return c;const F=WUI_FOOT,o=d%2,B=o?F.NE:F.N,bw=B[0].length,bh=B.length;let p=[];
-  B.forEach((r,y)=>{for(let x=0;x<bw;x++)if(r[x]==='#')p.push([x-(bw-1)/2,y-(bh-1)/2])});
-  if(left)p=p.map(([x,y])=>o?[-y,-x]:[-x,y]);for(let k=((d-6-o)/2%4+4)%4;k>0;k--)p=p.map(([x,y])=>[-y,x]);
-  const x0=Math.min(...p.map(q=>q[0])),y0=Math.min(...p.map(q=>q[1])),W=Math.round(Math.max(...p.map(q=>q[0]))-x0)+1,H=Math.round(Math.max(...p.map(q=>q[1]))-y0)+1,M=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&M[y*W+x];
-  for(const [x,y] of p)M[Math.round(y-y0)*W+Math.round(x-x0)]=1;
-  const ux=Math.cos(d/F.dirs*6.2832),uy=Math.sin(d/F.dirs*6.2832);let tip=-1,tu=-1e9;for(let i=0;i<W*H;i++)if(M[i]){const u=(i%W)*ux+((i/W)|0)*uy;if(u>tu+1e-6){tu=u;tip=i}}
+// (by the fine px since 2026-11-17 (the owner: the prints blocky and white; then "not realistic"): a foot's shape (PRINT_FOOT, as the
+// tracks men leave), pointing one of dirs ways, its feet side px either side of the way (a walker's gauge, not two trails))
+const WUI_FOOT={gap:7,side:1.1,look:4,dirs:16,edge:.55};
+function wuiFoot(d,left,col){const z=wuiZ(),key='f'+d+(left?'l':'r')+col+z;let c=WUIP.get(key);if(c)return c;const M=printFoot(d,left,Math.max(2,z)),F=WUI_FOOT,s=Math.max(2,z)/z;
+  // (a foot's shape (worldterrain.js printFoot, as the tracks men leave): its rim in the dark at F.edge, its toe's px lit)
+  const x0=Math.min(...M.map(q=>q[0])),y0=Math.min(...M.map(q=>q[1])),W=Math.max(...M.map(q=>q[0]))-x0+1,H=Math.max(...M.map(q=>q[1]))-y0+1,A=new Uint8Array(W*H),at=(x,y)=>x>=0&&y>=0&&x<W&&y<H&&A[y*W+x];
+  let tu=-1e9;for(const q of M){A[(q[1]-y0)*W+q[0]-x0]=1;tu=Math.max(tu,q[3])}
   c=mkc(W+2,H+2,g=>{g.globalAlpha=F.edge;for(let y=-1;y<=H;y++)for(let x=-1;x<=W;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);
-    g.globalAlpha=1;for(let i=0;i<W*H;i++)if(M[i])rect(g,i===tip?wuiMix(col,.6):col,i%W+1,((i/W)|0)+1)});
-  c.cx=Math.round(-x0)+1;c.cy=Math.round(-y0)+1;WUIP.set(key,c);return c}
+    g.globalAlpha=1;for(const q of M)rect(g,q[3]>tu-1.2?wuiMix(col,.6):col,q[0]-x0+1,q[1]-y0+1)});
+  c.cx=(1-x0)/z/s;c.cy=(1-y0)/z/s;c.k=1/z/s;WUIP.set(key,c);return c}
 /* ---- a click: the ripple, the arrow's drop (input.js worldGo, after the click has done what it does) ---- */
 function wuiClick(wx,wy){if(G.mode!=='world')return;const now=performance.now(),o=G.chase&&objKind(G.chase)?G.chase:null;if(!o&&P.tx==null)return;
   if(o&&WUI.tgt&&WUI.tgt.o===o)WUI.tgt.t=now;else if(!o&&WUI.dest)WUI.dest.t=now;WUI.way=null;
@@ -96,6 +99,15 @@ function wuiWay(x0,y0,x1,y1,now){const X=[x0],Y=[y0],o={x:x0,y:y0,dir:1},st=WUI_
   if(ok){X.push(x1);Y.push(y1)}else if(X[X.length-1]!==o.x){X.push(o.x);Y.push(o.y)}
   const S=[0];for(let i=1;i<X.length;i++)S.push(S[i-1]+Math.hypot(X[i]-X[i-1],Y[i]-Y[i-1]));
   return{X,Y,S,n:X.length,i:0,gx:x1,gy:y1,ok,v:WAYV,t:now}}
+// (how far the land at map point (x, y) is drawn up the screen (worldterrain.js liftAt): the way, the goal, the rings and the brackets
+// drawn up with it, where the land and what stands on it are (the owner, 2026-11-16: "path guide display is invalid, clicking at
+// hill ... not showing where player click"))
+const wuiL=(x,y)=>typeof liftAt==='function'?liftAt(x,y):0;
+// (an army's own outline (march.js MarchOutline: round its men as they stand), drawn about it at its land's lift in col at alpha a,
+// for what the pointer is on and what you chase, instead of a square or a ring (the owner, 2026-11-16: "Can we change the square to
+// higlight the unit around them instead? Or using the army ring"); false for one with none)
+function wuiRing8(o,cam,col,a){const A=o&&typeof marchPicked==='function'?marchPicked(o):null,R=A&&A.ring;if(!R||!R.out||!R.out[0].n)return false;
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1/WORLD_VIEW.fine;ctx.globalAlpha=a;R.path(R.out[0],o.x-cam.x,o.y-cam.y-wuiL(o.x,o.y));ctx.stroke();ctx.restore();return true}
 // (the point s px along it, world px)
 function wuiPt(w,s){s=Math.max(0,Math.min(w.S[w.n-1],s));let lo=0,hi=w.n-1;while(hi-lo>1){const m=(lo+hi)>>1;if(w.S[m]<=s)lo=m;else hi=m}
   const L=w.S[hi]-w.S[lo],q=L>0?(s-w.S[lo])/L:0;return[w.X[lo]+(w.X[hi]-w.X[lo])*q,w.Y[lo]+(w.Y[hi]-w.Y[lo])*q]}
@@ -124,8 +136,9 @@ function wuiBox(o,px,py){let b=null,f=null,inb=null,gate=null;const u=(x0,y0,x1,
   // (an army picked by its men, as world.js pickAt picks it: round all its men's figures as drawn, a caravan's cart with them)
   const A=marchPicked(o),men=!!(A&&MARCH_RING.on&&A.ring);
   const at={x:o.x,y:o.y,V:1e9,army:q=>q===o&&men,add:(q,r,dy)=>{if(q!==o)return;const h=Math.round(r*.7),y=q.y-(dy||0);u(q.x-h,y-h,q.x+h,y+h)},
+    lot:(q,t,l)=>{if(q!==o)return;const b=lotPicBox(t,l);at.box(q,b[0],b[1],b[2],b[3])},// (a lot: round its building as drawn, structures.js)
     box:(q,x0,y0,x1,y1)=>{if(q!==o)return;u(x0,y0,x1,y1);if(!gate){gate=[x0,y0,x1,y1];return}if(px>=x0&&px<x1&&py>=y0&&py<y1&&(!inb||(x1-x0)*(y1-y0)<(inb[2]-inb[0])*(inb[3]-inb[1])))inb=[x0,y0,x1,y1]},
-    camp:(q,sp)=>{if(q!==o)return;const x0=q.x-sp.ax,y0=q.y+8-sp.ay;u(x0,y0,x0+sp.width,y0+sp.height)},
+    camp:(q,sp)=>{if(q!==o)return;const c=sitePicBox(q,sp);u(c[0],c[1],c[2],c[3])},// (a site: round its picture's opaque px as drawn)
     fig:(q,s,x0,y0,flip)=>{if(q!==o)return;const k=opaqueBox(s),L=flip?x0+s.width-1-k[2]:x0+k[0];f=[L,y0+k[1],L+k[2]-k[0]+1,y0+k[3]+1]}};
   o.pick(at);if(!b&&!f&&o.town){const t=townBy(o.town);if(t)t.pick(at)}
   if(men){const q=A.figBox();f=f?[Math.min(f[0],q[0]),Math.min(f[1],q[1]),Math.max(f[2],q[2]),Math.max(f[3],q[3])]:[q[0],q[1],q[2],q[3]]}
@@ -140,10 +153,10 @@ function wuiBox(o,px,py){let b=null,f=null,inb=null,gate=null;const u=(x0,y0,x1,
 // window up, land you have never seen))
 function wuiHover(now,dt){const H=WUI.hp,M=G.mouse;
   if(!(G.mode==='world'&&!G.modal&&M.in&&M.type==='mouse'&&!G.place&&!P.stay)){WUI.hov=null;return}
-  const wx=G.cam.x+M.x,wy=G.cam.y+M.y;
+  const wx=G.cam.x+M.x,wy=typeof liftGround==='function'?liftGround(G.cam.x+M.x,G.cam.y+M.y).y:G.cam.y+M.y;// (the map point whose ground shows under it, as a click: input.js)
   if(H.x!==wx||H.y!==wy||now-H.t>WUI_K.repick){H.x=wx;H.y=wy;H.t=now;H.o=pickAt(wx,wy)}
   const o=H.o&&objKind(H.o)?H.o:null,box=o&&wuiBox(o,wx,wy);let to,kind;
-  if(box){to=box;kind=wuiKind(o)}else{if(!seenAt(wx,wy)||wx<0||wy<0||wx>=MW*TILE||wy>=MH*TILE){WUI.hov=null;return}const tx=Math.floor(wx/TILE)*TILE,ty=Math.floor(wy/TILE)*TILE;to=[tx,ty,tx+TILE,ty+TILE];kind='ground'}
+  if(box){const L=wuiL(o.x,o.y);to=[box[0],box[1]-L,box[2],box[3]-L];kind=wuiKind(o)}else{if(!seenAt(wx,wy)||wx<0||wy<0||wx>=MW*TILE||wy>=MH*TILE){WUI.hov=null;return}const tx=Math.floor(wx/TILE)*TILE,ty=Math.floor(wy/TILE)*TILE,L=wuiL(wx,wy);to=[tx,ty-L,tx+TILE,ty+TILE-L];kind='ground'}
   let h=WUI.hov;const rm=reducedMotion();
   if(!h)h=WUI.hov={b:rm?to.slice():[to[0]-3,to[1]-3,to[2]+3,to[3]+3]};// (in from a little outside)
   h.kind=kind;
@@ -186,23 +199,26 @@ function wuiTrail(cam,now,rm){const w=WUI.way,D=WUI.dots,FT=WUI.feet;D.length=0;
   const reach=rm?1e9:s0+(now-w.t0)/1000/WUI_K.draw*(end-s0+20);let n=0;
   for(let k=Math.ceil((s0+3-ph)/gp),s=k*gp+ph;s<end&&s<reach&&n<400;k++,s+=gp){const [x,y]=wuiPt(w,s),[ax,ay]=wuiPt(w,s-F.look),[bx,by]=wuiPt(w,s+F.look),l=Math.hypot(bx-ax,by-ay)||1,ux=(bx-ax)/l,uy=(by-ay)/l,left=!(k&1),sd=left?-F.side:F.side;
     // (seen where it is drawn: a point rounded over a tile's edge into the dark is not)
-    const rx=Math.round(x-uy*sd),ry=Math.round(y+ux*sd);if(!seenAt(rx,ry))continue;const sx=rx-cam.x,sy=ry-cam.y;if(sx<-6||sy<-6||sx>VW+6||sy>VH+6)continue;
+    const rx=Math.round(x-uy*sd),ry=Math.round(y+ux*sd);if(!seenAt(rx,ry))continue;const bs=typeof bridgeShift==='function'?bridgeShift(rx,ry):null,sx=rx-cam.x+(bs?Math.round(bs[0]):0),sy=ry-cam.y-Math.round(wuiL(rx,ry))+(bs?Math.round(bs[1]):0);if(sx<-6||sy<-6||sx>VW+6||sy>VH+6)continue;// (on a bridge: on its deck)
     D.push(sx,sy,Math.min(1,(s-s0-3)/14,(end+6-s)/8));FT.push(((Math.round(Math.atan2(uy,ux)/6.2832*F.dirs))%F.dirs+F.dirs)%F.dirs,left?1:0);n++}
   for(let i=0,f=0;i<D.length;i+=3,f+=2){const c=wuiFoot(FT[f],FT[f+1],col);ctx.globalAlpha=D[i+2];wuiPut(c,D[i],D[i+1],c.cx,c.cy)}ctx.globalAlpha=1}
 // (a chased thing's feet, the top of what is drawn of it (a party's label over its army too: render.js armyTagAt) and its ring's
 // width, on the screen)
 function wuiTargetAt(o,cam){const b=wuiBox(o)||[o.x-6,o.y-12,o.x+6,o.y+2],top=o instanceof Party?Math.min(b[1],armyTagAt(o,null,{x:0,y:0}).y-MAP_TEXT.size-2):b[1];
-  return{x:wuiX(o.x,cam),y:wuiY(o.y,cam)+1,top:Math.floor(top-cam.y),rx:Math.round(clamp((b[2]-b[0])/2+3,7,22))}}
+  // (a site's ring at the foot of its picture as drawn, under its middle (its point stands above it, a camp's to one side: the owner,
+  //  2026-11-17: "highlight wrong place"); anything else's at its point)
+  const st=typeof Site!=='undefined'&&o instanceof Site&&wuiBox(o),fx=st?(b[0]+b[2])/2:o.x,fy=st?b[3]-3:o.y,L=Math.round(wuiL(o.x,o.y));return{x:wuiX(fx,cam),y:wuiY(fy,cam)+1-L,top:Math.floor(top-cam.y)-L,rx:Math.round(clamp((b[2]-b[0])/2+3,7,22))}}
 // under the markers and labels: the way, the goal's ring, the ripples and puffs, the ring round what you chase
 function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(now-(WUI.last||now))/1000)),rm=reducedMotion();WUI.last=now;
   if(G.mode==='title'){WUI.hov=null;return}wuiSync(now);wuiHover(now,dt);
   wuiTrail(cam,now,rm);
-  if(WUI.dest){const d=WUI.dest,x=Math.round(d.x)-cam.x,y=Math.round(d.y)-cam.y,e=(now-d.t)/1000;if(rm||e>WUI_K.drop){const r=rm?4:4+Math.round((1+Math.sin((e-WUI_K.drop)/WUI_K.bob*6.2832))*.5),c=wuiRing(r,Math.ceil(r/2),WUI_K.col.gold);ctx.globalAlpha=.85;wuiPut(c,x,y,c.cx,c.cy);ctx.globalAlpha=1}}
+  if(WUI.dest){const d=WUI.dest,x=Math.round(d.x)-cam.x,y=Math.round(d.y)-cam.y-Math.round(wuiL(d.x,d.y)),e=(now-d.t)/1000;if(rm||e>WUI_K.drop){const r=rm?4:4+Math.round((1+Math.sin((e-WUI_K.drop)/WUI_K.bob*6.2832))*.5),c=wuiRing(r,Math.ceil(r/2),WUI_K.col.gold);ctx.globalAlpha=.85;wuiPut(c,x,y,c.cx,c.cy);ctx.globalAlpha=1}}
   if(WUI.tgt&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),col=WUI_K.col[wuiKind(o)],e=(now-WUI.tgt.t)/1000;
+    if(wuiRing8(o,cam,col,rm?.9:.75+.25*Math.sin(e*5.5))){}else{
     const c=wuiRing(T.rx,Math.ceil(T.rx*.45),col);ctx.globalAlpha=rm?.9:.8+.2*Math.sin(e*5.5);wuiPut(c,T.x,T.y,c.cx,c.cy);
-    if(!rm){const q=(e%WUI_K.ping)/WUI_K.ping,r=T.rx+Math.round(q*6),p=wuiRing(r,Math.ceil(r*.45),col);ctx.globalAlpha=.8*(1-q);wuiPut(p,T.x,T.y,p.cx,p.cy)}ctx.globalAlpha=1}
+    if(!rm){const q=(e%WUI_K.ping)/WUI_K.ping,r=T.rx+Math.round(q*6),p=wuiRing(r,Math.ceil(r*.45),col);ctx.globalAlpha=.8*(1-q);wuiPut(p,T.x,T.y,p.cx,p.cy)}}ctx.globalAlpha=1}
   wuiRoadUnder(cam,now,rm);
-  for(const f of WUI.fx){const q=(now-f.t)/1000/(f.k==='ripple'?WUI_K.ripple:WUI_K.poof),x=f.x-cam.x,y=f.y-cam.y;if(q<0||q>=1)continue;const e=1-(1-q)*(1-q);
+  for(const f of WUI.fx){const q=(now-f.t)/1000/(f.k==='ripple'?WUI_K.ripple:WUI_K.poof),x=f.x-cam.x,y=f.y-cam.y-Math.round(wuiL(f.x,f.y));if(q<0||q>=1)continue;const e=1-(1-q)*(1-q);
     if(f.k==='ripple'){for(const [d,m] of [[0,1],[.14,.6]]){const qq=Math.max(0,(q-d)/(1-d)),ee=1-(1-qq)*(1-qq),r=2+Math.round(ee*11),c=wuiRing(r,Math.max(1,Math.round(r*.5)),f.col);ctx.globalAlpha=m*(1-qq);wuiPut(c,x,y,c.cx,c.cy)}
       if(q<.3){ctx.globalAlpha=1-q/.3;ctx.fillStyle='#fff8e0';ctx.fillRect(x-1,y,3,1);ctx.fillRect(x,y-1,1,3)}}
     else{const r=3+Math.round(e*7),c=wuiRing(r,Math.ceil(r/2),f.col);ctx.globalAlpha=1-q;wuiPut(c,x,y,c.cx,c.cy);
@@ -211,10 +227,11 @@ function wuiUnder(cam){const now=performance.now(),dt=Math.min(.1,Math.max(0,(no
   ctx.globalAlpha=1}
 // over the labels: the goal's arrow, the arrow over what you chase (the crossed swords over a foe), the brackets
 function wuiOver(cam){if(G.mode==='title')return;const now=WUI.now||performance.now(),rm=reducedMotion();
-  if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y,d.t,WUI_K.col.gold,now,rm,true)}
+  if(WUI.dest){const d=WUI.dest;wuiDrop(Math.round(d.x)-cam.x,Math.round(d.y)-cam.y-Math.round(wuiL(d.x,d.y)),d.t,WUI_K.col.gold,now,rm,true)}
   if(WUI.tgt&&!WUI.tgt.f&&WUI.tgt.o.inView(vis())){const o=WUI.tgt.o,T=wuiTargetAt(o,cam),k=wuiKind(o);wuiDrop(T.x,T.top,WUI.tgt.t,WUI_K.col[k],now,rm,false,k==='foe'?wuiDrawSwords:null)}// (one you follow: no arrow)
   wuiRoadOver(cam,now,rm);wuiDistractions(cam,now,rm);wuiEscorts(cam,now,rm);wuiFilling(cam);
   const h=WUI.hov;if(h){const b=h.b,col=WUI_K.col[h.kind],x0=wuiX(b[0],cam),y0=wuiY(b[1],cam),x1=wuiX(b[2],cam),y1=wuiY(b[3],cam),br=rm?0:(1+Math.sin(now/1000/WUI_K.breathe*6.2832))/2;
+    if(h.kind!=='ground'&&wuiRing8(WUI.hp.o,cam,col,.6+.4*br))return;
     wuiBrackets(x0,y0,x1,y1,col,h.kind==='ground'?.75:1,rm?0:Math.round(br),h.kind==='ground'?.5+.5*br:1+br)}}
 /* ---- the encounters on the road (world/road.js), each you know of and have not met (marked). Under the markers: sound
    waves rippling out from its feet while you see it. Over the labels: a pulsing "!" over it while it is on the screen (heard and

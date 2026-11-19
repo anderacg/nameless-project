@@ -3,6 +3,8 @@
 /* melee: on the world map each fighter is drawn sprite times as big (and his formation's slots as wide), so his melee reach and
    the few fixed melee distances (meleeK: a duel's slack, the riders' contact, a bowman's blade) are that much more too (the owner,
    2026-10-29: "the units overlap in world battle"); off, as they were */
+/* walk: a formation's walk on the map, of its slowest's full pace (a fight apart's MARCH.base): with the fight on the world's own
+   clock (battle.js), its men walking near the pace of those marching by */
 // (an army coming in is told as it comes ("X enters the battle"): where its men stepped in, every other side has as last seen (BattleSight
 // lastSeen), so a captain who has not set eyes on them still knows where to go: commander.js search; the owner, 2026-10-30: his army
 // stood idle as bandits joined, the watch routing)
@@ -17,7 +19,10 @@ const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0
 const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
-const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:30,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
+// (walk: a fight's walking share of a man's pace, the field's own (battle.js MARCH.base; was .75, near the map's march, when a fight on
+//  the map ran on the map's clock); blocked: battle seconds without a blow before a stalled fight is looked at, 5 (was 30 on that
+//  clock, some 16 s on screen at 1x: as many now on the fight's own, battle.js battleStep))
+const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
 /* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
    same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
    much wider than the ring was, its edge twice your sight and more past where it began, that no one sees (a foe past it has got
@@ -129,7 +134,11 @@ class WorldBattleArea{
     const cs=TERRAIN.cs,C=Math.ceil(BW/cs),R=Math.ceil(BH/cs),N=C*R,T=new BattleTerrain({cs,C,R,kind:new Uint8Array(N),lvl:new Uint8Array(N),up:new Int8Array(N).fill(-1)});
     T.c0=CLIMS.indexOf(this.env.c);T.mix={c0:this.env.c,c:this.env.c,t:this.env.t,w:[]};T.clim=new Uint8Array(N);T.road=new Uint8Array(N);T.wall=new Uint8Array(N);
     for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,p=this.world({x:(c+.5)*cs,y:(r+.5)*cs}),tx=Math.floor(p.x/TILE),ty=Math.floor(p.y/TILE),j=ty*MW+tx,k=tAt(tx,ty);
-      T.kind[i]=k===T_WATER?TKIND.deep:k===T_MOUNT?TKIND.rock:k===T_FOREST?TKIND.wood:k===T_FORD?TKIND.ford:climAt(p.x,p.y)==='swamp'?TKIND.marsh:TKIND.open;
+      // (the water as the map walks it, by its drawn depth there (worldterrain.js drawnDepth, map.js WATER): ankle to waist deep a ford's
+      //  shallows, deeper (swum, open water) deep; a water tile's dry px land. Was every water tile deep: a stream the bands waded walled
+      //  the fight in two, the owner, 2026-11-17: "Fighting across river or stream is bugged")
+      const dd=typeof drawnDepth==='function'?drawnDepth(p.x,p.y):(k===T_WATER?1:0),wet=dd>0?(depthBand(dd)>=4?TKIND.deep:TKIND.ford):-1;
+      T.kind[i]=k===T_MOUNT?TKIND.rock:k===T_FORD?TKIND.ford:wet>=0?wet:k===T_FOREST?TKIND.wood:climAt(p.x,p.y)==='swamp'?TKIND.marsh:TKIND.open;
       if(k===T_ROAD){T.kind[i]=TKIND.open;T.road[i]=1}T.clim[i]=WM.climAt(tx,ty);
       if(WM.has(tx,ty)){T.lvl[i]=Math.max(0,Math.min(3,(WM.elev[j]-64)>>5));const edge=WM.edge[j];if(p.x%TILE<cs/this.scale&&edge&4)T.wall[i]|=4;if(p.x%TILE>TILE-cs/this.scale&&edge&1)T.wall[i]|=1;if(p.y%TILE<cs/this.scale&&edge&8)T.wall[i]|=8;if(p.y%TILE>TILE-cs/this.scale&&edge&2)T.wall[i]|=2}
     }
@@ -396,7 +405,7 @@ class WorldBattleSetup extends BattleSetup{
       const key=marchRowOf(g,first),formation=g.player?rows:source instanceof Party?marchRows(source):[],offset=formation.find(r=>r.id===key)||{x:0,y:first?.leader?0:(Object.keys(B.groups).indexOf(id)%5-2)*7};a.place(g,m,g.player?a.starts[0]:this.area.joinedFight&&Number.isFinite(anchor?.x)?anchor:a.starts[1],offset,g.player?P:source?.src||source||e.ref,true);// (men of no army of their own, a camp's after a load: they stand for the place, e.ref)
     }
     OutpostTower.post(B,a);// (an outpost's archers on its tower: world/outposts.js)
-    if(this.surprise||a.joinedFight||seamless(e)){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=G.speed;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);if(e&&e.btype&&e.btype.kind==='ambush')e.btype=false;sightStep(true);warmBattle(B.units);
+    if(this.surprise||a.joinedFight||seamless(e)){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=BSPEED.v;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);if(e&&e.btype&&e.btype.kind==='ambush')e.btype=false;sightStep(true);warmBattle(B.units);
   }
   present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera();if(B.muster?.active)toast('Armies are moving to their starting formations. Combat begins only after Start Battle.')}
   start(after){this.survey();this.terrain();this.muster();this.open();if(after)after();return Promise.resolve()}

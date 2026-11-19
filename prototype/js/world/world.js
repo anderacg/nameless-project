@@ -24,13 +24,15 @@ function gateSpot(t){const cx=t.tx,cy=t.ty+2,c=[];
   return own?at(own):c.length?at(c[0]):{x:(cx+.5)*TILE,y:(cy+.5)*TILE}}
 // you put on the map at a holding's gate (gateSpot), going nowhere
 function heroAtGate(t){const s=gateSpot(t);P.x=s.x;P.y=s.y;P.tx=P.ty=null;P.stuck=0}
-// on a bridge, anyone crossing keeps to the middle of its deck
+// on a bridge, anyone crossing keeps to the middle of its deck, and never past its rails (router.js deckKeep)
 const bridgeAt=(tx,ty)=>tAt(tx,ty)!==T_ROAD?0:tAt(tx-1,ty)===T_WATER&&tAt(tx+1,ty)===T_WATER?1:tAt(tx,ty-1)===T_WATER&&tAt(tx,ty+1)===T_WATER?2:0;
 function walk(o,dx,dy,step,ok){
   const a0=Math.atan2(dy,dx);
   const inWall=TownWall.at(Math.floor(o.x/TILE),Math.floor(o.y/TILE));// (a town's ring of walls kept off, but by one standing in it: world/townwalls.js)
-  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(passable(terrAt(nx,ny))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
+  for(const off of [0,.6,-.6,1.2,-1.2,1.9,-1.9]){const a=a0+off;let nx=o.x+Math.cos(a)*step,ny=o.y+Math.sin(a)*step;if(!(o===P&&WAY_CLIMB)&&!ledgePass(o.x,o.y,nx,ny))continue;// (no step over a ledge: map.js ledgeOk)
+    if((walkAt(nx,ny)||o===P&&WAY_CLIMB&&terrAt(nx,ny)===T_MOUNT)&&!((o===P||WAY_NOSWIM)&&waterBand(Math.floor(ny/TILE)*MW+Math.floor(nx/TILE))>=4&&waterBand(Math.floor(o.y/TILE)*MW+Math.floor(o.x/TILE))<4&&(WAY_NOSWIM||!heroSwims()))&&(inWall||!TownWall.at(Math.floor(nx/TILE),Math.floor(ny/TILE)))&&(!ok||ok(nx,ny))){
     const tx=Math.floor(nx/TILE),ty=Math.floor(ny/TILE),b=bridgeAt(tx,ty),m=Math.max(1,step);if(b===1)nx+=clamp((tx+.5)*TILE-nx,-m,m);else if(b===2)ny+=clamp((ty+.5)*TILE-ny,-m,m);
+    {const d=deckKeep(nx,ny);if(d){nx=d[0];ny=d[1]}}// (never on a deck's rails: router.js deckLane)
     WALKED.set(o,(WALKED.get(o)||0)+Math.hypot(nx-o.x,ny-o.y));o.x=nx;o.y=ny;return true}}
   return false;
 }
@@ -41,7 +43,7 @@ const REACH=14;
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
 // caravans, the refugees, the encounters on the road, the workers, the hunters out, the camps' and the holdings' people, the ships (never clicked), then the fights (none picked: a click on a party in one meets
 // it, interact). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...Hunters.seen(),...CampFolk.all(),...TownFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list,...Carcass.list];
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...Hunters.seen(),...CampFolk.all(),...CampSpots.all(),...TownFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list,...Carcass.list];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
 // refugees (rf), an encounter on the road (rd), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
@@ -51,7 +53,7 @@ function pickAt(wx,wy){
   // structures answer anywhere on what is drawn of them, ranked as near as their own spot (a holding's gate) but never nearer
   // than 12 pixels away, so someone clicked on top of one is picked, and a click on the gate still picks the holding
   const box=(o,x0,y0,x1,y1,dy)=>{if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
-  const camp=(o,sp)=>{const x0=o.x-sp.ax,y0=o.y+8-sp.ay;box(o,x0,y0,x0+sp.width,y0+sp.height)};// anywhere on its picture
+  const camp=(o,sp)=>{const b=sitePicBox(o,sp);box(o,b[0],b[1],b[2],b[3])};// anywhere on its picture as drawn (structures.js sitePicBox)
   // a big figure (a mounted lord, a caravan's cart, ox and drover) answers anywhere on what is drawn of it (its picture s, cell
   // top left x0, y0, mirrored when it faces left: render.js opaqueBox), ranked 10-12 by how far from its middle: after anyone's
   // ring (someone small beside it, clicked on, is still picked), before a building it stands in front of
@@ -70,7 +72,10 @@ function pickAt(wx,wy){
   const army=o=>{const a=marchPicked(o);if(!a)return false;if(!o.inView(V))return true;const h=a.hit(wx,wy,tol);
     if(h&&(h.kind==='figure'||yours()==null||h.d<mine))c.push([h.kind==='figure'?10+2*Math.min(1,h.d):13+Math.min(h.d,999)/1000,o]);return !!(MARCH_RING.on&&a.ring)};
   // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
-  const at={x:wx,y:wy,V,add,box,fig,camp,army};for(const o of worldObjects())o.pick(at);
+  // (a lot of holding t answers only on its building's own pixels as drawn (lotPicHit), not its whole square: a cluster's free ground
+  //  between its houses is walked on (the owner, 2026-11-16: "I always misclick at free space area belong to the cluster building"))
+  const lot=(o,t,l,dy)=>{if(lotPicHit(t,l,wx,wy)&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
+  const at={x:wx,y:wy,V,add,box,fig,camp,army,lot};for(const o of worldObjects())o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
@@ -90,8 +95,9 @@ function clickAt(wx,wy){
   const o=pickAt(wx,wy);if(!o){G.chase=null;return false}
   return approach(o);
 }
-// (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased)
-function approach(o){if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;{const q=marchMeetAt(o);P.tx=q.x;P.ty=q.y}P.stuck=0;return false}
+// (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased;
+// townsfolk greet you where they are, you staying put (the owner, 2026-11-15: "should not bring up the city menu"))
+function approach(o){if(o.mapKind==='townsfolk'){o.meet();return false}if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;{const q=marchMeetAt(o);P.tx=q.x;P.ty=q.y}P.stuck=0;return false}
 /* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
    the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
    G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles
@@ -197,7 +203,7 @@ const caravanGround=(x,y)=>Math.max(.5,speedAt(x,y)||1);
 // (your band's: the land for your race and mounts, a Pathfinder's and Woodcraft's ease, rough ground for riders; HERO_GROUND: what
 // travelMul knows of your band for it)
 const HERO_GROUND={ign:null,ride:false};
-function heroGround(x,y){const H=HERO_GROUND;let t=speedAt(x,y,P.race,H.ign)||1;if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
+function heroGround(x,y){const H=HERO_GROUND;let t=(terrAt(x,y)===T_MOUNT?(headingUp(x,y,P.tx,P.ty)===false?LAB_WALK.cliffDown:LAB_WALK.cliff):speedAt(x,y,P.race,H.ign)||1)*headingMul(x,y,P.tx,P.ty)*(G.keys&&G.keys.shift?LAB_WALK.run:1);if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
 // your hero's own pace: on foot a fit 40; mounted, by the mount
 // a lord's army: its pace, slowed by its baggage train unless it is mostly mounted
 const lordSpeed=l=>partySpeed(l,l.troops)*(mountedShare(listSpeeds(l.troops))>=.5?1:.85);
@@ -219,7 +225,7 @@ function travelMul(){const H=HERO_GROUND;H.ign=mountIgn();H.ride=mountedShare(ba
 // its cold short of furs and frostbite; the desert's thirst.) Each night short of furs in the frost costs a little morale; swamp fever
 function survive(){
   const clim=climAt(P.x,P.y),home=RACES[P.race].home,shelter=TOWNS.some(t=>Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.shelter);
-  if(shelter)return;
+  if(shelter||CHEAT.noNeeds)return;// (the console's no needs: the land takes nothing)
   // Survival: each day in harsh land teaches it, and it softens what the land costs (sv: the share still paid)
   const harsh=clim==='frost'&&!home.includes('frost')||clim==='desert'&&!home.includes('desert')||clim==='swamp'&&!home.includes('swamp');if(harsh)train('surv',4);
   const sv=survivalShare();
@@ -255,7 +261,8 @@ function bandPayroll(){const counts=[P.troops,P.wounded||{},...cparties().map(p=
 // (none while you are held captive: you are not with your band, world/captivity.js)
 // (a realm's contract for your band a day: BAND_PAY.merc of your fit soldiers' wages)
 const mercPay=()=>Math.round(Object.entries(P.troops).reduce((a,[k,n])=>a+n*soldierPay(k),0)*BAND_PAY.merc);
-function bandWages(){if(Captivity.held)return;const wage=bandPayroll().total;
+function bandWages(){if(Captivity.held||CHEAT.noNeeds)return;// (the console's no needs: no wages)
+  const wage=bandPayroll().total;
   if(wage>0){if(P.gold>=wage)P.gold-=wage;else{P.gold=0;P.morale-=6;log('You cannot pay your troops. Morale falls.','bad','band');mood('unpaid')}}}
 function bandLarder(){
   let rot=0;for(const g of FOODS){const r=GOODS[g].spoil,n=goodN(g);if(r&&n)rot+=goodTake(g,Math.min(n,Math.floor(n*r+Math.random())))}
@@ -334,9 +341,9 @@ const HERO_WAY={x:NaN,y:NaN,d:Infinity};
 // straight, the next, a hair off it, went back by the router, and the walk swayed on the spot for ever (the owner, 2026-11-10:
 // "sometime stuck"); the router straightens its own way where the land is open)
 // (on foot round the buildings: WAY_FOOT, router.js)
-function heroWay(o,tx,ty,step){const f0=WAY_FOOT;WAY_FOOT=true;try{const rd=byRoadTo(tx,ty);
+function heroWay(o,tx,ty,step){const f0=WAY_FOOT,s0=WAY_NOSWIM,c0=WAY_CLIMB;WAY_FOOT=true;WAY_NOSWIM=o===P&&!heroSwims();WAY_CLIMB=o===P&&heroClimbs();try{const rd=byRoadTo(tx,ty);
   if(!rd&&!wayRouted(o,tx,ty)&&passable(terrAt(o.x,o.y))&&clearLine(o.x,o.y,tx,ty))return walk(o,tx-o.x,ty-o.y,step)?1:0;// (not while on a ferry's water: its leg goes on by the router)
-  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}finally{WAY_FOOT=f0}}
+  const x0=o.x,y0=o.y;if(!Router.travel(o,rd?{x:tx,y:ty,road:ROAD_GO.keep}:{x:tx,y:ty},step))return -1;return o.x!==x0||o.y!==y0?2:0}finally{WAY_FOOT=f0;WAY_NOSWIM=s0;WAY_CLIMB=c0}}
 // (toward dx, dy from you: your goal, or short of it so your army's head stands on it: march.js marchAim)
 function heroStep(dx,dy,dist,step){
   const x0=P.x,gx=P.x+dx,gy=P.y+dy,r=heroWay(P,gx,gy,step);if(r===2&&P.x!==x0)P.dir=P.x>x0?1:-1;if(r>=0)return r>0;

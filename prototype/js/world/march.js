@@ -183,6 +183,12 @@ function marchSprite(u,o,pose,bare){
   const type=chiefLookType(u.character?u.type.replace(/^comp_/,''):u.type,o.ld?.band),hero=type==='hero',lead=hero||u.row==='leader';
   return dressedIn(dressClimAt(o.x,o.y),()=>unitSprite(type,o.mapKind==='monster'?1:0,hero,lead?0:u.id%6,pose??(marchWalks(u)?2+marcherStep(u):0),!!bare,!!o.unarmed,o.look().col));
 }
+// (your army's pictures made ahead in a frame's spare time (main.js paintIdle): standing and its four strides, armed and bare, one man
+// of each kind and look a call, in turn; each first built as he set off had cost a frame 25-50 ms (the owner, 2026-11-17: "lag/freeze"))
+const MARCH_WARM={on:true,poses:[0,2,3,4,5],i:0};
+function marchWarm(ms){const Q=MARCH_WARM,A=Q.on&&WORLD_BATTLE.on&&MARCH_ARMIES.get(P);if(!A||!A.units.length)return;const t0=performance.now(),U=A.units,seen=new Set();
+  for(let n=0;n<U.length&&performance.now()-t0<ms;n++){const u=U[(Q.i+n)%U.length],k=u.type+'|'+(u.row==='leader'||u.character?0:u.id%6);if(seen.has(k))continue;seen.add(k);
+    for(const p of Q.poses)for(const b of [false,true]){const a=performance.now();marchSprite(u,P,p,b);if(performance.now()-a>2){Q.i=(Q.i+n)%U.length;return}}}Q.i=(Q.i+1)%U.length}// (one new picture a call at most)
 // Leaders use the same character kind and equipment as battle; cached cells also serve map picking and banner height.
 const MARCH_LEADERS=new WeakMap();
 function marchLeaderSprite(o,f){
@@ -195,10 +201,76 @@ function marchDraw(ents,o,cam){
   // (another's men only those in your sight, each by his own ground (worldobject.js spotted, manSpotted): a host's van seen as it comes
   // on, the rest still in the fog; yours and your companions' all)
   const own=o===P||o.faction==='player',S=!own&&SIGHT_EYES.armies&&G.mode==='world'&&!B?yourSight():null;
-  for(const u of army.units)if(!S||manSpotted(S,u))ents.push({y:u.y,own,f:()=>drawMarcher(u,o,cam)});
+  // (each one drawn bends the grass he walks through: worldterrain.js grassFoot)
+  for(const u of army.units)if(!S||manSpotted(S,u)){const D=ST[u.type]||{};grassFoot(u.x,u.y,marchWalks(u),D.mounted||D.big||D.beast,u);ents.push({x:u.x,y:u.y,own,f:()=>drawMarcher(u,o,cam)})}
   // (a beast's marker over its middle)
-  const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
+  const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({x:o.x,y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
+// (a marcher going up a slope, down one or up a cliff, by the land's height a few px ahead of him the way he faces (map.js headingUp):
+// 'up', 'down', 'cliff' (a rock tile, climbed: map.js heroClimbs) or null on the flat; and his pose for it, as in a fight (render.js
+// drawUnitAt's climbState): 19-22 up, 23-26 down, CLIFF_POSE's four a cliff (gfx/dollfigs.js DOLL_CLIMB); none standing)
+function marchSlope(u,o){const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return null;const i=ty*MW+tx;if(WM.kind[i]===T_MOUNT)return 'cliff';
+  const c=WM.slope&&WM.slope[i];if(c!==1&&c!==2)return null;const a=u.dir??marchFacing(o),up=headingUp(u.x,u.y,u.x+Math.cos(a)*8,u.y+Math.sin(a)*8);return up==null?null:up?'up':'down'}
+function marchClimbPose(u,o){if(!marchWalks(u)||(ST[u.type]||{}).fly)return undefined;const s=marchSlope(u,o);if(!s)return undefined;return (s==='up'?19:s==='down'?23:CLIFF_POSE)+marcherStep(u)}
+/* a marcher's moment over a ledge, a bank or out of the water (the owner, 2026-11-17: "make jumping animation when ascending the hill
+   edge (if can go down)", "add crawling up animation from shore, edge of land and water"; 2026-11-18: "The jumping and animations should
+   be based on the height right? ... if the water is at foot level then there no need to jump down", "the distance to play animation
+   should be close to edge"), drawn only, by the land as painted (liftAt: a river's water lies some px below its banks, a lake's level
+   with them). Walking, he looks along his way up to look game px for a face: the first px where the land changes by rate px or more
+   from the one before; its height from the px before it to the land past it (the face running on up to face px while it changes by soft
+   px or more a px). When his feet are within reach px of it (or the px he moves this frame), its height picks his move (game px; a man
+   stands some 16): going down, under down[0] he walks on, under down[1] a step down, under down[2] a hop, more a jump; going up, under
+   up[0] he walks on, under up[1] a step up, more a pull up (the cliff's scramble); up out of water deep or deeper (levels, map.js WATER:
+   waist; the water's own depth over the ramp px behind him, not the drawn shallows at its bank) by crawl px or more, he crawls out on his
+   hands and knees. On a graded way (a ford, a road: marchGraded) he only steps down or up, however high. A beast neither climbs nor
+   crawls (its moves drawn as its walk), a rider never crawls. The move is played over the
+   ground he covers from there (span game px of it plus per px of its height, at least past the face), so it begins at the edge and ends
+   where the land does; met while in a move past its own face (a narrow stream's far bank), the next from where he is drawn; standing
+   still stall s, it is dropped; a far move (far px, a gate) none. Past a face in one frame, the move from the height he left. Its pose and how far up from where the land would put him (dy, game px) */
+const MARCH_ACT={look:6,reach:2,rate:1.5,face:4,soft:.5,moved:.1,far:8,stall:.4,down:[2.5,5,9],up:[2.5,5],deep:.35,crawl:4,ramp:8,
+  span:{step:3,hop:5,jump:7,stepup:3,climb:5,crawl:7},per:.3,arc:{hop:1.5,jump:3}};
+// (the face along (hx, hy) from map px (x, y) within look px: {a: px to it, end: px to the land past it, from, to: the land's lift
+// before and past it, h: to - from}; none, null)
+function marchFace(x,y,hx,hy,J=MARCH_ACT){let p=liftAt(x,y),a0=0;
+  for(let a=1;a<=J.look;a++){const v=liftAt(x+hx*a,y+hy*a);if(Math.abs(v-p)>=J.rate){a0=a;break}p=v}
+  if(!a0)return null;let to=liftAt(x+hx*a0,y+hy*a0),b=a0;const sg=Math.sign(to-p);
+  for(;b<a0+J.face;b++){const v=liftAt(x+hx*(b+1),y+hy*(b+1));if(Math.abs(v-to)<J.soft||Math.sign(v-to)!==sg)break;to=v}
+  return{a:a0,end:b,from:p,to,h:to-p}}
+// (the move over a face h px high (up +), out of water wd levels deep, by his kind S, on a graded way or not; none, null)
+function marchMove(h,wd,S,graded,J=MARCH_ACT){if(h<0){const d=-h;return d<J.down[0]?null:d<J.down[1]||graded?'step':d<J.down[2]?'hop':'jump'}
+  if(h<J.up[0])return null;if(S.beast||graded)return 'stepup';if(wd>=J.deep&&h>=J.crawl&&!S.mounted)return 'crawl';return h<J.up[1]?'stepup':'climb'}
+// (on a bridge's span at map px (x, y): its deck and the road ramped up to it (worldways.js bridgeShift: drawn on the deck), where
+// no edge move is played; the land under it is the river's, never his)
+const marchOnBridge=(x,y)=>typeof bridgeShift==='function'&&!!bridgeShift(x,y);
+// (a graded way at map px (x, y): a ford's tile, a road's, or well into a road's band as drawn (roadband.js), where the way is cut down
+// the bank: walked, stepping down or up it, never leapt, climbed or crawled)
+function marchGraded(x,y){const t=terrAt(x,y);return t===T_FORD||t===T_ROAD||typeof RoadBand!=='undefined'&&(RoadBand.at(x,y)&63)>=ROAD_BAND.name*63}
+// (how deep the water he is leaving is, levels: its tiles' own depth (open water WATER.open) over the ramp px behind him; none, 0)
+function marchWaterBehind(x,y,hx,hy,J=MARCH_ACT){if(typeof drawnWet!=='function')return 0;const D=waterDepths(WM);let w=0;
+  for(let k=0;k<=J.ramp;k+=2){const px=x-hx*k,py=y-hy*k;if(!drawnWet(px,py))continue;const i=Math.floor(py/TILE)*MW+Math.floor(px/TILE),d=D[i]<0?WATER.open:D[i];if(d>w)w=d}
+  return w}
+// (where a move A draws him at its share q: the land's lift there, eased from the height he left to the new, a hop's or a jump's arc over it)
+// (how far up each marcher is drawn by his move over an edge this frame (marchDraw): where effects on him are, MarchArmy body)
+const MARCH_UP=new WeakMap();
+function marchActLift(A,q,J=MARCH_ACT){const k=A.k,sm=q*q*(3-2*q);return A.from+A.h*(k==='hop'||k==='jump'?q*q:sm)+(J.arc[k]?J.arc[k]*4*q*(1-q):0)}
+function marchAct(u){const J=MARCH_ACT,now=performance.now()/1000,S=ST[u.type]||{},none={pose:undefined,dy:0};if(S.fly||typeof liftAt!=='function')return none;
+  const walks=marchWalks(u),m=u._ax!=null?Math.hypot(u.x-u._ax,u.y-u._ay):0,hx=m>0?(u.x-u._ax)/m:0,hy=m>0?(u.y-u._ay)/m:0,L=liftAt(u.x,u.y),aL=u._aL;
+  u._ax=u.x;u._ay=u.y;u._aL=L;let A=u._act;if(marchOnBridge(u.x,u.y)){u._act=null;return none}// (on a bridge's span: walked level on its deck)
+  if(m>J.far){u._act=null;return none}
+  if(A){if(m>0){A.go+=m;A.t=now}if(now-A.t>J.stall||A.go>=A.span)u._act=A=null}
+  // (a face at his feet: its move; met while still in a move past its own face (a narrow stream's far bank), the next from where he is drawn)
+  if(walks&&m>=J.moved&&(!A||A.go>=A.past)){
+    const f=marchFace(u.x,u.y,hx,hy,J);let k=null,from=0,h=0,end=0;
+    if(f&&f.a<=Math.max(J.reach,m*1.5)){k=marchMove(f.h,f.h>0?marchWaterBehind(u.x,u.y,hx,hy,J):0,S,marchGraded(u.x,u.y)||marchGraded(u.x+hx*f.end,u.y+hy*f.end),J);if(A&&!k)k=A.k;from=A?marchActLift(A,Math.min(1,A.go/A.span),J):f.from;h=f.to-from;end=f.end}
+    else if(!A&&!f&&aL!=null&&Math.abs(L-aL)/m>=J.rate){h=L-aL;from=aL;k=marchMove(h,h>0?marchWaterBehind(u.x,u.y,hx,hy,J):0,S,marchGraded(u.x,u.y),J)}
+    if(k)u._act=A={k,t:now,go:0,from,h,past:end,span:Math.max(J.span[k]+J.per*Math.abs(h),end+1)}}
+  if(!A)return none;const q=Math.min(1,A.go/A.span),dy=marchActLift(A,q,J)-L,k=A.k;if(S.beast)return{pose:undefined,dy};const st=marcherStep(u);
+  return{pose:k==='step'?23+st:k==='stepup'?19+st:k==='climb'?CLIFF_POSE+st:k==='crawl'?CRAWL_POSE+Math.floor(q*8)%4:JUMP_POSE,dy}}
+// (how far up a man the water stands at depth d (levels), figure px: WATER.cut's bands eased one into the next, full at each band's
+// middle (MARCH_WADE), so he sinks as he wades in and rises as he wades out, the drawn depth easing in from the bank; any water an ankle's,
+// a ford's and a brook's drawn over the land (their depth 0) too)
+const MARCH_WADE=[0,.06,.235,.575,.8];
+function wadeCut(d){if(!(d>0))return 0;const C=WATER.cut,K=MARCH_WADE;for(let b=1;b<K.length;b++)if(d<K[b])return Math.max(C[1],Math.round(C[b-1]+(C[b]-C[b-1])*(d-K[b-1])/(K[b]-K[b-1])));return C[4]}
 // (drawn small without losing its lines when zoomed out: render.js reduced)
 function drawMarcher(u,o,cam){if(u.gateAt)return;if(o.drawMan)return o.drawMan(u,cam);return reduced(()=>drawMarcherAt(u,o,cam))}// (an army of no soldiers draws its own men: refugees.js)// (waiting his turn at a gate: unseen, gatefile.js)
 function drawMarcherAt(u,o,cam){
@@ -206,11 +278,33 @@ function drawMarcherAt(u,o,cam){
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
-  subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
+  const act=marchAct(u);MARCH_UP.set(u,act.dy);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
-  const s=marchSprite(u,o,I?.pose,true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
-  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
+  const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
+  // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px, eased between its bands: wadeCut; worldterrain.js
+  //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
+  //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),inn=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH,deck=inn&&typeof bridgeShift==='function'&&(bridgeShift(u.x,u.y)||[])[2],cut=!inn||deck?0:typeof drawnDepth==='function'?wadeCut(drawnDepth(u.x,u.y))||(drawnWet(u.x,u.y)?WATER.cut[1]:0):WATER.cut[Math.min(4,waterBand(ty*MW+tx))];
+  ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
+  G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
+  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&!deck&&typeof grassOver==='function'){grassOver(u.x,u.y,s.width*k/2);stepPrint(u)}}// (on a bridge's deck: no water at his legs, no grass)
+// (a man in water (march.js drawMarcherAt): his picture s drawn at (x, y) scaled (sx, k), its corner (bx, by); the water cut figure px up
+// his body. Under the line his body faint and wavering; at it a darker band of water and a broken ring of foam, wavering; a ripple ring
+// spreading from him, quicker while he moves; all of it only over the screen's px where water is drawn (the owner: "the water circle
+// is draw over the land"), the ground each px shows read through the land's lift (worldterrain.js liftGround, drawnWet)
+function drawWading(s,x,y,sx,k,bx,by,cut,id,moving,cam){const t=performance.now()/1000,W=WATER.draw,yl=s.height+by-cut;
+  const R=Math.ceil((s.width/2+10)*k),Y0=Math.floor((yl-4)*k),Y1=Math.ceil((s.height+by+8)*k),wet=new Path2D();let any=false;
+  if(cam&&typeof liftGround==='function'){const L=typeof LIFT_NOW==='number'?LIFT_NOW:0;
+    for(let ly=Y0;ly<=Y1;ly++){let a=null;for(let lx=-R;lx<=R+1;lx++){const g=lx<=R&&liftGround(cam.x+x+lx+.5,cam.y+y+ly+.5-L),on=g&&drawnWet(g.x,g.y);
+      if(on&&a===null)a=lx;else if(!on&&a!==null){wet.rect(a,ly,lx-a,1);any=true;a=null}}}
+    if(!any)return}else wet.rect(-R,Y0,2*R+1,Y1-Y0+1);
+  ctx.save();ctx.translate(x,y);ctx.clip(wet);ctx.scale(sx,k);ctx.beginPath();ctx.rect(bx-8,yl,s.width+16,cut+8);ctx.clip();ctx.globalAlpha=W.under;ctx.drawImage(s,bx+Math.round(Math.sin(t*3+id)*.8),by+1);ctx.restore();
+  ctx.save();ctx.translate(x,y);ctx.clip(wet);ctx.scale(k,k);const w=Math.max(6,Math.round(s.width*.55)),h=w>>1;
+  ctx.fillStyle=W.shade;ctx.beginPath();ctx.ellipse(0,yl+1.5,h+1,2,0,0,Math.PI*2);ctx.fill();
+  for(let i=-h;i<=h;i++){const wv=Math.sin(i*.9+t*6+id),a=1-Math.abs(i)/(h+1);if(wv<-.55)continue;ctx.fillStyle=`rgba(236,246,250,${(.35+.5*a).toFixed(2)})`;ctx.fillRect(i,Math.round(yl+(wv>.5?-1:0)),1,1)}
+  const ph=(t*(moving?W.rippleMove:W.ripple)+id*.37)%1;ctx.strokeStyle=`rgba(236,246,250,${(.4*(1-ph)*(1-ph)).toFixed(2)})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,yl+1,h+ph*w*W.spread,1+ph*1.6,0,0,Math.PI*2);ctx.stroke();
+  ctx.restore()
 }
 // (the owner, 2026-10-31: "the army ring speed is based on the overall unit speed so it can keep centered") its rings drawn on the
 // middle its men make (MarchArmy mid: each man's spot less his place in it, their median), so they go as the men go, and settle
@@ -219,10 +313,10 @@ function drawMarcherAt(u,o,cam){
 function marchCircle(ents,o,cam,r=marchOuter(o),col=o===P?B?'#e4c777':travelDetectionColor(travelDetectionShown(travelDetectionState())):o.look().col,army=null){
   const L=army&&MARCH_RING.on&&army.units.length?army.ring||(army.ring=new MarchOutline()):null;
   // (MARCH_RING.draw off: no ring drawn, its outline kept for the rules all the same)
-  if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
+  if(L){L.update(army);if(!MARCH_RING.draw)return;ents.push({x:o.x,ly:o.y,y:o.y+L.top,f:()=>{const x=o.x-cam.x,y=o.y-cam.y;ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;L.path(L.out[0],x,y);ctx.stroke();
     ctx.globalAlpha=.28;ctx.setLineDash(RING_DASH);L.path(L.out[1],x,y);ctx.stroke();ctx.restore()}});return}
   if(!MARCH_RING.draw)return;const m=MARCH_ARMIES.get(o)?.mid,c=m&&Math.hypot(m.x-o.x,m.y-o.y)<r?m:o;
-  ents.push({y:c.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
+  ents.push({x:c.x,ly:c.y,y:c.y-r,f:()=>{ctx.save();ctx.strokeStyle=col;ctx.lineWidth=1;ctx.globalAlpha=.55;ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,r,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.28;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(c.x-cam.x,c.y-cam.y,marchInteractRadius(o,r),0,Math.PI*2);ctx.stroke();ctx.restore()}});
 }
 
 // Positions are runtime state. Saved group offsets remain the destination, never a rigid transform of the men.
@@ -456,13 +550,15 @@ function marchHull(P){if(P.length<3)return P;const S=P.slice().sort((a,b)=>a[0]-
 // router.js holdShut); off, its picture's foot, as before)
 function lotFooting(t,l){const s=lotSprite(t,l),X=l.x*TILE,Y=l.y*TILE,hold=l.k==='centre'&&PATHS.holding;if(l._ft&&l._ftS===s&&l._ftX===X&&l._ftY===Y&&l._ftH===hold)return l._ft;
   const f=l.k==='centre'?(hold?holdFooting(lotModel(t,l)):null):modelFooting(lotModel(t,l));l._ftS=s;l._ftX=X;l._ftY=Y;l._ftH=hold;
-  if(!f){const b=opaqueBox(s),h=Math.min(12,l.n*TILE*.3);return l._ft=[{x:X+b[0],y:Y+Math.max(b[1],b[3]-h),w:b[2]-b[0]+1,h}]}
-  return l._ft=f.map(r=>({x:X+r.x,y:Y+r.y,w:r.w,h:r.h}))}
+  // (at the lab's scale: gfx/structures.js lotDrawBox)
+  const N=s.width,k=lotK(l),ox=X+N*(1-k)/2,oy=Y+N*(1-k);
+  if(!f){const b=opaqueBox(s),h=Math.min(12,l.n*TILE*.3);return l._ft=[{x:ox+b[0]*k,y:oy+Math.max(b[1],b[3]-h)*k,w:(b[2]-b[0]+1)*k,h:h*k}]}
+  return l._ft=f.map(r=>({x:ox+r.x*k,y:oy+r.y*k,w:r.w*k,h:r.h*k}))}
 // (a site's or camp's model, as gfx/structures.js siteSprite makes it (its snow aside: the same shape); a resting place has none: its
 // graves are walked among, world/lineage.js)
 function siteModel(s){const c=climAt(s.x,s.y),k=s instanceof BanditCamp?'bandit':SITE_KIND[s.type]?s.type:null;
   return k?PX.clusterModel({kind:SITE_KIND[k],seed:s.seed*131+7,env:c,snow:0}):PX.buildingModel({type:s.type,seed:s.seed,env:c,snow:0,glow:c==='desert'?'#e8c040':'#7fd8e8'})}
-function siteFooting(s){if(typeof s.footing==='function')return s.footing();const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const X=s.x-sp.ax,Y=s.y+8-sp.ay;return sp._ft.map(r=>({x:X+r.x,y:Y+r.y,w:r.w,h:r.h}))}
+function siteFooting(s){if(typeof s.footing==='function')return s.footing();const sp=siteSprite(s);if(!sp._ft)sp._ft=modelFooting(siteModel(s))||[];const k=siteK(s),X=s.x-sp.ax*k,Y=s.y+8-sp.ay*k;return sp._ft.map(r=>({x:X+r.x*k,y:Y+r.y*k,w:r.w*k,h:r.h*k}))}
 // (every footing in the box x0..x1, y0..y1, world px: the lots standing there (not ruins, fields nor pastures), the sites you know of)
 const marchFootings=(x0,y0,x1,y1)=>TOWNS.flatMap(t=>(t.lots||[]).filter(l=>l.st!=='ruined'&&l.k!=='field'&&l.k!=='pasture'&&l.x*TILE<x1&&l.y*TILE<y1&&(l.x+l.n)*TILE>x0&&(l.y+l.n)*TILE>y0).flatMap(l=>lotFooting(t,l)))
   .concat((W.sites||[]).filter(s=>s.type!=='rest'&&s.known&&s.known()&&s.x>x0-96&&s.x<x1+96&&s.y>y0-96&&s.y<y1+96).flatMap(siteFooting));
@@ -481,7 +577,7 @@ function marchOff(pts,x,y){let v=Infinity;for(let i=0;i<pts.length;i++){const a=
 function marchStrays(pts,u,p){let ax=u.x,ay=u.y;for(const q of p){const l=Math.hypot(q.x-ax,q.y-ay),n=Math.max(1,Math.ceil(l/4));for(let k=1;k<=n;k++)if(marchOff(pts,ax+(q.x-ax)*k/n,ay+(q.y-ay)*k/n)>PATHS.stray)return true;ax=q.x;ay=q.y}return false}
 class MarchGround{
   constructor(o,units,pad=MARCH_MOVE.pad){
-    const r=marchOuter(o),chunk=MARCH_MOVE.chunk,cs=MARCH_MOVE.cell,fly=o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly;this.fly=!!fly;
+    const r=marchOuter(o),chunk=MARCH_MOVE.chunk,cs=MARCH_MOVE.cell,fly=o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly;this.fly=!!fly;this.owner=o;const climb=this.climb=o===P&&heroClimbs();// (your small band climbs: map.js heroClimbs)
     this.x=Math.max(0,Math.floor((Math.min(o.x-r,...units.map(u=>u.x))-pad)/chunk)*chunk);this.y=Math.max(0,Math.floor((Math.min(o.y-r,...units.map(u=>u.y))-pad)/chunk)*chunk);
     const x1=Math.min(MW*TILE,Math.ceil((Math.max(o.x+r,...units.map(u=>u.x))+pad)/chunk)*chunk),y1=Math.min(MH*TILE,Math.ceil((Math.max(o.y+r,...units.map(u=>u.y))+pad)/chunk)*chunk);
     const g=this.grid=routeGrid(Math.max(1,Math.ceil((x1-this.x)/cs)),Math.max(1,Math.ceil((y1-this.y)/cs)),cs);this.version=WAYV;this.x1=x1;this.y1=y1;this.sig=marchBlocksSig(this.x,this.y,x1,y1);this.blocks=(PATHS.footing?marchFootings:marchFootprints)(this.x,this.y,x1,y1).filter(b=>b.x<x1&&b.y<y1&&b.x+b.w>this.x&&b.y+b.h>this.y);
@@ -491,9 +587,10 @@ class MarchGround{
     const shut=this.foot=new Uint8Array(g.cost.length);if(!fly)for(const b of this.blocks){const c0=Math.max(0,Math.floor((b.x-this.x)/cs)),c1=Math.min(g.C-1,Math.ceil((b.x+b.w-this.x)/cs)-1),r0=Math.max(0,Math.floor((b.y-this.y)/cs)),r1=Math.min(g.R-1,Math.ceil((b.y+b.h-this.y)/cs)-1);
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const x=this.x+(c+.5)*cs,y=this.y+(r+.5)*cs;if(x+cs/2>b.x&&x-cs/2<b.x+b.w&&y+cs/2>b.y&&y-cs/2<b.y+b.h)shut[r*g.C+c]=1}}
     for(let i=0;i<g.cost.length;i++){const x=this.x+(i%g.C+.5)*cs,y=this.y+(Math.floor(i/g.C)+.5)*cs,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),k=ty*MW+tx;
-      let open=WM.has(tx,ty)&&(fly||wayLand(k));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
-      g.cost[i]=open&&!shut[i]?ROUTE.unit:0;
-      if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k];if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
+      let open=WM.has(tx,ty)&&(fly||wayLand(k)||climb&&tiles[k]===T_MOUNT&&!(SHUT&&SHUT[k]))&&(fly||!bridgeSide(k)&&!deckOut(x,y));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
+      // (a bridge's deck: only its cells inside its rails, router.js deckLane; water by its depth, WATER.cost: waded, swum; map.js)
+      const wb=open&&!fly&&tiles[k]===T_WATER?waterBand(k):0;g.cost[i]=open&&!shut[i]?Math.min(255,Math.round(ROUTE.unit*(wb?WATER.cost[wb]:1))):0;
+      if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k]|(climb?0:ledgeBits()[k]);if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
     }
     if(!fly&&MARCH_MOVE.slit)this.shutSlits(Math.floor(MARCH_MOVE.slit/cs));
   }
@@ -505,13 +602,13 @@ class MarchGround{
     for(let r=0;r<g.R;r++)run(c=>r*g.C+c,g.C);for(let c=0;c<g.C;c++)run(r=>r*g.C+c,g.R)}
   // (still true to the land: no world version since (terrain, a crossing shut, a holding's walls: router.js WAYV) and its buildings and
   // sites as they were (marchBlocksSig))
-  fresh(){if(this.version!==WAYV)return false;const a=this.sig,b=marchBlocksSig(this.x,this.y,this.x1,this.y1);if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}
+  fresh(){if(this.version!==WAYV||this.climb!==(this.owner===P&&heroClimbs()))return false;const a=this.sig,b=marchBlocksSig(this.x,this.y,this.x1,this.y1);if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true}
   local(p){return{x:p.x-this.x,y:p.y-this.y}}
   world(p){return{x:p.x+this.x,y:p.y+this.y}}
   contains(p,pad=0){const g=this.grid;return p.x>=this.x+pad&&p.y>=this.y+pad&&p.x<this.x+g.C*g.cs-pad&&p.y<this.y+g.R*g.cs-pad}
   covers(p,pad){const g=this.grid,x1=this.x+g.C*g.cs,y1=this.y+g.R*g.cs;return p.x>=this.x+(this.x>0?pad:0)&&p.y>=this.y+(this.y>0?pad:0)&&p.x<x1-(x1<MW*TILE?pad:0)&&p.y<y1-(y1<MH*TILE?pad:0)}
   open(p){return this.contains(p)&&!!this.grid.cost[routeIx(this.grid,p.x-this.x,p.y-this.y)]}
-  stand(p){return this.open(p)&&(this.fly||terrAt(p.x,p.y)!==T_WATER)}
+  stand(p){return this.open(p)&&(this.fly||walkAt(p.x,p.y)||this.climb&&terrAt(p.x,p.y)===T_MOUNT)}
   // (PATHS.clear: a man's (one with a type) half his body (marchBody), the room he keeps off walls; else, or one squeezing out of a
   // pocket (tight: MarchArmy step), none)
   body(p){return PATHS.clear&&p.type&&!p.tight?marchBody(p)/2:0}
@@ -697,7 +794,7 @@ class MarchArmy{
     // (each man his march pace; menCentre: the army's own step this moment, at least that, at most road times it: its step how far
     // its guide went over the time since it last moved, at most a mid tier's moment (worldobject.js WORLD_LOD: such a one steps
     // every few frames, its whole step at once). Without: the army's step, its road with it, a leap past it no march)
-    const nav=this.ground,walk=moveStep(marchPace(o),d,!B?.world);let step;
+    const nav=this.ground,walk=moveStep(marchPace(o),d,true);let step;
     // (turned, its column halted halt s, its men in their places (within place px: TRAVEL_STYLES.column; or most s gone): its loop
     // (MARCH_MOVE.about.loop), if there is room; its pace up over ease s, each man's place on by as far as he trails one going so,
     // braking for it (b × his kind's t: as below); half round, the chosen order)
@@ -858,7 +955,7 @@ class MarchArmy{
         // put on the nearest a man could stand on, else its way on the map (from its guide, march guides) starts in the water, finds
         // none, and every order is dropped (the owner, 2026-11-01: "my army get stuck when the unit try to form a formation near
         // blocking or water"); a ferry's water is open; a building's feet are not the map's, so its way starts there as ever)
-        const foot=(x,y)=>{const p={x,y};return MARCH_MOVE.footing&&!passable(terrAt(x,y))&&nav.contains(p)&&!nav.open(p)?nav.snap(p,null):null};{const q=foot(this.gx,this.gy);if(q){this.gx=q.x;this.gy=q.y}}let px=col?this.gx+col.ox:c.x,py=col?this.gy+col.oy:c.y;
+        const foot=(x,y)=>{const p={x,y};return MARCH_MOVE.footing&&!walkAt(x,y)&&nav.contains(p)&&!nav.open(p)?nav.snap(p,null):null};{const q=foot(this.gx,this.gy);if(q){this.gx=q.x;this.gy=q.y}}let px=col?this.gx+col.ox:c.x,py=col?this.gy+col.oy:c.y;
         if(col&&!jump){const ex=px-this.wx,ey=py-this.wy,e=Math.hypot(ex,ey),g=F.glide*step;if(e>g){px=this.wx+ex/e*g;py=this.wy+ey/e*g}}
         {const q=foot(px,py);if(q){px=q.x;py=q.y}}
         this.mid=col?{x:px,y:py}:c;o.x=this.x=this.wx=px;o.y=this.y=this.wy=py}
@@ -999,6 +1096,9 @@ class MarchArmy{
     if(marchCentrePiece(o)){const s=o.dir<0?-1:1;for(const c of MARCH_CART){const d=Math.hypot(o.x+s*c[0]-x,o.y-y)-c[1]/2;if(d<v)v=d}}return Math.max(0,v)}
   // (the box round its men's figures as drawn, world px x0, y0, x1, y1: the pointer's brackets round it, worldui.js wuiBox; made
   // again when they have moved)
+  // (where a man of it is drawn, game px: his x across his figure's middle, his foot up by its ground's lift (worldterrain.js liftY),
+  // his figure's middle and top (figure): what is drawn on him after the scene, centred on him as he stands, gfx/blessing.js)
+  body(u){const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,mx=(F[0]+F[2])/2,f=liftY(u.x,u.y)-(MARCH_UP.get(u)||0);return{x:u.x+(fl?-mx:mx),foot:f,mid:f+(F[1]+F[3])/2,top:f+F[1]}}
   figBox(){const b=this.fbx||(this.fbx=[0,0,0,0]);if(this.fbT===this.time&&this.fbU===this.units&&this.fbX===this.x&&this.fbY===this.y)return b;b[0]=b[1]=Infinity;b[2]=b[3]=-Infinity;
     for(const u of this.units){if(u.dead)continue;const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,x0=u.x+(fl?-F[2]:F[0]),x1=u.x+(fl?-F[0]:F[2]);
       if(x0<b[0])b[0]=x0;if(x1>b[2])b[2]=x1;if(u.y+F[1]<b[1])b[1]=u.y+F[1];if(u.y+F[3]>b[3])b[3]=u.y+F[3]}this.fbT=this.time;this.fbU=this.units;this.fbX=this.x;this.fbY=this.y;return b}

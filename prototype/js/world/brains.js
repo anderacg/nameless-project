@@ -200,7 +200,9 @@ class CaravanBrain extends Brain{
   behind(c,gate,gd){const X=CARAVAN_GAP,[ux,uy]=this.heading(c,gate,gd);
     return W.caravans.some(o=>{if(o===c||o.gone||o.idle||inFight(o)||Math.hypot(o.x-c.x,o.y-c.y)>X.px)return false;const g=gateGoal(townBy(o.to)||{x:o.x,y:o.y}),[vx,vy]=this.heading(o,g,Math.hypot(g.x-o.x,g.y-o.y));
       return ux*vx+uy*vy>=X.dot&&(o.x-c.x)*ux+(o.y-c.y)*uy>0})}
-  think(c,d){
+  // (its carts never swim, the lab's: deep water shut to its ways, map.js WAY_NOSWIM)
+  think(c,d){const s0=WAY_NOSWIM;WAY_NOSWIM=true;try{return this.go(c,d)}finally{WAY_NOSWIM=s0}}
+  go(c,d){
     if(c.idle||inFight(c))return false;
     this.cool(c,d);const to=townBy(c.to);if(!to||!c.mine&&atWar(to.owner,c.fac)){c.gone=true;return false}
     const v=this.look(c),pd=v.d,scared=!c.mine&&hostileTo(c.fac)&&(TravelAwareness.sees(c)||fearSeen(c));// (in its sight, or remembered: engage.js fearSeen)

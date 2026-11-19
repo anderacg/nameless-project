@@ -27,7 +27,9 @@ Kit.suite(({ok,info})=>{
  {const o=C.list.find(c=>!c.empty())||C.list[0];if(o.empty())o.items.push({k:'good',id:'meat',n:2});const n=o.items.reduce((a,s)=>a+s.n,0),band=t.asParty({kind:'bandits',troops:['militia'],x:o.x+30,y:o.y,cool:0});t.bandits.push(band);
   const home=[P.x,P.y];Kit.goTo(o.x>t.MW*t.TILE/2?o.x-1500:o.x+1500,o.y);const f=t.CARCASS.find;t.CARCASS.find=1;try{ok(t.Death.unseenAt(o.x,o.y),'(far from them: out of your sight)');C.hour();for(let i=0;i<4000&&band.corpse;i++)C.seek(band,.1)}finally{t.CARCASS.find=f;Kit.goTo(home[0],home[1])}
   ok(o.empty()&&band.plunder?.items.reduce((a,x)=>a+x[2],0)===n&&/picked clean by/.test(o.tip()),'a band near the fallen you cannot see picks them over ('+n+' things), the carcass "'+o.what()+'"');
-  const m=t.goodN('meat');t.Remains.beaten(band);ok(t.goodN('meat')===m+n,'beaten, its plunder is yours');o.items.push({k:'good',id:'meat',n:1})}
+  // (all of it, whatever it is: a beast's carcass its hide as well as its meat, world/carcasses.js)
+  const its=[...new Set(band.plunder.items.map(x=>x[0]+':'+x[1]))].map(s=>s.split(':')),had=its.map(([k,id])=>t.invCount(k,id)),want=its.map(([k,id])=>band.plunder.items.reduce((a,x)=>a+(x[0]===k&&x[1]===id?x[2]:0),0));
+  t.Remains.beaten(band);const got=its.map(([k,id],i)=>t.invCount(k,id)-had[i]);ok(got.every((g,i)=>g===want[i])&&got.reduce((a,g)=>a+g,0)===n,'beaten, its plunder is yours ('+its.map(([k,id],i)=>got[i]+'/'+want[i]+' '+id).join(', ')+')');o.items.push({k:'good',id:'meat',n:1})}
  // (saved; rotted)
  t.saveGame(true);C.list=[];t.loadGame();ok(C.list.length===2&&C.list.some(o=>o.items.some(s=>s.id==='meat'))&&C.list.every(o=>o instanceof C&&!o.corpse),'the fallen are saved (their picture a plain one after a load)');
  // (every body rots the same way (BODY_ROT, world/carcasses.js BodyRot): fresh, rotting, bones, then gone; yours too (Remains))

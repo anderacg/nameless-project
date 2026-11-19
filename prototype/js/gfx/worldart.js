@@ -170,7 +170,7 @@ const palAt=(CM,WL,q,fx,fy)=>{const k=CM.at(q,fx,fy);return k>=0?WL[k]:CM.pal(WL
 // a trampled patch [cx, cy, rx, ry, amount] over the window: worn ground, ragged at its edge, never on water (the water as drawn,
 // wpx: a bridge's water, a curved shore's)
 function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){if(cx+rx<x0||cy+ry<y0||cx-rx>=x0+w||cy-ry>=y0+h)return;for(let yy=-ry;yy<=ry;yy++)for(let xx=-rx;xx<=rx;xx++){const x=cx+xx,y=cy+yy;if(x<x0||y<y0||x>=x0+w||y>=y0+h)continue;
-  const d=(xx*xx)/(rx*rx)+(yy*yy)/(ry*ry),edge=1-hs(x,y,17)*.35;if(d>edge||tiles[(y>>4)*MW+(x>>4)]===T_WATER||wpx(P.wk,x,y))continue;const o=((y-y0)*w+x-x0)*4,dc=DIRT[CLIMS[climate[(y>>4)*MW+(x>>4)]]],k=amt*(d>edge-.25?.5:1)*(.75+hs(x,y,18)*.25);
+  const d=(xx*xx)/(rx*rx)+(yy*yy)/(ry*ry),edge=1-hs(x,y,17)*.35;if(d>edge||tiles[(y>>4)*MW+(x>>4)]===T_WATER||wpx(P.wk,x,y))continue;const o=((y-y0)*w+x-x0)*4,dc=DIRT[CLIMS[typeof terClimate==='function'?terClimate(x,y):climate[(y>>4)*MW+(x>>4)]]],k=amt*(d>edge-.25?.5:1)*(.75+hs(x,y,18)*.25);
   D[o]+=(dc[0]-D[o])*k;D[o+1]+=(dc[1]-D[o+1])*k;D[o+2]+=(dc[2]-D[o+2])*k}}
 /* ---------- fields: a farm's plots, their crops (gfx/structures.js estateGround draws each plot through farmPlot) ---------- */
 // FARM: the crops each climate's fields grow (PX.WORLD_CROPS, by weight; a plot in the snow by the frost's), then each people's
@@ -178,34 +178,64 @@ function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){if(cx+rx<x0||cy+ry<y0||cx-rx>=
 // wheat and hay, the Salt League vines, the Sylvan Court an orchard's and a forest garden's rows and herbs, the Karn terraced rye
 // and potatoes, the Ashgor Horde herd ground and few crops; terrace: whose crops' rows step down hillsides (a stone lip every 5); things:
 // what stands on a plot by its crop (stooks along an open edge, each a chance, a haystack, fruit trees on a 2 x 2 grid, a date palm
-// by the channel); ripe: how ripe the crops stand (1: as now; the seasons' hook, not built). A crop a plot (seeded by its tile)
-const FARM={ripe:1,
+// by the channel; palmFoot: the tile row its foot needs at least, so all of it stands on the plot); ripe: how ripe the crops stand at the 16 px scale (by the season's stage: ripeOf); a crop's look by the season
+// (the owner, 2026-11-17: "make it more like other game where i can tell whether this is a wheat"): season (null: the clock's,
+// world/weather.js Weather.season; one of its keys to show it), each crop's growth (grow: its kind's, by season, a stage of
+// engine/worldnature.js PX.CROP_PLANTS: young, ripe, full, flower, fruit, leaf, stubble, bare; none: as it is all year). A crop a
+// plot (seeded by its tile)
+const FARM={ripe:1,season:null,ripeOf:{young:.15,ripe:1,full:1,flower:.7,fruit:1,leaf:.5,stubble:1,bare:.6},
+  grow:{wheat:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},barley:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},
+    rye:{spring:'young',summer:'ripe',autumn:'ripe',winter:'stubble'},veg:{spring:'young',summer:'full',autumn:'full',winter:'bare'},
+    turnips:{spring:'young',summer:'full',autumn:'full',winter:'full'},potato:{spring:'young',summer:'full',autumn:'full',winter:'bare'},
+    flax:{spring:'young',summer:'flower',autumn:'ripe',winter:'bare'},herbs:{spring:'young',summer:'flower',autumn:'flower',winter:'young'},
+    vines:{spring:'leaf',summer:'fruit',autumn:'fruit',winter:'bare'},irrigated:{spring:'full',summer:'full',autumn:'full',winter:'full'}},
   crops:{grass:[['wheat',4],['barley',2],['veg',2],['orchard',1],['vines',1],['flax',1],['hay',1.5]],frost:[['rye',4],['turnips',2],['fallow',2.5]],
     desert:[['irrigated',5],['barley',1],['veg',1]],swamp:[['veg',2],['hay',2],['flax',1],['turnips',1.5]]},
   people:{vale:{wheat:2.5,hay:1.5},salt:{vines:3,wheat:1.5},sylvan:{orchard:3,veg:1.5,wheat:.3,barley:.3},karn:{rye:3,wheat:.3,vines:.2,orchard:.3},
     horde:{hay:2,barley:1.5,wheat:.3,veg:.3,vines:0,orchard:0,flax:.3,irrigated:.4}},
   own:{sylvan:{herbs:3},karn:{potato:4,rye:2},horde:{grazed:7}},
   terrace:{karn:['wheat','barley','rye','veg','turnips','potato']},race:{human:'vale',dwarf:'karn',elf:'sylvan',orc:'horde'},
-  things:{stook:.4,haystack:.6,fruit:.9,palm:.55}};
+  things:{stook:.4,haystack:.6,fruit:.9,palm:.55,palmFoot:7},
+  fine:{lit:1.12,shade:.84,leaf:.07,soil:.12,rag:.3}};
 const cultureOf=t=>HOME[t.name]||FARM.race[(t.races||[])[0]]||'vale';
+// (the season the fields show, and crop k's stage in it: FARM.grow)
+const farmSeason=()=>FARM.season||(typeof Weather!=='undefined'&&typeof Clock!=='undefined'?Weather.season().k:'summer');
+const cropStage=k=>(FARM.grow[k]||{})[farmSeason()]||'ripe';
 function fieldCrop(t,tx,ty,c){const cu=cultureOf(t),M=FARM.people[cu]||{},A=FARM.own[cu]||{},L=(FARM.crops[c]||FARM.crops.grass).map(([k,w])=>[k,w*(M[k]==null?1:M[k])]);
   for(const k in A){const e=L.find(e=>e[0]===k);if(e)e[1]+=A[k];else L.push([k,A[k]])}let n=0;for(const e of L)n+=e[1];let r=hash(tx,ty,t.seed*7+21)*n;for(const e of L){r-=e[1];if(r<0)return e[0]}return L[0][0]}
 // a farm's plot at tile (tx, ty) of holding t in climate c (fr: how far into the frost, by the snow's cover; ed(x, y): px from an edge
 // with no plot beyond): its crop's rows (PX.worldCrop: the frost's snow in the troughs, the swamp's water), ragged into the ground
-// round it at an open edge, and what stands on it with its shadow, each pixel by px(rgb, x, y) (tile px)
-function farmPlot(t,tx,ty,c,fr,ed,px){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=cultureOf(t),k=fieldCrop(t,tx,ty,fr>.5?'frost':c),v=Math.floor(h(tx,ty,22)*4),FT=FARM.things;
-  const sp=PX.worldCrop(k,c,v,{ripe:FARM.ripe,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768);
-  for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
+// round it at an open edge, and what stands on it with its shadow, each pixel by px(rgb, x, y) (tile px); fine (lit, shade: a plant's
+// top left and bottom right fine px, leaf, soil: their grain, rag: a fine px gone at an open edge) the lab's scale, by pxf(rgb, x, y) (fine px, z a tile px)
+function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.seed*7+s),cu=cultureOf(t),k=fieldCrop(t,tx,ty,fr>.5?'frost':c),v=Math.floor(h(tx,ty,22)*4),FT=FARM.things;
+  const stg=cropStage(k),rp=FARM.season||FARM.grow[k]?FARM.ripeOf[stg]:FARM.ripe,sp=PX.worldCrop(k,c,v,{ripe:rp,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k)}),T=new Uint8Array(256),Q=new Float32Array(768),SK=new Uint8Array(256);
+  for(let i=0;i<256;i++){const x=i&15,y=i>>4,e=ed(x,y);if(e<2&&h(tx*16+x,ty*16+y,3)<(e?.25:.55))continue;T[i]=1;SK[i]=sp.tr&&sp.tr[i]?1:0;Q[i*3]=sp.rgb[i*3];Q[i*3+1]=sp.rgb[i*3+1];Q[i*3+2]=sp.rgb[i*3+2]}
   // (what stands: its shadow on the plot, then its pixels (navy round it) where they fall in the tile)
-  const stand=(s,fx,fy)=>{for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
-    const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;
+  // (at the lab's scale the fine picture's (PX.worldCropThingFine), kept to be laid over the crop by the fine px: FS)
+  const fine=z===2&&pxf,FS=[],stand=(s,fx,fy,kind,fv)=>{if(fine&&kind){FS.push([PX.worldCropThingFine(kind,fv),fx*z+(z>>1),fy*z+z-1]);return}for(let j=0;j<s.sh.length;j+=2){const x=fx+s.sh[j],y=fy+s.sh[j+1];if(x<0||y<0||x>15||y>15||!T[y*16+x])continue;const i=(y*16+x)*3;for(let n=0;n<3;n++)Q[i+n]+=([18,26,42][n]-Q[i+n])*.3}
+    const N=s.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=s.a[j*N+i];if(!a)continue;const x=fx-s.ax+i,y=fy-s.ay+j;if(x<0||y<0||x>15||y>15)continue;const q=y*16+x;T[q]=1;SK[q]=2;
       if(a===2){Q[q*3]=26;Q[q*3+1]=28;Q[q*3+2]=38}else{Q[q*3]=s.rgb[(j*N+i)*3];Q[q*3+1]=s.rgb[(j*N+i)*3+1];Q[q*3+2]=s.rgb[(j*N+i)*3+2]}}};
-  if(k==='wheat'||k==='barley'||k==='rye'){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
-      const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy))}}}
-  else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7));
-  else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit)stand(PX.worldCropThing('fruit',(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2)),fx+(fy>8?-1:0),fy)}
-  else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const p=PX.worldTree('desert','palm',Math.floor(h(tx,ty,39)*4),0);stand(p,5+Math.floor(h(tx,ty,40)*6),sp.ch-1)}
-  for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4)}
+  if((k==='wheat'||k==='barley'||k==='rye')&&(stg==='ripe'||stg==='stubble')){let m=0;for(const [sx,sy,ex,ey] of [[8,0,0,1],[8,15,0,-1],[0,8,1,0],[15,8,-1,0]]){if(ed(sx,sy))continue;for(let n=0;n<2;n++){if(h(tx*4+m,ty,30+n)>=FT.stook)continue;m++;
+      const along=4+n*7+Math.floor(h(tx,ty*4+m,32)*3),fx=ey?along:ex>0?4:11,fy=ey?(ey>0?7:15):along+3;stand(PX.worldCropThing('stook',m),Math.min(12,fx),Math.min(15,fy),'stook',m)}}}
+  else if(k==='hay'&&h(tx,ty,33)<FT.haystack)stand(PX.worldCropThing('haystack',0),4+Math.floor(h(tx,ty,34)*8),8+Math.floor(h(tx,ty,35)*7),'haystack',0);
+  else if(k==='orchard')for(const [fx,fy] of [[4,7],[12,7],[4,15],[12,15]]){if(h(tx*2+fx,ty*2+fy,36)<FT.fruit){const fv=(cu==='sylvan'?2:0)+Math.floor(h(tx,ty,37)*2);stand(PX.worldCropThing('fruit',fv),fx+(fy>8?-1:0),fy,'fruit',fv)}}
+  // (a date palm by the channel: on its upper bank, or its lower where the palm would stand out past the plot's top (its crown cut off, 2026-11-17))
+  else if(k==='irrigated'&&sp.ch>=0&&h(tx,ty,38)<FT.palm){const pv=Math.floor(h(tx,ty,39)*4),p=PX.worldTree('desert','palm',pv,0),fy=sp.ch-1>=FT.palmFoot?sp.ch-1:Math.min(15,sp.ch+3);stand(p,5+Math.floor(h(tx,ty,40)*6),fy,'palm',pv)}
+  // (at the lab's scale (z fine px a game px, pxf drawing one): the crop laid by the fine px (PX.worldCrop's fine: its rows and plants
+  //  half the size), grained by the fine px; the open edge ragged by the fine px; what stands on it at the fine px (FS: its shadow,
+  //  then its picture, its rim the ground's own darkened)); at any other scale each game px lit at its top left, shaded at its bottom right
+  const F=FARM.fine;
+  if(z<=1||!pxf){for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4);return}
+  const Z=16*z,FC=new Float32Array(Z*Z*3),FD=new Uint8Array(Z*Z),sf=fine?PX.worldCrop(k,c,PX.CROP_PLANTS[k]?Math.floor(h(0,0,23)*4):v,{ripe:rp,stage:stg,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z}):null;
+  for(let i=0;i<256;i++){if(!T[i])continue;const x=i&15,y=i>>4,e=SK[i]===2?9:ed(x,y);
+    for(let j=0;j<z;j++)for(let q=0;q<z;q++){const X=x*z+q,Y=y*z+j;if(e<2&&h(tx*64+X,ty*64+Y,42)<F.rag)continue;const n=h(tx*64+X,ty*64+Y,41)-.5,o=(Y*Z+X)*3,fi=Y*Z+X;
+      if(sf&&SK[i]!==2){const m=1+n*(sf.tr[fi]?F.soil:F.leaf);FC[o]=Math.min(255,sf.rgb[fi*3]*m);FC[o+1]=Math.min(255,sf.rgb[fi*3+1]*m);FC[o+2]=Math.min(255,sf.rgb[fi*3+2]*m)}
+      else{const m=SK[i]===2?1:SK[i]===1?1+n*F.soil:(q===0&&j===0?F.lit:q===z-1&&j===z-1?F.shade:1)+n*F.leaf;FC[o]=Math.min(255,Q[i*3]*m);FC[o+1]=Math.min(255,Q[i*3+1]*m);FC[o+2]=Math.min(255,Q[i*3+2]*m)}
+      FD[fi]=1}}
+  for(const [S,X,Y] of FS){for(let j=0;j<S.sh.length;j+=2){const x=X+S.sh[j],y=Y+S.sh[j+1];if(x<0||y<0||x>=Z||y>=Z||!FD[y*Z+x])continue;const o=(y*Z+x)*3;FC[o]+=(18-FC[o])*.3;FC[o+1]+=(26-FC[o+1])*.3;FC[o+2]+=(42-FC[o+2])*.3}
+    const N=S.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=S.a[j*N+i];if(!a)continue;const x=X-S.ax+i,y=Y-S.ay+j;if(x<0||y<0||x>=Z||y>=Z)continue;const o=(y*Z+x)*3,u=(j*N+i)*3;
+      if(a===2){const g=FD[y*Z+x]?.55:1;FC[o]=FC[o]*(1-g)+30*g;FC[o+1]=FC[o+1]*(1-g)+28*g;FC[o+2]=FC[o+2]*(1-g)+30*g}else{FC[o]=S.rgb[u];FC[o+1]=S.rgb[u+1];FC[o+2]=S.rgb[u+2]}FD[y*Z+x]=1}}
+  for(let i=0;i<Z*Z;i++)if(FD[i])pxf([FC[i*3],FC[i*3+1],FC[i*3+2]],i%Z,(i/Z)|0)}
 /* ---------- the world's water and roads (doc/WORLD_DESIGN.md §12.1). The water by the pixel (wpx): the water tiles (sea and lake, river, a ford's shallows, under a bridge:
    the plan's wk) read as a smooth field, its shore a curve (lakes rounded, rivers bending, a staircase of tiles a slope), wobbling
    a pixel or two. Over the window painted and a margin,
@@ -409,7 +439,7 @@ const WNEAR=[[0,0],[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
 function wnear(K,tx,ty,no){for(const [a,b] of WNEAR){const u=tx+a,v=ty+b;if(u>=0&&v>=0&&u<MW&&v<MH&&K[v*MW+u]&&K[v*MW+u]!==no)return v*MW+u}return no?wnear(K,tx,ty):-1}
 // the ground of the window x0, y0, w×h (px) into D, its RGBA, a row of pixels a step; only its pixels in I painted, what lies round
 // them read alike (paintSteps: the whole window, its apron too, since a range's foot and rim read the ground beside them)
-function* artGenGround(P,D,x0,y0,w,h,I){
+function* artGenGround(P,D,x0,y0,w,h,I,keep){
   const MG=GENART.margin,X0=x0-MG,Y0=y0-MG,RW=w+2*MG,RH=h+2*MG,M=new Uint8Array(RW*RH),N9=new Uint8Array(9),K=P.wk,Rv=WM.river,G=GENART;
   // (a tile whose 8 neighbours are all its kind is that kind to its every pixel: only the tiles at an edge are worked a pixel at a time)
   const kd=(u,v)=>u<0||v<0||u>=MW||v>=MH||K[v*MW+u]>0?1:0;
@@ -418,6 +448,7 @@ function* artGenGround(P,D,x0,y0,w,h,I){
       if(!same)wnb(K,tx,ty,N9);for(let y=ya;y<yb;y++){const o=(y-Y0)*RW-X0;if(same)M.fill(k,o+xa,o+xb);else for(let x=xa;x<xb;x++)M[o+x]=wpxN(N9,x,y)}}
     yield}
   const DT=yield* wdist(M,RW,RH);yield;
+  if(keep)Object.assign(keep,{M,DT,X0,Y0,RW,RH});// (the water mask and distances, for the finer terrain: worldterrain.js terrainChunk)
   const tx0=x0>>4,ty0=y0>>4,tx1=(x0+w-1)>>4,ty1=(y0+h-1)>>4,LW=tx1-tx0+2,LG=new Float32Array(LW*(ty1-ty0+2)),DG=new Float32Array(LW*(ty1-ty0+2)),dep=P.dep;
   for(let y=ty0;y<=ty1+1;y++)for(let x=tx0;x<=tx1+1;x++){const k=(y-ty0)*LW+x-tx0;LG[k]=(fbm(x/4.5,y/4.5,77)-.5)*2;
     let s=0,n=0;for(const [a,b] of [[0,0],[-1,0],[0,-1],[-1,-1]]){const tx=x+a,ty=y+b;if(tx<0||ty<0||tx>=MW||ty>=MH)continue;s+=Math.min(4,dep[ty*MW+tx]===9?4:dep[ty*MW+tx]);n++}DG[k]=n?s/n:4}
@@ -504,113 +535,51 @@ function segBand(S,k,x,y,wf){const a=S[k],b=S[k+1],vx=S[k+2]-a,vy=S[k+3]-b,g=S[k
 function roadAt(P,x,y){if(x<0||y<0||x>=MW*TILE||y>=MH*TILE)return -99;const t=(y>>4)*MW+(x>>4),S=P.segs,R=ROAD_REACH(),wf=laneW(P.lane,x,y);let s=-99;
   for(let p=P.ST[t];p<P.ST[t+1];p++){const k=P.SI[p],v=segBand(S,k,x,y,S[k+4]<2?wf:0);if(BD[1]<=R&&v>s)s=v}
   const f=P.fd[t];if(f){const v=fordBand(P,f,x,y);if(v>s)s=v}return s}
-// (the owner, 2026-11-06: "roads look like straight lines with a transparent middle"): how much its middle is mottled, the noise
-// past which a rut shows (in stretches), a track's crown grassed in tufts (share of its pixels)
-const ROADLOOK={mottle:.55,rut:.42,tuft:.22};
-function* artGenRoads(P,D,x0,y0,w,h){const S=P.segs,K=P.wk,B=P.box,G=GENART,RD=GENART.road,V=GENART.verge,R=ROAD_REACH(),SC=new Float32Array(w*h).fill(-99),DL=new Float32Array(w*h),KF=new Uint8Array(w*h);
-  // (a lane in or by the window: its pixels by segBand)
-  let LN=false;for(let ty=Math.max(0,(y0>>4)-1);ty<=Math.min(MH-1,((y0+h-1)>>4)+1)&&!LN;ty++)for(let tx=Math.max(0,(x0>>4)-1);tx<=Math.min(MW-1,((x0+w-1)>>4)+1);tx++)if(P.lane[ty*MW+tx]){LN=true;break}
-  for(let k=0;k<S.length;k+=5){const a=S[k],b=S[k+1],c=S[k+2],d=S[k+3],g=S[k+4];if(Math.max(a,c)+R<x0||Math.min(a,c)-R>=x0+w||Math.max(b,d)+R<y0||Math.min(b,d)-R>=y0+h)continue;
-    const vx=c-a,vy=d-b,L=vx*vx+vy*vy,px0=Math.max(x0,Math.floor(Math.min(a,c)-R)),px1=Math.min(x0+w-1,Math.ceil(Math.max(a,c)+R)),py0=Math.max(y0,Math.floor(Math.min(b,d)-R)),py1=Math.min(y0+h-1,Math.ceil(Math.max(b,d)+R));
-    for(let y=py0;y<=py1;y++)for(let x=px0;x<=px1;x++){const wf=LN&&g<2?laneW(P.lane,x,y):0;let s,dl;
-      if(wf>0){s=segBand(S,k,x,y,wf);dl=BD[1];if(dl>R)continue}
-      else{const ex=x+.5-a,ey=y+.5-b,t=L?Math.max(0,Math.min(1,(ex*vx+ey*vy)/L)):0,dx=ex-vx*t,dy=ey-vy*t;dl=Math.sqrt(dx*dx+dy*dy);if(dl>R)continue;s=(g<2?RD[g]*(.88+.24*wnoise2(x/40,y/40,61)):segW(g,t))-dl}
-      const o=(y-y0)*w+x-x0;if(s>SC[o]){SC[o]=s;DL[o]=dl;KF[o]=g&1}}
-    if(!(k%80))yield}
-  const tx0=x0>>4,ty0=y0>>4,LW=((x0+w-1)>>4)-tx0+2,CVG=coverGrids(P,tx0,ty0,(x0+w-1)>>4,(y0+h-1)>>4,LW),cv=[0,0,0],RP4=[[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
-  for(let y=y0;y<y0+h;y++){if(!((y-y0+1)&31))yield;for(let x=x0;x<x0+w;x++){const o=(y-y0)*w+x-x0,s=SC[o];if(s<=-V)continue;const i=(y>>4)*MW+(x>>4),bi=B[i];if(K[i]||bi===1||bi>1&&((y&15)<16-G.notch[1]||(bi===2?16-(x&15):(x&15)+1)>G.notch[0])||wpx(K,x,y))continue;
-    const q4=((y>>4)-ty0)*LW+(x>>4)-tx0,fx=(x&15)/16,fy=(y&15)/16;for(let k=0;k<3;k++){const A=CVG[k],a=A[q4],b=A[q4+1],cc=A[q4+LW],d=A[q4+LW+1];cv[k]=a+(b-a)*fx+(cc-a)*fy+(a-b-cc+d)*fx*fy}
-    const RC=roadPal(cv,RP4),q=o*4,cur=[D[q],D[q+1],D[q+2]];let c;
-    if(s<=0){if(hs(x,y,57)<.25+.4*(-s/V))continue;c=mixc(cur,RC[3],.42*(1+s/V))}
-    // (its edge broken, not a ruled line: dark where the noise says, else the road's own tone eased into it)
-    else if(s<=1.1){const e=hs(x>>1,y>>1,61);c=e<(KF[o]?.55:.35)?mixc(RC[1],RC[0],KF[o]?.8:.55):mixc(RC[1],cur,.25)}
-    // (its middle worn earth, mottled lighter and darker by a soft noise; ruts in broken stretches; a track's crown a little grassed,
-    //  in tufts, never see-through; stones and pebbles)
-    else{const dl=DL[o],m=wnoise2(x/9,y/9,63)-.5,R=ROADLOOK;c=m>0?mixc(RC[1],RC[2],m*R.mottle):mixc(RC[1],RC[0],-m*R.mottle*.6);
-      if((KF[o]?Math.abs(dl-1.6)<.5:Math.abs(dl-1.05)<.42)&&wnoise2(x/5,y/5,64)>R.rut)c=mixc(c,RC[0],.4);
-      else if(!KF[o]&&dl<.55&&hs(x>>1,y>>1,65)<R.tuft)c=mixc(c,cur,.55);
-      const ph=hs(x,y,58);if(ph<.025)c=RC[2];else if(ph>.98)c=RC[0]}
-    D[q]=c[0];D[q+1]=c[1];D[q+2]=c[2]}}
-  const ok=(x,y)=>{if(x<x0||y<y0||x>=x0+w||y>=y0+h)return false;const i=(y>>4)*MW+(x>>4);return!K[i]&&B[i]!==1};
-  return{at:(x,y)=>ok(x,y)?SC[(y-y0)*w+x-x0]:-99,great:(x,y)=>ok(x,y)&&KF[(y-y0)*w+x-x0]===1}}
-// (a road's three tones and its verge's dirt (o, 4 colours) at a pixel by the climates' covers there (cv, COVERS' order): the
-//  grass's leaning toward each climate's in turn, from none at its cover GENART.rblend[0] to all at [1])
-function roadPal(cv,o){const [lo,hi]=GENART.rblend,G=ROAD_RGB.grass,DG=DIRT.grass;for(let n=0;n<3;n++){o[n][0]=G[n][0];o[n][1]=G[n][1];o[n][2]=G[n][2]}o[3][0]=DG[0];o[3][1]=DG[1];o[3][2]=DG[2];
-  for(let k=0;k<3;k++){const u=Math.max(0,Math.min(1,(cv[k]-lo)/(hi-lo)));if(!u)continue;const c=COVERS[k].c,R=ROAD_RGB[c],Dd=DIRT[c];for(let n=0;n<4;n++){const a=o[n],b=n<3?R[n]:Dd;a[0]+=(b[0]-a[0])*u;a[1]+=(b[1]-a[1])*u;a[2]+=(b[2]-a[2])*u}}
-  return o}
-/* a bridge in detail (artGenXing; the owner, 2026-11-14: "enhance the bridge to get more detail"): stone: its shade on the water,
-   arches (arch px apart: dark under the deck, a gleam on the water), piers between them (pier: lit, body) cut to a point upstream
-   with foam, setts on the deck (deck: their greys) with dark joints, worn pale down the middle, parapets of coping stones (cope:
-   lit top, body, joint, a joint every cope[3] px); wood: its shade on the water, piles (pile px apart) with a ripple either side,
-   planks of plank's tones with a gap between, nails, knots, the wheels' wear, rails on posts (postAt px apart;
-   rail and post: lit, dark). on false: as before */
-const BRIDGE_ART={on:true,
-  stone:{shade:'#24323e',dark:'#121c26',gleam:'#3a5266',foam:'#e4eef4',arch:10,pier:['#b4ac9a','#7e7666'],deck:['#a69e8e','#a29a8a','#aaa292','#9e9686'],joint:'#928a7a',worn:'#b4ac9c',cope:['#d0c8b6','#7e7666','#544e46',5]},
-  wood:{shade:'#22384c',ripple:'#8eb4cc',pile:8,plank:['#8a6038','#906640','#845c36','#94683e','#88603a'],gap:'#664426',nail:'#5a3c22',knot:'#704c2c',worn:'#9c7248',rail:['#b08458','#5a3c22'],post:['#c09464','#2a1a10'],postAt:6}};
-// a crossing over the window (OVER): a bridge's deck from bank to bank (stone: grey courses, parapets, the arches' shade on the
-// water below; wood: planks, rails, posts) on an abutment at each end (abut: the owner's fourth play-test, no wider than the deck), a ford's rocks (a few, scattered over its shallows, never in a row: 1 to 3 px, lit,
-// a dark waterline under each and foam on its downstream side; capped with snow in the frost, mossy in the swamp) and a swamp
-// ford's reeds at its edges, a ferry's landings, its raft and the rope across
-function artGenXing(P,r,c){const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,lo=hor?Math.min(ax,bx):Math.min(ay,by),hi=hor?Math.max(ax,bx):Math.max(ay,by),mid=(hor?ay:ax)*TILE+8;
-  // (a rect along the crossing: from u0 to u1 along it, v0 to v1 across it, px)
-  const R=(col,u0,u1,v0,v1)=>hor?r(col,u0,v0,u1-u0,v1-v0):r(col,v0,u0,v1-v0,u1-u0);
-  if(c.kind==='bridge'){const u0=lo*TILE+TILE-4,u1=hi*TILE+4,hw=GENART.deck[c.stone?1:0],K=P.wk;
-    // (an abutment at the deck's end e (its last row), d the way to the bank: as wide as the deck, a joint on the deck and the head
-    //  over the bank (stone: lit, then its body; wood: a sill beam), its outer row ragged, drawn over land only (the shore keeps its
-    //  curve to the deck))
-    const AB=c.stone?['#6e665a','#c8c0ae','#9a9282','#7e7666']:['#2a1a10','#7a5432','#5a3c22','#3e2818'];
-    const abut=(e,d)=>{for(let k=0;k<4;k++){const u=e-d*(1-k);for(let v=mid-hw;v<mid+hw;v++){const x=hor?u:v,y=hor?v:u;if(k>=2&&wpx(K,x,y)||k===3&&hs(x,y,c.i+91)<.4)continue;
-      R(k===2&&hs(x,y,c.i+92)<.15?AB[0]:AB[k],u,u+1,v,v+1)}}};
-    // (in detail, BRIDGE_ART: the owner, 2026-11-14, "enhance the bridge to get more detail"; off, as it was, below)
-    if(BRIDGE_ART.on){const Q=(col,a,e,v0,v1)=>{if(e>a&&v1>v0)R(col,a,e,v0,v1)},h=(a,b,n)=>hs(a,b,c.i*7+n),pk=(L,a,b,n)=>L[Math.floor(h(a,b,n)*L.length)];
-      if(c.stone){const S=BRIDGE_ART.stone,at=[];
-        // (its shadow on the water below; its piers, each cut to a point upstream with the water broken white round it, the arches
-        //  between them dark under the deck, their light on the water)
-        Q(S.shade,u0+4,u1-4,mid+hw,mid+hw+2);
-        for(let u=u0+8;u<u1-6;u+=S.arch)at.push(u);
-        for(const u of at){Q(S.dark,u,u+4,mid+hw,mid+hw+1);Q(S.gleam,u+1,u+3,mid+hw+1,mid+hw+2)}
-        for(let k=0;k+1<at.length;k++){const u=at[k]+5;Q(S.pier[1],u,u+3,mid+hw,mid+hw+2);Q(S.pier[0],u,u+3,mid+hw,mid+hw+1);Q(S.pier[1],u+1,u+2,mid-hw-1,mid-hw);Q(S.foam,u,u+1,mid-hw-1,mid-hw);Q(S.foam,u+2,u+3,mid+hw+2,mid+hw+3)}
-        // (the deck's setts, each its own grey, their joints dark, worn pale down the middle; its parapets of coping stones, lit on
-        //  top, a joint every few)
-        Q(S.deck[0],u0,u1,mid-hw,mid+hw);
-        for(let u=u0;u<u1;u+=3)for(let v=mid-hw+2,r0=0;v<mid+hw-2;v+=2,r0++){const o=(r0&1)?1:0,a=u+o;Q(pk(S.deck,a,v,11),a,Math.min(a+2,u1),v,v+2);Q(S.joint,a+2,Math.min(a+3,u1),v,v+2);if(h(a,v,12)<.15)Q(S.joint,a,Math.min(a+2,u1),v+1,v+2)}
-        for(let u=u0+1;u<u1-1;u++)for(const v of [mid-1,mid])if(h(u,v,13)<.45)Q(S.worn,u,u+1,v,v+1);
-        for(const [v0,lit] of [[mid-hw,mid-hw],[mid+hw-2,mid+hw-2]]){Q(S.cope[1],u0,u1,v0,v0+2);Q(S.cope[0],u0,u1,lit,lit+1);for(let u=u0+2+Math.floor(h(v0,0,14)*3);u<u1-1;u+=S.cope[3])Q(S.cope[2],u,u+1,v0,v0+2)}
-        abut(u0,-1);abut(u1-1,1)}
-      else{const Wd=BRIDGE_ART.wood;
-        // (its shadow on the water below, and its piles standing in it, a ripple either side of each)
-        Q(Wd.shade,u0+3,u1-3,mid+hw+1,mid+hw+3);
-        for(let u=u0+6;u<u1-5;u+=Wd.pile){Q(Wd.post[1],u,u+2,mid+hw+1,mid+hw+3);Q(Wd.post[0],u,u+1,mid+hw+1,mid+hw+2);Q(Wd.ripple,u-1,u,mid+hw+3,mid+hw+4);Q(Wd.ripple,u+2,u+3,mid+hw+3,mid+hw+4)}
-        // (its planks across it, 2 px each and a dark gap, each its own tone, ragged at the ends, nailed at each, a knot here and
-        //  there; the wheels' wear down it)
-        for(let u=u0,k=0;u<u1;u+=3,k++){const a=h(k,1,2)<.3?1:0,b=h(k,1,3)<.3?1:0,e=Math.min(u+2,u1);Q(pk(Wd.plank,k,1,1),u,e,mid-hw+a,mid+hw-b);Q(Wd.gap,e,Math.min(e+1,u1),mid-hw,mid+hw);
-          if(h(k,1,4)<.5){Q(Wd.nail,u,u+1,mid-hw+1,mid-hw+2);Q(Wd.nail,e-1,e,mid+hw-2,mid+hw-1)}if(h(k,1,5)<.1){const v=mid-3+Math.floor(h(k,1,6)*6);Q(Wd.knot,u+(h(k,1,7)<.5?0:1),u+(h(k,1,7)<.5?1:2),v,v+1)}}
-        for(let u=u0+1;u<u1-1;u++)for(const v of [mid-2,mid+1])if(h(u,v,8)<.35)Q(Wd.worn,u,u+1,v,v+1);
-        // (a rail each side on posts, off the deck: the far one on its beam above it, the near one along its foot, lit on top; within 2
-        //  px of the deck, none over the water beside it)
-        Q(Wd.rail[0],u0,u1,mid-hw-2,mid-hw-1);Q(Wd.rail[1],u0,u1,mid-hw-1,mid-hw);Q(Wd.rail[0],u0,u1,mid+hw,mid+hw+1);Q(Wd.rail[1],u0,u1,mid+hw+1,mid+hw+2);
-        for(let u=u0+2;u<u1-1;u+=Wd.postAt){Q(Wd.post[0],u,u+1,mid-hw-2,mid-hw-1);Q(Wd.post[1],u,u+1,mid-hw-1,mid-hw+1);Q(Wd.post[0],u,u+1,mid+hw,mid+hw+1);Q(Wd.post[1],u,u+1,mid+hw+1,mid+hw+3)}
-        abut(u0,-1);abut(u1-1,1)}}
-    else if(c.stone){R('#24323e',u0+4,u1-4,mid+hw,mid+hw+2);R('#a69e8e',u0,u1,mid-hw,mid+hw);
-      for(let u=u0;u<u1;u++)for(let v=mid-hw+2;v<mid+hw-2;v++)if((v-mid)%3===0||(u+((v-mid+12)/3|0)*3)%6===0)R('#8e8676',u,u+1,v,v+1);
-      R('#6e665a',u0,u1,mid-hw,mid-hw+2);R('#c8c0ae',u0,u1,mid-hw,mid-hw+1);R('#6e665a',u0,u1,mid+hw-2,mid+hw);R('#c8c0ae',u0,u1,mid+hw-2,mid+hw-1);
-      for(let u=u0+8;u<u1-6;u+=10)R('#121c26',u,u+4,mid+hw,mid+hw+1);abut(u0,-1);abut(u1-1,1)}
-    else{R('#8a6038',u0,u1,mid-hw,mid+hw);for(let u=u0;u<u1;u+=2)R('#6a4628',u,u+1,mid-hw,mid+hw);R('#3e2818',u0,u1,mid-hw-1,mid-hw);R('#3e2818',u0,u1,mid+hw,mid+hw+1);
-      for(let u=u0+5;u<u1-3;u+=7){R('#2a1a10',u,u+1,mid+hw+1,mid+hw+3);R('#2a1a10',u+3,u+4,mid-hw-2,mid-hw-1)}abut(u0,-1);abut(u1-1,1)}}
-  else if(c.kind==='ford'){const K=P.wk,f=P.fordOf.get(c),cl=clAt(...(hor?[(ax+bx)>>1,ay]:[ax,(ay+by)>>1])),RK=GENART.ford.rock[cl],span=(hi-lo)*TILE,at=[],h=n=>hs(c.i,c.j,n+120);
-    // (up to 4 + 4 rocks for 3 tiles of its span: tried at random over the shallows, kept 5 px apart; 1 a pebble, 2 a stone, 3 a boulder)
-    for(let q=0,n=0;q<48&&n<4+Math.round(span/12);q++){const u=lo*TILE+8+h(q*4)*span,v=mid+(h(q*4+1)-.5)*2*(GENART.ford.w+2),x=Math.round(hor?u:v),y=Math.round(hor?v:u),z=h(q*4+2),sw=z<.3?1:z<.75?2:3,sh=sw>1?2:1;
-      if(fordAt(P,f,x,y)<.3||!wpx(K,x,y+sh)||!wpx(K,x+sw-1,y+sh)||at.some(([a,b])=>Math.abs(a-x)+Math.abs(b-y)<5))continue;at.push([x,y]);n++;
-      const fl=WM.flow[(y>>4)*MW+(x>>4)]>>5,[dx,dy]=DIR8[fl]||[0,1];r(RK[0],x,y+sh,sw,1);r(RK[1],x,y,sw,sh);if(sw>1)r(RK[0],x+sw-1,y+1,1,1);r(RK[2],x,y,sw>2?2:1,1);
-      if(h(q*4+3)<.6){const fx=dx>0?x+sw:dx<0?x-1:x+(sw>>1),fy=dy>0?y+sh+1:dy<0?y-1:y+(sh>>1);if(wpx(K,fx,fy))r('#e4eef4',fx,fy,1,1)}}
-    // (the swamp's: reeds at the shallows' edges, in the water and on the bank)
-    if(cl==='swamp'){const [c0,c1]=REED.swamp;for(let q=0;q<10;q++){const u=lo*TILE+4+h(q*3+200)*(span+8),v=mid+(h(q*3+201)<.5?-1:1)*(GENART.ford.w+2+h(q*3+202)*5),x=Math.round(hor?u:v),y=Math.round(hor?v:u),sa=fordAt(P,f,x,y);
-      if(sa<.02||sa>.45||P.clear.at(x,y))continue;r(c0,x,y-2,1,3);r(c1,x,y-2,1,1);if(h(q*3+203)<.6){r(c0,x+1,y-1,1,2);r(c1,x+1,y-1,1,1)}}}}
-  else{const dir=hi===(hor?bx:by)?1:-1,ends=[[c.i,dir],[c.j,-dir]],tip=[];
-    for(const [t,d] of ends){const e=hor?t%MW:(t/MW|0),u0=d>0?e*TILE+TILE-3:e*TILE+3-9,u1=u0+9;R('#7a5432',u0,u1,mid-3,mid+3);for(let u=u0;u<u1;u+=2)R('#5a3c22',u,u+1,mid-3,mid+3);
-      R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid-4,mid-3);R('#2a1a10',d>0?u1-1:u0,d>0?u1:u0+1,mid+3,mid+5);tip.push(d>0?u1:u0)}
-    const [p,q]=tip[0]<tip[1]?tip:[tip[1],tip[0]];for(let u=p+1;u<q;u+=2)R('#d8c890',u,u+1,mid-5,mid-4);
-    const rf=dir>0?tip[0]+1:tip[0]-12;R('#3e2818',rf,rf+11,mid-1,mid+6);R('#9a6e42',rf+1,rf+10,mid,mid+5);for(let u=rf+2;u<rf+10;u+=3)R('#6a4628',u,u+1,mid,mid+5);R('#2a1a10',rf+5,rf+6,mid-4,mid)}}
+/* a ferry in detail (ferryArt; the owner, 2026-11-15: "what is that wooden with the line things, can we improve the visuals? Give
+   it more detail"): a landing out from each bank (len px long, its last 3 px on the shore) of planks across it (plank's tones, a
+   dark gap between, a nail here and there, a worn track), a beam each side (lit, dark), its shade on the water, two piles each
+   side standing in the water with a ripple at their feet, and a tall post at its tip (tie px high) the rope is made fast to; the
+   rope across from post top to post top, twisted (rope: lit, dark, a dark twist every twist px), sagging sag px at its middle
+   (east-west; seen from above, a north-south one runs straight), its shadow on the water below it (shadow px across, the posts'
+   height down), broken; the raft gap px out from one landing (raft: [long, wide] px) of logs along it (log's tones, a seam between,
+   pale ends), two battens across, a rail on its upstream side, its block on the rope (a post up to it), a crate or a barrel on
+   deck, its shade and ripples at its ends. Posts stand up the screen whichever way the ferry runs.
+   on false: as before */
+const FERRY_ART={on:true,len:10,shade:'#22384c',ripple:'#8eb4cc',plank:['#8a6038','#906640','#845c36','#94683e','#88603a'],gap:'#5a3c22',nail:'#3e2818',worn:'#9c7248',
+  beam:['#b08458','#3e2818'],post:['#c09464','#6a4628','#2a1a10'],pile:2,tie:5,rope:['#e0d0a0','#a8925e'],twist:3,sag:2,shadow:1,ropeShade:'#2e5270',
+  gap0:3,raft:[13,10],log:['#86592f','#94683e','#7e5530','#9a6e44'],seam:'#3e2818',end:'#c8a274',batten:'#5a3c22',rail:['#c09464','#4a3018'],
+  crate:['#b8915e','#6a4a2a','#dcb880'],barrel:['#7a5432','#3e2818','#a8a49a']};
+function ferryArt(r,R,c,hor,mid,dir){const F=FERRY_ART,Q=(col,a,e,v0,v1)=>{if(e>a&&v1>v0)R(col,a,e,v0,v1)},h=(a,b,n)=>hs(a,b,c.i*5+n),pk=(L,a,b,n)=>L[Math.floor(h(a,b,n)*L.length)],P=(col,u,v)=>Q(col,u,u+1,v,v+1),
+    S=(u,v)=>hor?[u,v]:[v,u],
+    // (a post at (u, v) standing ht px up the screen: lit top, its body, a ripple at its foot (wet))
+    post=(u,v,ht,wet)=>{const [x,y]=S(u,v);r(F.post[2],x,y-ht+1,1,ht);r(F.post[1],x,y-ht+2,1,Math.max(0,ht-3));r(F.post[0],x,y-ht+1,1,1);if(wet)r(F.ripple,x+(h(x,y,14)<.5?-1:1),y+1,1,1);return [x,y-ht+1]},tops=[];
+  // (each landing: d the way out over the water; its shade, planks, beams, piles and tie post)
+  for(const [t,d] of [[c.i,dir],[c.j,-dir]]){const e=hor?t%MW:(t/MW|0),u0=d>0?e*TILE+TILE-3:e*TILE+3-F.len,u1=u0+F.len,w0=d>0?u0+3:u0,w1=d>0?u1:u1-3,out=d>0?u1-1:u0,pin=out-d*(F.len-6);
+    Q(F.shade,w0+(d>0?1:0),w1-(d>0?0:1),mid+3,mid+5);
+    for(let u=u0,k=0;u<u1;u+=3,k++){const a=h(k,t,1)<.2?1:0,b=h(k,t,2)<.2?1:0,x=Math.min(u+2,u1);Q(pk(F.plank,k,t,3),u,x,mid-3+a,mid+3-b);Q(F.gap,x,Math.min(x+1,u1),mid-3,mid+3);
+      if(h(k,t,4)<.25)P(F.nail,u,h(k,t,9)<.5?mid-2:mid+1)}
+    for(let u=u0+1;u<u1-1;u++)if(h(u,t,5)<.3)P(F.worn,u,h(u,t,6)<.5?mid-1:mid);
+    Q(F.beam[0],u0,u1,mid-4,mid-3);Q(F.beam[1],u0,u1,mid+3,mid+4);
+    for(const u of [out,pin])for(const v of [mid-4,mid+3])post(u,v,F.pile,true);
+    tops.push(post(out+d,mid-5,F.tie,true))}
+  // (the rope from post top to post top: its sag, its twist, its broken shadow on the water below)
+  const [A,B]=tops,n=Math.max(Math.abs(B[0]-A[0]),Math.abs(B[1]-A[1])),at=k=>[Math.round(A[0]+(B[0]-A[0])*k/n),Math.round(A[1]+(B[1]-A[1])*k/n+(hor?Math.sin(Math.PI*k/n)*F.sag:0))];
+  for(let k=1;k<n;k++){const [x,y]=at(k);if(h(k,1,7)<.6)r(F.ropeShade,x+F.shadow,y+F.tie,1,1);r(k%F.twist?F.rope[0]:F.rope[1],x,y,1,1)}
+  // (the raft out from the first landing: shade, logs, battens, rail, its load, the pole, its block on the rope)
+  const [W,D]=F.raft,t0=dir>0?(hor?c.i%MW:c.i/MW|0)*TILE+TILE-3+F.len:(hor?c.i%MW:c.i/MW|0)*TILE+3-F.len,rf=dir>0?t0+F.gap0:t0-F.gap0-W,top=mid-4,bot=top+D;
+  Q(F.shade,rf+1,rf+W+1,bot,bot+2);Q(F.seam,rf,rf+W,top,bot);
+  for(let v=top+1,k=0;v<bot-1;v+=3,k++){const col=pk(F.log,k,c.i,8),s0=h(k,c.i,9)<.5?1:0,s1=h(k,c.i,10)<.5?1:0;Q(col,rf+s0,rf+W-s1,v,v+2);Q(F.end,rf+s0,rf+s0+1,v,v+2);Q(F.end,rf+W-1-s1,rf+W-s1,v,v+2)}
+  for(const u of [rf+2,rf+W-3])Q(F.batten,u,u+1,top+1,bot-1);
+  Q(F.rail[0],rf,rf+W,top,top+1);for(let u=rf;u<rf+W;u+=4)P(F.rail[1],u,top+1);
+  const cu=rf+3+Math.floor(h(1,c.i,11)*(W-8));if(h(2,c.i,12)<.5){Q(F.crate[1],cu,cu+3,top+2,top+5);Q(F.crate[0],cu,cu+3,top+2,top+4);P(F.crate[2],cu,top+2);P(F.crate[1],cu+1,top+3)}
+  else{Q(F.barrel[1],cu,cu+2,top+2,top+5);Q(F.barrel[0],cu,cu+2,top+2,top+4);P(F.barrel[2],cu,top+3);P(F.barrel[2],cu+1,top+3)}
+  for(const u of [rf-1,rf+W])for(const v of [top+2,bot-3])if(h(u,v,13)<.7)P(F.ripple,u,v);
+  const bu=rf+(W>>1),[bx,by]=S(bu,mid-5),ry=at(Math.round(n*(hor?(bx-A[0])/(B[0]-A[0]||1):(by-F.tie+1-A[1])/(B[1]-A[1]||1))))[1];
+  if(hor)r(F.post[2],bx,ry,1,by-ry+1);else post(bu,mid-5,F.tie,true);r(F.post[0],bx,hor?ry:by-F.tie+1,1,1)
+}
+// a ferry over the window (OVER): its landings, its raft and the rope across (a bridge and a ford are the lab's: worldways.js)
+function artGenXing(P,r,c){if(c.kind!=='ferry')return;const ax=c.i%MW,ay=(c.i-ax)/MW,bx=c.j%MW,by=(c.j-bx)/MW,hor=ay===by,hi=hor?Math.max(ax,bx):Math.max(ay,by),mid=(hor?ay:ax)*TILE+8;
+  const R=(col,u0,u1,v0,v1)=>hor?r(col,u0,v0,u1-u0,v1-v0):r(col,v0,u0,v1-v0,u1-u0);ferryArt(r,R,c,hor,mid,hi===(hor?bx:by)?1:-1)}
 /* the holdings' yards (the world-map building redesign, stage 3): each lot's model's ground layer, its snow's over it (structures.js
    lotYard: worn earth, cobbles, sand, mud, trodden snow; the model's own ragged edge, dithered out over its cell's last pixels),
    laid into the land under it before the roads and the land's nature, the land showing through by its material (TOWN_GROUND: a
@@ -628,23 +597,9 @@ function* townGround(P,D,x0,y0,w,h){const K=P.wk;
     yield}}
 // over the land's nature, drawn on a canvas g in map pixels, each pass over the tiles tx0..tx1, ty0..ty1 in the map's order (a
 // chunk's and a tile round it: whatever reaches into it)
-const REED={grass:['#4e7a34','#8aac52'],frost:['#9a9478','#c8c0a0'],desert:['#7a8040','#b0aa62'],swamp:['#4a5a2c','#7e8a42']};
 const OVER=[
-  // reeds and stones on the river banks (land beside a river tile, never in the water, not a pixel of them, or on clear ground)
-  (P,r,tx0,ty0,tx1,ty1)=>{const K=P.wk;
-    for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const i=ty*MW+tx;if(K[i]||tiles[i]===T_MOUNT)continue;const X=tx*TILE,Y=ty*TILE,[c0,c1]=REED[clAt(tx,ty)];
-      for(const [a,b] of [[0,-1],[0,1],[-1,0],[1,0]]){const u=tx+a,v=ty+b;if(u<0||v<0||u>=MW||v>=MH||K[v*MW+u]!==2)continue;
-        for(let k=0;k<4;k++){const h=n=>hs(tx*4+k,ty*4+a+2*b+2,n+80),al=2+Math.floor(h(1)*12),of=1+Math.floor(h(2)*3),x=b?X+al:a<0?X+of:X+TILE-1-of,y=a?Y+al:b<0?Y+of+2:Y+TILE-1-of;
-          let wet=false;for(let b=-2;b<=1&&!wet;b++)for(let a=0;a<=1;a++)if(wpx(K,x+a,y+b)){wet=true;break}if(wet||P.clear.at(x,y))continue;
-          if(h(3)<.62){r(c0,x,y-2,1,3);r(c1,x,y-2,1,1);if(h(4)>.5)r(c0,x+1,y-1,1,2)}else if(h(3)<.85){r('#5a5a5e',x,y+1,2,1);r('#8e8c88',x,y,2,1);r('#c4c0b8',x,y,1,1)}}}}},
-  // the crossings that reach the window
-  (P,r,tx0,ty0,tx1,ty1)=>{const inW=t=>{const x=t%MW,y=(t-x)/MW;return x>=tx0&&x<=tx1&&y>=ty0&&y<=ty1};for(const c of WM.crossings)if(inW(c.i)||inW(c.j)||c.tiles.some(inW))artGenXing(P,r,c)},
-  // white water on the rapids: short strokes down the flow, foam between
-  (P,r,tx0,ty0,tx1,ty1)=>{const K=P.wk,done=new Set();
-    for(const rv of WM.rivers)for(const [s,e] of rv.rapids)for(let k=s;k<=e;k++){const t=rv.path[k],x=t%MW,y=(t-x)/MW;if(x<tx0-1||x>tx1+1||y<ty0-1||y>ty1+1)continue;
-      for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b,i=v*MW+u;if(u<tx0||v<ty0||u>tx1||v>ty1||K[i]!==2||done.has(i))continue;done.add(i);const [dx,dy]=DIR8[WM.flow[i]>>5];
-        for(let q=0;q<4;q++){const h=n=>hs(u*7+q,v,n+90),px=u*TILE+2+Math.floor(h(1)*12),py=v*TILE+2+Math.floor(h(2)*12),n=2+Math.floor(h(3)*2);
-          for(let m=0;m<n;m++){const X=px+dx*m,Y=py+dy*m;if(wpx(K,X,Y))r(m?'#b8d8ea':'#e8f4fa',X,Y,1,1)}if(h(4)<.5&&wpx(K,px-dy,py+dx))r('#eef6fa',px-dy,py+dx,1,1)}}}},
+  // the ferries that reach the window
+  (P,r,tx0,ty0,tx1,ty1)=>{const inW=t=>{const x=t%MW,y=(t-x)/MW;return x>=tx0&&x<=tx1&&y>=ty0&&y<=ty1};for(const c of WM.crossings)if(c.kind==='ferry'&&(inW(c.i)||inW(c.j)||c.tiles.some(inW)))artGenXing(P,r,c)},
   // an ore vein: a few bright flecks of its metal low on the hill or mountain
   (P,r,tx0,ty0,tx1,ty1)=>{for(let ty=ty0;ty<=ty1;ty++)for(let tx=tx0;tx<=tx1;tx++){const t=tAt(tx,ty);if((t!==T_HILL&&t!==T_MOUNT)||DEP_AT[ty*MW+tx]<0)continue;const X=tx*TILE,Y=ty*TILE,h=k=>hs(tx,ty,k+40),col=GOODS[DEPOSITS[DEP_AT[ty*MW+tx]].g].col;
     for(let k=0;k<4;k++){const x=X+4+Math.floor(h(20+k)*8),y=Y+9+Math.floor(h(24+k)*5);r('#2a2620',x,y+1,2,1);r(col,x,y,2,1);if(k<2)r('#ffffff',x,y,1,1)}}}];
@@ -652,17 +607,22 @@ const OVER=[
 // its window's ground, the trampled patches and the land's nature, kept to the rect, then what lies over them, clipped to it. The
 // counts of what it painted (and how long it took) into rec
 function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
-  const t0=performance.now(),Wp=MW*TILE,Hp=MH*TILE,AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+h+AP)-y0,img=new ImageData(ww,wh),D=img.data,NT=NATURE_TOUCH;
-  yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh});
+  // (the world lab's painter, the only one (the owner, 2026-11-15: "use the LAB version ... Remove all old concepts"): the ground's
+  //  water kept and its tiles' grounds, the yards and trampled patches over them, the ferries and ore; then the lab's terrain, ways
+  //  and nature at the scene's resolution (worldterrain.js terrainChunk), and the game-px picture taken from it. The land is drawn
+  //  lifted by its height, so a chunk's picture shows the land south of it too, as far as the highest lift (HE rows))
+  const r=Math.max(1,rec.fine||1),Wp=MW*TILE,Hp=MH*TILE,HE=Math.min(h+Math.ceil(WORLD_TERRAIN.liftMax*WORLD_TERRAIN.lh/r),Hp-Y),
+    t0=performance.now(),AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+HE+AP)-y0,img=new ImageData(ww,wh),D=img.data,KP={};
+  yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh},KP);
+  const G0=new Uint8ClampedArray(D);
   for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
   yield* townGround(P,D,x0,y0,ww,wh);
-  const road=yield* artGenRoads(P,D,x0,y0,ww,wh);
-  const TO=NT?new Uint8Array(ww*wh):null;
-  rec.n=yield* PX.worldNatureSteps(P.nature,{x:x0,y:y0,w:ww,h:wh,inner:{x:X,y:Y,w,h},road},D,TO);
-  if(TO)for(let y=Y;y<Y+h;y++)NT.set(TO.subarray((y-y0)*ww+X-x0,(y-y0)*ww+X-x0+w),y*Wp+X);
-  g.putImageData(img,ox+x0-X,oy+y0-Y,X-x0,Y-y0,w,h);
-  const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+h-1)>>4)+1),r=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w||1,h||1)};
-  for(const pass of OVER){yield;g.save();g.beginPath();g.rect(ox,oy,w,h);g.clip();g.translate(ox-X,oy-Y);pass(P,r,tx0,ty0,tx1,ty1);g.restore()}
+  rec.n={trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0,tm:{},stand:{X:x0,Y:y0,w:ww,h:wh,cell:32,C:1,R:1,at:new Int32Array(2),L:[],E:[]}};
+  const E=mkcv(w,HE),eg=E.getContext('2d',{willReadFrequently:true});eg.putImageData(img,x0-X,y0-Y,X-x0,Y-y0,w,HE);
+  const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+HE-1)>>4)+1),rr=(col,x,y,w,h)=>{eg.fillStyle=col;eg.fillRect(x,y,w||1,h||1)};
+  for(const pass of OVER){yield;eg.save();eg.beginPath();eg.rect(0,0,w,HE);eg.clip();eg.translate(-X,-Y);pass(P,rr,tx0,ty0,tx1,ty1);eg.restore()}
+  yield;yield* terrainChunk(rec,P,eg.getImageData(0,0,w,HE).data,G0,KP,X,Y,w,h,HE,x0,y0,ww,r);
+  g.save();g.imageSmoothingEnabled=false;g.clearRect(ox,oy,w,h);g.drawImage(rec.fcv,ox,oy,w,h);g.restore();
   rec.ms=performance.now()-t0;
 }
 const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
@@ -672,7 +632,7 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     below the 6 a view can show).
 //   draw(g, cam): blits the map under the view (cam.x, cam.y, VW×VH; whole pixels), painting a chunk in view at once if it must,
 //     then queues the ring round the view, those the way the view moves first (as many as the cap leaves room for), and paints
-//     them for slice ms (step).
+//     them for slice ms (step), sliceView ms while one in view still waits for its fine paint.
 //   step(ms): paints queued chunks for ms, a small step at a time (a chunk's painting resumes where it stopped).
 //   invalidate(r): the map or its holdings changed: forget the plan (remade when next needed) and the chunks, all of them, or (r, a
 //     rect of tiles) those within REACH tiles of it (enough for lots, plots, estates and camps; a change of tile kinds, mountains
@@ -690,44 +650,88 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
-  plan:null,chunks:new Map(),jobs:new Map(),queue:[],pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,REACH:8,
+  plan:null,chunks:new Map(),jobs:new Map(),queue:[],miss:new Map(),pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,vel:0,frameMs:16,lastT:0,est:0,need:0,drawSpent:0,
+  // (in play (the game's loop, not a test's page: liveOk) no chunk is ever painted whole in a frame: ART_PACE)
+  liveOk:typeof location==='undefined'||!/[?&]test=/.test(location.search),live(){return this.liveOk&&performance.now()-this.idleAt<ART_PACE.alive},
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
   get cols(){return Math.ceil(MW*TILE/CHUNK)},get rows(){return Math.ceil(MH*TILE/CHUNK)},
-  ensure(){return this.plan||(this.plan=worldArtPlan())},
+  ensure(){if(!this.plan){this.plan=worldArtPlan();ArtWorkers.planned()}return this.plan},// (a new plan: the painter workers' world sent again, ArtWorkers)
   rect(cx,cy){const X=cx*CHUNK,Y=cy*CHUNK;return[X,Y,Math.min(CHUNK,MW*TILE-X),Math.min(CHUNK,MH*TILE-Y)]},
   // a chunk's painting: its own canvas (one the LRU let go, if one fits), as steps
-  start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [X,Y,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h),rec={cx,cy,cv};
-    j={k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec)};this.jobs.set(k,j);return j},
-  done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.cap)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
-  recycle(cv){if(this.pool.length<4)this.pool.push(cv)},
+  // (fine: how much finer than a game px it is painted (render.js sceneRes); a fine chunk weighs r x r times as much, so fewer kept)
+  get capNow(){return typeof sceneRes==='function'&&sceneRes()>1?Math.max(10,this.cap>>1):this.cap},
+  start(cx,cy){const k=cy*this.cols+cx;let j=this.jobs.get(k);if(j)return j;const [,,w,h]=this.rect(cx,cy),i=this.pool.findIndex(c=>c.width===w&&c.height===h),cv=i>=0?this.pool.splice(i,1)[0]:mkcv(w,h);
+    j=this.paintJob(cx,cy,typeof paintRes==='function'?paintRes():1,cv);this.jobs.set(k,j);return j},
+  // (a chunk's painting at fine, onto cv (a new canvas if none): its steps, its record; no pool, no job kept (a painter worker's: paintworker.js))
+  paintJob(cx,cy,fine,cv){const k=cy*this.cols+cx,[X,Y,w,h]=this.rect(cx,cy);cv=cv||mkcv(w,h);const rec={cx,cy,cv,fine};return{k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec)}},
+  done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.capNow)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
+  recycle(cv){if(cv&&cv.getContext&&this.pool.length<4)this.pool.push(cv)},// (a worker's picture is an ImageBitmap: never pooled)
   chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runGen(j.gen);this.done(j);return j.rec.cv},
   draw(g,cam){const W=MW*TILE,H=MH*TILE,x0=Math.max(0,cam.x),y0=Math.max(0,cam.y),x1=Math.min(W,cam.x+VW),y1=Math.min(H,cam.y+VH);if(x1<=x0||y1<=y0)return;
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
-    for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy;
-      g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
+    const fr=typeof sceneRes==='function'?sceneRes():1;
+    const live=this.live(),now=performance.now(),AP=ART_PACE;let wait=false;for(const k of this.miss.keys())if(!this.view.has(k)||this.chunks.has(k))this.miss.delete(k);if(live&&!ArtWorkers.list.length)ArtWorkers.start();
+    for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){if(live&&!this.chunks.has(cy*this.cols+cx)){const k=cy*this.cols+cx;if(!this.miss.has(k))this.miss.set(k,now);if(this.standIn(g,cx,cy,x0,y0,x1,y1,cam))wait=true;continue}const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
+      if(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh))continue;// (none of it known: nothing drawn, the fog alone: fog.js VIEW_SEEN)
+      if(fr>1&&c&&c.fcv&&c.fr===fr)g.drawImage(c.fcv,(sx-X)*fr,(sy-Y)*fr,sw*fr,sh*fr,sx-cam.x,sy-cam.y,sw,sh);else g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
     // (ahead: the ring round the view, the way it moves first, as many as the cap leaves room for: those painted kept as freshly
     //  used, the rest queued; a job for a chunk no longer queued let go)
+    if(this.last&&this.lastT){const dt=now-this.lastT;if(dt>0&&dt<500){this.vel+=(Math.hypot(cam.x-this.last.x,cam.y-this.last.y)/dt*1000-this.vel)*AP.ease;this.frameMs+=(dt-this.frameMs)*AP.ease}}this.lastT=now;
     const dx=this.last?Math.sign(cam.x-this.last.x):0,dy=this.last?Math.sign(cam.y-this.last.y):0,mx=(c0+c1)/2,my=(r0+r1)/2,ring=[];this.last={x:cam.x,y:cam.y};
-    for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
-    ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.cap-this.view.size));
+    //  (ahead more rings the way it moves: a chunk walked into painted before, never in the frame)
+    const A=this.ahead;for(let cy=r0-1-(dy<0?A:0);cy<=r1+1+(dy>0?A:0);cy++)for(let cx=c0-1-(dx<0?A:0);cx<=c1+1+(dx>0?A:0);cx++){const k=cy*this.cols+cx;if(cx<0||cy<0||cx>=this.cols||cy>=this.rows||this.view.has(k))continue;ring.push([(cx-mx)*dx+(cy-my)*dy,Math.hypot(cx-mx,cy-my),k,cx,cy])}
+    ring.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);ring.length=Math.min(ring.length,Math.max(0,this.capNow-this.view.size));
     for(let i=ring.length-1;i>=0;i--){const k=ring[i][2],c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c)}}
-    this.queue=ring.filter(q=>!this.chunks.has(q[2])).map(q=>[q[3],q[4]]);const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
-    for(const [k,j] of this.jobs)if(!keep.has(k)){this.jobs.delete(k);this.recycle(j.rec.cv)}
-    this.step(this.slice)},
-  step(ms){const t0=performance.now();while(this.queue.length&&performance.now()-t0<ms){const [cx,cy]=this.queue[0];if(this.chunks.has(cy*this.cols+cx)){this.queue.shift();continue}const j=this.start(cx,cy);
-      while(performance.now()-t0<ms)if(j.gen.next().done){this.done(j);this.queue.shift();break}}},
-  invalidate(r){this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
+    // (a chunk painted coarser than the scene now is (painted while the game loaded) painted again in the background, those in view first)
+    const stale=k=>{const c=this.chunks.get(k);return !c||(c.fine||1)<fr};
+    const at=k=>[k%this.cols,(k/this.cols)|0],ahead=ring.filter(q=>stale(q[2])),vs=[...this.view];
+    if(!live)this.queue=[...vs.filter(k=>stale(k)&&this.chunks.has(k)).map(at),...ahead.map(q=>[q[3],q[4]])];
+    else{
+      // (in play: the chunks not painted yet, in view or ahead, by when they are wanted: the view's gap to each (game px), or, none of
+      //  its land known yet, the later of that and your sight's gap to it (yourSight: the men's box and their reach); the work left
+      //  of each, summed in that order, over the time before it is wanted at the view's speed: what the deadlines ask a frame (need).
+      //  Then those in view painted coarser than the scene is)
+      const S=typeof yourSight==='function'&&typeof VIEW_SEEN!=='undefined'&&VIEW_SEEN.on?yourSight():null,sp=Math.max(this.vel,AP.speed),est=this.est||AP.est,miss=[];
+      for(const k of new Set([...vs,...ahead.map(q=>q[2])])){if(this.chunks.has(k))continue;const [cx,cy]=at(k),X=cx*CHUNK,Y=cy*CHUNK;let gap=Math.max(0,X-x1,x0-X-CHUNK,Y-y1,y0-Y-CHUNK);
+        if(S&&S.m&&!seenAny(X,Y,X+CHUNK,Y+CHUNK))gap=Math.max(gap,Math.max(0,X-S.x1,S.x0-X-CHUNK,Y-S.y1,S.y0-Y-CHUNK)-S.rm);miss.push([cx,cy,gap,k])}
+      miss.sort((p,q)=>p[2]-q[2]);let cum=0,rate=0;
+      for(const [,,gap,k] of miss){const j=this.jobs.get(k);cum+=Math.max(est*AP.rest,est-(j&&j.spent||0));rate=Math.max(rate,cum/Math.max(AP.soon,gap/sp*1000))}
+      this.need=Math.min(AP.most,rate*this.frameMs*AP.safety);
+      this.queue=[...miss.map(q=>[q[0],q[1]]),...vs.filter(k=>stale(k)&&this.chunks.has(k)).map(at),...ahead.filter(q=>this.chunks.has(q[2])).map(q=>[q[3],q[4]])]}
+    const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
+    // (a job no longer queued let go; in play keep of them kept while near the view, their work not lost when the way bends)
+    let spare=live?AP.keep:0;for(const [k,j] of this.jobs)if(!keep.has(k)){const [cx,cy]=at(k);if(spare>0&&cx>=c0-A-1&&cx<=c1+A+1&&cy>=r0-A-1&&cy<=r1+A+1){spare--;continue}this.jobs.delete(k);this.recycle(j.rec.cv)}
+    // (sliceView ms a frame while a chunk in view still waits for its fine paint; those ahead in the frame's time left over once it is
+    //  drawn (idle: main.js), slice ms here only while no game loop gives it that (the tests' frames))
+    let inView=false;for(const k of this.view)if(stale(k)){inView=true;break}
+    if(live){this.drawSpent=this.step(wait?AP.view:inView?this.sliceView:0);return}
+    this.step(inView?this.sliceView:performance.now()-this.idleAt<250?0:this.slice)},
+  // (a chunk in view not painted yet, in play: the minimap's colours (mini, a px a tile) smoothed over its part of the view, as long
+  //  as it takes; none where you know none of its land)
+  standIn(g,cx,cy,x0,y0,x1,y1,cam){const [X,Y,w,h]=this.rect(cx,cy),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;
+    if(sw<=0||sh<=0||(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh)))return false;
+    g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();return true},
+  // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; main.js loop)
+  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));this.drawSpent=0},
+  step(ms){let Q=this.queue;if(ArtWorkers.feed(this)){const now=performance.now();Q=[...this.miss].filter(([k,t])=>now-t>ART_WORKERS.help).map(([k])=>[k%this.cols,(k/this.cols)|0]);if(!Q.length)return 0}
+    const t0=performance.now();while(Q.length&&performance.now()-t0<ms){const [cx,cy]=Q[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){Q.shift();continue}const j=this.start(cx,cy),a=performance.now();let end=false;
+      while(performance.now()-t0<ms)if(j.gen.next().done){end=true;break}
+      j.spent=(j.spent||0)+performance.now()-a;if(end){this.learn(j);this.done(j);Q.shift()}}
+    return performance.now()-t0},
+  // (a chunk painted at the scene's resolution: its work (ms) eased into what one costs (est))
+  learn(j){if((j.rec.fine||1)>=(typeof paintRes==='function'?paintRes():1))this.est=this.est?this.est+(j.spent-this.est)*ART_PACE.learn:j.spent},
+  invalidate(r){ArtWorkers.stale(!r);this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
     if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
     this.forget(r.x*TILE-this.REACH*TILE,r.y*TILE-this.REACH*TILE,(r.x+r.w+this.REACH)*TILE,(r.y+r.h+this.REACH)*TILE)},
   // a lot placed, taken away or its model changed (lots.js relot): the plan kept (its ground kept clear of the land's nature) and only
   // the chunks its yard reaches painted again (a chunk's window reaches PX.WN_APRON past it)
-  relot(l){if(this.plan)this.plan.clear.fill(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);if(!this.chunks.size&&!this.jobs.size&&!this.full)return;
+  relot(l){if(ArtWorkers.list.length&&this.live()){const s=lotSig();if(s!==this.lsig){this.lsig=s;this.plan=null}}if(this.plan)this.plan.clear.fill(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);if(!this.chunks.size&&!this.jobs.size&&!this.full)return;
     const a=PX.WN_APRON+1;this.forget(l.x*TILE-a,l.y*TILE-a,(l.x+l.n)*TILE+a,(l.y+l.n)*TILE+a)},
   // (the chunks meeting the rect x0..x1, y0..y1 (px) let go, any being painted too, and marked to paint again in the whole picture)
   forget(x0,y0,x1,y1){
     for(let cy=Math.max(0,Math.floor(y0/CHUNK));cy<=Math.min(this.rows-1,Math.floor((y1-1)/CHUNK));cy++)for(let cx=Math.max(0,Math.floor(x0/CHUNK));cx<=Math.min(this.cols-1,Math.floor((x1-1)/CHUNK));cx++){
-      const k=cy*this.cols+cx,c=this.chunks.get(k),j=this.jobs.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(j){this.jobs.delete(k);this.recycle(j.rec.cv)}if(this.full)this.dirty.add(k)}},
+      const k=cy*this.cols+cx,c=this.chunks.get(k),j=this.jobs.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(j){this.jobs.delete(k);this.recycle(j.rec.cv)}if(this.full)this.dirty.add(k);ArtWorkers.forgot(k)}},
   whole(){const W=MW*TILE,H=MH*TILE;if(this.full&&(this.full.width!==W||this.full.height!==H))this.full=null;
     if(!this.full){this.full=mkcv(W,H);this.dirty=new Set();this.cnt.clear();for(let k=0;k<this.cols*this.rows;k++)this.dirty.add(k)}
     if(this.dirty.size){const g=this.full.getContext('2d', { willReadFrequently: true });
@@ -744,12 +748,9 @@ const WorldArt={
       // whole on a small map: WM.river and feat's road bits)
       if(k>1){let rd=-1,rv=-1;for(let b=0;b<k&&y*k+b<MH;b++)for(let a=0;a<k&&x*k+a<MW;a++){const j=(y*k+b)*MW+x*k+a;if(Rv[j]&3&&tiles[j]===T_WATER)rv=j;else if(Fe[j]&192&&tiles[j]===T_ROAD)rd=j}if(rv>=0)i=rv;else if(rd>=0)i=rd}
       rect(g,PAL[CLIMS[climate[i]]].mini[tiles[i]],x,y,1,1)}}))},
-  deck(c){let d=this.decks.get(c);if(d)return d;const L=[];let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
-    artGenXing(this.ensure(),(col,x,y,w,h)=>{w=w||1;h=h||1;L.push(col,x,y,w,h);x0=Math.min(x0,x);y0=Math.min(y0,y);x1=Math.max(x1,x+w);y1=Math.max(y1,y+h)},c);
-    const cv=mkc(x1-x0,y1-y0,g=>{for(let i=0;i<L.length;i+=5){g.fillStyle=L[i];g.fillRect(L[i+1]-x0,L[i+2]-y0,L[i+3],L[i+4])}});
-    d={cv,x:x0,y:y0,foot:y1-1};this.decks.set(c,d);return d},
-  standing(x0,y0,x1,y1,fn){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
-    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k))this.chunk(cx,cy);const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
+  deck(c){let d=this.decks.get(c);if(d)return d;d=wayDeck(c);this.decks.set(c,d);return d},
+  standing(x0,y0,x1,y1,fn,ready){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
+    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k)){if(ready)continue;this.chunk(cx,cy)}const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
       for(let j=Math.max(0,Math.floor((y0-S.Y)/cs));j<=Math.min(S.R-1,Math.floor((y1-S.Y)/cs));j++)for(let i=Math.max(0,Math.floor((x0-S.X)/cs));i<=Math.min(S.C-1,Math.floor((x1-S.X)/cs));i++){const q=j*S.C+i;
         for(let p=S.at[q];p<S.at[q+1];p++){const e=S.L[p];if(seen.has(e))continue;seen.add(e);if(fn){fn(S,e);continue}
           const E=S.E,o=e*4,dx=S.X+E[o],dy=S.Y+E[o+1],r=E[o+2],s=r>=0?PX.WN_SPR[r]:null,b=s?s.box:[0,0,0,-r-1];
@@ -758,6 +759,48 @@ const WorldArt={
   bytes(){let c=0,s=0;for(const q of this.chunks.values()){c+=q.cv.width*q.cv.height*4;s+=q.n.stand.bytes}let p=0;for(const q of this.pool)p+=q.width*q.height*4;const pl=this.plan;
     return{chunks:c,pool:p,full:this.full?this.full.width*this.full.height*4:0,plan:pl?pl.dep.byteLength+pl.clear.bytes+pl.nature.bytes:0,stand:s}}
 };
+/* the painter workers (the owner, 2026-11-18: "optimize the game performance on mobile"): in play, the chunks are painted on other cores
+   by copies of the game's own scripts (paintworker.js), so new land costs the game's frame nothing; the view shows its stand-in until a
+   chunk comes back. A world (or its lots changed: relot, lotSig) is sent to every worker as the save record (saveRecord), which each
+   loads as a save is, the world made again from its seed, and the plan made again from it on both sides (planned), so a chunk painted
+   there is the very one painted here (tests/paintworker.js). Each job carries the day and clock (the crops' season) and the scene's
+   scale; one a worker at a time; a job of an older world or of a chunk let go since (forgot) thrown away when it comes back. Nature's
+   sprites (PX.WN_SPR, numbered as each is first used) sent once by each worker with a key of their pixels, and the standing index's
+   numbers made the page's. Off with no Worker, OffscreenCanvas or createImageBitmap, in tests (WorldArt.liveOk) and wiki pages, with
+   ?noworkers, or once one fails (the chunks painted here again, sliced, as before); the logic that must read a chunk at once
+   (WorldArt.standing, chunk) still paints it here. ART_WORKERS: how many, and on/off */
+const ArtWorkers={list:[],n:0,id:0,fail:false,jobs:new Map(),ep:new Map(),keys:new Map(),
+  ok(){return ART_WORKERS.on&&!this.fail&&typeof window!=='undefined'&&!window.PAINT_WORKER&&typeof Worker!=='undefined'&&typeof OffscreenCanvas!=='undefined'&&typeof createImageBitmap!=='undefined'&&
+    typeof document!=='undefined'&&!/[?&]noworkers/.test(location.search)&&!/wiki\.html/.test(location.pathname)},
+  url(){const s=[...document.scripts].find(e=>/gfx\/worldart\.js(\?|$)/.test(e.src));return s?s.src.replace(/worldart\.js.*/,'paintworker.js'):null},
+  // (the pool, on the first frame in play (force: a test's); a world sent to it at once)
+  start(force){if(this.list.length||!(force||WorldArt.liveOk)||!this.ok())return false;const u=this.url();if(!u)return false;
+    const phone=typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches,hc=navigator.hardwareConcurrency||2,ask=/[?&]workers/.test(location.search),per=phone?ART_WORKERS.phone||(ask?1:0):ART_WORKERS.most;
+    if(per<1)return false;const n=Math.max(1,Math.min(per,hc-1));// (a phone: none unless ?workers, each a whole game's memory: ART_WORKERS.phone)
+    const scripts=[...document.scripts].map(e=>e.src).filter(x=>x&&!/\/tests\//.test(x));
+    try{for(let i=0;i<n;i++){const w=new Worker(u);w.wn=-1;w.busy=false;w.onmessage=e=>this.msg(w,e.data);w.onerror=e=>this.broke(e.message||'worker error');w.postMessage({t:'boot',scripts});this.list.push(w)}}catch(e){this.broke(e.message);return false}
+    WorldArt.plan=null;WorldArt.lsig=lotSig();WorldArt.ensure();return true},
+  // (a new plan here: the world sent again, every job before it thrown away when it comes back)
+  planned(){if(!this.list.length)return;this.n++;const rec=saveRecord();for(const w of this.list){w.wn=-1;w.postMessage({t:'world',rec,n:this.n})}},
+  stale(all){if(!this.list.length)return;this.n++;for(const w of this.list)w.wn=-1;if(all)this.jobs.clear()},
+  forgot(k){if(this.list.length)this.ep.set(k,(this.ep.get(k)||0)+1)},
+  ready(){return this.list.some(w=>w.wn===this.n)},
+  // (the chunks queued handed to the free workers, the nearest first: true while the workers paint (none here))
+  feed(WA){if(!this.list.length||!WA.live()||!this.ready())return false;const fine=typeof paintRes==='function'?paintRes():1;
+    for(const [cx,cy] of WA.queue){const free=this.list.find(w=>!w.busy&&w.wn===this.n);if(!free)break;const k=cy*WA.cols+cx,c=WA.chunks.get(k);if(c&&(c.fine||1)>=fine||this.jobs.has(k))continue;this.post(free,cx,cy,fine)}
+    return true},
+  post(w,cx,cy,fine,cb){const k=cy*WorldArt.cols+cx,id=++this.id;w.busy=true;this.jobs.set(k,{id,w,n:this.n,ep:this.ep.get(k)||0,cb,t:performance.now()});
+    w.postMessage({t:'paint',id,cx,cy,fine,n:this.n,day:G.day,clock:G.clock,vs:VS});return id},
+  msg(w,m){if(m.t==='ready'){if(m.n===this.n)w.wn=m.n;return}if(m.t==='error'){this.broke(m.msg);return}if(m.t!=='done'&&m.t!=='stale')return;w.busy=false;
+    const k=m.k,j=this.jobs.get(k);if(!j||j.id!==m.id)return;this.jobs.delete(k);if(m.t==='stale')return;const rec=this.rec(m.rec);
+    if(j.cb){j.cb(rec);return}if(m.n!==this.n||j.ep!==(this.ep.get(k)||0))return;const WA=WorldArt,c=WA.chunks.get(k);if(c&&(c.fine||1)>=(rec.fine||1))return;
+    const pj=WA.jobs.get(k);if(pj){WA.jobs.delete(k);WA.recycle(pj.rec.cv)}if(c)WA.recycle(c.cv);WA.done({k,rec})},
+  // (a chunk as it comes back: nature's sprites it is the first to send kept, the standing index's numbers made the page's)
+  rec(r){const S=PX.WN_SPR;for(const [key,d] of r.sprites||[])if(!this.keys.has(key)){const sp=d.bmp?Object.assign(d.bmp,d.f):d.f;sp._wn=S.length;S.push(sp);this.keys.set(key,sp._wn)}
+    const E=r.n&&r.n.stand&&r.n.stand.E,M=r.refs;if(E&&M)for(let o=2;o<E.length;o+=4){const q=E[o];if(q>=0)E[o]=this.keys.get(M[q])}delete r.sprites;delete r.refs;return r},
+  broke(msg){this.why=msg;if(this.fail)return;this.fail=true;for(const w of this.list)w.terminate();this.list=[];this.jobs.clear();if(typeof console!=='undefined')console.warn('Map painter workers off: '+msg)}};
+// (the holdings' lots as they stand, short: a change that is more than a model's picture (relot) makes the plan again with workers on)
+function lotSig(){let h=2166136261;for(const t of TOWNS)for(const l of t.lots||[])for(const v of [l.id,l.x,l.y,l.n,l.type,l.st,l.lv,l.yaw])for(const ch of String(v))h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0}
 // a world goes in (useWorld: a new game's too, whose lots differ from the title screen's): painted afresh when next drawn, minimap too
 onWorld(()=>WorldArt.invalidate());
 // the whole map painted afresh (a new plan: the tests)
@@ -798,36 +841,48 @@ function paintArena(c,steps){const W=BW,H=BH,P3=GROUND_RGB[c],seed=CLIMS.indexOf
       ()=>PX.canvas(Math.ceil(W/2),Math.ceil(H/2),g=>{const it=A.paintSteps(g,0,0,W,H,0,2);while(!it.next().done);})))}};
   return steps?(function*(){return A})():A}
 
-/* what moves on the map: water glints, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies at night */
-// a cloud's shadow at full size, pixel by pixel (hard edges, never scaled)
-const CLOUD=(()=>{const c=document.createElement('canvas');c.width=192;c.height=96;const g=c.getContext('2d', { willReadFrequently: true });g.fillStyle='#000';
+/* what moves on the map: water glints, fish leaping, cloud shadows drifting by day, smoke over holdings, snow in the frost, fireflies
+   at night. At the lab's scale where the canvas drawn on holds fine px (envFine: the fine scene's, sceneRes), else a game px each */
+// a cloud's shadow at full size, pixel by pixel (hard edges, never scaled): 2 px a game px (drawn at half), its rim thinner and
+// broken a fine px at a time
+const CLOUD=(()=>{const c=document.createElement('canvas');c.width=384;c.height=192;const g=c.getContext('2d', { willReadFrequently: true });
   const E=[...Array(9)].map((_,i)=>[36+hs(i,1,3)*120,28+hs(i,2,3)*40,(20+hs(i,3,3)*20)*1.4,(20+hs(i,3,3)*20)*.8]);
-  for(let y=0;y<96;y++)for(let x=0;x<192;x++)if(E.some(([cx,cy,rx,ry])=>((x+.5-cx)/rx)**2+((y+.5-cy)/ry)**2<=1))g.fillRect(x,y,1,1);return c})();
-// layer 0 (under everything): water glints; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
+  for(let y=0;y<192;y++)for(let x=0;x<384;x++){let d=9;for(const [cx,cy,rx,ry] of E)d=Math.min(d,((x/2+.25-cx)/rx)**2+((y/2+.25-cy)/ry)**2);if(d>1)continue;
+    if(d>.84&&hs(x,y,7)<(d-.84)/.16*.8)continue;g.fillStyle=d>.84?'rgba(0,0,0,.55)':'#000';g.fillRect(x,y,1,1)}return c})();
+// (the px of the canvas drawn on, in game px: a fine px where its transform holds them, else one)
+const envFine=()=>{const r=typeof sceneRes==='function'?sceneRes():1;return r>1&&ctx.getTransform().a>=r?1/r:1};
+// layer 0 (under everything): water glints, fish; layer 1 (over parties, under fog and night): clouds, smoke, snow, fireflies
 function drawEnv(cam,V,layer){
-  const now=performance.now()/1000,dark=darkness(),x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1);
+  const now=performance.now()/1000,dark=darkness(),x0=Math.max(0,Math.floor(cam.x/TILE)),y0=Math.max(0,Math.floor(cam.y/TILE)),x1=Math.min(MW-1,x0+Math.ceil(VW/TILE)+1),y1=Math.min(MH-1,y0+Math.ceil(VH/TILE)+1),
+    q=envFine(),f=(x,y,w,h)=>ctx.fillRect(Math.round(x/q)*q,Math.round(y/q)*q,w*q,h*q),live=(x,y)=>viewState(x,y)===2;// (moving only where you see: fog.js VIEW_SEEN)
   ctx.save();
-  // glints on water, sliding with the current
-  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tiles[ty*MW+tx]!==T_WATER)continue;const c=CLIMS[climate[ty*MW+tx]];if(c==='frost')continue;
-    for(let k=0;k<2;k++){const ph=(now*.35+hs(tx,ty,k))%1,a=Math.sin(ph*Math.PI);if(a<.15)continue;
-      ctx.globalAlpha=a*.55;ctx.fillStyle=c==='swamp'?'#8ab08a':'#d8ecfa';ctx.fillRect(tx*TILE+2+Math.floor(hs(tx,ty,k+4)*9)+Math.floor(ph*3)-cam.x,ty*TILE+2+Math.floor(hs(tx,ty,k+6)*12)-cam.y,3,1)}}ctx.restore();return}
-  // fish leap now and then over the fishing grounds (each its own colour: salmon, eel, pearl oysters' silver)
-  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER)continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
-    const fx=tx*TILE+4+Math.floor(hs(tx,ty,5)*6)+Math.floor(ph*6)-cam.x,fy=ty*TILE+10-Math.round(Math.sin(ph*Math.PI)*5)-cam.y;ctx.globalAlpha=1;ctx.fillStyle=GOODS[DEPOSITS[d].g].res==='fish'&&DEPOSITS[d].g!=='pearls'?GOODS[DEPOSITS[d].g].col:'#dfe4ea';ctx.fillRect(Math.round(fx),Math.round(fy),2,1);
-    if(ph<.15||ph>.85){ctx.fillStyle='#d8ecfa';ctx.fillRect(Math.round(fx)-1,ty*TILE+11-cam.y,4,1)}}ctx.globalAlpha=1}
+  // fish leap now and then over the fishing grounds (each its own colour: salmon, eel, pearl oysters' silver), lit on its back, its
+  // tail trailing as it turns over its arc, a splash and drops where it leaves the water and goes in
+  if(layer===0){for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const d=DEP_AT[ty*MW+tx];if(d<0||tiles[ty*MW+tx]!==T_WATER||!live(tx*TILE+8,ty*TILE+8))continue;const ph=(now*.4+hs(tx,ty,3)*7)%3;if(ph>1)continue;
+    const g=DEPOSITS[d].g,fx=tx*TILE+4+Math.floor(hs(tx,ty,5)*6)+ph*6-cam.x,fy=ty*TILE+10-Math.sin(ph*Math.PI)*5-cam.y,wy=ty*TILE+11-cam.y,up=ph<.5,n=Math.round(2/q);
+    ctx.globalAlpha=1;ctx.fillStyle=GOODS[g].res==='fish'&&g!=='pearls'?GOODS[g].col:'#dfe4ea';f(fx,fy,n,1);if(q<1){f(up?fx-q:fx+n*q,fy+(up?q:-q),1,1);ctx.fillStyle='#eef4f8';f(fx+q,fy-q,1,1)}
+    if(ph<.15||ph>.85){ctx.fillStyle='#d8ecfa';f(fx-1,wy,Math.round(4/q),1);if(q<1){ctx.globalAlpha=.7;f(fx-1.5,wy-q,1,1);f(fx+3,wy-2*q,1,1);f(fx+1,wy-3*q,1,1)}}}ctx.globalAlpha=1}
+  // glints on water, sliding with the wind; in the fine scene a fine px each (3 x 1 lab px), on the sea's and the lakes' water only
+  // (a river's current runs in its own streaks: gfx/worldterrain.js terrainEnts; the owner: "make a water effect like water")
+  if(layer===0){const r=typeof sceneRes==='function'?sceneRes():1,k1=1/r;for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){if(tiles[ty*MW+tx]!==T_WATER||!live(tx*TILE+8,ty*TILE+8))continue;const c=CLIMS[climate[ty*MW+tx]];if(c==='frost')continue;
+    for(let k=0;k<2;k++){const ph=(now*.35+hs(tx,ty,k))%1,a=Math.sin(ph*Math.PI);if(a<.15)continue;const gx=tx*TILE+2+Math.floor(hs(tx,ty,k+4)*9)+Math.floor(ph*3*r)*k1,gy=ty*TILE+2+Math.floor(hs(tx,ty,k+6)*12);
+      if(r>1&&drawnWater(gx,gy)!==1)continue;ctx.globalAlpha=a*.55;ctx.fillStyle=c==='swamp'?'#8ab08a':'#d8ecfa';ctx.fillRect(gx-cam.x,gy-cam.y,r>1?3*k1:3,r>1?k1:1)}}ctx.restore();return}
   // cloud shadows by day
   if(dark<.8){ctx.globalAlpha=.1*(1-dark);for(let i=0;i<14;i++){const span=MW*TILE+300,x=((hs(i,1,21)*span+now*6*(1+hs(i,2,21)))%span)-150,y=hs(i,3,21)*MH*TILE;
-    if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round(x-cam.x),Math.round(y-cam.y))}}
-  // smoke from the hearths of a few houses of each holding in view
+    if(x+192<cam.x||x>cam.x+VW||y+96<cam.y||y>cam.y+VH)continue;ctx.drawImage(CLOUD,Math.round((x-cam.x)/q)*q,Math.round((y-cam.y)/q)*q,192,96)}}
+  // smoke from the hearths of a few houses of each holding in view: puffs rounded at their corners, lit on top, greying as they rise
   for(const t of TOWNS){if(Math.hypot(t.x-P.x,t.y-P.y)>VW)continue;const hs0=(t.lots||[]).filter(l=>l.k==='house'&&l.st==='built').slice(0,t.T.smoke);
-    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y,ox=0,oy=0;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20)continue;
-      for(let k=0;k<5;k++){const ph=(now*.3+k/5+j*.37)%1;ctx.globalAlpha=(1-ph)*.45;ctx.fillStyle=ph<.3?'#8a8a8a':'#b4b4b4';const w=1+Math.round(ph*3);
-        ctx.fillRect(Math.round(sx+ox+Math.sin(ph*5+k)*2+ph*6-w/2),Math.round(sy+oy-ph*18),w,w)}}}
-  // snow falls in the frost (with the weather on, only when it snows: gfx/weather.js), fireflies glow on warm nights (all over the
-  // view: with ambient life on, its own fireflies in the woods and the marsh near you instead, ambient.js)
+    for(let j=0;j<hs0.length;j++){const l=hs0[j],sx=(l.x+l.n*.7)*TILE-cam.x,sy=l.y*TILE+2-cam.y;if(sx<-20||sy<-40||sx>VW+20||sy>VH+20||!live(sx+cam.x,sy+cam.y))continue;
+      for(let k=0;k<5;k++){const ph=(now*.3+k/5+j*.37)%1,w=1+ph*3,n=Math.max(1,Math.round(w/q)),x=sx+Math.sin(ph*5+k)*2+ph*6-w/2,y=sy-ph*18,c=n>2?1:0;
+        ctx.globalAlpha=(1-ph)*.45;ctx.fillStyle=ph<.3?'#8a8a8a':'#b4b4b4';f(x+c*q,y,n-2*c,n);if(c)f(x,y+q,n,n-2);
+        if(q<1&&n>2){ctx.fillStyle=ph<.3?'#a2a2a2':'#cacaca';f(x+q,y,n-3,1);f(x,y+q,1,n-3)}}}}
+  // snow falls in the frost (with the weather on, only when it snows: gfx/weather.js), some flakes a little star; fireflies glow on
+  // warm nights (all over the view: with ambient life on, its own fireflies in the woods and the marsh near you instead, ambient.js)
   const here=climAt(P.x,P.y);
-  if(here==='frost'&&!WEATHER.on){ctx.fillStyle='#ffffff';for(let i=0;i<70;i++){const x=(hs(i,1,31)*VW+now*(8+hs(i,2,31)*10)+Math.sin(now+i)*6)%VW,y=(hs(i,3,31)*VH+now*(18+hs(i,4,31)*14))%VH;ctx.globalAlpha=.5+hs(i,5,31)*.5;ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
-  else if(dark>.5&&(here==='grass'||here==='swamp')&&!AMBIENT.on){ctx.fillStyle='#e8f080';for(let i=0;i<22;i++){const x=(hs(i,1,41)*VW+Math.sin(now*.7+i)*20+VW)%VW,y=(hs(i,2,41)*VH+Math.cos(now*.5+i*2)*14+VH)%VH;ctx.globalAlpha=dark*(.4+.6*Math.max(0,Math.sin(now*2+i*1.7)));ctx.fillRect(Math.round(x),Math.round(y),1,1)}}
+  if(here==='frost'&&!WEATHER.on){ctx.fillStyle='#ffffff';for(let i=0;i<70;i++){const x=(hs(i,1,31)*VW+now*(8+hs(i,2,31)*10)+Math.sin(now+i)*6)%VW,y=(hs(i,3,31)*VH+now*(18+hs(i,4,31)*14))%VH,big=q<1&&hs(i,6,31)<.3;
+    ctx.globalAlpha=.5+hs(i,5,31)*.5;f(x,y,1,1);if(big){ctx.globalAlpha*=.6;f(x-q,y,1,1);f(x+q,y,1,1);f(x,y-q,1,1);f(x,y+q,1,1)}}}
+  else if(dark>.5&&(here==='grass'||here==='swamp')&&!AMBIENT.on){ctx.fillStyle='#e8f080';for(let i=0;i<22;i++){const x=(hs(i,1,41)*VW+Math.sin(now*.7+i)*20+VW)%VW,y=(hs(i,2,41)*VH+Math.cos(now*.5+i*2)*14+VH)%VH,a=dark*(.4+.6*Math.max(0,Math.sin(now*2+i*1.7)));
+    ctx.globalAlpha=a;f(x,y,1,1);if(q<1){ctx.globalAlpha=a*.35;f(x-q,y,1,1);f(x+q,y,1,1);f(x,y-q,1,1);f(x,y+q,1,1)}}}
   ctx.restore();
 }
 

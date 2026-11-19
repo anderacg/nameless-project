@@ -92,7 +92,7 @@ class Dismount{
     if(how==='thrown'||how==='killed')Dismount.fall(u,how==='killed'?'Horse down':'Unhorsed');Dismount.role(u)}
   // thrown: down a moment (stunned with physics off), his unit shaken, what befell him over him (say) and a puff of dust
   static fall(u,say){const D=DISMOUNT;if(PHYSICS.on){u.down=u.downFor=D.stun;u.acl=0}else stun(u,D.stun);if(!steady(u))shake(u,PHYSICS.hit.downShock);
-    B.floats.push({x:u.x,y:u.y-20,t:say,life:1,c:'#ffc070'});
+    B.floats.push({x:u.x,y:u.y-fxUp(20),t:say,life:1,c:'#ffc070'});
     for(let i=0;i<6;i++){const a=rnd(0,6.283),v=rnd(10,35);vfx({k:'dust',x:u.x,y:u.y-1,vx:Math.cos(a)*v,vy:Math.sin(a)*v*.4,r:rnd(2,3),grow:8,life:rnd(.4,.7),col:dustCol()})}}
   // he climbs back into the saddle
   static up(u){const h=u.horse;if(!u.afoot||!h||h.dead)return;h.ride();u.x=h.x;u.y=h.y;u.s=Dismount.rideOf(u);u.afoot=false;u.remount=null;u.mountT=0;Dismount.role(u)}

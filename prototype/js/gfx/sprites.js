@@ -1,6 +1,9 @@
 'use strict';
 /* ---------- sprites ---------- */
 const mkc=(w,h,f)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d', { willReadFrequently: true });g.imageSmoothingEnabled=false;f(g);return c};
+// a canvas drawn into every frame (the scene, the overlay over it, the grass, the fog's mist, the depth's masks): left to the GPU
+// with the screen's own (core.js RENDER.gpu, ?gpu=1), else as every other (willReadFrequently: the CPU's, read back cheaply)
+const mkg=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d',{willReadFrequently:!RENDER.gpu}).imageSmoothingEnabled=false;return c};
 const rect=(g,col,x,y,w=1,h=1)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
 const C={skin:'#e8c39e',dark:'#1a1410',steel:'#c9ced8',steel2:'#8e95a6',wood:'#8b5a2b',gold:'#e8b94a',hood:'#3d6b3a',team:['#3d74d6','#b8403a'],teamD:['#2a4f99','#7e2a26'],horse:'#7a4a26',horseD:'#573219'};
 const spr={};
@@ -22,6 +25,9 @@ const ATK_BASE={swing:6,thrust:9,overhead:12,jab:29,hook:32,kick:35,grapple:38},
 // 44 braced, both hands on his pole levelled before him (a pike, a spear with no shield); 45 both hands on a great weapon in guard
 // (the owner, 2026-11-06: "bracing spear will adjust their pose to grip a spear and hold the shield to the front"; a shield-bearer
 // braces behind it: DEF_POSE)
+// (scrambling up a cliff: its four steps, walk 16-19 (people.js), on the map (march.js marchClimbPose); a leap down off a ledge, walk
+// 20; crawling up out of the water, its four, walk 21-24 (march.js marchAct))
+const CLIFF_POSE=50,JUMP_POSE=54,CRAWL_POSE=55;
 const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,BRACE_POSE=44,GRIP_POSE=45,LIFE_POSES={41:'flinch',42:'look',43:'shift',44:'brace',45:'grip'};
 // bare: in battle, a soldier's melee weapon is drawn apart (weapons.js); the sprite leaves it off, the body and the rest of its
 // gear kept by pose in spr (figures.js); else the finished figure, its weapon on it, kept in FIGURES (an LRU: the map, the cards)
@@ -74,8 +80,10 @@ const wildKindOf=id=>{if(!id||!WILD_ART.on||!PX.WILD_KINDS)return null;const D=C
 // an animal on the map as in a battle (the owner, 2026-11-12: "the sprite in world map should be the same as battle"): its battle figure, s,
 // drawn at k (the marchers' scale: march.js), w its body's width there and h its height; its map step fr (0 standing) a walking pose;
 // v its coat. WILD_ART off: its map figure, at 1
-function critterArt(id,fr,v){const kd=wildKindOf(id);if(!kd){const s=critterSprite(id,fr);return{s,k:1,w:s.cw,h:s.ch}}
-  const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,s=beastSprite(kd,1,v,fr?2+(fr>>1)%4:0),[bw,bh]=artBox(s);return{s,k,w:Math.ceil(bw*k),h:Math.ceil(bh*k)}}
+// (how: its pose on the map, the wild game's between its flights (critters.js Herd draw): 'run' its gallop (fr its step), 'graze' its head
+//  down nibbling, 'rest' bedded down; else walking by fr, standing at 0)
+function critterArt(id,fr,v,how){const kd=wildKindOf(id);if(!kd){const s=critterSprite(id,how?0:fr);return{s,k:1,w:s.cw,h:s.ch}}
+  const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,s=beastSprite(kd,1,v,how==='run'?15+(fr>>1)%4:how==='graze'?PX.BEAST_GRAZE+(fr&1):how==='rest'?PX.BEAST_REST:fr?2+(fr>>1)%4:0),[bw,bh]=artBox(s);return{s,k,w:Math.ceil(bw*k),h:Math.ceil(bh*k)}}
 // (a picture's drawn width, and its height over its feet: its pixels' box, kept)
 const ART_BOX=new WeakMap();
 function artBox(c){let b=ART_BOX.get(c);if(b)return b;const d=c.getContext('2d',{willReadFrequently:true}).getImageData(0,0,c.width,c.height).data;let x0=c.width,x1=-1,y0=c.height;
@@ -89,7 +97,7 @@ const DOWN_LOOK=new WeakMap();
    (team 0) wears the side's blue; a wild one nothing. Cached by kind, side, variant and pose (the climbs walk, the other blows
    strike) */
 const BEAST_POSES=PX.BEAST_POSES;
-const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
+const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=PX.BEAST_GRAZE&&p<=PX.BEAST_REST?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
 function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0);const k='bst'+type+(team?1:0)+v+'p'+pose;
   return spr[k]||(spr[k]=cellOf(PX.beast(type,{v,pose,team:team?1:0})))}
 // a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing
@@ -434,7 +442,7 @@ function itemIcon(def){const k='ic'+def.icon+def.col;return spr[k]||(spr[k]=mkc(
 // txt and txtPic keep the existing small pixel font for other canvas text.
 let TXTQ=null;
 const TXT_FONT='8px Silkscreen, "Courier New", monospace';
-function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y,col,al]);return}
+function txt(s,x,y,col,al){if(TXTQ&&(ctx===TXTQ.ctx||ctx===TXTQ.lo)){TXTQ.push([s,x,y-(typeof LIFT_NOW==='number'?LIFT_NOW:0),col,al]);return}
   // (on the map's canvas of VS px a game px, its picture enlarged; a battle drawn sharp (core.js bview) writes it at its own px)
   if(CVS>1&&ctx===ctx0&&MAPZOOM.map){const c=txtPic(s,col,al);ctx.drawImage(c,x-c.ox,y-c.oy);return}
   ctx.font=TXT_FONT;ctx.textAlign=al||'left';ctx.textBaseline='alphabetic';ctx.fillStyle='#000';ctx.fillText(s,x+1,y+1);ctx.fillStyle=col||'#e4e0cf';ctx.fillText(s,x,y)}

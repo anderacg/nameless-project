@@ -34,7 +34,7 @@ class GateFile{
   // (each man filing in, by his feet among everyone, fading at the gate)
   static draw(ents,cam){const X=GATE_FILE;for(const f of this.list){const own=f.o===P||f.o.faction==='player';
     if(f.fig){const u=f.men[0];if(!u)continue;const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade),L=[];f.o.draw(L,cam,vis());for(const e of L){const g=e.f;ents.push({...e,f:()=>{ctx.save();ctx.globalAlpha*=a;try{g()}finally{ctx.restore()}}})}continue}
-    for(const u of f.men){const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade);ents.push({y:u.y,own,f:()=>{ctx.save();ctx.globalAlpha*=a;drawMarcher(u,f.o,cam);ctx.restore()}})}}}
+    for(const u of f.men){const a=Math.min(1,Math.hypot(f.g.x-u.x,f.g.y-u.y)/X.fade);ents.push({x:u.x,y:u.y,own,f:()=>{ctx.save();ctx.globalAlpha*=a;drawMarcher(u,f.o,cam);ctx.restore()}})}}}
   // (a lord at rest outside a holding with no room for his men, or a companion's party told to stay there: its camp beside its
   // gate, in your sight)
   static camps(ents,cam,V){if(!GATE_FILE.camp){CampSite.purge();return}const S=yourSight(V);

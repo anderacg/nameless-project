@@ -108,7 +108,7 @@ cv.addEventListener('pointermove',e=>{const p=toCanvas(e);G.mouse.x=p.x;G.mouse.
   const tip=$('#tip');if(holdCardUp()&&e.pointerType==='touch')return;// (a long press's card stays until the next tap: below)
   if(G.mode!=='world'||G.modal||e.pointerType==='touch'){tip.hidden=true;if(G.mode!=='battle')cv.style.cursor='';return}
   const mini=!G.place&&fullMapHit(p);cv.style.cursor=mini?'pointer':'';// (over the minimap: it opens the full map, not what lies under it)
-  const o=!mini&&pickAt(G.cam.x+p.x,G.cam.y+p.y),h=mini?MINI_TIP:o&&tipFor(o)||rumourTip(G.cam.x+p.x,G.cam.y+p.y)||trackTip(G.cam.x+p.x,G.cam.y+p.y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
+  const o=!mini&&pickAt(G.cam.x+p.x,liftGround(G.cam.x+p.x,G.cam.y+p.y).y),h=mini?MINI_TIP:o&&tipFor(o)||rumourTip(G.cam.x+p.x,liftGround(G.cam.x+p.x,G.cam.y+p.y).y)||trackTip(G.cam.x+p.x,liftGround(G.cam.x+p.x,G.cam.y+p.y).y);if(!h){tip.hidden=true;return}// (nothing there: a rumour's "?", news.js; else tracks you see, world/tracks.js)
   tip.innerHTML=h;tip.classList.remove('hold');tip.hidden=false;const r=cv.getBoundingClientRect(),x=e.clientX-r.left+16,y=e.clientY-r.top+14,[ox,oy]=tipOver(tip);
   tip.style.left=Math.max(ox,Math.min(x,r.width-tip.offsetWidth-6))+'px';tip.style.top=Math.max(oy,Math.min(y,r.height-tip.offsetHeight-6))+'px'});
 // (px a card's banner tab stands out past its left and top edges (ui.js tipFlag): kept on the screen with it)
@@ -120,7 +120,7 @@ cv.addEventListener('pointerdown',e=>{
   if(G.modal)return;
   if(G.mode==='world'&&!G.place&&e.button===0&&fullMapHit(p)){if(fullMapOpen())eatClick();return}// (a click or a tap on the minimap: the full map, map.js; the click its letting go still sends goes nowhere)
   if(e.pointerType==='touch'&&touchDown(e,p))return;// (a finger in battle or on the map: below; it acts when it lifts)
-  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=G.cam.y+p.y;if(G.place){if(e.button===2){G.place=null;toast('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
+  if(G.mode==='world'){const wx=G.cam.x+p.x,wy=liftGround(G.cam.x+p.x,G.cam.y+p.y).y;if(G.place){if(e.button===2){G.place=null;toast('You stop placing.')}else placeClick(wx,wy);return}if(P.stay)return stayClick(wx,wy);
     if(e.button===0)ringPress(e,wx,wy);else worldMove(wx,wy)}// (the left button: nothing yet; let go, you travel (on a party, its ring: worldGo); held still, the action ring: ring.js. The right one travels, or chases, at once)
   else if(G.mode==='scene')sceneClick(p.x,p.y);
   // battle: RTS command (commands.js): left-click or drag to select, right-click to move or attack (a touch: select, then a
@@ -167,14 +167,14 @@ function worldMove(wx,wy){followStop();Talk.clear();G.pitch=null;G.byRoad=null;i
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
    once, as one click did before. Which: world.js FOLLOW.kinds, not in a fight (a click on a fight meets it). last: the ring a
    click opened, its party, when. At (wx, wy), where you clicked it (the owner, 2026-11-01: a big army clicked on its flank opened its
-   ring far off at its middle); none given, at the party */
+   ring far off at its middle); none given, at the party. Up by the land's lift there, where it is drawn (worldterrain.js liftAt) */
 const PARTY_CLICK={dbl:400,r:16,last:null};
 function partyRing(o,wx,wy){if(!o||!(FOLLOW.kinds.includes(objKind(o))||SEAMLESS.on&&objKind(o)==='monster')||o.fight||G.mode!=='world'||G.modal)return false;
-  const at=Number.isFinite(wx)&&Number.isFinite(wy),x=at?wx:o.x,y=at?wy:o.y-6,r=cv.getBoundingClientRect(),cx=r.left+(x-G.cam.x)*r.width/VW,cy=r.top+(y-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
+  const at=Number.isFinite(wx)&&Number.isFinite(wy),x=at?wx:o.x,y=at?wy:o.y-6,L=typeof liftAt==='function'?liftAt(x,at?y:o.y):0,r=cv.getBoundingClientRect(),cx=r.left+(x-G.cam.x)*r.width/VW,cy=r.top+(y-L-G.cam.y)*r.height/VH,items=partyRingItems(o,cx,cy);if(!items.length)return false;
   const R=new ActionRing(cx,cy,items).open();PARTY_CLICK.last={R,o,t:performance.now()};return true}
 // (a press at canvas point p with a ring open: the party it is on, if a click opened that ring on it within PARTY_CLICK.dbl ms)
 function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
-  const wx=G.cam.x+p.x,wy=G.cam.y+p.y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
+  const wx=G.cam.x+p.x,wy=liftGround(G.cam.x+p.x,G.cam.y+p.y).y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
 // its ring's Approach (or the double click): today's chase of o, or met at once beside it (world.js approach)
 function worldApproach(o){followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
@@ -195,7 +195,7 @@ function touchDown(e,p){const T=TOUCH,id=e.pointerId;
   if(e.isPrimary&&T.pts.size){touchDrop();T.pts.clear();T.spent.clear();T.pinch=null}// (the first finger of a new touch: anything a lost lift left behind goes)
   if(G.mode==='world'){if(holdCardUp()){hideTip();touchDrop();T.pts.set(id,p);T.spent.add(id);return true}if(G.place||P.stay)return false;// (the card up: this tap only puts it away)
     p.cx=e.clientX;p.cy=e.clientY;T.pts.set(id,p);if(T.pts.size>1){touchDrop();T.spent.add(id);if(T.pts.size===2){for(const k of T.pts.keys())T.spent.add(k);T.pinch={map:true,d0:touchSpan()}}return true}// (two fingers: a pinch, never a tap: zooms the map by steps, touchMove)
-    T.lp={id,mode:'world',cx:e.clientX,cy:e.clientY,wx:G.cam.x+p.x,wy:G.cam.y+p.y,t0:performance.now()};touchTimer();return true}
+    T.lp={id,mode:'world',cx:e.clientX,cy:e.clientY,wx:G.cam.x+p.x,wy:liftGround(G.cam.x+p.x,G.cam.y+p.y).y,t0:performance.now()};touchTimer();return true}
   if(G.mode!=='battle'||!B)return false;T.pts.set(id,p);
   if(T.pts.size===2){touchDrop();for(const k of T.pts.keys())T.spent.add(k);const m=touchMid();T.pinch={d0:m.d,z0:B.cam?B.cam.z:1,w:toField(m)};return true}
   if(T.pts.size>2){T.spent.add(id);return true}
@@ -407,7 +407,7 @@ class MobileBattleHud{
     this.screen=$('#screen');this.enabled=false;this.nodes=[];
     this.root=document.createElement('div');this.root.className='mobile-battle-hud';this.root.hidden=true;
     const drawer=(id,title,body)=>'<section id="'+id+'" class="mbh-drawer" aria-label="'+title+'" hidden><header><strong>'+title+'</strong><button type="button" class="mbh-close" aria-label="Close '+title+'">×</button></header>'+body+'</section>';
-    this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">More ▴</button><div data-bplace="menu"></div></nav>'+
+    this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><div class="mbh-action" data-bplace="action"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">More ▴</button><div data-bplace="menu"></div></nav>'+
       drawer('battleSpeedChoices','Battle speed','<div class="mbh-speed-grid" data-bplace="speed"></div>')+
       drawer('battleOrderChoices','Orders & formations','<p class="mbh-help">Unit abilities affect selected troop groups. Commander abilities affect friendly groups near your hero.</p><div data-bplace="orders"></div><div data-bplace="powers"></div>')+
       drawer('battleMoreChoices','Battle view','<div class="mbh-options" data-bplace="options"><button type="button" data-bview="out">Zoom −</button><button type="button" data-bview="in">Zoom +</button><button type="button" data-bview="reset">Reset view</button></div><div data-bplace="info"></div>');
@@ -433,12 +433,13 @@ class MobileBattleHud{
       }else{for(const n of this.nodes){n.home.after(n.el);n.home.remove()}this.nodes=[]}
       this.measure();
     }
-    if(enabled){this.move($('#huntEnd'),'options');this.move($('#bCmd'),'powers');if(this.battle!==B){this.battle=B;this.update()}}
+    if(enabled){this.move($('#huntEnd'),'action');// (End hunt an action button over the dock, always in reach in a hunt: the owner, 2026-11-18)
+      this.move($('#bCmd'),'powers');if(this.battle!==B){this.battle=B;this.update()}}
   }
   close(){const was=this.panels.some(p=>!p.panel.hidden);for(const p of this.panels){p.panel.hidden=true;p.button.setAttribute('aria-expanded','false')}return was}
   measure(){if(this.enabled){const height=this.root.getBoundingClientRect().height;if(height>0)this.screen.style.setProperty('--mobile-battle-height',height+'px')}}
   update(){
-    if(!this.enabled||!B)return;const speed=B.world?G.speed:B.speed,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
+    if(!this.enabled||!B)return;const speed=B.speed||1,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
     const labels={hold:'Hold',charge:KITS.keys2?'Run':'Charge',advance:'Walk',withdraw:'Retreat',firm:'Hold ground',cease:'Hold fire',skirmish:'Skirmish',melee:'Melee',shieldWall:'Shields'};
     for(const b of this.root.querySelectorAll('.obtn'))if(!b.querySelector('.mbh-label')){
       const label=b.id==='bAmove'?'Attack move':labels[b.dataset.order||b.dataset.flag]||(b.dataset.form&&FORMS[b.dataset.form]?.n)||(b.dataset.abil&&UNIT_SKILLS[b.dataset.abil]?.n);

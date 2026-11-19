@@ -80,7 +80,7 @@ class Site extends WorldObject{
   // met (clicked: meet): a fight, or its window; false if nothing opened. A visit: what your scouts saw (G.siteSpy) is this visit's
   enter(){
     if(this.cleared&&this.empties&&!this.emptyPage){log('The '+this.name+' lies empty. Come back in '+Math.max(1,this.back-G.day)+' days.');return false}
-    G.site=this;G.siteMsg='';G.siteTab=null;G.siteSpy=null;G.mode='site';showSite();return true}
+    G.site=this;G.siteMsg='';G.siteTab=null;G.siteSolo=null;G.siteSpy=null;G.mode='site';showSite();return true}
   // its window (showSite): a place with rooms to walk between (its screen RAIL_SCREEN: the travellers) has its areas down the
   // rail: what it is (about: its overview), its places (each {k, n, short, ico, note (a few words on what is there, for the
   // overview), body (its window: people as cards, things as rows: window.js)}; one by default, its whole panel); a place with
@@ -133,12 +133,16 @@ class Site extends WorldObject{
   box(box,camp){box(this,this.x-8,this.y-8,this.x+8,this.y+8)}
   // its footprint, what is drawn of it (structures.js siteSprite: its picture's opaque box, set as Site draw sets it), reached from
   // your army's ring (march.js ringReach)
-  reachRadius(){const sp=siteSprite(this),b=opaqueBox(sp),x=this.x-sp.ax,y=this.y+8-sp.ay;return boxReach(this,{x0:x+b[0],y0:y+b[1],x1:x+b[2]+1,y1:y+b[3]+1})}
+  reachRadius(){const b=sitePicBox(this,siteSprite(this));return boxReach(this,{x0:b[0],y0:b[1],x1:b[2],y1:b[3]})}
   // drawn once you know of it (as you last saw it, outside your sight: a building, render.js drawWorld), no words (its name in its tip); dotted
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
   draw(ents,cam,V){if(!this.inView(V))return;const s=this;
-    const sp0=siteSprite(s);ents.push({st:true,y:s.y,sh:sp0.sh?[sp0.sh,Math.round(s.x-cam.x)-sp0.ax,Math.round(s.y-cam.y)+8-sp0.ay]:null,f:()=>{const sx=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y),sp=siteSprite(s);if(sp.gr)ctx.drawImage(sp.gr,sx-sp.ax,sy+8-sp.ay);if(s.cleared)ctx.globalAlpha=.5;ctx.drawImage(sp,sx-sp.ax,sy+8-sp.ay);if(!s.cleared)depthPic(sp,sx-sp.ax,sy+8-sp.ay);if(sp.fire&&!s.cleared)drawFire(sx-sp.ax+sp.fire[0],sy+8-sp.ay+sp.fire[1],s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),sx-sp.ax+sp.flag[0],sy+8-sp.ay+sp.flag[1],s.seed);ctx.globalAlpha=1;}})}
+    // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
+    //  its fire and flag at their own; lifted by the land at its foot, as a building is at its front (ly), a cave at its mouth)
+    const sp0=siteSprite(s),k=siteK(s);ents.push({st:true,x:s.x,y:s.y,ly:s.type==='cave'?s.y:s.y+7,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
+      if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);// (its yard made finer with it: structures.js buildFine)
+if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?', empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)
@@ -463,7 +467,12 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
 const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
 const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: Lair worn, keep)
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
+// (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
+function hillyAt(tx,ty){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(tx+i,ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
 class Hideout extends Lair{
+  // (wild ground first (wildGround), for half of siteSpot's tries: its pick's best of a few draws, once the gaps to the other sites
+  // took it, fell back to plain clear ground, so barely more than half stood in the wilds)
+  static wildFirst=true;
   static ground(tx,ty){return wildLand().at[ty*MW+tx]===1}
   static clear(tx,ty){return campClear('hideout',tx,ty)}
   static fits(tx,ty){return !estateNear(tx,ty,BANDIT_GAP)}
@@ -477,7 +486,7 @@ class Hideout extends Lair{
      hillside where hills or peaks stand by it, else a timbered tunnel dug into the ground, fought inside (battle/interior.js) */
   get lairLook(){if(this.within||hash(this.tx,this.ty,HIDEOUT_LAIR.salt)>=HIDEOUT_LAIR.share)return null;return this.hilly?'cave':'tunnel'}
   // (hills or peaks round it: HIDEOUT_LAIR.hills of them within r tiles)
-  get hilly(){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(this.tx+i,this.ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
+  get hilly(){return hillyAt(this.tx,this.ty)}
   get tunnel(){return !!this.lairLook}
   get T(){return this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type]}
   // (a lair its own name: HIDEOUT_LAIR.names)
@@ -520,6 +529,13 @@ class GoblinCamp extends Hideout{
   get T(){return this.tunnel?GOBLINS.warren.T:SITE_TYPES[this.type]}
   get lairCol(){return GOBLINS.warren.banner}
   get tune(){return GOBLINS.camp}
+  // (GOBLINS.warren.share of its picks a tile of the wild land among hills, clear for a camp, if one turns up in HIDEOUT_PLACE.draw
+  // looks; else a hideout's pick. By the hideouts' pick alone few camps stood by hills, a warren seldom made: 2026-11-17)
+  static pick(){const X=GOBLINS.warren,H=X.on?GoblinCamp.hills(wildLand()):[];
+    if(H.length&&Math.random()<X.share)for(let k=0;k<HIDEOUT_PLACE.draw;k++){const i=H[rint(0,H.length-1)],tx=i%MW,ty=(i-tx)/MW;if(this.clear(tx,ty))return[tx,ty]}
+    return super.pick()}
+  // (the wild land's tiles among hills (hillyAt) clear for a camp, once for each wild land)
+  static hills(L){const C=GoblinCamp.hillTiles;if(C&&C.of===L)return C.list;const list=L.list.filter(i=>{const x=i%MW,y=(i-x)/MW;return hillyAt(x,y)&&this.clear(x,y)});GoblinCamp.hillTiles={of:L,list};return list}
   // (its name in its own word: a warren's Warren, a camp's Camp; a name taken in either word taken; one draw, as before)
   setup(sites){this.band='goblins';const camp=n=>n.replace(/ Warren$/,' Camp'),used=new Set(sites.map(o=>camp(o.name))),free=GOBLINS.names.filter(n=>!used.has(camp(n))),
     n=camp(unusedName(free.length?free:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}
@@ -546,18 +562,22 @@ const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof Gob
 // traders' fire beside a bandits' den; a bandit camp stands on its spot first, a hideout keeps the gap to the travellers before it);
 // a hideout far from another and from the bandit camps (the owner, 2026-10-23: deep in the wilds, each its own stretch of them)
 const SITE_GAP={travelers:{travelers:ENCAMP.gap,camp:16,hideout:16},hideout:{travelers:16,camp:16,hideout:20},goblins:{travelers:16,camp:16,hideout:16,goblins:20}};
-const siteGap=(a,b)=>SITE_GAP[a]&&SITE_GAP[a][b]||0;
+// (either way round: a kind placed first (SITE_SPACE.first) keeps its gap from those after it)
+const siteGap=(a,b)=>Math.max(SITE_GAP[a]&&SITE_GAP[a][b]||0,SITE_GAP[b]&&SITE_GAP[b][a]||0);
 // a free tile for a site of this kind: reachable from the roads, on its ground, its kind's tiles from every holding (C.away, else
-// data/world.js SITE_AWAY), clear of other sites (the camps among
-// them; SITE_GAP's kinds farther); each try a tile its kind picks (Site pick)
+// data/world.js SITE_AWAY) and SITE_SPACE.lots from any holding's lots, clear of other sites by gap (the camps among
+// them; SITE_GAP's kinds farther; past half its tries SITE_SPACE.relax of gap); each try a tile its kind picks (Site pick)
 let ROAD_TILES=null;onWorld(()=>{ROAD_TILES=null});
+// (a holding's lot within r tiles of a tile: occAt above 0, its estates, fields and walls)
+function nearLot(tx,ty,r){for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(i*i+j*j<=r*r&&occAt(tx+i,ty+j)>0)return true;return false}
 function siteSpot(type,sites,gap,C=SITE_CLASS[type]){
   const from=startHolding();
   for(let k=0;k<5000;k++){
-    const g=k<2500?gap:gap*.6,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
+    const g=k<2500?gap:gap*SITE_SPACE.relax,[tx,ty]=C.pick(),fy=C.reachRow(ty);// where parties reach it
     if(tx<3||ty<3||tx>MW-4||ty>MH-4)continue;
     if(!passable(tAt(tx,fy))||!Router.reach(from,{x:(tx+.5)*TILE,y:(fy+.5)*TILE})||!C.ground(tx,ty)||!C.clear(tx,ty)||!C.fits(tx,ty))continue;
-    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<(C.away||SITE_AWAY[type]||SITE_AWAY.any))||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
+    if(k<2500&&Object.hasOwn(C,'wildFirst')&&!wildGround(tx,ty))continue;// (a hideout on wild ground while one is to be had: Hideout.wildFirst)
+    if(TOWNS.some(t=>Math.hypot(t.tx-tx,t.ty-ty)<(C.away||SITE_AWAY[type]||SITE_AWAY.any))||nearLot(tx,ty,SITE_SPACE.lots)||sites.some(s=>Math.hypot(s.tx-tx,s.ty-ty)<Math.max(g,siteGap(type,s.type))))continue;
     return[tx,ty];
   }
   return null;
@@ -574,9 +594,10 @@ function makeSite(type,tx,ty,sites,more){
 // a world's sites: a camp on each of its camp spots, then of each other kind as many as the world holds (density(WM), data/world.js)
 function genSites(){
   const sites=[],N=density(WM).sites;for(const c of CAMP_SPOTS)sites.push(makeSite('camp',c.tx,c.ty,sites));
-  // (a kind with a switch (on) only while it is on; one with its own stream (stream: core/rng.js) placed from it)
-  for(const type of Object.keys(SITE_TYPES)){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;if(T.place){T.place(sites);continue}
-    const place=()=>{for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,9);if(p)sites.push(makeSite(type,p[0],p[1],sites))}};if(T.stream)Rng.use(T.stream,place);else place()}
+  // (SITE_SPACE.first's kinds first; a kind with a switch (on) only while it is on; one with its own stream (stream: core/rng.js) placed from it)
+  const F=SITE_SPACE.first.filter(k=>k in SITE_TYPES);
+  for(const type of F.concat(Object.keys(SITE_TYPES).filter(k=>!F.includes(k)))){const T=SITE_TYPES[type];if(T.spots||T.on&&!T.on())continue;if(T.place){T.place(sites);continue}
+    const place=()=>{for(let n=0;n<(N[type]||0);n++){const p=siteSpot(type,sites,SITE_SPACE.own[type]??SITE_SPACE.gap);if(p)sites.push(makeSite(type,p[0],p[1],sites))}};if(T.stream)Rng.use(T.stream,place);else place()}
   return sites;
 }
 
@@ -584,12 +605,16 @@ function genSites(){
 // spot sites in view, and forget the one you last left once you are well away from it (G.lastSite: REACH past where your army
 // reaches it). A site opens only when you clicked or tapped it (the owner, 2026-10-22): a click beside it opens it at once, one
 // further off walks you there and opens it on arrival (world.js clickAt, the chase: marchStep meets it); walking past one, or
-// stopping by one you did not click, opens nothing. Never opens anything itself (false)
+// stopping by one you did not click, opens nothing. Never opens anything itself (false). SITE_SPOT: px round a site your scouts
+// spot whose ground becomes known with it (fog.js revealDisk)
+const SITE_SPOT=40;
 function updateSites(){
   const S=yourSight();Discovery.check();
   for(const s of W.sites){
     const dd=Math.hypot(P.x-s.x,P.y-s.y);
-    if(!s.seen&&s.scoutable&&S.sees(s.x,s.y,.9)){s.seen=true;train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
+    // (spotted: its ground known too, so it shows on the map past the fog of land you never saw (the owner, 2026-11-16: "why I cannot
+    //  see cave but in the map and scout can see"): SITE_SPOT px round it)
+    if(!s.seen&&s.scoutable&&S.sees(s.x,s.y,.9)){s.seen=true;revealDisk(s.x,s.y,SITE_SPOT);train('scout',4);log('Your scouts spot '+s.scoutLine()+'.')}
     if(G.lastSite===s&&dd>worldBattleReach(s)+REACH)G.lastSite=null;
   }
   return false;
@@ -633,6 +658,9 @@ function showSite(){
   if(s.screen===PAGE_SCREEN){const p=s.page(r,G.siteTab);return PAGE_SCREEN.show({ico:s.T.ico,title:p.title||s.name,sub:p.title?s.name:where,banner:s.view(),body:p.body,acts:p.acts,note:p.note,msg:p.msg??G.siteMsg,
     back:p.back||null,close:p.close||['site-leave',null,'Leave']},'site:'+s.i+':'+(G.siteTab||''))}
   const ps=s.places(r).filter(Boolean),p=ps.find(x=>x.k===G.siteTab);if(!p)G.siteTab=null;
+  // (one service opened alone (a camp's icon or one of its people: encampments.js solo): that place's window only, Leave its way out)
+  if(p&&G.siteSolo===p.k)return showRail({head:{act:['site-tab',p.k],on:true,ico:p.ico,name:p.n,sub:s.name,back:false},label:'',gold:true,items:[],
+    title:p.n,sub:s.name,body:p.body+(G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':''),back:null,close:['site-leave',null,'Leave']},'site:'+s.i+':solo:'+p.k);
   showRail({head:{act:['site-tab','home'],on:!p,ico:s.T.ico,name:s.name,sub:where,back:!!p},label:'Places',gold:true,
     items:ps.map(x=>({act:'site-tab',arg:x.k,ico:x.ico,n:x.n,short:x.short,on:x===p})),
     title:p?p.n:s.name,sub:p?s.name:where,
@@ -644,7 +672,7 @@ function siteAct(a,arg){
   if(!a.startsWith('site-'))return false;
   const s=G.site;if(G.mode!=='site'||!s)return true;
   const done=m=>{G.siteMsg=m;log(m.replace(/<[^>]+>/g,''));updateHUD(true);showSite();railFocus(a,arg)};
-  if(a==='site-leave'){G.site=null;G.siteHire=null;G.mode='world';hidePanel();saveGame(true);return true}
+  if(a==='site-leave'){G.site=null;G.siteHire=null;G.siteSolo=null;G.mode='world';hidePanel();saveGame(true);return true}
   if(a==='site-tab'){G.siteTab=arg==='home'?null:arg;G.siteMsg='';if(G.siteHire)G.siteHire.info=null;showSite();return true}// (a place on the rail, or home: the overview)
   s.act(a,arg,done);return true;
 }

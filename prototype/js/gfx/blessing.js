@@ -4,7 +4,9 @@
    your men where he stands (his march figure, followed as he walks: world/march.js MarchArmy units; else your band's own figure),
    and each lights where they reach him, a ring at his feet and sparks rising. Drawn over everyone, under the fog (render.js
    drawWorld); its own hash, never the game's dice; for one who prefers less motion: no motes, each man lit a moment ---------- */
-const BLESS_FX={on:true,pillar:[.7,34,5],motes:3,most:24,lead:.35,each:.06,gap:.14,fly:.95,arc:[26,.18],glow:.7,sparks:5,
+/* (pillar: [s it rises, px high, px wide]; alt: px its altar stands over the shrine's foot; mid: px your band's figure's middle over its
+   foot, when it marches as no army) */
+const BLESS_FX={on:true,pillar:[.7,34,5],alt:6,mid:5,motes:3,most:24,lead:.35,each:.06,gap:.14,fly:.95,arc:[26,.18],glow:.7,sparks:5,
   col:{core:'#f6ffff',glow:'#7fd8e8',deep:'#3a9fd0',spark:'#d6f6ff'}};
 class BlessFx{
   static list=[];
@@ -12,19 +14,22 @@ class BlessFx{
   static start(s){if(!BLESS_FX.on||!s)return;this.list.push({x:s.x,y:s.y,t0:performance.now()})}
   static hash(i,k){const v=Math.sin(i*127.1+k*311.7)*43758.5453;return v-Math.floor(v)}
   // (who it flows into: your men as they march, else your band's figure)
-  static men(){const a=typeof marchLive==='function'&&marchLive(P);const u=a?a.units.filter(u=>!u.dead):[];return u.length?u.slice(0,BLESS_FX.most):[{x:P.x,y:P.y}]}
+  // (where each is drawn: his x, his foot and his figure's middle (march.js MarchArmy body: up by his ground's lift, as he is drawn); your
+  // band's figure its foot BLESS_FX.mid px under its middle)
+  static men(){const a=typeof marchLive==='function'&&marchLive(P);const u=a?a.units.filter(u=>!u.dead):[];
+    if(u.length)return u.slice(0,BLESS_FX.most).map(m=>{const b=a.body(m);return{x:b.x,y:b.foot,mid:b.mid}});const f=liftY(P.x,P.y);return[{x:P.x,y:f,mid:f-BLESS_FX.mid}]}
   // (how long it lasts with n men)
   static span(n){const X=BLESS_FX;return X.lead+(n-1)*X.each+(X.motes-1)*X.gap+X.fly+X.glow}
   static draw(cam){const L=this.list;if(!L.length)return;const now=performance.now(),X=BLESS_FX,C=X.col,rm=reducedMotion(),men=this.men();
     ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=false;
     const px=(c,x,y,a,w=1,h=1)=>{if(a<=0)return;ctx.globalAlpha=Math.min(1,a);ctx.fillStyle=c;ctx.fillRect(Math.round(x-cam.x),Math.round(y-cam.y),w,h)};
     const halo=(x,y,r,c,a)=>{if(a<=0)return;const X0=x-cam.x,Y0=y-cam.y,g=ctx.createRadialGradient(X0,Y0,0,X0,Y0,r);g.addColorStop(0,c);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=Math.min(1,a);ctx.fillStyle=g;ctx.fillRect(X0-r,Y0-r,2*r,2*r)};
-    for(const e of L){const t=(now-e.t0)/1000,sx=e.x,sy=e.y-6;
+    for(const e of L){const t=(now-e.t0)/1000,ey=liftY(e.x,e.y),sx=e.x,sy=ey-X.alt;// (the altar up by its ground's lift, as the shrine is drawn)
       // (the pillar: light rising from the altar, a ring spreading at its foot)
       const [pd,ph,pw]=X.pillar,pk=t/pd;if(pk<1.6){const a=pk<1?pk:Math.max(0,1-(pk-1)/.6),hh=Math.round(ph*Math.min(1,pk*1.4));
         for(let k=0;k<hh;k++){const f=1-k/ph;px(C.glow,sx-(pw>>1),sy-k,a*.45*f,pw,1);px(C.core,sx-1,sy-k,a*.8*f,2,1)}
-        halo(sx,sy-hh*.5,10+hh*.4,C.glow,a*.5);const rr=4+pk*14;ctx.globalAlpha=Math.max(0,.6*(1-pk/1.6));ctx.strokeStyle=C.glow;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(sx-cam.x,e.y-cam.y,rr,rr*.4,0,0,6.283);ctx.stroke()}
-      men.forEach((u,i)=>{const tx=u.x,ty=u.y-5,first=X.lead+i*X.each,arrive=first+X.fly;
+        halo(sx,sy-hh*.5,10+hh*.4,C.glow,a*.5);const rr=4+pk*14;ctx.globalAlpha=Math.max(0,.6*(1-pk/1.6));ctx.strokeStyle=C.glow;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(sx-cam.x,ey-cam.y,rr,rr*.4,0,0,6.283);ctx.stroke()}
+      men.forEach((u,i)=>{const tx=u.x,ty=u.mid,first=X.lead+i*X.each,arrive=first+X.fly;
         // (its motes: up out of the pillar, over in an arc, down into him, a short trail behind each)
         if(!rm)for(let k=0;k<X.motes;k++){const s0=first+k*X.gap,q=(t-s0)/X.fly;if(q<0||q>1)continue;
           const d=Math.hypot(tx-sx,ty-sy),cx=(sx+tx)/2+(this.hash(i,k)-.5)*12,cy=Math.min(sy,ty)-X.arc[0]-d*X.arc[1];

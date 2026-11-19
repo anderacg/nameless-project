@@ -8,7 +8,8 @@ Kit.suite(({ok})=>{
  };
  for(const kind of ['dust','frost','spark','ember','blood','ghost','glow']){const p={k:kind,x:300,y:250,r:8,z:4,vx:12,vy:-4,life:.5,max:1,col:kind==='dust'?'170,152,112':'#ffc080',sp:t.actorSprite(b.hero,0,true),face:1},before=JSON.stringify(p,(key,v)=>key==='sp'?null:v);b.vfx=[p];
   const calls=spy(()=>kind==='dust'||kind==='frost'?t.vfxGround():t.vfxAir()),paint=calls.find(q=>['arc','fillRect','drawImage','stroke'].includes(q.n));
-  ok(paint&&Math.abs(paint.k-k)<.001&&(kind==='ghost'?Math.hypot(paint.m.e-p.x,paint.m.f-p.y)<.001:Math.abs(paint.m.a*p.x+paint.m.c*p.y+paint.m.e-p.x)<.001&&Math.abs(paint.m.b*p.x+paint.m.d*p.y+paint.m.f-p.y)<.001),kind+' scales around its own origin');
+  const oy=p.y-t.fieldLift(p.x,p.y);// (its origin as drawn: up by its ground's lift, as the men there, vfx.js fieldLift)
+  ok(paint&&Math.abs(paint.k-k)<.001&&(kind==='ghost'?Math.hypot(paint.m.e-p.x,paint.m.f-oy)<.001:Math.abs(paint.m.a*p.x+paint.m.c*p.y+paint.m.e-p.x)<.001&&Math.abs(paint.m.b*p.x+paint.m.d*p.y+paint.m.f-oy)<.001),kind+' scales around its own origin, up by its ground\'s lift ('+(p.y-oy).toFixed(1)+')');
   ok(JSON.stringify(p,(key,v)=>key==='sp'?null:v)===before,kind+' drawing does not alter particle state');
  }
  b.vfx=[{k:'shock',x:300,y:250,r:40,area:true,life:.5,max:1,col:'255,200,100'}];let calls=spy(()=>t.vfxGround()),ring=calls.find(q=>q.n==='ellipse'),stroke=calls.find(q=>q.n==='stroke');

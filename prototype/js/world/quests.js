@@ -1151,7 +1151,9 @@ class MissingQuest extends JobQuest{
    it (within near tiles), a wave of its foe's men at each of waves' hours (n[i] men and a man a day's ten more), marching on it
    from from tiles its foe's way (at tiles from it, with you not by it, they take it), away hours away from it at most once begun; scout: n of his foes' outposts within r tiles, each looked on from within see tiles, never within spot
    of a guarded one by day (half that by night) */
-const OUTPOST_JOB={take:60,lair:40,mend:40,hold:{r:60,foe:80,near:3,hours:12,waves:[3,7,10],n:[4,6,8],away:2,from:12,at:1},scout:{r:140,n:3,least:2,see:6,spot:2.5}};
+// (take: how far, in tiles, a lord's outpost to take may lie from his holding: 80 since the generated world's realms (a250c0a), whose
+// borders' outposts stood more than 60 from the nearest foreign holding, so none was ever asked for; as hold.foe)
+const OUTPOST_JOB={take:80,lair:40,mend:40,hold:{r:60,foe:80,near:3,hours:12,waves:[3,7,10],n:[4,6,8],away:2,from:12,at:1},scout:{r:140,n:3,least:2,see:6,spot:2.5}};
 const outpostNear=(fn,t,r)=>Outposts.all().filter(s=>fn(s)&&qTiles(s,t)<r).sort((a,b)=>qTiles(a,t)-qTiles(b,t))[0]||null;
 class OutpostQuest extends JobQuest{
   needless(){return this.gone()}
@@ -1509,7 +1511,7 @@ function lordJobHtml(l){
 const QUEST_MARK={col:'#ffe040',on:'#fff6c0',ring:'#ffd040',edge:14,mini:2,miniOn:4};
 function drawQuestMarks(cam){
   const t=performance.now()/300,M=QUEST_MARK,bob=Math.round(Math.sin(t)*2);
-  for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round(g.y-cam.y);
+  for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round((typeof liftY==='function'?liftY(g.x,g.y):g.y)-cam.y);// (over its goal as drawn, up by its ground's lift)
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10){if(on)questEdgeMark(sx,sy,t);continue}
     // (a lead: its circle, dashed, a ? at its middle: where to look, Q4)
     if(g.r){ctx.save();ctx.strokeStyle=on?M.on:M.col;ctx.globalAlpha=on?.8:.5;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(sx,sy,g.r*TILE,0,6.283);ctx.stroke();ctx.restore();txt('?',sx,sy-4+bob,on?M.on:M.col,'center');continue}

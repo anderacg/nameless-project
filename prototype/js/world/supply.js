@@ -8,7 +8,8 @@
    read. Nothing here draws Math.random. ---------- */
 /* SUPPLY, every number in one place.
    Stamina an hour on the march: march, × rough (hills, forest, mountains, swamp, snow, sand), × night, × forced (Forced March),
-   × dry with nothing to drink (desertDry: the desert with no water), × 1 + cold × the share of furs you lack in the frost, ×
+   × dry with nothing to drink (desertDry: the desert with no water), × heat in the desert's sun (by day, out of the water and off
+   its green: the lab's sta.heat), × 1 + cold × the share of furs you lack in the frost, ×
    mounted (mostly riders), × 1 − skill a level of Athletics (on foot) or Riding (mounted, at most skillCap off), × guide (a Guide in
    the band). Stopped it comes back: rest (stop, in camp, staying in a
    holding), × dryRest with nothing to drink; none with no food, nor in the desert with no water.
@@ -46,7 +47,7 @@
    allowed (campGround); road: px past that no road or track tile's middle may lie; lot: tiles kept between it and any lot, field
    or bandits' camp; ring: tiles round a holding's centre and houses; site: px round a site's picture; pole: your banner's pole's
    foot, px from the camp's fire (bandCampEnt: planted beside the tents). hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
-const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
+const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,heat:1.25,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
   rest:{stop:4,camp:16,stay:20},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,recover:4,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
@@ -211,9 +212,13 @@ function staminaRate(moving,dr,L){
   const S=SUPPLY,why=[],x=m=>'×'+Math.round(m*100)/100;
   if(moving){let n=S.march;why.push('marching −'+S.march);const mul=(m,w)=>{if(m!==1){n*=m;why.push(w+' '+x(m))}};
     if(L.rough)mul(S.rough,'rough ground');
+    {const b=waterBand(Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE));if(b>=4)mul(WATER.swim,'swimming');else if(b===3)mul(WATER.wade,'wading')}
+    {const c=WM.slope?WM.slope[Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE)]:0;if(terrAt(P.x,P.y)===T_MOUNT)mul(LAB_WALK.staCliff,'climbing');else if(c===2)mul(LAB_WALK.staSteep,'steep ground');else if(c===1)mul(LAB_WALK.staSlope,'a slope')}
+    if(G.keys&&G.keys.shift)mul(LAB_WALK.staRun,'running');
     if(Clock.isNight)mul(S.night,'night');
     if(P.hasPerk('forced'))mul(S.forced,'Forced March');
     if(!dr)mul(L.desert?S.desertDry:S.dry,L.desert?'no water in the desert':'nothing to drink');
+    if(L.desert&&!Clock.isNight&&!L.water&&!waterBand(Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE)))mul(S.heat,'the desert sun');
     if(L.frost)mul(1+S.cold*coldShare(),'short of furs');
     const ride=mountedShare(bandSpeeds())>=.5,sk=skill(ride?'ride':'athl');
     if(ride)mul(S.mounted,'mostly mounted');
@@ -370,8 +375,8 @@ function campRing(t){const b=centreBox(t),r=[b.x,b.y,b.x+b.n-1,b.y+b.n-1],g=SUPP
   for(const l of t.lots||[])if(l.k==='centre'||l.k==='house'){r[0]=Math.min(r[0],l.x);r[1]=Math.min(r[1],l.y);r[2]=Math.max(r[2],l.x+l.n-1);r[3]=Math.max(r[3],l.y+l.n-1)}
   return[r[0]-g,r[1]-g,r[2]+g,r[3]+g]}
 // (a site's picture on the map, px: its sprite and yard where Site draw lays them, structures.js siteSprite; a camp's ground: its area)
-function siteBox(s){if(s.area)return s.area();const sp=siteSprite(s),X=Math.round(s.x)-sp.ax,Y=Math.round(s.y)+8-sp.ay,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
-  return[X+Math.min(a[0],g[0]),Y+Math.min(a[1],g[1]),X+Math.max(a[2],g[2]),Y+Math.max(a[3],g[3])]}
+function siteBox(s){if(s.area)return s.area();const sp=siteSprite(s),k=siteK(s),X=Math.round(s.x)-sp.ax*k,Y=Math.round(s.y)+8-sp.ay*k,a=opaqueBox(sp),g=sp.gr?opaqueBox(sp.gr):a;
+  return[X+Math.min(a[0],g[0])*k,Y+Math.min(a[1],g[1])*k,X+Math.max(a[2],g[2])*k,Y+Math.max(a[3],g[3])*k]}
 // (any pixel of the px box the art keeps clear: worldart.js plan.clear, a PX.TileMask)
 function campKeptClear(x0,y0,x1,y1){const M=WorldArt.ensure().clear,ts=M.ts;x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.floor(x1);y1=Math.floor(y1);
   for(let ty=Math.floor(y0/ts);ty<=Math.floor(y1/ts);ty++)for(let tx=Math.floor(x0/ts);tx<=Math.floor(x1/ts);tx++){const f=M.f[ty*M.C+tx];if(!f)continue;if(f===1)return true;

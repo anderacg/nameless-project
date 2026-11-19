@@ -156,7 +156,7 @@ function abilityStep(g,dt){
   if(KITS.brace||RANKS.mastery5)postStep(g,dt);
   if(!g.abil)return;
   for(const id in g.abil){const S=g.abil[id],A=UNIT_SKILLS[id];if(!(B.t<S.until)){if(A.end&&!S.ended){S.ended=true;A.end(g,S)}continue}if(A.holds&&!A.holds(g,S)){S.until=B.t;continue}if(A.step)A.step(g,S,dt)}
-  const F=g.abil.fire;if(F&&B.t<F.until+4)for(const a of B.arrows)if(a.src&&a.src.fireArrow&&a.by&&a.by.grp===g.id&&(a.emb=(a.emb||0)+1)%2)fireMark(vfx({k:'ember',x:a.x,y:a.y-(a.arc?4+Math.max(0,a.z):0),vx:-a.vx*.05,vy:-8,life:.22,col:UNIT_SKILLS.fire.col}));
+  const F=g.abil.fire;if(F&&B.t<F.until+4)for(const a of B.arrows)if(a.src&&a.src.fireArrow&&a.by&&a.by.grp===g.id&&(a.emb=(a.emb||0)+1)%2)fireMark(vfx({k:'ember',x:a.x,y:a.y-(a.arc?arrowUp(a):0),vx:-a.vx*.05,vy:-8,life:.22,col:UNIT_SKILLS.fire.col}));
 }
 // (a push on its men who fit (fit(u)) fades faster: push, the share of it that still moves them; on top of a push's own fading, .004
 // a combat second: battle.js)

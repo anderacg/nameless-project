@@ -11,8 +11,8 @@ Kit.suite(({ok,info})=>{
  const site=W.sites[0];W.sites=W.sites.filter(s=>Math.hypot(s.x-P.x,s.y-P.y)>400);t.reveal();
  const x0=P.x,y0=P.y,cv=document.querySelector('canvas'),scr=document.getElementById('screen'),tip=document.getElementById('tip'),rect=e=>e.getBoundingClientRect();
  const form=(o,n=300)=>{t.MARCH_ARMIES.delete(o);const a=t.MarchArmy.of(o);for(let i=0;i<n;i++)a.step(1/30);a.ring=new t.MarchOutline();a.ring.update(a);return a};
- // (a party's banner pictures, both frames; what drawWorld drew, on any canvas)
- const flags=q=>[0,1].map(f=>t.bannerSprite(q.banner(),f));
+ // (a party's banner pictures, both frames, and as drawn where the scene has fine px (render.js bannerFine); what drawWorld drew, on any canvas)
+ const flags=q=>[0,1].flatMap(f=>[t.bannerSprite(q.banner(),f),...(t.sceneRes()>1?[t.bannerFine(q.banner(),f,t.sceneRes())]:[])]);
  const drawn=()=>{const C=CanvasRenderingContext2D.prototype,d0=C.drawImage,out=[];C.drawImage=function(s,...a){out.push(s);return d0.call(this,s,...a)};try{t.drawWorld()}finally{C.drawImage=d0}return out};
  // ---- a lord, a band and a caravan in sight, each its army
  P.troops={hum_foot:6};P.comps={};form(P);
@@ -21,12 +21,15 @@ Kit.suite(({ok,info})=>{
  const tw=t.TOWNS.find(x=>x.owner&&x.owner!=='player'),to=t.TOWNS.find(x=>x!==tw);
  const car=t.asParty({cv:true,fac:tw.owner,from:tw.name,to:to.name,x:x0-10,y:y0+70,goods:{grain:5},guards:6,cool:0,dir:1});W.caravans=[car];form(car);
  const beast=t.asMonster({id:'wolf',x:x0+60,y:y0+60,hx:x0+60,hy:y0+60,lv:1,n:4,t:0,a:0,cool:5});W.monsters=[beast];
- // ---- the map: no banner over any army, your own neither; the labels still over theirs
- {const labels=[],mt=window.mapTxt;window.mapTxt=function(...a){labels.push(a);return mt.apply(this,a)};let d;try{d=drawn()}finally{window.mapTxt=mt}
+ // ---- the map: no banner over any army, your own neither; the labels (their counts) over theirs in dev mode only (the owner,
+ // 2026-11-14: "remove the numbers above the group, make it available for dev mode only": render.js drawBanner1, ui.js DEV)
+ const dev0=t.DEV.on;try{for(const dev of [false,true]){t.prefSet('dev',dev);
+  const labels=[],mt=window.mapTxt;window.mapTxt=function(...a){labels.push(a);return mt.apply(this,a)};let d;try{d=drawn()}finally{window.mapTxt=mt}
   const flew=[P,lord,band,car].filter(q=>flags(q).some(s=>d.includes(s))).map(q=>q.mapKind);
-  ok(!flew.length&&[P,lord,band,car].every(q=>q.inView(t.vis())),'no banner flies over an army: yours, a lord\'s, a band\'s, a caravan\'s, all in sight ('+(flew.join(', ')||'none drawn')+')');
+  ok(!flew.length&&[P,lord,band,car].every(q=>q.inView(t.vis())),(dev?'dev mode: ':'')+'no banner flies over an army: yours, a lord\'s, a band\'s, a caravan\'s, all in sight ('+(flew.join(', ')||'none drawn')+')');
   const L=lord.look(),T0=t.armyTagAt(lord,null,G.cam),lab=L.label&&labels.find(a=>a[0]===L.label&&Math.abs(a[1]-T0.x)<1);
-  if(!L.label)info('the lord has no label now');else ok(!!lab&&Math.abs(lab[2]-T0.y)<1,'his label ('+L.label+') still over his army, at its tag over his men\'s middle ('+(lab?lab.slice(1,3).map(v=>v.toFixed(1)):'not drawn')+' for '+T0.x.toFixed(1)+','+T0.y.toFixed(1)+')')}
+  if(!L.label)info('the lord has no label now');else if(dev)ok(!!lab&&Math.abs(lab[2]-T0.y)<1,'dev mode: his label ('+L.label+') over his army, at its tag over his men\'s middle ('+(lab?lab.slice(1,3).map(v=>v.toFixed(1)):'not drawn')+' for '+T0.x.toFixed(1)+','+T0.y.toFixed(1)+')');
+  else ok(!lab,'out of dev mode: no label ('+L.label+') over his army')}}finally{t.prefSet('dev',dev0)}
  // ---- your camp: your banner still on its pole (the one left on the map)
  {t.makeCamp();if(!P.camp)info('no camp here');else{const d=drawn();ok(flags(P).some(s=>d.includes(s)),'camped: your banner planted on its pole in the camp');t.breakCamp()}}
  // ---- the badges and the eye over your hero
@@ -34,7 +37,8 @@ Kit.suite(({ok,info})=>{
   window.bannerAt=function(o){if(o===P)asked++;return ba.apply(this,arguments)};window.drawStealthEye=function(...a){eyes.push(a);return eye.apply(this,a)};
   t.prefSet('dev',true);// (the pace badge: dev mode only, render.js drawTravelPace)
   try{t.tiles[i]=t.T_FOREST;P.tx=P.x+80;P.ty=P.y;t.drawWorld();eyes=[];const cam=G.cam,cover=t.drawTravelConcealment(cam),pace=t.drawTravelPace(cam);t.drawTravelDetection(cam);
-   const a=t.marchPicked(P),u=a&&a.carrier,T1=u&&{x:t.snapV(u.x)-cam.x,y:t.snapV(u.y)+a.figure(u)[1]-cam.y},me=eyes[eyes.length-1],k=t.dprOf()/t.VS,w=t.STEALTH_EYE.player*k,h=w*2/3;
+   const a=t.marchPicked(P),u=a&&a.carrier,T1=u&&{x:t.snapV(u.x)-cam.x,y:t.snapV(u.y)+a.figure(u)[1]-t.liftAt(u.x,u.y)-cam.y},// (his head as drawn: up by his ground's lift, worldterrain.js liftY)
+   me=eyes[eyes.length-1],k=t.dprOf()/t.VS,w=t.STEALTH_EYE.player*k,h=w*2/3;
    ok(cover&&pace&&u&&/hero/.test(u.type),'in a wood, on the move: the cover and pace badges drawn ('+(u?u.type:'no hero')+' carries the army)');
    ok(me&&Math.abs(me[2]+w/2-T1.x)<.01&&me[3]+h<=T1.y+.01,'the eye watching you: centred over your hero\'s head ('+(me?me[2].toFixed(1)+','+me[3].toFixed(1):'none')+'; his head '+T1.x.toFixed(1)+','+T1.y.toFixed(1)+')');
    ok(cover.x>=me[2]+w-.01&&pace.x>=cover.x+cover.w-.01&&cover.y===pace.y&&cover.y+cover.h<=T1.y+.01,'the badges in a row right of it, the cover then the pace, over your head too ('+[cover,pace].map(r=>r.x.toFixed(1)+','+r.y.toFixed(1)).join(' / ')+')');
@@ -51,7 +55,8 @@ Kit.suite(({ok,info})=>{
  {const s=t.bannerSprite(lord.banner(),0),q=t.opaqueBox(s),k=t.TIP_FLAG.k,m=/width="(\d+)" height="(\d+)"/.exec(t.tipFlag(lord));
   ok(Number.isInteger(k)&&k>=2&&m&&+m[1]===(q[2]-q[0]+1)*k&&+m[2]===(q[3]-q[1]+1)*k,'the tab: the banner cut to its pixels ('+(q[2]-q[0]+1)+' x '+(q[3]-q[1]+1)+'), '+k+' CSS px a pixel')}
  // ---- hovered with a mouse: the card by the pointer, the tab on its top left corner, the header clear of it
- const hover=(wx,wy)=>{G.mode='world';G.modal=false;t.drawWorld();const r=rect(cv);cv.dispatchEvent(new PointerEvent('pointermove',{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-G.cam.y)*r.height/t.VH,pointerType:'mouse',bubbles:true}))};
+ // (the pointer where (wx, wy) is drawn: up by its land's lift, as a hover and a click read it: input.js liftGround)
+ const hover=(wx,wy)=>{G.mode='world';G.modal=false;t.drawWorld();const r=rect(cv);cv.dispatchEvent(new PointerEvent('pointermove',{clientX:r.left+(wx-G.cam.x)*r.width/t.VW,clientY:r.top+(wy-t.liftAt(wx,wy)-G.cam.y)*r.height/t.VH,pointerType:'mouse',bubbles:true}))};
  const card=(what)=>{const f=tip.querySelector('.tipflag'),b=tip.querySelector('b');if(!f||!b)return ok(false,what+': the tab on the card ('+(f?'tab':'no tab')+')');const R=rect(tip),F=rect(f),rg=document.createRange();rg.selectNodeContents(b);const H=rg.getClientRects()[0],k=t.TIP_FLAG.k;
   ok(F.left<R.left&&F.right>R.left&&F.top<R.top&&F.bottom>R.top,what+': the tab over the card\'s top left corner, past its top and its left edge (tab '+[F.left,F.top,F.right,F.bottom].map(Math.round)+', card '+[R.left,R.top].map(Math.round)+')');
   ok(H&&H.left>=F.right-.5,what+': the header clear of the cloth (text from '+(H?Math.round(H.left):'-')+', tab to '+Math.round(F.right)+')');
@@ -72,7 +77,7 @@ Kit.suite(({ok,info})=>{
  {const far=A.units.filter(u=>!u.dead).map(u=>({u,d:Math.hypot(u.x-lord.x,u.y-lord.y)})).sort((p,q)=>q.d-p.d)[0].u;
   ok(t.pickAt(far.x,far.y-4)===lord,'a click on his flank man still picks him');
   {const ba=window.bannerAt;let n=0;window.bannerAt=function(){n++;return ba.apply(this,arguments)};try{t.pickAt(far.x,far.y-4);t.pickAt(lord.x,lord.y-30)}finally{window.bannerAt=ba}ok(!n,'no banner asked where a click lands: none to click ('+n+')')}
-  t.drawWorld();const r=rect(cv),e={clientX:r.left+(far.x-G.cam.x)*r.width/t.VW,clientY:r.top+(far.y-4-G.cam.y)*r.height/t.VH,pointerType:'mouse',pointerId:1,isPrimary:true,bubbles:true};
+  t.drawWorld();const r=rect(cv),e={clientX:r.left+(far.x-G.cam.x)*r.width/t.VW,clientY:r.top+(far.y-4-t.liftAt(far.x,far.y-4)-G.cam.y)*r.height/t.VH,pointerType:'mouse',pointerId:1,isPrimary:true,bubbles:true};
   cv.dispatchEvent(new PointerEvent('pointerdown',e));window.dispatchEvent(new PointerEvent('pointerup',e));const q=t.PARTY_CLICK.last,o=t.ActionRing.now&&q&&t.ActionRing.now===q.R?q.o:null;t.ActionRing.close();
   ok(o===lord,'clicked: his ring opens')}
  {for(let i=0;i<10;i++){Object.assign(G.mouse,{x:t.VW/2+i*3,y:t.VH/2,in:true,type:'mouse'});t.wuiHover(performance.now(),.05);t.drawWorld()}ok(!ERR.length,'drawn and hovered: no errors ('+ERR.length+')')}

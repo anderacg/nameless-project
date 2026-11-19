@@ -19,13 +19,14 @@ function playerOrder(gs,fn,{counts=true,late=false}={}){if(B?.muster?.active)ret
 // same spot, the next one under (moraleicons.js iconPick)
 function rtsUnitAt(x,y,team,pick){
   const ic=pick?iconPick(x,y,team):iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g||!seenBy(0,u))continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
-  let best=null,bd=RTS_PICK*(B.world?WORLD_BATTLE.sprite:1);for(const u of B.units){if(u.hp<=0||(team===1?!battleEnemy(0,u):u.team!==team)||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-(u.z||0)-6*(B.world?WORLD_BATTLE.sprite:1)-y);if(d<bd){bd=d;best=u}}return best}
+  // (each by his body as drawn: up by his ground's lift in a fight on the map, vfx.js fieldLift)
+  let best=null,bd=RTS_PICK*(B.world?WORLD_BATTLE.sprite:1);for(const u of B.units){if(u.hp<=0||(team===1?!battleEnemy(0,u):u.team!==team)||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-(u.z||0)-6*(B.world?WORLD_BATTLE.sprite:1)-fieldLift(u.x,u.y)-y);if(d<bd){bd=d;best=u}}return best}
 // select: a click picks the group of the unit under it (nothing of yours under it: none, as in Total War; the All card, Ctrl+A or
 // a box round everyone picks all); a box picks every group with a unit inside
 function rtsSelect(x0,y0,x1,y1,add){
   const was=add?selGroups():[];
   if(Math.hypot(x1-x0,y1-y0)<5){const u=rtsUnitAt(x1,y1,0,true);B.sel=u&&playerGroups().includes(u.grp)?u.grp:add?B.sel:null}// (your allies' men are theirs to command)
-  else{const xa=Math.min(x0,x1),xb=Math.max(x0,x1),ya=Math.min(y0,y1),yb=Math.max(y0,y1),gs=playerGroups().filter(g=>grpUnits(g).some(u=>u.x>=xa&&u.x<=xb&&u.y-6*(B.world?WORLD_BATTLE.sprite:1)>=ya&&u.y-6*(B.world?WORLD_BATTLE.sprite:1)<=yb));
+  else{const xa=Math.min(x0,x1),xb=Math.max(x0,x1),ya=Math.min(y0,y1),yb=Math.max(y0,y1),by=u=>u.y-6*(B.world?WORLD_BATTLE.sprite:1)-fieldLift(u.x,u.y),gs=playerGroups().filter(g=>grpUnits(g).some(u=>u.x>=xa&&u.x<=xb&&by(u)>=ya&&by(u)<=yb));// (each by his body as drawn)
     B.sel=!gs.length?B.sel:gs.length===1?gs[0]:gs.length===playerGroups().filter(g=>grpUnits(g).length).length?'all':gs}
   if(add&&B.sel!=='all'){const all=[...new Set([...was,...selGroups()])].filter(g=>grpUnits(g).length);B.sel=all.length>=playerGroups().filter(g=>grpUnits(g).length).length?'all':all.length===1?all[0]:all}// (Shift: added to what you had)
   setOrderUI();
@@ -39,7 +40,7 @@ function rtsOrder(x,y,opt){
   opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;const am=amTake(opt),keep=gs.length>1&&keepFormOn();playerOrder(gs,()=>{
   if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
   const e=B.deploy?null:rtsUnitAt(x,y,1);
-  {const ic=!e&&iconAt(x,y,0);if(ic&&!B.deploy){x=ic.cx;y=ic.cy}}// (on one of your icons: to where that group stands)
+  {const ic=!e&&iconAt(x,y,0);if(ic&&!B.deploy){x=ic.cx;y=ic.cy}else if(!e)y=fieldGround(x,y)}// (on one of your icons: to where that group stands; else to the ground drawn where you pointed, its lift's: vfx.js fieldGround)
   gs.forEach(g=>B.groups[g].setRun(!!opt.run));// (a double right-click: this order at a run, a charge on an enemy)
   if(!e&&opt.queue){// a waypoint after their last, the groups keeping their places relative to one another
     gs.forEach(g=>B.groups[g].toHold());

@@ -34,7 +34,7 @@ Kit.suite(({ok,info})=>{
   C=near(s,.45);ok(C.ppl.every(p=>p.mode==='seat'&&!p.hid),'at dusk everyone gathers at the fire');
   {const hu=of(3)[0];hu.seen=true;W.monsters=W.monsters.filter(m=>Math.hypot(m.x-hu.x,m.y-hu.y)>F.danger*3);const H=near(hu,.15),out=H.ppl.filter(p=>p.R.work==='out');
    ok(out.length&&out.every(p=>Math.hypot(p.x-hu.x,p.y-hu.y)>=F.out[0]*t.TILE*.9),'by day the orc hunters are out on their ground, '+F.out.join('-')+' tiles off ('+out.map(p=>(Math.hypot(p.x-hu.x,p.y-hu.y)/t.TILE).toFixed(1)).join(', ')+')');
-   const p=out[0];for(let i=0;i<400&&p.leg!=='back';i++)t.CampFolk.step(.1);const d0=Math.hypot(p.x-p.door.x,p.y-p.door.y);for(let i=0;i<5;i++)t.CampFolk.step(.1);
+   const p=out[0];for(let i=0;i<400&&p.leg!=='back';i++)t.CampFolk.step(.1);const d0=Math.hypot(p.x-p.door.x,p.y-p.door.y);t.CampFolk.step(.1);// (one step: his spot may lie a tile from his tent, reached in a few)
    ok(p.leg==='back'&&Math.hypot(p.x-p.door.x,p.y-p.door.y)<d0,'after his work there he walks back to his tent ('+p.leg+')')}
   // ---- danger: a band near sends them in, the guards to the fire
   {const m=of(0)[0];m.seen=true;let D=near(m,.2);const b=t.asParty({x:m.x+40,y:m.y,n:8,kind:'bandits',list:t.makeEnemies(8,false,'bandits'),t:0,a:0,idle:false,cool:0,ld:null});t.bandits.push(b);

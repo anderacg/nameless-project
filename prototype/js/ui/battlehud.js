@@ -417,10 +417,11 @@ function drawGroupHealth(){
 // rings: under every soldier of the groups you have selected (bright; with All, light), under the group you point at (soft); an enemy you point
 // at, red (a right-click sets them on it)
 function drawSelection(){
-  const ring=(u,col,a,w)=>{const k=u.s.big?2:1;ctx.globalAlpha=a;ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.beginPath();ctx.ellipse(Math.round(u.x)+.5,Math.round(u.y)+.5,7*k,3.5*k,0,0,7);ctx.stroke();ctx.globalAlpha=1};
+  // (at each man's feet as he is drawn: up by his ground's lift in a battle on the map, vfx.js fieldLift)
+  const fy=u=>Math.round(u.y-fieldLift(u.x,u.y)),ring=(u,col,a,w)=>{const k=u.s.big?2:1;ctx.globalAlpha=a;ctx.strokeStyle=col;ctx.lineWidth=w||1;ctx.beginPath();ctx.ellipse(Math.round(u.x)+.5,fy(u)+.5,7*k,3.5*k,0,0,7);ctx.stroke();ctx.globalAlpha=1};
   // (All selected: every soldier of yours, a lighter ring, so the field does not turn gold)
   const sel=selGroups(),all=B.sel==='all';
-  for(const g of sel)for(const u of grpUnits(g)){const k=u.s.big?2:1;ctx.fillStyle='rgba(255,210,90,.35)';ctx.beginPath();ctx.ellipse(Math.round(u.x),Math.round(u.y),7*k,3.5*k,0,0,7);ctx.fill();ring(u,'#ffe08a',1,2)}
+  for(const g of sel)for(const u of grpUnits(g)){const k=u.s.big?2:1;ctx.fillStyle='rgba(255,210,90,.35)';ctx.beginPath();ctx.ellipse(Math.round(u.x),fy(u),7*k,3.5*k,0,0,7);ctx.fill();ring(u,'#ffe08a',1,2)}
   const h=B.hov;if(!h)return;const mine=rtsUnitAt(h.x,h.y,0),foe=!mine&&rtsUnitAt(h.x,h.y,1);
   if(mine&&mine.grp&&(all||!sel.includes(mine.grp)))for(const u of grpUnits(mine.grp))ring(u,sideKey(u)==='ally'?SIDE.ally.ui:'#ffffff',.7,1.5);// (your allies': their colour)
   if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])if(seenBy(0,u))ring(u,'#ff6a5a',.9,1.5)}// (none under those you cannot see: terrain.js)

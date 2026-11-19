@@ -136,6 +136,7 @@ function applySave(d){
   unstick(P);{const tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE),q=tAt(tx,ty);if(q===T_WATER||q===T_FORD||lotOf(tx,ty))heroAtGate(Spatial.nearestHolding(P.x,P.y))}// (never on water or a lot: world.js gateSpot)
   W.lords.forEach(unstick);bandits.forEach(unstick);W.monsters.forEach(unstick);
   G.mode='world';hidePanel();toast('Welcome back. It is day '+G.day+'.');updateHint();updateHUD(true);
+  if(Captivity.held)Captivity.open();// (saved while held: their page again at once, never the map to walk while you are theirs: world/captivity.js)
 }
 // delete a slot's save (the latest, if none is named)
 function wipeSave(slot){const s=slot||latestSlot();try{if(s)localStorage.removeItem(slotKey(s))}catch(e){}G.wipeArmed=false;G.resume=null;showTitle('load')}

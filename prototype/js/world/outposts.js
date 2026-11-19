@@ -79,7 +79,7 @@ class Outpost extends Site{
   // put back after a load: its point, and its tiles kept free of building (Outposts.reserve)
   placed(){super.placed();Outposts.reserve()}
   // (its tiles: its plinth's, the tile in front, its tower's beside it)
-  tiles(){const L=[];for(let j=-1;j<=1;j++)for(let i=this.lv>=2?-3:-1;i<=1;i++)L.push([this.tx+i,this.ty+j]);return L}
+  tiles(){const [x0,y0,x1,y1]=OUTPOST_PLACE.body,L=[];for(let j=y0;j<=y1;j++)for(let i=this.lv>=2?x0:-1;i<=x1;i++)L.push([this.tx+i,this.ty+j]);return L}
   mapDot(V){return this.known()?[this.col(),2]:null}
   tip(){const f=this.ownerName();return '<b>'+Discovery.nameOf(this)+'</b><small>'+(f?'Held by '+f:'Held by no one')+', '+OUTPOST_LV[this.lv]+(this.broken?' (broken)':'')+(this.guards?', '+roughly(this.guards)+' guards':'')+'</small><span class="act">Click: go there</span>'}
   sprite(){return outpostSprite(this)}
@@ -87,7 +87,7 @@ class Outpost extends Site{
   // the battle's figure with his weapon in hand (march.js drawMarcher); not while a battle is fought on the map: its guards are in
   // it, OutpostTower)
   draw(ents,cam,V){super.draw(ents,cam,V);const w=OutpostWatch.of.get(this);if(!w||!this.realm||!FACS[this.realm]||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
-    const o=this.sentryOwner();for(const u of w.men)ents.push({y:u.y,f:()=>drawMarcher(u,o,cam)})}
+    const o=this.sentryOwner();for(const u of w.men)ents.push({x:u.x,y:u.y,f:()=>drawMarcher(u,o,cam)})}
   // (who the sentries march for, as drawMarcher reads an army: its realm's colours, where it stands)
   sentryOwner(){const f=this.realm,col=FACS[f].col;return{x:this.x,y:this.y,fac:f,faction:f,mapKind:'patrol',look:()=>({col,dir:1}),banner:()=>({k:'banner',col,dev:f})}}
   // (its beat: the posts round the flag, each outpost's turned by its seed; its tower's door, where a sentry goes in to rest, or the
@@ -182,7 +182,10 @@ const Outposts={
   landKey(){if(!this.live)return 0;let h=1,n=0;for(const s of this.posts())if(s.type===OUTPOST_TYPE){n++;h=Math.imul(h^landOwnId(s.owner)*8^s.lv*2^(s.broken?1:0)^(s.choose?64:0),0x9e3779b1)+s.i|0}return n?h>>>0||1:0},
   of(i){return this.all().find(s=>s.i===i)||null},
   // (their tiles kept free of every holding's building: lots.js occReserve, lotFits)
-  reserve(){this.live=true;if(typeof OCC==='undefined'||!OCC)return;for(const s of this.all())for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},// (-3: an outpost's, no lot's: Outposts.stand looks past them)
+  reserve(){this.live=true;this.hold(this.all())},
+  // (their tiles held (-3: an outpost's, no lot's: Outposts.stand looks past them); a new game holds them before the sites are drawn,
+  // so no cave, camp or shrine stands under one: session.js)
+  hold(L){if(typeof OCC==='undefined'||!OCC)return;for(const s of L)for(const [x,y] of s.tiles())if(x>=0&&y>=0&&x<MW&&y<MH&&!OCC[y*MW+x])OCC[y*MW+x]=-3},
   spots(){const S=OUTPOST_PLACE,road=(x,y)=>{const k=tAt(x,y);return k===T_ROAD||k===T_FORD},peak=(x,y)=>tAt(x,y)===T_MOUNT,out=[];
     for(let ty=3;ty<MH-3;ty++)for(let tx=3;tx<MW-3;tx++){const k=tAt(tx,ty);let why=null;
       if(k===T_FORD)why='ford';
@@ -191,21 +194,31 @@ const Outposts={
       if(why)out.push({tx,ty,why})}
     for(const d of DEPOSITS||[])out.push({tx:d.tx,ty:d.ty,why:d.kind==='fish'?'fish':'deposit',g:d.g});
     return out},
-  // (open ground by a spot to stand on: off the road, nothing built, a clear tile under the plinth and in front)
+  // (open ground by a spot to stand on: off the road, nothing built on or round it, a clear tile under the plinth and in front, its
+  // ladder's ground on every side: built, climbable; the nearest such)
   stand(tx,ty){const N=OUTPOST_PLACE.near;let best=null,bd=1e9;
     for(let j=-N;j<=N;j++)for(let i=-N;i<=N;i++){const x=tx+i,y=ty+j;if(x<2||y<2||x>=MW-2||y>=MH-2)continue;const k=tAt(x,y),f=tAt(x,y+1);
-      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y)||this.onRoad(x,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd){bd=d;best=[x,y]}}
+      const oc=(a,b)=>{const v=occAt(a,b);return v&&v!==-3};if(k!==T_OPEN||!passable(f)||oc(x,y)||oc(x,y+1)||oc(x-1,y)||this.onRoad(x,y))continue;const d=i*i+j*j+(hash(x,y,9301)*.5);if(d<bd&&!this.built(x,y)&&this.climbable(x,y)){bd=d;best=[x,y]}}
     return best},
   // (a road under the picture it will have at its biggest: OUTPOST_PLACE.foot)
   onRoad(tx,ty){const [x0,y0,x1,y1]=OUTPOST_PLACE.foot;for(let j=y0;j<=y1;j++)for(let i=x0;i<=x1;i++)if(tAt(tx+i,ty+j)===T_ROAD)return true;return false},
-  // (anything built within OUTPOST_PLACE.clear tiles: a holding's lots, its estates, its walls)
-  built(tx,ty){const r=OUTPOST_PLACE.clear;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(occAt(tx+i,ty+j)>0)return true;return false},
+  // (anything built within OUTPOST_PLACE.clear tiles, or on its body's and its picture's tiles or a tile round them: a holding's lots,
+  // its estates, its walls; a lot by its tower was missed, Karn Hold's centre, 2026-11-17)
+  built(tx,ty){const S=OUTPOST_PLACE,r=S.clear,B=S.body,F=S.foot;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++)if(occAt(tx+i,ty+j)>0)return true;
+    for(let j=Math.min(B[1],F[1])-1;j<=Math.max(B[3],F[3])+1;j++)for(let i=Math.min(B[0],F[0])-1;i<=Math.max(B[2],F[2])+1;i++)if(occAt(tx+i,ty+j)>0)return true;return false},
+  // (its body on ground to stand on, no water or peak under its tower (Tidewatch's, 2026-11-17), and the middle tile beside each side
+  // of it ground too, nothing built there, reached from its realm's nearest holding)
+  climbable(tx,ty){const [x0,y0,x1,y1]=OUTPOST_PLACE.body,mx=Math.round((x0+x1)/2),my=Math.round((y0+y1)/2),h=Spatial.nearestHolding((tx+.5)*TILE,(ty+.5)*TILE);
+    for(let j=y0;j<=y1;j++)for(let i=x0;i<=x1;i++)if(!passable(tAt(tx+i,ty+j)))return false;
+    return [[x0-1,my],[x1+1,my],[mx,y0-1],[mx,y1+1]].every(([i,j])=>{const x=tx+i,y=ty+j;return passable(tAt(x,y))&&!(occAt(x,y)>0)&&(!h||Router.reach(h,{x:(x+.5)*TILE,y:(y+.5)*TILE}))})},
   // (the realm holding the land at a tile, and whether another realm's land lies within r tiles)
   realmAt(tx,ty){const h=landHold((tx+.5)*TILE,(ty+.5)*TILE);return h&&h.owner&&h.owner!=='player'&&FACS[h.owner]?h.owner:null},
   border(tx,ty,f){const r=OUTPOST_PLACE.border.r;for(let a=0;a<16;a++){const o=this.realmAt(Math.round(tx+Math.cos(a*Math.PI/8)*r),Math.round(ty+Math.sin(a*Math.PI/8)*r));if(o&&o!==f)return true}return false},
-  place(){if(!OUTPOST.on)return [];const S=OUTPOST_PLACE,byProv=new Map();
+  // (on the land as the world made it, without the outposts' own claims (landKey: live), so it is the same reckoned again in play)
+  place(){if(!OUTPOST.on)return [];const live=this.live;this.live=false;try{return this.reckon()}finally{this.live=live}},
+  reckon(){const S=OUTPOST_PLACE,byProv=new Map();
         for(const p of this.spots()){const f=this.realmAt(p.tx,p.ty);if(!f||TOWNS.some(t=>Math.hypot(t.tx-p.tx,t.ty-p.ty)<S.town))continue;
-      const at=this.stand(p.tx,p.ty);if(!at||this.built(at[0],at[1])||this.realmAt(at[0],at[1])!==f)continue;const pr=Provinces.at((at[0]+.5)*TILE,(at[1]+.5)*TILE);if(!pr)continue;
+      const at=this.stand(p.tx,p.ty);if(!at||this.realmAt(at[0],at[1])!==f)continue;const pr=Provinces.at((at[0]+.5)*TILE,(at[1]+.5)*TILE);if(!pr)continue;
       const border=this.border(p.tx,p.ty,f);p.f=f;p.at=at;p.border=border;p.score=S.score[p.why]+(border?S.border.add:0)+hash(p.tx,p.ty,7717)*.01;
       if(!byProv.has(pr))byProv.set(pr,[]);byProv.get(pr).push(p)}
     const chosen=[];
@@ -255,8 +268,8 @@ class OutpostWatch{
     for(let i=0;i<n;i++){const [a,c]=X.knot[i]||[-6*i,0],tx=w.x+ch*a-sh*c,ty=w.y+sh*a+ch*c;let u=w.men[i];
       if(!u)u=w.men[i]={id:(s.seed||0)*7+i,type,x:tx,y:ty,walk:0,walking:false,dir:w.look};
       u.type=type;const dx=tx-u.x,dy=ty-u.y,dd=Math.hypot(dx,dy);
-      if(dd>.3){const st=Math.min(dd,cap);u.x+=dx/dd*st;u.y+=dy/dd*st;u.walk+=st;u.walking=true;if(Math.abs(dx)>.05)u.dir=dx<0?Math.PI:0}
-      else{u.walking=false;if(!w.moving)u.dir=w.look}}
+      if(dd>.01){const st=Math.min(dd,cap);u.x+=dx/dd*st;u.y+=dy/dd*st;u.walk+=st}
+      u.walking=w.moving||dd>.3;u.dir=u.walking?(Math.abs(dx)>.3?(dx<0?Math.PI:0):Math.abs(ch)>.05?(ch<0?Math.PI:0):u.dir):w.look}
     w.men.length=n}
 }
 Systems.add({name:'outposts',order:{hour:45,day:72},hour:()=>Outposts.hour(),day:()=>Outposts.day()});

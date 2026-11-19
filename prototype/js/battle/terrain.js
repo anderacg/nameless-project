@@ -1530,7 +1530,7 @@ const inDeep=u=>{const T=B&&B.terrain;return !!T&&T.isDeep(u.x,u.y)};
 const holdsBank=(u,t)=>{const T=B&&B.terrain;return !!T&&T.holdsBank(u,t)};
 function groundWade(u){const T=B&&B.terrain;return T?T.wadeFor(u):0}
 const slopeWay=(T,i,mx,my)=>T.slope(i,mx,my);
-function groundMul(u,mx,my){const T=B&&B.terrain;return T?T.speedFor(u,mx,my):1}
+function groundMul(u,mx,my){const T=B&&B.terrain;return (T?T.speedFor(u,mx,my):1)*fightSpace()}// (on the map, as many times as far: battle.js fightSpace)
 function groundRun(u,mx,my,sp){const T=B&&B.terrain;return T?T.runFor(u,mx,my,sp):1}
 function climbState(u){const T=B&&B.terrain;return T?T.climbOf(u):null}
 // (his ranks still broken from a steep climb, STEEP.reform s after it (B.terrain.update's u.stc; morale.js cohesionReady); false off a steep field)

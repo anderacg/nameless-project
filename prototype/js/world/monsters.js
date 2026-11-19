@@ -24,11 +24,11 @@ class Monster extends Party{
   // its figure (a mythic one in flight, its wings beating, bobbing, drawn over what it flies above; the rest a walk of
   // PX.MAP_STEPS frames to a body length walked: render.js stepOf), its count and level by how it means to fight
   draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;if(WORLD_BATTLE.on){marchDraw(ents,this,cam);return}const m=this,M=MONSTERS[m.id],Y=M.mythic;
-    ents.push({y:m.y+(Y&&Y.fly?30:0),top:!!(Y&&Y.fly),f:()=>{subT(m);
+    ents.push({x:m.x,ly:m.y,y:m.y+(Y&&Y.fly?30:0),top:!!(Y&&Y.fly),f:()=>{subT(m);
       const u=monOf(m).unit,s=monsterMapSprite(m.id,Y?Math.floor(performance.now()/260+(m.hx||0))%2:stepOf(m,Math.max(4,monsterMapSprite(m.id,0,!!m.alpha,u).cw)/PX.MAP_STEPS,PX.MAP_STEPS),!!m.alpha,u),w=s.width,h=s.ch,sx=Math.round(m.x-cam.x),sy=Math.round(m.y-cam.y),lift=Y&&Y.fly?6-Math.round(Math.sin(performance.now()/260)*2):0;
       ctx.fillStyle='rgba(0,0,0,.3)';if(Y)ctx.fillRect(sx-8,sy-1,16,3);else ctx.fillRect(sx-Math.max(2,(s.cw>>1)-1),sy-1,Math.max(4,s.cw-2),2);
       ctx.save();ctx.translate(sx,sy-lift);if(Y?m.dir<0:faceDir(m)<0)ctx.scale(-1,1);ctx.drawImage(s,-(w>>1),-s.height+2);ctx.restore();
-      if(!Y)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
+      if(!Y&&DEV.on)txt((m.n>1?m.n+' ':'')+'Lv'+m.lv,sx,sy-h,STANCE_COL[M.aggro||stance(monPower(m))==='afraid'?stance(monPower(m)):'wary'],'center')}})}
   mapDot(V){const Y=MONSTERS[this.id].mythic;return yourSight(V).sees(this.x,this.y)?[Y?'#ff7a30':'#c58af0',Y?2:1]:null}
   tip(){const M=monOf(this);return '<b>'+(this.eater?Death.nameOf(this)+', ':'')+(M.n||this.id)+(this.n>1?' ×'+this.n:'')+'</b><small>Level '+this.lv+tipOdds(monPower(this))+(this.id==='wolf'&&this.alpha?', Led by an Alpha Wolf':'')+'</small><span class="act">Click: fight</span>'}
   // as one side of a fight on the map (fights.js), the face every party there shows: its fighters (n of its kind), its strength

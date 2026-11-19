@@ -30,7 +30,9 @@ Kit.suite(({ok,info})=>{
  // ---- the morning: from their doors they walk to work, and get there
  {const C=near(city,.045),wk=C.ppl.filter(p=>p.job&&!p.child),from=new Map(wk.map(p=>[p,{x:p.x,y:p.y}]));let moving=0;
   counted(()=>{for(let i=0;i<88;i++){G.clock+=t.DAY*.1/(t.WORLD_PACE*t.DAY_SECONDS);TF.step(.1);check(C);moving=Math.max(moving,wk.filter(p=>p.moving).length)}});
-  const there=wk.filter(p=>p.mode==='work'&&!p.wp.length&&!p.pend&&p.job.area.includes(C.walk.at(Math.floor(p.x/TILE),Math.floor(p.y/TILE))));
+  // (there: in his work's area, standing, or shifting to another spot of it (TownFolk live), never on his way still)
+  const inJob=(p,q)=>p.job.area.includes(C.walk.at(Math.floor(q.x/TILE),Math.floor(q.y/TILE)));
+  const there=wk.filter(p=>p.mode==='work'&&!p.pend&&inJob(p,p)&&p.wp.every(q=>inJob(p,q)));
   ok(wk.length&&moving>0&&there.length>=wk.length*.8&&there.some(p=>Math.hypot(p.x-from.get(p).x,p.y-from.get(p).y)>TILE),
    'in the morning they walk to work: '+there.length+' of '+wk.length+' at it by '+t.Clock.frac.toFixed(2)+' of the day ('+moving+' walking at once)')}
  // ---- midday: some at the square before the centre, the market or the well
@@ -56,7 +58,13 @@ Kit.suite(({ok,info})=>{
   // (clicked: he greets you, nothing more (the owner, 2026-11-15: "clicking at town folks should not open the city dialogue"))
   {const m0=G.mode,n0=(G.msgs||[]).length,tt=window.toast,said=[];try{window.toast=x=>said.push(String(x));p.meet()}finally{window.toast=tt}
    const hit=t.pickAt(p.x,p.y-3);ok(hit===p,'clicked on, it is him that is picked, not '+(hit&&hit!==p?(hit.name||hit.mapKind):'his holding'));
-   ok(G.mode===m0&&!G.town&&said.length===1&&said[0].includes(p.name)&&/“.+”/.test(said[0]),'clicked, he greets you, no holding window: '+said[0])}}
+   ok(G.mode===m0&&!G.town&&said.length===1&&said[0].includes(p.name)&&/“.+”/.test(said[0]),'clicked, he greets you, no holding window: '+said[0])}
+  // (clicked from afar: he greets you where he is, and you stay put: no walk to him into his holding (the owner, 2026-11-15))
+  {const P=t.P,x0=P.x,y0=P.y,tx=P.tx,tt=window.toast,said=[];P.x=p.x+200;P.y=p.y;G.chase=null;P.tx=null;
+   try{window.toast=x=>said.push(String(x));t.approach(p);ok(!G.chase&&P.tx==null&&said.length===1&&G.mode==='world','clicked from afar: greeted where he is, no walk ('+said.length+' said)')}
+   finally{window.toast=tt;P.x=x0;P.y=y0;P.tx=tx;G.chase=null}}
+  // (drawn as the workers and the armies are: their figures, to the screen's own pixel)
+  {let bad='';for(const q of e)try{t.ctx.save();q.f()}catch(x){bad=x.message}finally{t.ctx.restore()}ok(!bad,'each drawn as a figure, no error'+(bad?': '+bad:''))}}
  // ---- where they live (the owner, 2026-11-15: "Are townfolks also live in houses?", then link them): a house's page lists who lives
  // there, each where he is now; one's tip names his house
  {const T=t.TownFolk,C=T.of.get(city)||T.make(city),p=C.ppl.find(q=>q.home?.lot?.k==='house'),l=p&&p.home.lot,R=l?T.residents(city,l):[];

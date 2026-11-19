@@ -15,7 +15,7 @@ class House extends WorldObject{
   reachRadius(){return boxReach(this,lotBox(this.#l))}
   meet(){houseMeet(this)}
   pick(at){}// (with its holding's lots, in their order: pickOn)
-  pickOn(at,t,l){at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,0)}
+  pickOn(at,t,l){if(at.lot)at.lot(this,t,l,0);else at.box(this,l.x*TILE,l.y*TILE,(l.x+l.n)*TILE,(l.y+l.n)*TILE,0)}// (on its building's own pixels: world.js pickAt)
   // its kind (its model: a cottage, a townhouse, a stone hall, a tree house, an elf hall), its households, its people
   kindN(){return cap1(String(this.#l.type||'house').replace(/([a-z])(hall|house)$/,'$1 $2'))}
   households(){return this.#l.st==='built'?lotHouseholds(this.#t,this.#l):0}

@@ -42,7 +42,9 @@ try{
    for(const off of [-5,5]){if(done)break;const [a,b]=across(c,off,5);if(!t.passable(t.terrAt(a[0],a[1]))||!t.passable(t.terrAt(b[0],b[1]))||!t.Router.reach({x:a[0],y:a[1]},{x:b[0],y:b[1]})||t.clearLine(a[0],a[1],b[0],b[1]))continue;
     start();Kit.goTo(a[0],a[1]);const w=t.wuiWay(P.x,P.y,b[0],b[1],0),wet=w.X.filter((x,i)=>!t.passable(t.terrAt(x,w.Y[i]))).length,on=w.X.some((x,i)=>c.tiles.includes(Math.floor(w.Y[i]/TILE)*t.MW+Math.floor(x/TILE)));
     if(!on)continue;done=true;
-    ok(w.ok&&!wet&&w.S[w.n-1]>Math.hypot(b[0]-a[0],b[1]-a[1])+TILE,'the way drawn to the far bank goes over the '+c.kind+' ('+Math.round(w.S[w.n-1])+' px, the straight line '+Math.round(Math.hypot(b[0]-a[0],b[1]-a[1]))+'), no point of '+w.n+' on water');
+    // (longer than the line, blocked by the water: by how much is the crossing's own (a and b lie either side of its middle; the bay's
+    // bridge, 2026-11-17, lies nearly along that line, under a tile longer))
+    ok(w.ok&&!wet&&w.S[w.n-1]>Math.hypot(b[0]-a[0],b[1]-a[1]),'the way drawn to the far bank goes over the '+c.kind+' ('+Math.round(w.S[w.n-1])+' px, the straight line '+Math.round(Math.hypot(b[0]-a[0],b[1]-a[1]))+'), no point of '+w.n+' on water');
     let dev=0,f=0;P.tx=b[0];P.ty=b[1];P.stuck=0;for(;f<3000&&P.tx!=null;f++){t.marchStep(.05*t.WORLD_PACE);let m=1e9;for(let i=0;i<w.n;i++)m=Math.min(m,Math.hypot(w.X[i]-P.x,w.Y[i]-P.y));dev=Math.max(dev,m)}
     ok(P.tx==null&&Math.hypot(P.x-b[0],P.y-b[1])<3&&dev<t.WUI_K.off,'your band walks the way drawn, never more than '+dev.toFixed(1)+' px off it ('+f+' frames)');
     Kit.goTo(a[0],a[1]);P.tx=b[0];P.ty=b[1];G.chase=null;t.WUI.way=null;t.wuiSync(performance.now());const w0=t.WUI.way,v0=t.WAYV;t.Router.close(xi,true);

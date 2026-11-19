@@ -233,8 +233,9 @@
       Q.prop(d.pick(['crate','sacks','barrel']),[-3,-1],0,1)},
     // a haystack, round under its own cone on a base of logs, a little stook beside it
     haystack(Q,o){Q.round('h',[0,0],5,[0,4],'thatch',{form:'cone',rise:6,mat:'thatch',o:0});Q.round('hb',[0,0],5.3,[0,1],'log',{form:'lid',mat:'log'});Q.prop('hay',[4.5,3],0,1)},
-    // a woodpile: split logs stacked, their ends to the front, a chopping block with its axe
-    woodpile(Q,o){Q.box('w',[-5,5],[-2.5,2.5],[0,5],'log',{top:true,topMat:'logend'});Q.dec('w.S','Logs',.5,0);Q.prop('stump',[3,4.5],0,1);Q.box('ax',[2.5,4.5],[4,6],[2,3],'iron',{top:true})},
+    // a woodpile: split logs stacked lengthwise, a chopping block with its axe (no ends to the front: at the map's size they read as a
+    // chequer)
+    woodpile(Q,o){Q.box('w',[-5,5],[-2.5,2.5],[0,5],'log',{top:true,topMat:'logend'});Q.prop('stump',[3,4.5],0,1);Q.box('ax',[2.5,4.5],[4,6],[2,3],'iron',{top:true})},
     // a fence piece: posts and rails, straight, a corner or with a gate
     fence(Q,o){const k=o.d.int(0,2);Q.fence(k===1?[[-7,-4],[6,-4],[6,5]]:[[-7,1],[7,1]],k===2?[[-2,2,0]]:null,5,'plank')},
     // crates stacked, a sack on them
@@ -352,7 +353,7 @@
     keep(Q,o){const d=o.d,st=o.look.fort,cone=o.look.cones&&d.chance(.7),f=o.fort|0,dw=Q.home('keep','hall',3),L=d.chance(.5)?-1:1;Q.flag=true;Q.ground='cobble';
       Q.square('dj',[L*8,-12],18,[0,30],st,{form:'battlements'},{dw});if(cone)Q.square('djr',[L*8,-12],12,[28,32],st,{form:'pyramid',rise:10,mat:o.roofMat},{dw});
       for(const a of [-1,1])Q.round('dt'+a,[L*8+a*9,-3],2.5,[0,cone?37:33],st,cone?{form:'cone',rise:7,mat:o.roofMat}:{form:'lid',mat:st},{dw});
-      Q.dec('dj.S','Door2',.5);if(!f){Q.dec('dj.S','WinS',.3,13);Q.dec('dj.S','WinS',.7,13)}Q.dec('dj.S','Lancet',.5,21);// (its low windows not behind its walls' towers)for(const k of ['E','W','N'])Q.dec('dj.'+k,'Lancet',.5,21);
+      Q.dec('dj.S','Door2',.5);if(!f){Q.dec('dj.S','WinS',.3,13);Q.dec('dj.S','WinS',.7,13)}Q.dec('dj.S','Lancet',.5,21);for(const k of ['E','W','N'])Q.dec('dj.'+k,'Lancet',.5,21);// (its low windows not behind its walls' towers)
       const hx=-L*10;Q.box('hl',[hx-9,hx+9],[-14,-2],[0,13],st,{dw});Q.roof('hl','gable','u',7,o.roofMat,{finial:1});for(const at of [.2,.8])Q.dec('hl.S','Lancet2',at,4);Q.dec('hl.S','Door',.5);
       Q.round('wl',[hx,8],3,[0,3],'stone',{form:'water'});if(f)curtain(Q,-27,27,-30,26,f,cone,1);else{Q.prop('cart',[-16,18],1);Q.prop('barrel',[16,16])}},
     // a gatehouse (straight on): a gate arch with its portcullis in a block between two great towers, battlements, walls either side
@@ -484,11 +485,13 @@
   PX.buildingModelSpec=spec=>{const type=spec.type;if(!T[type])throw new Error('no model for '+type);const o=opts(spec,type,saltOf(SALT,type)),Q=planOf(type,o);
     const s=Q.spec();s.yaw=o.yaw;s.fitYaws=FRONT.includes(type)?[0]:[0,2,4,6];s.snow=SNOW(spec);s.role=s.role||(Q.dwellings[0]&&Q.dwellings[0].role)||null;return s};
   // the cache: a model a spec (its snow overlay a third of an amount at a time inside it)
-  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital]);
+  // (detail: drawn that many times finer, the same building (model.js PX.model); a model of its own in the cache)
+  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital,s.detail>1?s.detail|0:1]);
+  const fine=(s,spec)=>{if(spec.detail>1)s.detail=spec.detail|0;return s};
   function cached(k,spec,make){const id=key(k,spec);let m=CACHE.get(id);if(!m){m=make();CACHE.set(id,m)}const a=SNOW(spec);
     return a?Object.assign({},m,{snow:PX.modelSeason(m,'snow',a)}):Object.assign({},m,{snow:null})}
   const FACING=['front','left','back','right'];
-  PX.buildingModel=spec=>cached('b',spec,()=>{const s=PX.buildingModelSpec(Object.assign({},spec,{snow:0})),m=PX.model(s);
+  PX.buildingModel=spec=>cached('b',spec,()=>{const s=fine(PX.buildingModelSpec(Object.assign({},spec,{snow:0})),spec),m=PX.model(s);
     return Object.assign(m,{type:spec.type,people:peopleOf(spec),culture:cultureOf(spec),facing:FACING[s.yaw/2],gateX:FRONT.includes(spec.type)?m.cell/2:null})});
   PX.objectModel=spec=>PX.buildingModel(Object.assign({},spec,{type:spec.type||spec.kind}));
 
@@ -508,8 +511,9 @@
   // a stable: planks under a single slope, three stalls open to the yard, a trough
   const stable=(C,at,face)=>made(C,at,face,Q=>{const dw=Q.home('stable','stable');Q.box('s',[-12,12],[-5,5],[0,10],'plank',{dw,foot:'stone',keep:1});Q.roof('s','shed','u',4,C.o.roofMat,{o:1,ov:0});
     for(const a of [.18,.5,.82])Q.dec('s.S','Barn',a);Q.prop('trough',[0,8])});
-  // the fire of a camp (the game's flame stands on marks.fire)
-  const fire=(C,at)=>{P(C,'firepit',at);C.Q.marks.fire=[at[0],at[1],2]};
+  // the fire of a camp (the game's flame stands on marks.fire); in the camps below set in the open before the tents, a flame's height
+  // clear of their fronts (the owner, 2026-11-17: the campfire sat at the tent)
+  const fire=(C,at)=>{P(C,'firepit',at,0,1.5);C.Q.marks.fire=[at[0],at[1],2]};
   const CL={
     // a town's row: three or four houses wall to wall along the street, the yards behind with a shed, a garden and a washing line
     row:{role:'housing',ground:'cobble',make:C=>{row(C,-30,30,26,0);const R=C.d;made(C,[R.pick([-16,14]),-18],0,Q=>shed(Q,'s',[0,0],14,8,9,C.o.roofMat,Q.home('shed','store')));
@@ -561,10 +565,10 @@
       piece(C,'well',[0,14],0);piece(C,'cart',[-18,24],0);piece(C,'barrels',[20,24],0);P(C,'bench',[-6,30],1);C.Q.parts.push({k:'bed',name:'g1',u:[-60,-40],v:[-28,-18]},{k:'bed',name:'g2',u:[30,58],v:[-28,-18]})}},
     // camps: a bandits' camp (32: one or two tents round a fire, crates or a barrel, a log to sit on), a hideout (64: three tents and
     // their gear round the fire in a ring of spiked stakes, its way in at the front) and travellers (32: a tent, their wagon, the fire)
-    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-7:0,-9],0);if(two)piece(C,'tent',[8,2],0);fire(C,[two?-4:0,6]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-12,1]:[9,8]);P(C,'logs',[-8,11],0,1)}},
-    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-8],0);fire(C,[0,6]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
+    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-8:0,two?-10:-11],0);if(two)piece(C,'tent',[8,0],0);fire(C,[two?-5:0,two?9:8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-14,3]:[10,7]);P(C,'logs',two?[-12,12]:[-8,12],0,1)}},
+    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-12],0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
-    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-9],0);piece(C,'wagon',[6,8],0);fire(C,[-7,8])}}
+    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}}
   };
   // the clusters whose look is the country's
   const RURAL_CL=['yard','farmstead','mill','lumber','mine','quarry','fishery','pasture','granary'];
@@ -573,7 +577,7 @@
     const Q={cell:SIZE.clusters[spec.kind],role:L.role,ground:L.ground||o.look.ground,parts:[],decals:[],dwellings:[],marks:{},flag:!!L.flag,env:o.env,seed:o.seed,yaw,fitYaws:[0,2,4,6]},C={Q,o,d:o.d,n:0,spec};
     const f=ownOf(o.culture,'clusters',spec.kind);if(f)f(C,L.make);else L.make(C);for(const w of Q.dwellings)w.dwellings=w.dwellings|0;Q.snow=SNOW(spec);return Q};
   PX.modelCacheClear=()=>{CACHE.clear();if(PX.modelFitClear)PX.modelFitClear()};
-  PX.clusterModel=spec=>cached('c',spec,()=>{const s=PX.clusterModelSpec(Object.assign({},spec,{snow:0})),m=PX.model(s);return Object.assign(m,{kind:spec.kind,people:peopleOf(spec),culture:cultureOf(spec),facing:FACING[s.yaw/2]})});
+  PX.clusterModel=spec=>cached('c',spec,()=>{const s=fine(PX.clusterModelSpec(Object.assign({},spec,{snow:0})),spec),m=PX.model(s);return Object.assign(m,{kind:spec.kind,people:peopleOf(spec),culture:cultureOf(spec),facing:FACING[s.yaw/2]})});
 
   /* a holding's centre by its tier (camp 0 ... city or castle): the generic (PX.MODEL_CENTRES: a type or a cluster kind, and options
      for its spec), else its culture's (centres) */

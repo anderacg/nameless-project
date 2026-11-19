@@ -133,7 +133,7 @@ class Actor extends Fighter{
     if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);
     else if(ab==='pounce'){u.ab=(u.ab??1.5)-dt;if(u.ab>0)return;const t=nearest(u);if(!t)return;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d<24||d>110)return;
       const a=Math.atan2(t.y-u.y,t.x-u.x);fx(u.x,u.y-6,'#e8d8a0',6);u.x=t.x-Math.cos(a)*10;u.y=t.y-Math.sin(a)*10;u.face=Math.cos(a)>=0?1:-1;
-      if(u.type==='tiger'&&PX.tiger)PX.tiger.pounce(u,B.t);this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-20,t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
+      if(u.type==='tiger'&&PX.tiger)PX.tiger.pounce(u,B.t);this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-fxUp(20),t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
   }
   shotKind(){
     const u=this.u;if(u.s.magic)return 'magic';if(ST[u.type]&&ST[u.type].beast)return 'throw';
@@ -167,7 +167,7 @@ class Actor extends Fighter{
     if(u.rout){u.shot=null;return routStep(u,dt)}// (broken: it runs for its edge, morale.js)
     if(withdrawing(u)){u.shot=null;return withdrawStep(u,dt)}// (withdrawn: it leaves the field, morale.js)
     if(u.remount&&Dismount.going(this,dt))return;// (on foot, going back to his horse: dismount.js)
-    u.inSlot=false;
+    u.inSlot=false;u.ranks=false;// (ranks: this step he went to or kept his place in his group's formation, no foe of his own: battle.js steps your hero on his men's clock then)
     // its target: the enemy its group was set on (right-click), else the nearest
     // (Melee Mode, his group's: a shooter puts his bow away and is a fighter: his melee damage, a sword's reach; he shoots nothing)
     const g=u.grp&&B.groups[u.grp],mm=!!(u.s.range&&!u.empty&&g&&g.melee),s=mm?(u.mmS&&u.mmS.base===u.s?u.mmS:(u.mmS={...u.s,base:u.s,range:0,reach:BLADE.reach*meleeK(),dmg:meleeDmgOf(u.s)})):u.s;u.rt-=dt;// (his group lets a fallen foe go: battlecontrol.js step)
@@ -216,12 +216,12 @@ class Actor extends Fighter{
       // with wadeable water alone, over a ford or bridge when that beats wading (crossWay))
       let wx=sx,wy=sy,via=false;const TR=B.terrain;if(TR&&TR.blocky){const w=slotWay(u,g,sx,sy);if(w){wx=w[0];wy=w[1];via=!w.home}}else if(TR&&TR.has.water){const w=crossWay(u,sx,sy);if(w){wx=w[0];wy=w[1]}}
       const engage=order==='withdraw'||g.firm||g.form==='circle'||unitFlag(u,'shieldWall')?0:28;// (a circle's men never step out after a foe: formations.js)
-      if(reloc){const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
+      if(reloc){u.ranks=true;const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);if(u.relocFor!==g.mvId){u.relocFor=g.mvId;u.relocT=0}u.relocT+=dt;
         if((pd>RELOCATE.near||via)&&(MARCH_MOVE.formGiveUp?!slotGiveUp(u,g,sx,sy,dt,via):u.relocT<RELOCATE.max)){mv=true;mx=px/pd;my=py/pd;if(!via)arr=pd}else{u.mvId=g.mvId;u.relocT=0;u.inSlot=true}}
       else if(t&&!s.range&&held){}
       else if(t&&!s.range&&engage&&Math.hypot(t.x-sx,t.y-sy)<engage&&!holdsBank(u,t)&&!wayBarred(u,t)){mv=true;mx=dx/d;my=dy/d;chase=true;round(t.x,t.y)}// (not down off a bank into the water after him, nor round a cliff: terrain.js)
       else if(s.range&&t&&de<=reach&&!onTheMove(s)&&!g.backing&&!(g.cease&&!gt)){}// (a foe in reach: they keep their ground and shoot, not step to their exact place: attacking first)
-      else{const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
+      else{u.ranks=true;const px=wx-u.x,py=wy-u.y,pd=Math.hypot(px,py);const going=g.going;// (its place on the move: battlecontrol.js step)
         if((pd>(u.slotted&&!going?7:2)||via&&pd>.5)&&!slotGiveUp(u,g,sx,sy,dt,via)){mv=true;mx=px/pd;my=py/pd;u.slotted=false;if(!via&&!going)arr=pd}else{u.inSlot=true;u.slotted=true;if(ringed(u))u.face=Math.cos(ringFace(u))>=0?1:-1}}// (in its slot: it faces the formation's way (a circle's man outward), and stays till pushed clearly out)
     }else{
       if(s.range){if(d>s.range||!u.inRng&&d>s.range*.97){mv=true;mx=dx/d;my=dy/d;u.inRng=false;round(t.x,t.y)}else{u.inRng=true;if(d<28){mv=true;mx=-dx/d;my=-dy/d;back=true}}}
@@ -298,7 +298,7 @@ class HeroActor extends CharActor{
   crowd(dt,s){}
   dodging(){return B.hx&&B.hx.inv}
   taken(amt){amt*=1-tm('dr');if(this.u.wardT>0)amt*=.75;return amt}
-  fell(){const t=this.u;B.heroDown=true;B.floats.push({x:t.x,y:t.y-22,t:'You are down!',life:1.6,c:'#fff'});log('You are knocked down. Your troops fight on.','bad')}
+  fell(){const t=this.u;B.heroDown=true;B.floats.push({x:t.x,y:t.y-fxUp(22),t:'You are down!',life:1.6,c:'#fff'});log('You are knocked down. Your troops fight on.','bad')}
   guards(a,dm){return B.blocking&&angGap(a,B.aim)<1.25&&HeroHands.of().guard(dm)}
   flatShot(){return heroShot().flat}
   race(){return P.race}

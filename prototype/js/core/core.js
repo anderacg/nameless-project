@@ -17,11 +17,12 @@ let VS=1,CVS=1;
    Resolution, ui.js: Full none, Balanced 2, Fast 1.5). The game's art is whole pixels, so a canvas of fewer pixels shown at the
    window's size (pixelated, style.css) looks the same, its text a little coarser, and draws in a fraction of the time on a phone
    (at 3, Balanced fills 4/9 of the pixels, Fast 1/4) */
-// gpu: the screen's canvas left to the GPU (no willReadFrequently; Ashmark.html?gpu=1). Off by default: measured headless on a
+// gpu: the screen's canvas left to the GPU (no willReadFrequently; Ashmark.html?gpu=1), and with it every canvas drawn each frame
+// (sprites.js mkg: the scene, its overlay, the grass, the mist, the depth's masks). Off by default: measured headless on a
 // desktop GPU (doc/WORLD_DESIGN.md §3.5, "The frame's cost"), a GPU screen fed by the software canvases the frame is built in was
 // no faster, and every layer moved to the GPU was slower; for trying on a phone. sharpBattle: a battle fought apart drawn at the
 // screen's own pixels (bview, below); off, today's canvas of BVW x BVH stretched to the window
-const RENDER={cap:2,fps:60,gpu:/[?&]gpu=1/.test(location.search),sharpBattle:true};
+const RENDER={cap:2,fps:60,fine:Infinity,gpu:/[?&]gpu=1/.test(location.search),sharpBattle:true};// (fine: the scene's fine px a game px at most, the graphics level's: gfx/quality.js, render.js resAt)
 const dprOf=()=>Math.min(window.devicePixelRatio||1,RENDER.cap);
 // ctx: the context drawn into; the world map's ground and buildings go into a canvas of game pixels first (render.js drawWorld)
 const cv=$('#game');let ctx=cv.getContext('2d',{willReadFrequently:!RENDER.gpu});const ctx0=ctx;
@@ -42,10 +43,13 @@ const FIXED_VIEW=/[?&]test=/.test(location.search)&&!/[?&]v=/.test(location.sear
    in the tests' fixed view or on the map: today's BVW x BVH, the browser stretching it */
 function bview(){const Z=MAPZOOM;if(!RENDER.sharpBattle||FIXED_VIEW||typeof B!=='undefined'&&B?.world)return{w:BVW,h:BVH,k:1,cw:BVW,ch:BVH,sharp:false};
   const cw=Z.vw*Z.s0,ch=Z.vh*Z.s0,k=ch/BVH;return{w:cw/k,h:BVH,k,cw,ch,sharp:true}}
-/* Map art stays on whole device pixels. z: saved scale (0 Auto); lo/hi: zoom limits. Desktop Auto and limits follow the
-   window. On phones, the former default (PHONE × window scale, bounded by PHONE_IN/PHONE_IN_H) is now the farthest view.
-   Auto starts PHONE_START times closer, with further zoom up to PHONE_MAX times the former default. HUD scale stays s0. */
-const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE:3,PHONE_START:1.5,PHONE_MAX:2,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
+/* Map art stays on whole device pixels. z: saved scale (0 Auto); lo/hi: zoom limits. A window's map is at the world lab's scale
+   (labScale: closer on a phone-narrow one), never farther, closer at most WORLD_VIEW.in times (2026-11-15, 7c4f44e); the tests'
+   fixed view keeps the window's scale, its range by the window (PHONE_IN/PHONE_IN_H on a phone). HUD scale stays s0. */
+const MAPZOOM={z:0,map:false,on:false,s0:1,auto:1,lo:1,hi:1,vw:576,vh:360,IN:320,IN_H:180,OUT:1.7e6,PINCH:1.25,WHEEL:140,SMALL:540,PHONE_IN:240,PHONE_IN_H:120,wt:0,k(){return this.on?this.s0/VS:1},phone(w,h){return !FIXED_VIEW&&Math.min(w,h)<=this.SMALL}};
+// the map's scale a window aw CSS px wide at dpr: CSS px a fine px (data/world.js WORLD_VIEW zoom, phoneZoom below phone px), a whole
+// number of fine px a game px
+const labScale=(aw,dpr)=>{const V=WORLD_VIEW;return V.fine*Math.max(1,Math.round((aw<V.phone?V.phoneZoom:V.zoom)*dpr))};
 // the screen is the window; the canvas fills it at a whole-number scale (a game pixel's last part may run past the edge)
 function fitScreen(){
   const scr=cv.parentElement,dpr=dprOf(),aw=innerWidth,ah=innerHeight,Z=MAPZOOM,phone=Z.phone(aw,ah);
@@ -53,7 +57,9 @@ function fitScreen(){
   // (the screen in device pixels: the window, or the tests' fixed view at its scale; the view at a scale s: dw/s x dh/s)
   const dw=FIXED_VIEW?576*s0:aw*dpr,dh=FIXED_VIEW?360*s0:ah*dpr,fit=s=>Math.ceil(dw/s)*Math.ceil(dh/s)<=Z.OUT&&Math.ceil(dw/s)<=MW*TILE&&Math.ceil(dh/s)<=MH*TILE;
   Z.s0=s0;Z.vw=Math.ceil(dw/s0);Z.vh=Math.ceil(dh/s0);Z.hi=Math.max(s0,Math.floor(Math.min(dw/(phone?Z.PHONE_IN:Z.IN),dh/(phone?Z.PHONE_IN_H:Z.IN_H))));Z.lo=s0;while(Z.lo>1&&fit(Z.lo-1))Z.lo--;
-  if(phone){const far=Math.min(Z.hi,s0*Z.PHONE);Z.lo=far;Z.auto=Math.ceil(far*Z.PHONE_START);Z.hi=Math.max(Z.auto+1,Math.ceil(far*Z.PHONE_MAX))}else Z.auto=s0;
+  // (the map at the world lab's scale (data/world.js WORLD_VIEW: CSS px a fine px, a whole number of fine px a game px, so the scale is
+  //  even): where it starts and the farthest it goes; closer at most WORLD_VIEW.in times. The tests' fixed view as it was)
+  if(!FIXED_VIEW&&typeof WORLD_VIEW!=='undefined'){const lab=labScale(aw,dpr);Z.lo=lab;Z.auto=lab;Z.hi=lab*WORLD_VIEW.in}else Z.auto=s0;
   const s=Z.map?Math.max(Z.lo,Math.min(Z.hi,Z.z||Z.auto)):s0;Z.on=s!==s0;
   VW=Math.ceil(dw/s);VH=Math.ceil(dh/s);BVH=FIELD_H;BVW=Math.round(FIELD_H*Z.vw/Z.vh);
   const w=VW*s/dpr,h=VH*s/dpr;HUD_PX=dpr/s0;VS=s;cv.style.width=w+'px';cv.style.height=h+'px';
@@ -64,7 +70,11 @@ function fitScreen(){
 }
 // a step of the map's zoom (d: 1 in, -1 out) within its range, remembered (ui.js PREFS mapzoom); back at auto it is auto again.
 // False at the end of the range
-function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.auto,s=Math.max(Z.lo,Math.min(Z.hi,cur+d));if(s===cur)return false;prefSet('mapzoom',s===Z.auto?0:s);return true}
+// (a phone's zoom on the scales the world's finer art fits, whole: even ones while WORLD_VIEW.fine is 2 (render.js sceneRes), a step
+// two at a time; never below lo)
+function fineZ(s,lo){const f=typeof WORLD_VIEW!=='undefined'?WORLD_VIEW.fine:1;return f>1&&s>=2*f&&s%f&&s-s%f>=lo?s-s%f:s}
+function mapZoom(d){const Z=MAPZOOM,cur=Z.map?VS:Z.auto,f=typeof WORLD_VIEW!=='undefined'&&!FIXED_VIEW?WORLD_VIEW.fine:1,
+    n=f>1?(d>0?cur+f-cur%f:cur%f?cur-cur%f:cur-f):cur+d,s=Math.max(Z.lo,Math.min(Z.hi,n));if(s===cur)return false;prefSet('mapzoom',s===Z.auto?0:s);return true}
 addEventListener('resize',fitScreen);fitScreen();
 const ov=$('#ov'),panel=$('#panel'),bbar=$('#bbar');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -79,14 +89,23 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // the first half is daylight, then dusk, night and dawn fill the other half (NIGHT_AT on; the owner, 2026-10-19: 50/50). A day of 180 s at a world pace of .4
 // (doc/WORLD_DESIGN.md D9: it was 120 s at .6) keeps 72 units of the world's time to a day, so every timer counted in it lasts
 // the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
-const DAY_SECONDS=180,NIGHT_AT=.5;
+const DAY_SECONDS=293,NIGHT_AT=.5;// (180, times the world lab's walk over the map's old one: data/world.js WORLD_SCALE.move)
 const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
+// a battle's tempo on screen (the owner, 2026-11-17: "Can you reduce the speed in battle?"): the real time a frame of a battle runs on,
+// at its 1x (main.js); its rules and its tests' steps untouched. The world round a fight on the map keeps its own speed
+// (.55, was .7: the owner, 2026-11-18: "Reduce moving speed in the world and battle speed")
+const BATTLE_TEMPO=.55;
+// the map's tempo on screen (the owner, 2026-11-18: "Reduce moving speed in the world"): the real time a frame on the map runs on, at its
+// 1x (main.js), the same way as a battle's; everything on the map goes slower together, its clock too (a day 293 s / WORLD_TEMPO), so
+// what a day holds is the same; its rules and its tests' steps untouched
+const WORLD_TEMPO=.75;
 // the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
 // speed (the owner, 2026-10-22: back on the bar)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
 // the developer console's cheats (ui/developer.js): your band's map speed × speed (world.js bandPace); noNeeds: no hunger, thirst
-// or stamina drain, nor their tolls on your hero (world/supply.js). Runtime only, never saved; off unless a test sets them
-const CHEAT={speed:1,noNeeds:false};
+// or stamina drain, nor their tolls on your hero (world/supply.js), no wages and no harsh land's toll (world.js bandWages, survive);
+// noFog: the map drawn whole, no fog over it (render.js, fog.js VIEW_SEEN). Runtime only, never saved; off unless a test sets them
+const CHEAT={speed:1,noNeeds:false,noFog:false};
 // actions: every button names one (data-act="prefix-name"); each system claims its prefix once with onAct, so two systems can
 // never answer the same button. Actions without a registered prefix fall through to act() in input.js (menu, encounters), and
 // a town's own (tab, hire, buy …) on to townAct in ui/town.js.

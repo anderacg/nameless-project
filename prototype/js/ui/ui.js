@@ -64,8 +64,9 @@ const prefOnOff=(def,apply)=>({def,read:s=>def?s!=='0':s==='1',write:v=>v?'1':'0
 function prefVol(def){return{def,read:s=>{if(s==null||s==='')return def;const v=+s;return v>=0&&v<=1?Math.round(v*100)/100:def},write:v=>String(Math.round(clamp(+v||0,0,1)*100)/100),apply:()=>{if(typeof audioPrefs==='function')audioPrefs()}}}
 const PREFS={
   grid:prefOnOff(false),// the tile grid: a faint line along every 16-pixel tile edge on the map and in scenes (G)
-  fps:{def:60,read:s=>+s===30?30:60,write:String,apply:v=>{RENDER.fps=v}},// frames a second at most (main.js loop)
-  res:{def:'bal',read:s=>['full','bal','fast'].includes(s)?s:'bal',write:String,apply:v=>{RENDER.cap=RES_CAP[v];fitScreen()}},// the density drawn at (core.js RENDER): Full, Balanced, Fast
+  fps:{def:60,read:s=>+s===30?30:60,write:String,apply:()=>renderCaps()},// frames a second at most (main.js loop), with the graphics level's: the lower
+  res:{def:'bal',read:s=>['full','bal','fast'].includes(s)?s:'bal',write:String,apply:()=>renderCaps()},// the density drawn at (core.js RENDER): Full, Balanced, Fast
+  gfx:{def:'auto',read:s=>['auto','low','medium','high'].includes(s)?s:'auto',write:String,apply:()=>{if(typeof Quality!=='undefined')Quality.apply()}},// graphics: Auto, Low, Medium, High (data/quality.js, gfx/quality.js)
   mapzoom:{def:0,read:s=>{const v=parseInt(s,10);return Number.isSafeInteger(v)&&v>=1?v:0},write:String,apply:v=>{MAPZOOM.z=v;fitScreen()}},// the world map's zoom: 0 auto, else its scale (core.js MAPZOOM)
   bspeed:{def:1,read:s=>BATTLE_SPEEDS.includes(+s)?+s:1,write:String},// the speed each battle starts at
   guide:prefOnOff(true,()=>{if(typeof updateHint==='function')updateHint()}),// guide texts: the hints at the top of the screen and the helper lines in towns and battle
@@ -91,7 +92,10 @@ const PREFS={
 // what a setting reads as from storage (as the game loads)
 function prefLoad(k){const p=PREFS[k];try{return p.read(localStorage.getItem('ashmark.'+k))}catch(e){return p.def}}
 for(const k in PREFS)PREFS[k].v=prefLoad(k);
-const RES_CAP={full:Infinity,bal:2,fast:1.5};RENDER.cap=RES_CAP[PREFS.res.v];RENDER.fps=PREFS.fps.v;MAPZOOM.z=PREFS.mapzoom.v;fitScreen();
+const RES_CAP={full:Infinity,bal:2,fast:1.5};MAPZOOM.z=PREFS.mapzoom.v;
+// the density drawn at and the frames a second: Resolution's and Frame rate's, each no more than the graphics level's (gfx/quality.js)
+function renderCaps(){const q=typeof Quality!=='undefined'&&Quality.now;RENDER.cap=Math.min(RES_CAP[PREFS.res.v],q?q.cap:Infinity);RENDER.fps=Math.min(PREFS.fps.v,q?q.fps:60);fitScreen()}
+renderCaps();
 const prefGet=k=>PREFS[k].v;
 function prefSet(k,v){const p=PREFS[k],s=p.write(v);p.v=p.read(s);try{localStorage.setItem('ashmark.'+k,s)}catch(e){}if(p.apply)p.apply(p.v)}
 const prefView=(k,f='on')=>Object.defineProperty({},f,{get:()=>prefGet(k),set:v=>{PREFS[k].v=v},enumerable:true});
@@ -109,18 +113,18 @@ function settingAct(a,arg){
   if(a==='dev-mode'){prefSet('dev',!DEV.on);toast(DEV.on?'Dev mode on.':'Dev mode off.');if(G.mode==='esc')escSettings();else showTitle('settings');return true}
   if(a==='dev-perf'){toast(FrameProf.toggle());if(G.mode==='esc')escSettings();else showTitle('settings');return true}// (the frame timings, ui/frameprof.js)// (Settings → Developer tools: what the old DEV tab opened, developer.js)
   if(a==='res')prefSet('res',arg);else if(a==='fps')prefSet('fps',+arg);else if(a==='econmode')setEconMode(arg);else if(a==='bspeed')setBattleSpeed(+arg,true);else if(['grid','blood','hpbars','bdeploy','bpause','guide','bfog','ambient','bshake'].includes(a))prefSet(a,arg==='on');
-  else if(a==='opaths'||a==='bfx')prefSet(a,arg);else if(a==='mapzoom')prefSet('mapzoom',+arg||0);
+  else if(a==='opaths'||a==='bfx'||a==='gfx')prefSet(a,arg);else if(a==='mapzoom')prefSet('mapzoom',+arg||0);
   else if(a==='sound')prefSet('mute',arg==='off');else if(VOLUMES.some(([k])=>k===a))prefSet(a,+arg);else return false;
   if(G.mode==='esc')escSettings();else showTitle('settings');return true}
 // the volume settings, and the steps Settings offers
 const VOLUMES=[['volmaster','Volume'],['volmusic','Music'],['volsfx','Effects']],VOL_STEPS=[0,.25,.5,.75,1];
 // the battle's speed: the clock runs at this rate (and stands still while paused, though you can still give orders: a
 // tactical pause); B.speed is this battle's, BSPEED.v the one each battle starts at (save: set that too, as Settings does)
-const battleSpeeds=()=>B?.world?[...SPEEDS,TRAVEL_FAST]:BATTLE_SPEEDS;
-function setBattleSpeed(v,save){if(!battleSpeeds().includes(v))return;if(B?.world)setSpeed(v);if(B)B.speed=v;if(save&&!B?.world)prefSet('bspeed',v);battleSpeedUI()}
-function battleSpeedStep(d){const list=battleSpeeds(),i=list.indexOf(B?.world?G.speed:B?B.speed:BSPEED.v);setBattleSpeed(list[clamp(i+d,0,list.length-1)])}
+const battleSpeeds=()=>BATTLE_SPEEDS;
+function setBattleSpeed(v,save){if(!battleSpeeds().includes(v))return;if(B)B.speed=v;if(save)prefSet('bspeed',v);battleSpeedUI()}
+function battleSpeedStep(d){const list=battleSpeeds(),i=list.indexOf(B?B.speed:BSPEED.v);setBattleSpeed(list[clamp(i+d,0,list.length-1)])}
 function battlePause(on){if(!B)return;if(B.muster?.active){B.paused=on==null?!B.paused:!!on;battleSpeedUI();return}if(B.deploy||B.ready){if(on!==true)beginFight();return}B.paused=on==null?!B.paused:!!on;battleSpeedUI()}
-function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?.world?G.speed:B?B.speed:BSPEED.v,list=battleSpeeds();
+function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.speed:BSPEED.v,list=battleSpeeds();
   document.querySelectorAll('[data-bspeed]').forEach((b,i)=>{b.dataset.bspeed=list[i];b.textContent=list[i]+'×'});
   document.querySelectorAll('[data-bspeed]').forEach(b=>{const on=+b.dataset.bspeed===sp;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});
   let start=document.getElementById('bStart');if(!start){start=document.createElement('button');start.id='bStart';start.type='button';start.className='btn battle-start';start.textContent='Start Battle';start.title='Start battle (Space)';start.addEventListener('click',()=>battlePause(false));document.getElementById('bbar').appendChild(start)}
@@ -147,13 +151,13 @@ function originArt(key){const [sky,coat,glow,land,weapon]=ORIGIN_ART[key]||ORIGI
    change redraws the page it is on (settingAct) */
 function settingsPage(){
   return '<div class="top"><h2>Settings</h2></div>'+
-    '<div class="lab">Realm economy</div><div class="tabs" role="group" aria-label="Realm economy">'+Object.keys(ECON_MODES).map(m=>'<button class="btn sm'+(ECON.mode===m?' on':'')+'" type="button" data-act="econmode" data-arg="'+m+'" aria-pressed="'+(ECON.mode===m)+'">'+ECON_MODES[m][0]+'</button>').join('')+'</div><p class="muted">'+ECON_MODES[ECON.mode][1]+'</p>'+
     '<div class="lab">Map grid</div><div class="tabs" role="group" aria-label="Map grid">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(GRID.on===(v==='on')?' on':'')+'" type="button" data-act="grid" data-arg="'+v+'" aria-pressed="'+(GRID.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">Lines along every tile (16 by 16 pixels) on the world map and in towns. G on the map turns it on and off.</p>'+
     '<div class="lab">Map zoom</div><div class="tabs" role="group" aria-label="Map zoom">'+[0,...Array.from({length:MAPZOOM.hi-MAPZOOM.lo+1},(_,i)=>MAPZOOM.lo+i)].map(v=>'<button class="btn sm'+(MAPZOOM.z===v?' on':'')+'" type="button" data-act="mapzoom" data-arg="'+v+'" aria-pressed="'+(MAPZOOM.z===v)+'">'+(v?v:'Auto')+'</button>').join('')+'</div><p class="muted">How close the world map is drawn: Auto starts closer on phones; higher numbers zoom in further. Use the wheel, + and −, the Map controls or a two-finger pinch to zoom.</p>'+
+    '<div class="lab">Graphics</div><div class="tabs" role="group" aria-label="Graphics">'+Object.keys(QUALITY.names).map(v=>{const on=prefGet('gfx')===v;return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="gfx" data-arg="'+v+'" aria-pressed="'+on+'">'+QUALITY.names[v]+'</button>'}).join('')+'</div><p class="muted">'+Quality.note()+'</p>'+
     '<div class="lab">Resolution</div><div class="tabs" role="group" aria-label="Resolution">'+[['full','Full'],['bal','Balanced'],['fast','Fast']].map(([v,n])=>{const on=prefGet('res')===v;return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="res" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">Fewer pixels drawn: smoother on a phone, text a little coarser.</p>'+
     '<div class="lab">Frame rate</div><div class="tabs" role="group" aria-label="Frame rate">'+[[60,'60'],[30,'30']].map(([v,n])=>{const on=prefGet('fps')===v;return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="fps" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">30 saves the battery and keeps a slow phone steady.</p>'+
     '<div class="lab">Ambient life</div><div class="tabs" role="group" aria-label="Ambient life">'+[['off','Off'],['on','On']].map(([v,n])=>{const on=prefGet('ambient')===(v==='on');return '<button class="btn sm'+(on?' on':'')+'" type="button" data-act="ambient" data-arg="'+v+'" aria-pressed="'+on+'">'+n+'</button>'}).join('')+'</div><p class="muted">Birds crossing the sky and pecking in the fields, crows over a fight, gulls on the shore, butterflies, fireflies at night, fish jumping, a hare or a squirrel; birds out of the trees as a battle begins. Only for the look: fewer and calmer when your system asks for less motion.</p>'+
-    '<div class="lab">'+(B?.world?'World battle speed (shared with travel)':'Battle speed (each battle starts at it; change it in battle too)')+'</div><div class="tabs" role="group" aria-label="Battle speed">'+battleSpeeds().map(v=>'<button class="btn sm'+((B?.world?G.speed:BSPEED.v)===v?' on':'')+'" type="button" data-act="bspeed" data-arg="'+v+'" aria-pressed="'+((B?.world?G.speed:BSPEED.v)===v)+'">'+v+'×</button>').join('')+'</div>'+
+    '<div class="lab">Battle speed (each battle starts at it; change it in battle too)</div><div class="tabs" role="group" aria-label="Battle speed">'+battleSpeeds().map(v=>'<button class="btn sm'+(BSPEED.v===v?' on':'')+'" type="button" data-act="bspeed" data-arg="'+v+'" aria-pressed="'+((B?.world?G.speed:BSPEED.v)===v)+'">'+v+'×</button>').join('')+'</div>'+
     '<div class="lab">Guide texts</div><div class="tabs" role="group" aria-label="Guide texts">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(GUIDE.on===(v==='on')?' on':'')+'" type="button" data-act="guide" data-arg="'+v+'" aria-pressed="'+(GUIDE.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">The hints at the top of the screen and the helper lines in towns and battle. Off, only what you can do right now shows (E to talk).</p>'+
     '<div class="lab">Battle preparation</div><p class="muted">Armies walk to their starting formations before combat, then pause. Use Start Battle in the center of the screen or Space when ready. Ambushes and surprise attacks begin immediately.</p>'+
     '<div class="lab">Deployment</div><div class="tabs" role="group" aria-label="Deployment">'+[['off','Off'],['on','On']].map(([v,n])=>'<button class="btn sm'+(BDEPLOY.on===(v==='on')?' on':'')+'" type="button" data-act="bdeploy" data-arg="'+v+'" aria-pressed="'+(BDEPLOY.on===(v==='on'))+'">'+n+'</button>').join('')+'</div><p class="muted">On, a battle opens frozen so you can place your band in its zone first (Space to begin).</p>'+

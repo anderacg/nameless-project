@@ -452,10 +452,11 @@ try{
  // forth from one frame to the next; and the icons follow their groups, never jumping (they may overlap: none here are at blows)
  {P.troops={hum_spear:8};G.mode='world';G.modal=false;t.hidePanel();const L=['orc_grunt','orc_grunt','orc_shield','orc_shield','hum_levy','hum_levy','militia','militia'];G.enc={kind:'party',ref:{cool:0,x:P.x,y:P.y},list:L};
   go({enemies:L,tournament:false});const B=t.B;B.obs=[];B.noMorale=true;const es=B.units.filter(u=>u.team===1),my=B.units.filter(u=>u.team===0&&!u.hero),mx=my.reduce((a,u)=>a+u.x,0)/my.length;
-  B.units.forEach(u=>u.hp=u.max=u.max*20);es.forEach(u=>{u.x=mx+140+Math.random()*20;u.grp=null});const fl={},ix={};es.forEach(u=>{fl[u.id]=[];ix[u.id]=[]});let jump=0,off=0;const was={};
-  for(let f=0;f<700;f++){t.updateBattle(.016);t.frame();es.forEach(u=>{if(u.nearW)u.wasNear=true;fl[u.id].push(u.face);if(u.wIdx!=null)ix[u.id].push(u.wIdx)});
+  B.units.forEach(u=>u.hp=u.max=u.max*20);es.forEach(u=>{u.x=mx+140+Math.random()*20;u.grp=null});const fl={},ix={},sx={},st=u=>(u.stun>0?'s':'')+(t.Defence.now(u)||'')+(u.atkAt!=null&&B.t-u.atkAt<t.ATK_ANIM?'b':'');es.forEach(u=>{fl[u.id]=[];ix[u.id]=[];sx[u.id]=[]});let jump=0,off=0;const was={};
+  for(let f=0;f<700;f++){t.updateBattle(.016);t.frame();es.forEach(u=>{if(u.nearW)u.wasNear=true;fl[u.id].push(u.face);if(u.wIdx!=null){ix[u.id].push(u.wIdx);sx[u.id].push(st(u))}});
    for(const r of B.icons||[]){const w=was[r.g],c=t.fromField({x:r.cx,y:r.cy});if(w)jump=Math.max(jump,Math.hypot(r.x-w.x,r.y-w.y));off=Math.max(off,Math.abs(r.x+r.w/2-c.x));was[r.g]={x:r.x,y:r.y}}}
-  const flips=a=>{let n=0;for(let k=2;k<a.length;k++)if(a[k]!==a[k-1]&&a[k]===a[k-2])n++;return n},F=es.reduce((a,u)=>a+flips(fl[u.id]),0),X=es.reduce((a,u)=>a+flips(ix[u.id]),0);
+  // (a flip counted only while his state holds: a blow cut short by a stun is a change of state, its weapon to the stun's hold)
+  const flips=(a,S)=>{let n=0;for(let k=2;k<a.length;k++)if(a[k]!==a[k-1]&&a[k]===a[k-2]&&(!S||S[k]===S[k-1]&&S[k-1]===S[k-2]))n++;return n},F=es.reduce((a,u)=>a+flips(fl[u.id]),0),X=es.reduce((a,u)=>a+flips(ix[u.id],sx[u.id]),0);
   ok(es.filter(u=>u.wasNear).length>=6&&F===0&&X===0,'closing in and pointing their weapons, none flickers ('+es.filter(u=>u.wasNear).length+' came to grips; '+F+' facing and '+X+' weapon flips)');
   ok(jump<=6&&off<=24,'and the icons follow their groups, over them, never jumping (at most '+Math.round(jump)+' px a frame, '+Math.round(off)+' px off its middle)');B.over=true;B.endT=0;t.B=null}
  // steady: a man in his place stays there till pushed clearly out; a shooter stands while his foe is in his range
