@@ -1801,3 +1801,6 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 @keyframes dice-fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .dice-ov.quiet .dice-bar em,.dice-ov.quiet .dice-res,.dice-ov.quiet .dice-go{animation:none}
 @media (prefers-reduced-motion:reduce){.dice-card{animation:none}}
+
+/* Painted rank medals use a high-resolution transparent source. */
+.rbadge{image-rendering:auto}

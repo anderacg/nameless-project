@@ -24,8 +24,7 @@ const ORDER_ICON={
   // (keep formation: a front rank and a rear rank, bracketed together)
   keep:['aa.....aa','a.......a','..aaaaa..','.........','.........','..bbbbb..','.........','a.......a','aa.....aa']
 };
-function pixelSVG(rows,size,cls){const key=Object.keys(ORDER_ICON).find(k=>ORDER_ICON[k]===rows)||Object.keys(ABIL_ICON).find(k=>ABIL_ICON[k]===rows),art=key&&uiOrderIcon(key,size,cls);if(art)return art;const s=rows.length;let r='';rows.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')r+='<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="currentColor"'+(c==='b'?' opacity=".5"':'')+'/>'}));
-  return '<svg class="'+(cls||'oico')+'" viewBox="0 0 '+s+' '+s+'" width="'+size+'" height="'+size+'" shape-rendering="crispEdges" aria-hidden="true">'+r+'</svg>'}
+function pixelSVG(rows,size,cls){const key=Object.keys(ORDER_ICON).find(k=>ORDER_ICON[k]===rows)||Object.keys(ABIL_ICON).find(k=>ABIL_ICON[k]===rows);return key?uiOrderIcon(key,size,cls):''}
 /* the order bar (doc/UNIT_KITS_DESIGN.md §2, §3, §5, §7b), built from the tables (data/kits.js; its keys KIT_KEYS, by KITS.keys2): the
    orders (ORDERS: Hold, Charge (keys2: a true order, bCharge), the Attack-move; Withdraw last, on the right), the stances (STANCES:
    Pace, its Run and Walk; Discipline; keys2, the three stance slots, Q W E, each the selected units' own stance in it (bhudStances);

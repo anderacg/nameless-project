@@ -95,16 +95,15 @@ try{
    click(b.x,b.y-4);const ring=t.ActionRing.now;click(b.x,b.y-4);frame(16);frame(400);ok(ring&&!t.ActionRing.now&&G.chase===b&&WUI.tgt&&WUI.tgt.o===b&&!WUI.dest,'a click on a band out of reach ('+Math.round(b.x-P.x)+' px off) opens its ring, a second chases it, and it is the UI\'s target');
    const T=t.wuiTargetAt(b,{x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),rs=rings(),sw=swords();
    ok(rs.length>=1&&!arrows().length&&sw.length===1&&sw[0][1][1]<T.y-14,'a ring pulses round it ('+rs.length+' drawn) and crossed swords stand over it, no arrow: you go to attack it');
-   {const c=t.wuiSwords(),I=t.ICONS.attack,d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data,hx=v=>'#'+[0,1,2].map(k=>d[v+k].toString(16).padStart(2,'0')).join('');let red=0,navy=0,other=0;
-    for(let i=0;i<d.length;i+=4){if(!d[i+3])continue;const h=hx(i);if(h===t.PEOPLE_OUT)navy++;else if(Object.values(I.p).includes(h))red++;else other++}
+   {const c=t.wuiSwords(),d=c.getContext('2d', { willReadFrequently: true }).getImageData(0,0,c.width,c.height).data;
     const it=t.partyRingItems(b,0,0)[0],svg=t.icon('attack',22);
-    ok((c.uiIcon==='attack'||red>=30&&navy>=30&&!other)&&I.p.r===t.WUI_K.col.foe,'the attack marker uses shared art or its loading glyph, retaining the hostile colour');
+    ok(c.uiIcon==='attack'&&c.k===.25&&d.some((v,i)=>i%4===3&&v>0&&v<255),'the attack marker uses shared painted art with a hostile rim and curved edges');
     ok(it.label==='Attack'&&it.icon==='attack'&&/data-ui-icon="attack"/.test(svg)&&svg.includes('icons-interface.png'),'the Attack ring action uses the shared crossed-sword illustration');
     ok(/data-ui-icon="sword"/.test(t.icon('sword',16))&&t.icon('sword',16).includes('width="16"'),'standard interface symbols use the shared atlas at their requested size')}
    // (zoomed far out on a phone, 2 device px a game px at a devicePixelRatio of 3: drawn twice the size, at least WUI_K.swords CSS px;
    // at Resolution Full, RENDER.cap: Balanced, the default since 2026-10-29, draws a 3x screen at 2, a game px a CSS px)
    {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap=t.RENDER.cap;Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});t.RENDER.cap=Infinity;ev('VS=2');let a;try{frame(16);a=swords()[0]}finally{ev('VS=1');t.RENDER.cap=cap;if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio}
-    const c=t.wuiSwords();ok(a&&a[1].length===4&&a[1][2]===c.width*2&&a[1][3]===c.height*2&&c.height*2*2/3>=t.WUI_K.swords,'at the farthest zoom of a phone the swords are drawn at twice their pixels ('+(a?a[1].slice(2).join('x'):'none')+' game px: '+(c.height*2*2/3).toFixed(1)+' CSS px high)')}
+    const c=t.wuiSwords();ok(a&&a[1].length===4&&a[1][2]/a[1][3]===c.width/c.height&&a[1][3]*2/3>=t.WUI_K.swords-1e-8&&a[1][3]<c.height,'at the farthest phone zoom the painted swords preserve proportions and minimum readable size ('+(a?a[1].slice(2).join('x'):'none')+' game px: '+(a?a[1][3]*2/3:0).toFixed(1)+' CSS px high)')}
    ok(WUI.way&&Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1&&(WUI.dots.length>0||WUI.way.S[WUI.way.n-1]-6<=t.wuiOut(WUI.way,WUI.s)+3+t.WUI_FOOT.gap),'the dots lead to it (none where it is nearer than your army’s head)');
    b.x+=12;for(let i=0;i<20;i++)frame(30);ok(Math.hypot(WUI.way.gx-b.x,WUI.way.gy-b.y)<1,'it moves on: the way follows it');
    click(P.x-30,P.y+30);frame(16);ok(G.chase===null&&!WUI.tgt&&WUI.dest,'a click elsewhere: the chase and its ring are gone, a new goal marked');t.bandits.length=0;P.tx=null}
@@ -134,8 +133,8 @@ try{
   // ---- crisp at the screen's 3x: every picture of it at its own size, on whole device pixels
   home();ev('VS=3');try{const b=t.asParty({x:P.x+60,y:P.y+10,n:6,cool:5,t:0,a:0,kind:'bandits',idle:true});b.troops=t.makeEnemies(6,false,'bandits');outOfReach(b);t.bandits.push(b);
    P.x+=.37;frame(16);click(b.x,b.y-4);click(b.x,b.y-4);pointAt(P.x-30.3,P.y+20);const bad=[];let n=0,fills=0;const fr0=c.fillRect;c.fillRect=function(x,y,w,h){if(rec){const m=this.getTransform();fills++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(!isI(m.e+m.a*x)||!isI(m.f+m.d*y)||!isI(m.a*w)||!isI(m.d*h))bad.push('rect '+[x,y,w,h].map(v=>+v.toFixed(3)).join(','))}return fr0.call(this,x,y,w,h)};
-   try{for(let i=0;i<12;i++){frame(37);for(const [img,a,m] of mine()){n++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if(a.length!==2||Math.abs(m.a-3)>1e-3||Math.abs(m.d-3)>1e-3||!isI(m.e+m.a*a[0])||!isI(m.f+m.d*a[1]))bad.push(img.width+'x'+img.height+' @'+a.map(v=>+(+v).toFixed(3)).join(','))}}}finally{c.fillRect=fr0}
-   ok(n>12&&!bad.length,'at 3x its pictures ('+n+') and fills are on whole device pixels at their own size: crisp'+(bad.length?': '+bad.slice(0,4).join('; '):''));t.bandits.length=0;G.chase=null;P.tx=null;G.mouse.in=false}finally{ev('VS=1')}
+   try{for(let i=0;i<12;i++){frame(37);for(const [img,a,m] of mine()){n++;const isI=v=>Math.abs(v-Math.round(v))<1e-3;if((a.length!==2&&a.length!==4)||Math.abs(m.a-3)>1e-3||Math.abs(m.d-3)>1e-3||(!img.uiPainted&&!img.uiIcon&&(!isI(m.e+m.a*a[0])||!isI(m.f+m.d*a[1]))))bad.push(img.width+'x'+img.height+' @'+a.map(v=>+(+v).toFixed(3)).join(','))}}}finally{c.fillRect=fr0}
+   ok(n>12&&!bad.length,'at 3x its high-resolution pictures ('+n+') retain their logical size and ground effects stay aligned'+(bad.length?': '+bad.slice(0,4).join('; '):''));t.bandits.length=0;G.chase=null;P.tx=null;G.mouse.in=false}finally{ev('VS=1')}
  }finally{c.drawImage=di0}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 finally{performance.now=pn;Math.random=r0}

@@ -4,7 +4,7 @@
 // draws its view around you at SCENE_ZOOM, the people sorted by depth, a mark over everyone who keeps a shop, the name of
 // whoever is near and how to talk to them, and the night with lit windows.
 function sceneCv(S){
-  if(S.cv)return S.cv;const W=S.W,H=S.H,G0=SCENE_GROUND[S.clim]||SCENE_GROUND.grass,ST0=SCENE_STYLE[S.style]||SCENE_STYLE.human;S.lights=[];
+  const ready=Object.values(SCENE_ROLES).every(r=>uiIconReady(r.icon));if(S.cv&&S.iconArt===ready)return S.cv;S.iconArt=ready;const W=S.W,H=S.H,G0=SCENE_GROUND[S.clim]||SCENE_GROUND.grass,ST0=SCENE_STYLE[S.style]||SCENE_STYLE.human;S.lights=[];
   return S.cv=mkc(W*TILE,H*TILE,g=>{
     const r=(c,x,y,w,h)=>rect(g,c,x,y,w||1,h||1),n=(x,y,k)=>hs(x,y,S.seed*31+k);
     // ground and speckles
@@ -61,10 +61,8 @@ function paintBld(g,S,b,ST0){
   if(b.role){const sx=X+W/2+(big?8:6),sy=fy+2;r('#5a3a20',sx,sy,7,6);r('#c8a060',sx+1,sy+1,5,4);signIcon(g,SCENE_ROLES[b.role].icon,sx+2,sy+2)}
 }
 // tiny 3x3 marks for signs and the markers over people
-function signIcon(g,icon,x,y,col){const r=(xx,yy,w,h)=>rect(g,col||'#3a2418',x+xx,y+yy,w||1,h||1);
-  ({mug:()=>{r(0,0,2,3);r(2,1)},anvil:()=>{r(0,0,3,1);r(1,1,1,2)},coin:()=>{r(1,0);r(0,1,3,1);r(1,2)},sword:()=>{r(1,0,1,2);r(0,2,3,1)},
-    shoe:()=>{r(0,0,1,3);r(2,0,1,3);r(1,2)},scroll:()=>{r(0,0,3,1);r(0,2,3,1);r(1,1)},crown:()=>{r(0,0);r(2,0);r(0,1,3,2)},candle:()=>{r(1,0);r(1,1,1,2)}}[icon]||(()=>r(1,1)))();
-}
+function signIcon(g,name,x,y,col){uiCanvasIcon(g,name,x-1,y-1,5,5)}
+function sceneServiceIcon(g,name,x,y){g.save();g.translate(x,y);uiCanvasMarker(g,name,9,9);g.restore()}
 // townsfolk and the people who work in town, in their own clothes (no weapons): a seeded look per person, with the trade's
 // clothes and tools for a role. pose: 0-1 standing, 2-5 walking, like unitSprite
 // a townsperson: the template figure in its trade's clothes (people.js), walking or standing
@@ -81,8 +79,8 @@ function drawScene(){
     const s=hero?unitSprite('hero',0,true,0,pose):look==='guard'?unitSprite(RACES[o.race||race].melee,0,false,o.role?1:o.lord?0:3,pose):personSprite(look,o.race||race,o.v||(o.role||'').length,pose);
     ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(Math.round(o.x-5),Math.round(o.y-1),10,2);
     ctx.save();ctx.translate(Math.round(o.x),Math.round(o.y));if((o.dir||1)<0)ctx.scale(-1,1);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore();
-    if(o.lord){const bx=Math.round(o.x)-4,by=Math.round(o.y)-26+(Math.floor(now/500+o.ph)%2);rect(ctx,'#1a1410',bx-1,by-1,9,9);rect(ctx,'#e8b94a',bx,by,7,7);signIcon(ctx,'crown',bx+2,by+2)}
-    if(o.role&&!o.guard){const R=SCENE_ROLES[o.role],bx=Math.round(o.x)-4,by=Math.round(o.y)-26+(Math.floor(now/500+o.ph)%2);rect(ctx,'#1a1410',bx-1,by-1,9,9);rect(ctx,'#e8d8a0',bx,by,7,7);signIcon(ctx,R.icon,bx+2,by+2)}}
+    if(o.lord){const bx=Math.round(o.x)-4,by=Math.round(o.y)-26+(Math.floor(now/500+o.ph)%2);sceneServiceIcon(ctx,'crown',bx-1,by-1)}
+    if(o.role&&!o.guard){const R=SCENE_ROLES[o.role],bx=Math.round(o.x)-4,by=Math.round(o.y)-26+(Math.floor(now/500+o.ph)%2);sceneServiceIcon(ctx,R.icon,bx-1,by-1)}}
   DRESS.clim=null;
   if(GRID.on)drawGrid(cam.x,cam.y,VW/Z,VH/Z,0,0,1/Z);
   // night: the dark, and warm light from windows and lamps

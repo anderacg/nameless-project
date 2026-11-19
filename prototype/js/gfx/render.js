@@ -85,8 +85,8 @@ const TRAVEL_HIDE={size:14,gap:4,s:null};
 function drawTravelConcealment(cam){
   if(B||P.stay||!hiddenAt(P.x,P.y))return null;
   const e=heroTagAt(cam),k=e.k,size=TRAVEL_HIDE.size*k,x=e.right+TRAVEL_HIDE.gap*k,y=e.bottom-size;
-  const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=mkc(9,9,g=>{for(const [x,y,c] of badgePx('hidden'))rect(g,c,x,y)}));
-  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size};
+  const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=uiIndicatorCanvas('eye',14,14,'#b8c7a1',0));
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size};
 }
 // (both badges put to the screen's own pixel (snapV), as the figure under them and the eye beside them are (the owner, 2026-11-08:
 // "the moving icon seems to not smooth attach to the army"): rounded to whole game px, they stepped a game px at a time, several
@@ -97,25 +97,16 @@ const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
   if(!DEV.on||B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
   const e=heroTagAt(cam),kind='walk',k=e.k,size=TRAVEL_PACE.size*k,x=e.right+(TRAVEL_PACE.gap+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0))*k,y=e.bottom-size;
-  let s=TRAVEL_PACE.cache.get(kind);if(!s){s=mkc(9,9,g=>{for(const [x,y,c] of badgePx(kind))rect(g,c,x,y)});TRAVEL_PACE.cache.set(kind,s)}
-  ctx.save();ctx.imageSmoothingEnabled=false;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
+  let s=TRAVEL_PACE.cache.get(kind);if(!s){s=uiIndicatorCanvas('arrow',14,14,'#d6b052');if(uiIconReady('speed')){const q=s.getContext('2d');q.clearRect(0,0,s.width,s.height);uiCanvasIcon(q,'speed',0,0,s.width,s.height);TRAVEL_PACE.cache.set(kind,s)}}
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
 }
 const STEALTH_EYE={size:18,player:18,gap:4,cache:new Map()};
 function stealthEyeSprite(exposure,col,width=18){
-  const level=Math.round(clamp(exposure,0,1)*4),unit=Math.max(1,Math.round(width/18)),key=level+':'+col+':'+unit;let s=STEALTH_EYE.cache.get(key);if(s)return s;
-  // Opaque pixel strokes only. Integer-sized blocks avoid soft curves and uneven mobile resampling.
-  s=mkc(18*unit,12*unit,g=>{
-    const lid=x=>5-Math.round(level*.75*(1-Math.pow((x-8.5)/6.5,2))),box=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x*unit,y*unit,w*unit,h*unit)};
-    for(let x=2;x<16;x++){const top=lid(x);box('#141210',x-1,top-1,3,14-top*2)}
-    for(let x=2;x<16;x++){const top=lid(x),bottom=11-top;box('#211c18',x,top,1,bottom-top+1);box(col,x,top,1,1);box(col,x,bottom,1,1)}
-    if(level){const r=level===4?2:1;for(let y=6-r;y<6+r;y++)for(let x=9-r;x<9+r;x++)if(r===1||!(Math.abs(x-8.5)>1&&Math.abs(y-5.5)>1))box(col,x,y,1,1)}
-  });
-  STEALTH_EYE.cache.set(key,s);return s;
+ const level=Math.round(clamp(exposure,0,1)*4),w=Math.max(72,Math.ceil(width)),key=level+':'+col+':'+w;let s=STEALTH_EYE.cache.get(key);if(s)return s;
+ s=uiIndicatorCanvas('eye',w,w*2/3,col,level/4,'stand',1);STEALTH_EYE.cache.set(key,s);return s;
 }
-// Keep each art pixel an integer-sized block at the display density, aligned to physical pixels.
 function drawStealthEye(exposure,col,x,y,size){
-  const s=stealthEyeSprite(exposure,col,size*dprOf());
-  ctx.drawImage(s,Math.round(x*VS)/VS,Math.round(y*VS)/VS,s.width/VS,s.height/VS);
+ const s=stealthEyeSprite(exposure,col,size*dprOf());ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(s,Math.round(x*VS)/VS,Math.round(y*VS)/VS,size*dprOf()/VS,size*dprOf()/VS*2/3);ctx.restore();
 }
 // (drawn only: worked out again at most every DETECT_DRAW ms of real time, not each frame; afresh after TravelAwareness.reset)
 const DETECT_DRAW=100;let DETECT_LAST=null;

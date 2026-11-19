@@ -156,3 +156,5 @@ Each role has five rungs. **Rank 1** has the role's basic skill; the rest unlock
 ## 9. Open questions
 
 None now. The numbers marked "proposal" are first values in the tunables, for the owner to adjust in play.
+
+Rank artwork (2026-11-19): the shield is now a high-resolution, curved metal painting with continuous material lighting; each rank retains its chevrons and mastery metal. Rank labels, tooltips and image size contracts remain.
