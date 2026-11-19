@@ -188,7 +188,20 @@ function setHoldings(list){MADE_HOLDINGS=list;TOWNS.length=0;for(const k in HOME
 // a world goes in again (a new game, a load: useWorld): the holdings founded in the last game are gone with it, before each
 // holding the world made is put back as it first stood (worldmap.js)
 onWorld(()=>{for(const t of TOWNS.splice(MADE_HOLDINGS.length))delete HOME[t.name]});
-function setCamps(list){CAMP_SPOTS.length=0;for(const c of list)CAMP_SPOTS.push({tx:c.tx,ty:c.ty,x:(c.tx+.5)*TILE,y:(c.ty+.5)*TILE})}
+function setCamps(list,m){CAMP_SPOTS.length=0;for(const c0 of list){const c=m?campOffEdge(c0,m):c0;CAMP_SPOTS.push({tx:c.tx,ty:c.ty,x:(c.tx+.5)*TILE,y:(c.ty+.5)*TILE})}}
+/* a bandits' camp off a hill's edge (the owner, 2026-11-19: "Buildings should not be spawn at the edge of hills"): where the
+   generator's spot has one within its box (data/world.js EDGE_PLACE.r, as sites.js siteSpot reads it), the nearest spot within
+   EDGE_PLACE.camp tiles walked to from it without a ledge (map.js ledgeBits), its 2 x 2 tiles and their ring clear of roads, water,
+   fords and peaks as genCamps keeps them, and its box clear of one, its tiles opened as genCamps opens them; the generator's
+   spot where none is (the world's roads and realms stay as laid) */
+function campOffEdge(c,m){const E=EDGE_PLACE,[rx,ry]=E.r,W=m.w,H=m.h,K=m.kind,R=E.camp;
+  const by=(x,y)=>edgeNear((x+.5)*TILE-rx,(y+.5)*TILE-ry,(x+.5)*TILE+rx,(y+.5)*TILE+4,m);if(!by(c.tx,c.ty))return c;
+  const clear=(cx,cy)=>{for(let y=cy-2;y<=cy+1;y++)for(let x=cx-1;x<=cx+2;x++){if(x<1||y<1||x>=W-1||y>=H-1)return false;const t=K[y*W+x];if(t===T_ROAD||t===T_WATER||t===T_MOUNT||t===T_FORD)return false}return true};
+  const B=ledgeBits(m),D=[[1,0,1],[0,1,2],[-1,0,4],[0,-1,8]],s=c.ty*W+c.tx,seen=new Set([s]),q=[s];let best=null,bd=1e9;
+  for(let h=0;h<q.length;h++){const i=q[h],x=i%W,y=(i-x)/W,d=(x-c.tx)*(x-c.tx)+(y-c.ty)*(y-c.ty);if(h&&d<bd&&clear(x,y)&&!by(x,y)){bd=d;best={tx:x,ty:y}}
+    for(const [dx,dy,bo] of D){const nx=x+dx,ny=y+dy,j=ny*W+nx;if(Math.abs(nx-c.tx)>R||Math.abs(ny-c.ty)>R||nx<0||ny<0||nx>=W||ny>=H||seen.has(j)||!walkTile(j,m)||B[i]&bo)continue;seen.add(j);q.push(j)}}
+  if(best)for(let y=best.ty-1;y<=best.ty;y++)for(let x=best.tx;x<=best.tx+1;x++){K[y*W+x]=T_OPEN;m.high[y*W+x]=0}
+  return best||c}
 // where a new game starts unless your people have a capital, and where reach is measured from
 const startHolding=()=>TOWNS[0];
 // a realm's capital: the city it starts with (one per realm). A people's: their own realm's (theirs alone, else one they share)

@@ -286,13 +286,14 @@ const SITE_AWAY={any:12,cave:20,travelers:14};
 const SITE_SPACE={gap:14,relax:.6,lots:8,own:{hideout:9,goblins:9},first:['goblins']};
 /* nothing built at a hill's edge (the owner, 2026-11-19: "Buildings should not be spawn at the edge of hills"; world/map.js edgeNear):
    a steep edge is where the land's height (its lift, ledgeHt, px) rises or falls more than steep px from one point to the next of a
-   grid every step px; what is built keeps margin px of ground round its footprint free of one. A holding (worldplace.js, its centre's
-   box: box tiles round its tile, up 1 more), a hamlet, a bandits' camp (genCamps: its spots clear of one first), a lot (lots.js
-   lotSpot), a site (sites.js siteSpot, its box r px across and up: a travellers' camp its ring of tents, encampments.js) and an
+   grid every step px; what is built keeps margin px of ground round its footprint free of one. A lot (lots.js lotSpot), a site
+   placed in play (sites.js siteSpot, its box r px across and up: a travellers' camp its ring of tents, encampments.js) and an
    outpost (outposts.js stand) take a spot clear of one where they can (cost: how much dearer one by an edge is, in each's own score:
-   lots' tiles, a holding's liking, an outpost's tiles squared), and only where none is, one by an edge, so none is lost; a camp's
-   tent or piece (campsite.js tentOk) never stands by one. free: kinds of site an edge is for (a cave's mouth is in a cliff) */
-const EDGE_PLACE={step:4,steep:6,margin:8,box:2,r:[16,20],cost:{lot:1000,hold:1.5,hamlet:1,outpost:400},free:['cave']};
+   lots' tiles, an outpost's tiles squared), and only where none is, one by an edge, so none is lost; a camp's tent or piece
+   (campsite.js tentOk) never stands by one. A holding's middle and a bandits' camp stay where the generator puts them (worldplace.js:
+   moving them re-lays the roads, bridges and realms); a bandits' camp by one moves to a spot near it
+   clear of one, camp tiles at most (holding.js campOffEdge), where there is one. free: kinds of site an edge is for (a cave's mouth is in a cliff) */
+const EDGE_PLACE={step:4,steep:6,margin:8,r:[16,20],cost:{lot:1000,outpost:400},camp:3,free:['cave']};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},

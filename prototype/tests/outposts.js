@@ -174,7 +174,7 @@ Kit.suite(({ok,info})=>{
       // (one guard down: taken off his party as a blow that kills him takes him, attacks.js)
       if(gu.length){gu[0].hp=0;gp.remove(gu[0].type,1)}
       B.win=true;B.over=true;B.units.filter(u=>u.team===1).forEach(u=>u.hp=0);t.finishBattle();lostG=gs0-s.guards}else t.act('auto')}}
-   ok(set>=H.from-2&&closer,'a wave sets out '+(set&&set.toFixed(0))+' tiles off, its foe\'s way, and marches on the outpost');
+   ok(set>=H.from-2-1e-9&&closer,'a wave sets out '+(set&&set.toFixed(0))+' tiles off, its foe\'s way, and marches on the outpost');// (1e-9: a wave set out 10 whole tiles off measures 9.999999999999998)
    ok(beside&&tower,'upon you there: its guards beside you, their archers posted on its tower (yours, holding it)');
    ok(lostG===1,'a guard of its fallen beside you: one fewer guarding it after ('+gs0+' to '+(gs0-lostG)+')');
    ok(waves===H.waves.length&&q.done&&q.wave===H.waves.length,'by it '+H.hours+' hours: '+waves+' waves of the '+t.FACS[foe].n+' beaten, and relief comes: the job done');
