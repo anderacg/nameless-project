@@ -148,7 +148,7 @@ class HeroHands{
   }
   // the grapple (your hero's hard attack with bare hands, H: movesets.js): t seized in both hands and thrown, its blow hard (it may throw him down)
   grab(t,H){const h=B.hero,X=this,G=FISTS.grab;if(!h||h.hp<=0||X.busy()||!t||t.hp<=0)return;const a=Math.atan2(t.y-h.y,t.x-h.x);B.aim=a;
-    h.cd=H.wind*(h.s.cd/.45);h.atkAt=B.t;h.atkStyle='grapple';h.face=Math.cos(a)>=0?1:-1;X.hard=H;
+    h.cd=H.wind*(h.s.cd/.45)*BATTLE_RHYTHM.strike;h.atkAt=B.t;h.atkStyle='grapple';h.face=Math.cos(a)>=0?1:-1;X.hard=H;
     try{X.hitFoe(t,H.dmg,{kb:G.kb,stun:G.stun,dt:'blunt',noCrit:true})}finally{X.hard=null}B.floats.push({x:h.x,y:h.y-fxUp(28),t:'Throw',life:.6,c:'#ffb04a'})}
   drawStart(){const h=B.hero;if(!h||h.hp<=0||B.blocking||this.busy()||h.cd>0||!haveShots())return;B.draw={t:0}}
   drawRelease(force){const p=force!=null?force:clamp(B.draw.t/DRAW_TIME,.15,1);B.draw=null;this.shoot('ranged',p)}
@@ -161,7 +161,7 @@ class HeroHands{
   shoot(kind,power){
     const h=B.hero,X=this,S=heroShot();if(h.cd>0){X.buf=true;return}X.buf=false;if(!haveShots()||!X.spend(S.sp,S.mp))return;
     heroSpendShots(1);
-    h.cd=S.cd*(h.s.cd/.45);h.atkAt=B.t;h.face=Math.cos(B.aim)>=0?1:-1;
+    h.cd=S.cd*(h.s.cd/.45)*BATTLE_RHYTHM.strike;h.atkAt=B.t;h.face=Math.cos(B.aim)>=0?1:-1;
     const dmg=h.s.dmg*S.mult*(.9+Math.random()*.2)*(h.buffT>0?1.3:1)*(kind==='magic'?spellMul():1+.04*skill('archery')),src={...h.s,bolt:'#ffe08a',flat:!!S.flat,heroShot:true};if(kind==='magic'){train('spell',.5);battleEvent('cast',{u:h,id:'bolt'})}
     // (as true as any shooter's: attacks.js aimErr, by their skill, their bow and their draw)
     if(kind==='ranged'&&!S.flat){const p=power==null?.75:power,dm=dmg*(.55+.6*p),E=Actor.of(h).aimErr(p);
@@ -175,7 +175,7 @@ class HeroHands{
     const CB=heroCombo();X.buf=false;const step=X.win>0?(X.step+1)%CB.length:0;if(!X.spend(MANUAL_HERO?Math.round(STAM.swing[step]*(CB.sp||1)):0,0)){X.win=0;return}
     if(!MANUAL_HERO)staSpend(h,blowSta(step,CB));// (under RTS command a blow costs what a soldier's does; tired, it lands softer: hitFoe)
     X.step=step;const c=CB[step];
-    h.cd=c.cd*(h.s.cd/.45);X.win=h.cd+COMBO_WINDOW;h.swing=.18;h.atkAt=B.t;h.atkStyle=c.look||STYLE[c.shape];h.face=Math.cos(B.aim)>=0?1:-1;
+    h.cd=c.cd*(h.s.cd/.45)*BATTLE_RHYTHM.strike;X.win=h.cd+COMBO_WINDOW;h.swing=.18;h.atkAt=B.t;h.atkStyle=c.look||STYLE[c.shape];h.face=Math.cos(B.aim)>=0?1:-1;
     // thrusts step in, sweeps lean in, slams and spins plant the feet
     const lean=c.shape==='thrust'||c.shape==='twin'?(c.reach>15?8:5):c.shape==='arc'?3:0;
     h.x=clamp(h.x+Math.cos(B.aim)*lean,8,BW-8);h.y=clamp(h.y+Math.sin(B.aim)*lean,fieldTop(),fieldBot());

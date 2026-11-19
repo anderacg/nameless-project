@@ -246,7 +246,7 @@ class WorldBattleArea{
   // boundary"))
   escape(u,dt){const keep=!u.shattered&&!B.over,hold=()=>{const p=this.constrain(u);u.x=p.x;u.y=p.y};
     if(!this.inside(u,-2)){if(keep)hold();else{this.depart(u);return}}
-    const exit=this.escapePlan(u)?.to||this.exit(u,2),way=this.escapeWay(u),p=way?{x:u.x+way[0]*way[2],y:u.y+way[1]*way[2]}:exit,d=Math.hypot(p.x-u.x,p.y-u.y),s=Math.min(d,u.s.spd*1.1*dt*tiredMul(u).spd);
+    const exit=this.escapePlan(u)?.to||this.exit(u,2),way=this.escapeWay(u),p=way?{x:u.x+way[0]*way[2],y:u.y+way[1]*way[2]}:exit,d=Math.hypot(p.x-u.x,p.y-u.y),s=Math.min(d,u.s.spd*1.1*dt*tiredMul(u).spd*BATTLE_RHYTHM.move);
     if(d>0){u.x+=(p.x-u.x)*s/d;u.y+=(p.y-u.y)*s/d;u.dir=Math.atan2(p.y-u.y,p.x-u.x);u.face=Math.cos(u.dir)>0?1:-1;u.spdNow=u.s.spd}fatigueStep(u,dt,s>0,false,false);
     if(!this.inside(u,-2)){if(keep)hold();else this.depart(u)}
   }

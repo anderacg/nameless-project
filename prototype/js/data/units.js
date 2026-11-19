@@ -1,5 +1,14 @@
 'use strict';
 /* ---------- data: troop stats, race troop trees, the dragon's battle stats, hiring and upgrades ---------- */
+/* a battle's rhythm (the owner, 2026-11-19: "make it not look like slow motion please but just want a battle not to be so fast pace"):
+   the battle runs at its natural speed (core.js BATTLE_PACE, BATTLE_TEMPO 1: swings, shots, falls and effects as they are) and is calmed
+   by its rules, the same for every kind of man and both kinds of battle. move: every step (walking, running, routing, a loose horse's,
+   game fleeing: battle/terrain.js groundMul; .7 of a man's lengths a second walking, 1.3 running); strike: every cooldown between
+   blows (attacks.js, charmind.js, combat.js; a blow every 2 s), the swing itself as it is; shot: a shooter's reload (actors.js
+   shotStep; a shot every 3.2 s), his draw as it is; dmg: every wound (attacks.js Fighter wound; a 20 v 20 melee as long as at
+   the old slow clock); morale, tire: the share of a battle second morale and stamina run on (battle.js moraleTick, fatigue.js
+   fatigueStep: as fast a real second as before). Measured: tests/battlespeed.js */
+const BATTLE_RHYTHM={move:.54,strike:2.2,shot:3.3,dmg:.65,morale:.33,tire:.33};
 const ST={
   militia:{n:'Militia',hp:26,dmg:5,spd:38,reach:11,range:0,cd:.9,tier:1},
   spearman:{n:'Spearman',hp:38,dmg:7,spd:38,reach:17,range:0,cd:.95,tier:2},

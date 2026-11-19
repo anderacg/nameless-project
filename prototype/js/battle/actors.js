@@ -151,7 +151,7 @@ class Actor extends Fighter{
     // (on the move, only those who shoot on the move draw: the rest let a draw down and stand to shoot)
     const still=!mv&&!u.skirm||onTheMove(u.s);/* (his group backing off counts as moving) */if(u.shot&&!still)u.shot=null;
     if(u.shot){u.shot.t+=dt*(u.slow>0?.5:1);
-      if(u.shot.t>=u.shot.aim){if(can&&inArc(u,t)){u.shot=null;if(strike)strike(u,t);else this.attack(t);u.atkAt=B.t;u.atkStyle='swing';u.cd=this.shotTimes().reload*(.9+Math.random()*.2)}
+      if(u.shot.t>=u.shot.aim){if(can&&inArc(u,t)){u.shot=null;if(strike)strike(u,t);else this.attack(t);u.atkAt=B.t;u.atkStyle='swing';u.cd=this.shotTimes().reload*(.9+Math.random()*.2)*BATTLE_RHYTHM.shot}
         else if(u.shot.t>u.shot.aim+SHOOT.hold)u.shot=null}
       return}
     if(can&&u.cd<=0&&inArc(u,t)&&still)u.shot={t:0,aim:this.shotTimes().aim}}

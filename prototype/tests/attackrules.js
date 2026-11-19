@@ -116,7 +116,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       let calls=0;const stream=t.seeded(name==='arc_trees'||name==='flat_trees'?1:100+index);Math.random=()=>{calls++;return stream()};const result={};
       const arrow=(src={},extra={})=>({by:bow,team:0,dmg:12,a:0,src:{...t.ST.hum_bow,...src},x:399,y:244,vx:50,vy:0,life:2,tk:0,...extra});
       const tick=()=>t.updateBattle(.02);
-      if(name==='reductions'){u.hp=u.max=100;u.comp=true;u.s.block=.3;u.s.dr=.1;u.wardT=1;t.applyDmg(u,20,1,'slash');ok(u.hp===91,'ward, companion block and damage reduction keep their multiplication/rounding order')}
+      if(name==='reductions'){u.hp=u.max=100;u.comp=true;u.s.block=.3;u.s.dr=.1;u.wardT=1;t.applyDmg(u,20,1,'slash');ok(u.hp===94,'ward, companion block and damage reduction keep their multiplication/rounding order (hp '+u.hp+'; 91 before BATTLE_RHYTHM.dmg .65, 2026-11-19)')}
       else if(name==='dodge'){B.hx.inv=1;t.applyDmg(B.hero,100,1,'slash');ok(B.hero.hp===10000&&B.floats.some(f=>f.t==='Dodge'),'invulnerability prevents damage and reports a dodge')}
       else if(name==='enemy_kill'){e.hp=1;t.hit(u,e,100);ok(e.hp===0&&B.kills===1&&B.slain[0]==='militia'&&u.xp>0&&B.corpses.length===1,'a lethal hit records kills, corpse effects and troop damage/kill XP')}
       else if(name==='own_losses'){B.sel='inf';inf.forEach(q=>q.grp='inf');inf.forEach(q=>t.applyDmg(q,20000,1,'slash'));ok(B.lost.hum_levy===2&&B.sel==='all'&&P.troops.hum_levy===2,'field losses accumulate and empty selection resets without prematurely changing the campaign roster')}

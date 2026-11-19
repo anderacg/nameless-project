@@ -159,7 +159,7 @@ try{
   // a rider's run builds as it rides at the enemy
   B.obs=[];B.units.filter(u=>u.team===0&&!u.hero).forEach(u=>u.hp=0);e.x=t.BW/2;e.y=t.BH/2;e.cd=99;e.s={...e.s,spd:0};e.hp=e.max=9999;B.hero.x=10;B.hero.y=10;B.hero.s={...B.hero.s,spd:0};
   const rider={...B.units[1],id:999,type:'horse',s:{...t.ST.horse},hp:44,max:44,x:t.BW/2-150,y:t.BH/2,grp:testGroup('cav'),run:0,cd:0,dead:false,mor:80,mor0:80,tgt:null,rt:0};B.units.push(rider);B.groups[testGroup('cav')].order='charge';B.groups[testGroup('cav')].run=true;
-  let hit=0;for(let i=0;i<120&&!hit;i++){const r0=rider.run;t.updateBattle(.03);if(e.hitAt)hit=r0}
+  let hit=0;for(let i=0;i<140&&!hit;i++){const r0=rider.run;t.updateBattle(.03);if(e.hitAt)hit=r0}// (140 steps: a calmer battle's walk, BATTLE_RHYTHM.move)
   ok(hit>=t.CHARGE.run*.9,'riding at them builds the charge ('+Math.round(hit)+' px run when it struck)');B.over=true;B.endT=0;t.B=null}
  // a battle ends in a rout
  {const B=fight(['militia','militia','militia']);const foes=B.units.filter(u=>u.team===1);B.units.filter(u=>u.team===0).forEach(u=>{u.s={...u.s,spd:0};u.cd=99});
@@ -360,7 +360,7 @@ try{
   u.sta=F.max;u.run=t.CHARGE.run/2;t.chargeMul(u,e);ok(u.sta<F.max&&u.sta>F.max-F.charge,'half a run, half the cost');
   u.sta=50;t.fatigueStep(u,1,true,false,false,false);const ran=50-u.sta;u.sta=50;t.fatigueStep(u,1,true,false,true,false);ok(ran>0&&Math.abs(50-u.sta-2*ran)<.01,'running wears it down, charging twice as fast');
   u.sta=50;t.fatigueStep(u,1,true,true,false,false);ok(u.sta===50,'walking neither spends nor restores');
-  t.fatigueStep(u,1,false,false,false,true);ok(u.sta===50,'nor does fighting where it stands');t.fatigueStep(u,1,false,false,false,false);ok(u.sta===50+F.rest,'standing out of the fight restores it');
+  t.fatigueStep(u,1,false,false,false,true);ok(u.sta===50,'nor does fighting where it stands');t.fatigueStep(u,1,false,false,false,false);ok(Math.abs(u.sta-(50+F.rest*t.BATTLE_RHYTHM.tire))<1e-9,'standing out of the fight restores it (at the battle\'s rhythm, BATTLE_RHYTHM.tire)');
   u.sta=F.max;t.fatigueBlow(u);ok(u.sta===F.max-F.blow,'each blow costs a little');
   u.sta=F.tired-1;const T1=t.tiredMul(u);u.sta=F.spent-1;const T2=t.tiredMul(u);u.sta=F.max;const T0=t.tiredMul(u);
   ok(T0.spd===1&&T1.spd<1&&T2.spd<T1.spd&&T1.dmg<1&&T2.dmg<T1.dmg&&T1.run<1&&T2.run===0,'tired: slower and weaker, a charge builds half as fast; spent: no charge at all');
@@ -506,7 +506,7 @@ try{
  {const B=fight(['militia']);B.noMorale=true;B.obs=[];B.units.filter(u=>u.team===1).forEach(u=>{u.x=t.BW-20;u.cd=99;u.s={...u.s,spd:0}});t.selectGroup(testGroup('inf'));const hb=document.querySelector('[data-order="hold"]');
   for(let j=0;j<150;j++)t.updateBattle(.03);t.setOrderUI();ok(hb.classList.contains('on'),'standing in their places, Hold is lit');
   const g=B.groups[testGroup('inf')];t.rtsOrder(g.ax+150,g.ay);for(let j=0;j<10;j++)t.updateBattle(.03);t.setOrderUI();ok(!hb.classList.contains('on'),'sent somewhere, it is not (they are on the move)');
-  for(let j=0;j<400;j++)t.updateBattle(.03);t.setOrderUI();ok(hb.classList.contains('on'),'and lit again once they stand in their new places');B.over=true;B.endT=0;t.B=null}
+  for(let j=0;j<450;j++)t.updateBattle(.03);t.setOrderUI();ok(hb.classList.contains('on'),'and lit again once they stand in their new places');B.over=true;B.endT=0;t.B=null}
  // one mind for every character: your hero, a lord, a chieftain, a companion (commander.js); the hero's own AI file is gone
  {ok(typeof t.charAuto==='function'&&(0,eval)('typeof heroAuto')==='undefined'&&!document.querySelector('script[src="js/battle/heroai.js"]'),'one AI for every character: your hero\u2019s is the champions\u2019 (commander.js)');
   P.slots=Array(10).fill(null);P.comps={brann:{ap:0,role:''}};t.compInit('brann');const B=fight(['militia','militia','militia']);B.obs=[];const c=B.units.find(u=>u.comp),fs=B.units.filter(u=>u.team===1);
@@ -544,7 +544,7 @@ try{
   ok(T.aim>0&&T.reload>0&&Math.abs(T.aim+T.reload-a.s.cd)<1e-6,'a shot is a draw and a reload, together its attack time ('+T.aim.toFixed(2)+' + '+T.reload.toFixed(2)+' s)');
   t.aiUnit(a,.03,null);ok(!!a.shot,'a foe in range and in front: they draw at once');ok(t.procPose(a,false)>=9&&t.procPose(a,false)<=11,'and the draw shows (its frames)');
   B.arrows=[];let n=0;while(a.shot&&n<200){t.aiUnit(a,.03,null);n++}ok(B.arrows.length===1&&Math.abs(n*.03-T.aim)<.1,'they loose when the draw is done ('+(n*.03).toFixed(2)+' s)');
-  ok(a.cd>T.reload*.85&&a.cd<T.reload*1.15,'then reload');for(let j=0;j<12;j++)t.aiUnit(a,.03,null);B.t+=.36;ok(!a.shot&&t.procPose(a,false)>=12&&t.procPose(a,false)<=14,'the reload shows (its frames), no draw till it is done');
+  {const R=T.reload*t.BATTLE_RHYTHM.shot;ok(a.cd>R*.85&&a.cd<R*1.15,'then reload (at the battle\'s rhythm, BATTLE_RHYTHM.shot)')}for(let j=0;j<12;j++)t.aiUnit(a,.03,null);B.t+=.36;ok(!a.shot&&t.procPose(a,false)>=12&&t.procPose(a,false)<=14,'the reload shows (its frames), no draw till it is done');
   a.cd=0;a.shot=null;a.aimA=0;e.x=a.x-a.s.range*.6;t.aiUnit(a,.03,null);
   ok(!a.shot,'a foe behind them: no shot, they never turn their arc themselves');a.aimA=Math.PI;a.cd=0;t.aiUnit(a,.03,null);ok(!!a.shot,'turned to face him (by you or their commander), they draw');
   a.cd=0;a.shot=null;a.aimA=0;a.face=1;a.grp=testGroup('arc');B.groups[testGroup('arc')].skirmish=true;B.groups[testGroup('arc')].tgt=null;t.aiUnit(a,.03,null);ok(!t.roundFire(a)&&!a.shot,'skirmishers too shoot only in their cone: a foe behind, they turn first');B.groups[testGroup('arc')].skirmish=false;a.shot=null;
