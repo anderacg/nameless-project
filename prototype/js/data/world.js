@@ -94,7 +94,10 @@ const WORLD_FLORA={step:9,
    dead straight along a row of its tiles. Its current (flow, the owner: "make a water effect like water"): streaks running down it,
    len px long every period px along lanes lane px apart across it, at speed px a second; a lane's streaks only where noise gate px
    long along it is over on, and within edge of its half-width of its middle, fewer farther out (period must divide 30000); its
-   line smoothed over smooth times its half-width each way for it. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
+   line smoothed over smooth times its half-width each way for it. wide: by its half-width (game px, hw a stream's to a big river's),
+   its lanes out to edge of it, lit where the gate's noise is over on, its streaks len px long in its middle (mid less at its edge),
+   speed times as quick, each every per times its length at least (the owner, 2026-11-18: "more line on the big river/stream");
+   stride: a chunk's flow record's numbers a px. road: the lab's (LAB.road, the owner: "why the road scale not match with the lab?"):
    half-widths (a track, a road: both the lab's 13, 26 wide), its width wandering vary of it along it, its corners rounded (bend
    more cuts of its line); its worn look: a packed crown in
    patches, no wheel ruts (the bands' tracks are drawn: world/tracks.js; track: the wear down a bridge's deck), gravel, puddles past puddle, a ragged edge of edge px, shoulders sh px,
@@ -117,7 +120,8 @@ const WORLD_FLORA={step:9,
    of the diagonal), it is turned to cross it square, on the slant; walked only inside its rails, walk game px in from each side (world/router.js
    deckLane) */
 const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,hw:[0,10,22,38],brook:[2.6,4.8],bank:8,depth:[.36,.5,1,1.5],ford:.25,fordBar:{band:3,warp:3,blend:.42,gravel:.42,riffle:.6,stone:.2,cell:5},meander:6,mouth:1.6,tarn:{lv:3,w:3.2},
-  flow:{lane:1.5,gate:22,on:.55,speed:10,period:30,len:7,edge:.7,smooth:2.5}},
+  flow:{lane:1.5,gate:22,on:.55,speed:10,period:30,len:7,edge:.7,smooth:2.5,stride:5,
+    wide:{hw:[1.5,9],edge:[.55,.88],on:[.62,.34],len:[5,15],mid:.45,speed:[1.3,.8],per:3.2}}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
     flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:28,slope:.4,diag:.45,walk:2}};

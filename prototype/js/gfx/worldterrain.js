@@ -51,7 +51,7 @@ const tpick=(L3,x,y,s)=>L3[Math.min(L3.length-1,Math.floor((wnoise2(x/5,y/5,s)*.
 // X0, Y0, RW: the sea's and the lakes'); its ways the lab's (worldways.js: the rivers and brooks as curves, their surface stepping
 // down the land; the roads worn tracks; the bridges standing over the water)
 function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
-  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),WL=new Int16Array(W2*HE2),PL=new Uint8Array(W2*HE2),KD=new Uint8Array(W2*HE2),NT=new Uint8Array(W2*HE2),MWA=new Float32Array(W2*HE2).fill(-1),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
+  const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),WL=new Int16Array(W2*HE2),WS=new Int16Array(W2*HE2),PL=new Uint8Array(W2*HE2),KD=new Uint8Array(W2*HE2),NT=new Uint8Array(W2*HE2),MWA=new Float32Array(W2*HE2).fill(-1),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
   // (the game px whose levels are worked: the chunk, a px round it, and south of it as far as the highest lift reaches (HE rows))
   const CV=caveRocks(X,Y,w,HE);// (the caves whose rocky ground reaches the chunk: caveShare)
   const gx0=X-2,gy0=Y-2,GW=w+4,GH=HE+4,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH),SW=new Float32Array(GW*GH);
@@ -204,7 +204,12 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
           //  across a river no stair of game px squares, the owner's "lighter rectangular blocks over the water")
           {const d0=(dp*(1-q*q)+.04)*(1-fw*(1-WV.river.ford)),dq=mo<1?Math.min(terDepth(P,gx,gy)*T.depth*2,DLR[qe]*.09)*(1-mo)+d0*mo:d0,qq=m||dd<T.shore.ice?0:q;if(csh[ci]>.98)col=wayWater(Q,CLIMS[ci],fx,fy,dq,qq,fw,A,c,e,still);
             else{let a0=0,a1=0,a2=0,sw=0;for(let cc=0;cc<4;cc++){if(csh[cc]<.02)continue;const v=wayWater(PAL[cc],CLIMS[cc],fx,fy,dq,qq,fw,A,c,e,still);a0+=v[0]*csh[cc];a1+=v[1]*csh[cc];a2+=v[2]*csh[cc];sw+=csh[cc]}col=[a0/sw,a1/sw,a2/sw]}}shade=false;WK[fi]=2;WA[fi]=A;
-          WL[fi]=e>=1||hs(ln,1,546)<e||wnoise2(A/RW.gate,ln*.7,544)<RW.on||mo<1&&wnoise2(A/RW.gate,ln*.7+5,548)>mo?0:1+((hs(ln,0,545)*900)|0);
+          // (by its width (RW.wide): a big river's lanes out nearer its banks and more of each lane lit, a stream's few; each lane's streaks
+          //  longer the nearer its middle and on a wider river, quicker on a stream (its land is level along it, so no slope to read);
+          //  WS: its streaks' length and speed, by lane, the same down it (the owner, 2026-11-18: "more line on the big river/stream"))
+          {const RD=RW.wide,wf=Math.round(Math.max(0,Math.min(1,(hw/r-RD.hw[0])/(RD.hw[1]-RD.hw[0])))*8)/8,mix=a=>a[0]+(a[1]-a[0])*wf,ed=mix(RD.edge),e2=c/hw/ed,el=Math.min(1,ln*RW.lane/hw/ed);
+            WL[fi]=e2>=1||hs(ln,1,546)<e2||wnoise2(A/RW.gate,ln*.7,544)<mix(RD.on)||mo<1&&wnoise2(A/RW.gate,ln*.7+5,548)>mo?0:1+((hs(ln,0,545)*900)|0);
+            if(WL[fi])WS[fi]=Math.round(mix(RD.len)*(1-RD.mid*el)*10)|Math.round(mix(RD.speed)*20)<<8}
           // (its banks' foam, as a lake's shore's: by its half-width, none over a ford's bar)
           if(!fw)col=waterRim(col,Q,-rs/r,WT.rim*Math.min(1,hw/r/WT.hw),fx,fy);
           // (a natural ford where a track crosses a stream (the owner: "No need to be human made stone ford"): the stream spread
@@ -315,7 +320,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     let e=0,sw=0;for(let q=0;q<4;q++){e+=ws[q]*(Wa[ks[q]]?land:Lv[ks[q]]);sw+=ws[q]*SW[ks[q]]}
     SF[fi]=sw;LFF[fi]=Math.max(0,Math.round((e+(Math.floor(e/SB)*SB-e)*sw)*T.lh))}}
   const lfAt=(jx,jy)=>{const fx=jx-X*r,fy=jy-Y*r;return fx>=0&&fy>=0&&fx<W2&&fy<HE2?LFF[fy*W2+fx]:LF[at(Math.floor(jx/r),Math.floor(jy/r))]};
-  const DEPF=new Int32Array(W2*H2).fill(-1),TOP=new Uint8Array(W2*H2),lh=T.lh,SH=[],FL=[];
+  const DEPF=new Int32Array(W2*H2).fill(-1),TOP=new Uint8Array(W2*H2),lh=T.lh,SH=[],FL=[],SR=[],FR=[];
   for(let fx=0;fx<W2;fx++){const x=(fx/r)|0,gx=X+x;let first=-1;
     for(let fy=0;fy<HE2;fy++){const y=(fy/r)|0,gy=Y+y,k=at(gx,gy),fi=fy*W2+fx,L=LFF[fi],wt=WF[fi],sy=fy-L,ci=fi*4;
       if(sy>=0&&sy<H2){const o=(sy*W2+fx)*4;let s=1;const fp=fy>0?fi-W2:fi,fq=fy>1?fi-2*W2:fi;
@@ -324,7 +329,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         //  for the south ankle that we cannot see"): its crest's own px darkened)
         else if(!wt){const RM=T.rim;if(fp!==fi&&LFF[fp]<L-RM.drop&&!WF[fp])s=RM.north;else{const fw=fx>0?fi-1:fi,fe=fx<W2-1?fi+1:fi;if(fw!==fi&&LFF[fw]<L-RM.drop&&!WF[fw]||fe!==fi&&LFF[fe]<L-RM.drop&&!WF[fe])s=RM.side}}
         O[o]=CW[ci]*s;O[o+1]=CW[ci+1]*s;O[o+2]=CW[ci+2]*s;O[o+3]=255;DEPF[sy*W2+fx]=fy;TOP[sy*W2+fx]=1;if(first<0)first=sy;
-        const wk=WK[fy*W2+fx];if((wk===1||wk===2&&hs(fx+X*r,fy,547)<T.water.bankFoam)&&(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx]))SH.push(fx,sy,(wnoise2((fx+X*r)/14,fy/14,540)*1900)|0);if(wk===2&&WL[fy*W2+fx])FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,WL[fy*W2+fx]);else if(wk===3)FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0)}
+        const wk=WK[fy*W2+fx];if((wk===1||wk===2&&hs(fx+X*r,fy,547)<T.water.bankFoam)&&(fx>0&&!WK[fy*W2+fx-1]||fx<W2-1&&!WK[fy*W2+fx+1]||fy>0&&!WK[(fy-1)*W2+fx]||fy<HE2-1&&!WK[(fy+1)*W2+fx])){SH.push(fx,sy,(wnoise2((fx+X*r)/14,fy/14,540)*1900)|0);SR.push(fy)}if(wk===2&&WL[fy*W2+fx]){FL.push(fx,sy,Math.round(WA[fy*W2+fx])%30000,WL[fy*W2+fx],WS[fy*W2+fx]);FR.push(fy)}else if(wk===3){FL.push(fx,sy,-2,(hs(fx+X*r,fy,543)*100)|0,0);FR.push(fy)}}
       if(fy+1>=HE2)continue;const fN=fi+W2,kN=at(gx,Y+(((fy+1)/r)|0)),LN=LFF[fN],syN=fy+1-LN;if(syN<=sy+1)continue;
       // (the lip, lit; snow on a high one; a face within a road's wall px dressed stone (its cut or fill), never one falling to water: no
       //  masonry on a river's bank where no bridge stands (the owner, 2026-11-18: "Why there's a human made brick when there's no bridge?"))
@@ -334,7 +339,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       if(n<=3&&(SF[fi]<.5&&SF[fN]<.5&&!(wetB&&!wet&&WK[fN]===2)||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
           O[o]=CW[ci]+(CW[ci2]-CW[ci])*f;O[o+1]=CW[ci+1]+(CW[ci2+1]-CW[ci+1])*f;O[o+2]=CW[ci+2]+(CW[ci2+2]-CW[ci+2])*f;O[o+3]=255;DEPF[yy*W2+fx]=fy;TOP[yy*W2+fx]=1}continue}
       for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0)continue;if(yy>=H2)break;const f=dz/Math.max(1,n),zh=L-dz,nz=hs(gx*r+fx%r,fy+dz,331),afx=X*r+fx;let c;
-        if(wet&&wetB){const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1)FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0)}
+        if(wet&&wetB){const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1){FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0,0);FR.push(fy)}}
         else if(wall){if(dz===1){rec.walls=(rec.walls||0)+1;if(wetB)rec.wallWet=(rec.wallWet||0)+1}// (counted: a chunk's masonry faces, none down to water, tests/bridgeroads.js)
           const row=Math.floor(dz/3),off=(row&1)*3;c=dz%3===0||(afx+off)%6===0?WAY_COL.stone[2]:WAY_COL.stone[hs(Math.floor((afx+off)/6),row,333)<.5?0:1]}
         else if(rocky){const RC=Q.rock;c=tmix(f<.5?RC[2]:RC[3],Q.face[2],.25);c=tmix(c,RC[4]||RC[3],Math.min(.5,f*.5));if(zh%lh===0)c=tmul(c,.62);else if((zh+1)%lh===0)c=tmul(RC[1],.95);
@@ -349,7 +354,11 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   rec.fcv=mkcv(W2,H2);rec.fcv.getContext('2d').putImageData(out,0,0);rec.fr=r;
   // (the water that moves (the lab's): the shore's px the foam rides (x, y on the picture, a phase), the rivers' px (x, y, how far
   //  along, a phase; along -1 a fall's))
-  rec.shore=Int16Array.from(SH);rec.flow=Int16Array.from(FL);
+  // (only where its px still shows the water it was found on: a south bank lifted higher over it later, or a face, drew land there
+  //  (DEPF: each picture px's last row), so no current or foam floats on the land in front (the owner, 2026-11-18: "The water lines
+  //  sometimes float on the land"); rec.flowCut, rec.shoreCut: how many were let go, tests/waterlines.js)
+  {const keep=(A,R,n)=>{const o=[];let cut=0;for(let k=0,j=0;k<A.length;k+=n,j++){if(DEPF[A[k+1]*W2+A[k]]===R[j])for(let q=0;q<n;q++)o.push(A[k+q]);else cut++}return [o,cut]};
+   const [s2,sc]=keep(SH,SR,3),[f2,fc]=keep(FL,FR,5);rec.shore=Int16Array.from(s2);rec.flow=Int16Array.from(f2);rec.shoreCut=sc;rec.flowCut=fc}
   // (each game px drawn as water or not (its fine px's middle): what a man in water is drawn by, so none wades on the drawn bank)
   {const WE=rec.wet=new Uint8Array(w*h);for(let y=0;y<h;y++)for(let x=0;x<w;x++){const f=(y*r+(r>>1))*W2+x*r+(r>>1);WE[y*w+x]=WF[f]?WK[f]||1:0}
     // (each water px's distance to the drawn land, game px (3 a step, 4 aslant, then /3; the chunk's edge not land), for how deep a man
@@ -549,9 +558,9 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
     {const ts=now/1000,FO=0xd8f6f4ec,SP=0x5cf2ece0,SL=0x30eee4d4,WF=0x99fffcfa,RW=WORLD_WAYS.river.flow;
       for(const c of recs){const S=c.shore,F=c.flow,ox=c.cx*CHUNK*r-cam.x*r-5+5,oy=c.cy*CHUNK*r-cam.y*r;
         if(S)for(let k=0;k<S.length;k+=3){const x=S[k]+ox,y=S[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;if(Math.sin(ts*1.6+S[k+2]/100)>.45){U[y*BW+x]=FO;any=true}}
-        if(F)for(let k=0;k<F.length;k+=4){const x=F[k]+ox,y=F[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;
+        if(F)for(let k=0;k<F.length;k+=5){const x=F[k]+ox,y=F[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;
           if(F[k+2]===-1){if((((F[k+1]+c.cy*CHUNK*r)*.5-ts*24+F[k+3])%5+5)%5<1){U[y*BW+x]=WF;any=true}}
-          else if(F[k+2]===-2){if(((ts*7+F[k+3]*.37)|0)%4===0){U[y*BW+x]=(F[k+3]&1)?WF:SP;any=true}}else{const q=((F[k+2]-ts*RW.speed+F[k+3])%RW.period+RW.period)%RW.period;if(q<RW.len){U[y*BW+x]=q>RW.len-1.2?WF:q>RW.len*.4?SP:SL;any=true}}}}}
+          else if(F[k+2]===-2){if(((ts*7+F[k+3]*.37)|0)%4===0){U[y*BW+x]=(F[k+3]&1)?WF:SP;any=true}}else{const v=F[k+4],len=(v&255)/10||RW.len,sp=(v>>8)/20||1,P=Math.max(RW.period,len*RW.wide.per),q=((F[k+2]-ts*RW.speed*sp+F[k+3])%P+P)%P;if(q<len){U[y*BW+x]=q>len-1.2?WF:q>len*.4?SP:SL;any=true}}}}}
     for(const c of recs){const Gr=c.grass;if(!Gr)continue;const fy0=cam.y*r-4,fy1=(cam.y+VH)*r+GH;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy0)lo=m+1;else hi=m}
       for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cam.x*r-5,by=Y-cam.y*r-9;if(bx<-GW||bx>BW||QG<1&&hs(X,Y,439)>=QG)continue;const st=vs(X/r,Y/r);if(!st)continue;any=true;
         // (left, it eases back, never past upright: over back[0] s, back[1] s more for each s it was trodden (up to back[2]); pressed
