@@ -911,7 +911,12 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, W6 re-recorded 2026-11-19 again, on purpose, the owner's "please fix that straight line steep hill": a face's rock and sand
 //  blended by noise, not picked per column, and painted as earth or rock with a ragged grassy lip, strata, cracks, roots and scree
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'e9f4056f',W6:'fd6aba67',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
+const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'dad150d3',W6:'fb9bd4c5',W7:'5c44bdb4',W8:'5466914a',B2:'23d198e7'};
+// (W1, W3-W8, B2 re-recorded 2026-11-19, on purpose, the owner's "Buildings should not be spawn at the edge of hills": lots, sites
+//  placed in play and outposts off a hill's edge by a cost, a bandits' camp by one nudged to a clear spot near, its tiles opened
+//  (data/world.js EDGE_PLACE, holding.js campOffEdge), a moving camp never back onto its own spot (encampments.js); W2 and the
+//  generator's sums hold, the made world's tiles as they were. Were: W1 2fc54212, W3 e7fea2d6, W4 2e253f27, W5 e9f4056f, W6 fd6aba67, W7
+//  7eb11ba5, W8 1c2960d1, B2 05b4d278)
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
