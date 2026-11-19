@@ -230,10 +230,33 @@
         face(F,[a,b,ap],{cls:'roof',mat:rf.mat,out:m,O:a,eu:nrm(sub(b,a)),su:1,ev:null,prio:2,rf,part:p.name});if(rf.lip!==0)face(F,[sub(a,[0,0,1]),sub(b,[0,0,1]),b,a],{cls:'lip',mat:rf.mat,out:[m[0],m[1],0],O:a,eu:nrm(sub(b,a)),su:1,ev:[0,0,1],prio:3,rf,part:p.name})}}
   }
 
+  /* cloth (the owner, 2026-11-19: "make sure that the tents in camps look like a fabrics"): a tent's canvas, hides and awnings drawn
+     as cloth, never as a building's courses, speckle, moss, slipped tiles or a hard dark eave. Its slopes in panels between seams
+     (seam px apart), each sagging between them (its middle a shade deeper toward the eave), a crease now and then running down from
+     a seam, lit along the ridge, weathered low (a stain); its walls in soft vertical folds (fold: the share of 2 px columns a shade
+     deeper), a hem at the foot and a shade under the roof; its edge at the eave a hem, scalloped; an awning keeps its stripes, a
+     hide its stitches. The tones as every texture's (0 lit .. 3 deep) */
+  const CLOTH={canvas:1,canvasR:1,canvasB:1,awning:1,awningB:1,awningG:1,hide:1},CLOTHT={seam:7,fold:.16,crease:.12,stain:.14};
+  function clothTexel(f,u,v,b,sd,m,tx,iu,iv,h){const T=CLOTHT,ds=sd+(f.sd|0),stripe=tx.startsWith('awning'),hide=tx==='hide',st=(a,t)=>stripe&&(iu>>1)%2?['linen',cl(t)]:[a,cl(t)];
+    if(f.cls==='lip')return st(m,b+1+(iu%3===1?1:0)-(f.n&&f.n[0]<-.3?1:0));// (the hem along its eave, scalloped)
+    if(f.cls==='roof'){const top=f.fh-v,P=T.seam,pu=((u%P)+P)%P,mid=Math.abs(pu-P/2)<P*.2,seam=pu<1,low=v<f.fh*.4;
+      if(top<1)return st(m,b-1);// (lit along the ridge, where it lies over the pole)
+      const cu=((u-v*.35)%P+P)%P,crease=!seam&&v<f.fh*.8&&Math.abs(cu-1.5)<.6&&H(Math.floor((u-v*.35)/P),0,ds+71)<T.crease,stain=v<2&&h<T.stain;
+      return st(m,b+(seam&&!hide?1:0)+(mid&&low?1:0)+(crease?1:0)+(stain?1:0)+(hide?hidePatch(iu,iv,ds):0)-(h>.97&&b>0?1:0))}
+    if(f.cls==='top'||f.cls==='floor')return st(m,b);
+    // (a fold: a thin crease down the cloth here and there, and the cloth hanging a shade deeper in broad drapes low on it)
+    const fold=!hide&&H(iu,0,ds+53)<T.fold,drape=v<f.hz*.6&&H(iu>>2,0,ds+57)<.3,hem=v<1,under=f.hz&&v>=f.hz-1&&!f.gable,stain=v<2&&h<T.stain;
+    return st(m,b+(fold||drape?1:0)+(hem||under?1:0)+(stain?1:0)+(hide?hidePatch(iu,iv,ds):0))}
+  // (hides sewn together: irregular patches, a few a shade deeper, a dotted stitch up their sides and now and then across; never
+  // boards in rows)
+  const hidePatch=(iu,iv,ds)=>{const pr=Math.floor(iv/4),off=Math.floor(H(pr,0,ds+61)*5),pc=Math.floor((iu+off)/5),e=(iu+off)%5===0||iv%4===0&&H(pc,pr,ds+73)<.35;
+    return (H(pc,pr,ds+67)<.3?1:0)+(e&&(iu+iv)%2===0?1:0)};
+
   /* textures: the material and tone (0 lit .. 3 deep) a face shows at (u, v), from its tone by the light b. Every surface has its
      courses and a little 2-tone speckle inside them (never a flat fill), within its 4-tone ramp */
   const H=PX.hash,cl=t=>t<0?0:t>3?3:t;
   function texel(f,u,v,b,sd){const m=f.mat,iu=Math.floor(u),iv=Math.floor(v),h=H(iu,iv,sd+f.sd),sp=h<.07?1:h>.96?-1:0;
+    {const tx=TEX[m]||m;if(CLOTH[tx])return clothTexel(f,u,v,b,sd,m,tx,iu,iv,h)}// (a tent's cloth: folds and sags, no courses or speckle)
     if(f.cls==='lip'){const lit=f.n[0]<-.3?-1:0;// (the sun side's edge caught by the light)
       return m==='thatch'?[m,cl(b+1+lit+(iu%3===0&&iv<1?1:0))]:m==='shingle'?['timber',cl(b+1+lit)]:[m,cl(3+lit)]}
     if(f.cls==='roof'){const top=f.fh-v;// (v up the slope from the eave; top: how far below the ridge)
