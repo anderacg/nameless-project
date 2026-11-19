@@ -289,10 +289,56 @@ function bridgeOver(x,y,L){const P0=WorldArt.plan;if(!P0||!P0.ways||ON_DECK)retu
 //  time, a fall at each (the owner, 2026-11-15: "Look how the river and hill work in the lab": its surface runs flat, then drops a
 //  level over a fall, down the hills); one dropping steps.min levels or more at once falls at its middle)
 function riverSurf(A,B,t){const s=A-B<WORLD_TERRAIN.steps.min?A+(B-A)*t:t<.5?A:B,st=WORLD_WAYS.river.step;return st>0?Math.floor(s/st+1e-4)*st:s}
+/* (where a river runs as rapids, its surface sloping down a drop instead of stepping over a fall (the owner, 2026-11-19: "I see waterfall
+   in big river looks weird": a wide river stepping two levels at once drew a straight white band right across its water above a
+   lake): a reach falls.rapid.hw game px of half-width or more, within falls.rapid.mouth px (along it) of still water at its end or of a wider river it runs into (its level there), or
+   within falls.rapid.bridge px of a bridge's deck; there its stepped surface (riverSurf) averaged over falls.rapid.ramp px along it
+   each way (the window never past the run's ends, so it meets the still water's level), eased in over ramp px from the reach: no
+   face (a fall) nor its lip and pool, white water down the slope (terrainChunk). Per river point, NaN where none (riverLevel)) */
+function riverRamp(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=X.length,R=new Float32Array(n).fill(NaN),FR=WORLD_TERRAIN.falls.rapid,on=new Uint8Array(n),D=new Float32Array(n),S=new Float32Array(n),core=new Uint8Array(n),BR=WY.bridges||[],ML=WM.lv||(WM.lv=reliefOf(WM));
+  for(const k of WY.SP)on[k]=1;
+  // (the river a point lies in the water of: another run's, wider, whose half-width reaches it (-1 none); that river's stepped level there)
+  const run=new Int32Array(n),G=new Map(),cell=32;{let q=0;for(let k=0;k<n;k++){run[k]=q;if(!on[k])q++;const g=Math.floor(X[k]/cell)+','+Math.floor(Y[k]/cell);if(!G.has(g))G.set(g,[]);G.get(g).push(k)}}
+  const inside=k=>{const cx=Math.floor(X[k]/cell),cy=Math.floor(Y[k]/cell);let b=-1,bd=0;for(let v=cy-1;v<=cy+1;v++)for(let u=cx-1;u<=cx+1;u++)for(const j of G.get(u+','+v)||[]){if(run[j]===run[k]||WY.HW[j]<=WY.HW[k]+1)continue;const d=Math.hypot(X[j]-X[k],Y[j]-Y[k])-WY.HW[j];if(d<bd){bd=d;b=j}}return b};
+  const lvOf=j=>on[j]?riverSurf(LV[j],LV[j+1],0):j>0&&on[j-1]?riverSurf(LV[j-1],LV[j],1):LV[j];
+  const still=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH)return false;const i=ty*MW+tx;return tiles[i]===T_WATER&&(!(WM.river[i]&3)||!!(WY.mouth&&WY.mouth[i]))};
+  for(let k0=0;k0<n;){let k1=k0;while(k1<n-1&&on[k1])k1++;
+    for(let k=k0+1;k<=k1;k++)D[k]=D[k-1]+Math.hypot(X[k]-X[k-1],Y[k]-Y[k-1]);
+    for(let k=k0;k<=k1;k++)S[k]=k<k1?riverSurf(LV[k],LV[k+1],0):k>k0?riverSurf(LV[k-1],LV[k],1):riverSurf(LV[k],LV[k],0);
+    // (its end in water not its own: still water (a lake's, the sea's), or a brook's run over land into another's water (a river it
+    //  joins): its mouth. From its first point there (ka) on its water lies at that water's level (ML), never a step of water raised in
+    //  it; over ramp px before ka it eases down to that level)
+    const wet=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);return tx>=0&&ty>=0&&tx<MW&&ty<MH&&tiles[ty*MW+tx]===T_WATER},back=k=>{let j=k;while(j>k0&&D[k]-D[j]<FR.join)j--;return j};
+    let ka=k1+1;if(k1>k0&&(still(X[k1],Y[k1])||wet(X[k1],Y[k1])&&!wet(X[back(k1)],Y[back(k1)]))){ka=k1;while(ka>k0&&wet(X[ka-1],Y[ka-1]))ka--}
+    else if(k1>k0&&inside(k1)>=0){ka=k1;while(ka>k0&&inside(ka-1)>=0)ka--}// (or its tail run on within a wider river's banks: from where it enters that river)
+    for(let k=ka;k<=k1;k++){const i=Math.floor(Y[k]/TILE)*MW+Math.floor(X[k]/TILE),j=inside(k);S[k]=Math.min(S[k],ML[i],j>=0?lvOf(j):1e9)}
+    for(let k=k1-1;k>=ka;k--)S[k]=Math.min(S[k],S[k+1]);// (and never above the water further in: a river's stepped surface, not its tile's level)
+    const e0=still(X[k0],Y[k0]),e1=ka<=k1,DA=e1?D[ka]:D[k1];
+    for(let k=k0;k<=k1;k++)core[k]=WY.HW[k]>=FR.hw||e1&&DA-D[k]<FR.mouth||e0&&D[k]-D[k0]<FR.mouth||BR.some(b=>Math.hypot(X[k]-b.mx,Y[k]-b.my)<b.L/2+FR.bridge)?1:0;
+    // (each point's distance along to the nearest of the reach, both ways: its weight 1 there, 0 ramp px off it)
+    const dc=new Float32Array(k1-k0+1);let last=-1e9;for(let k=k0;k<=k1;k++){if(core[k])last=D[k];dc[k-k0]=D[k]-last}
+    last=1e9;for(let k=k1;k>=k0;k--){if(core[k])last=D[k];dc[k-k0]=Math.min(dc[k-k0],last-D[k])}
+    const kz=Math.min(k1,ka-1);
+    for(let k=k0;k<=k1;k++){const w=1-dc[k-k0]/FR.ramp;if(w<=0)continue;if(k>=ka){R[k]=S[k];continue}
+      const rad=Math.min(FR.ramp,D[k]-D[k0],D[kz]-D[k]);let sm=0,sw=0;
+      for(let j=k;j>=k0&&D[k]-D[j]<=rad;j--){const v=1-(D[k]-D[j])/(rad+1);sm+=S[j]*v;sw+=v}
+      for(let j=k+1;j<=kz&&D[j]-D[k]<=rad;j++){const v=1-(D[j]-D[k])/(rad+1);sm+=S[j]*v;sw+=v}
+      R[k]=S[k]+(sm/sw-S[k])*Math.min(1,w)}
+    // (down to its mouth's level over the ramp before it: from the ramp's value ramp px up to the water's at ka, never rising)
+    if(e1){let ku=ka;while(ku>k0&&DA-D[ku-1]<=FR.ramp)ku--;const top=R[ku]===R[ku]?R[ku]:S[ku],lo=S[ka];
+      for(let k=ku;k<ka;k++){const f=FR.ramp>0?Math.min(1,(D[k]-(DA-FR.ramp))/FR.ramp):1;R[k]=Math.max(lo,top+(lo-top)*Math.max(0,f))}}
+    // (never rising downstream where its river does not)
+    for(let k=k0+1;k<=k1;k++)if(R[k]===R[k]&&R[k-1]===R[k-1]&&LV[k]<=LV[k-1]&&R[k]>R[k-1])R[k]=R[k-1];
+    k0=k1+1}
+  return R}
+// (a river's surface at segment a, t 0-1 along it: on its rapids' ramp (riverRamp), else stepped (riverSurf))
+function riverLevel(WY,a,t){const R=WY.RR||(WY.RR=riverRamp(WY)),r0=R[a],r1=R[a+1];if(r0!==r0&&r1!==r1)return riverSurf(WY.LV[a],WY.LV[a+1],t);
+  const p=r0===r0?r0:riverSurf(WY.LV[a],WY.LV[a+1],0),q=r1===r1?r1:riverSurf(WY.LV[a],WY.LV[a+1],1);return p+(q-p)*t}
 // (how far each river point lies from a fall along its river (game px; less than 0 above it, more below), within a fall's lip above and
 //  its pool below (WORLD_TERRAIN.falls); else 1e9: a fall where its stepped surface (riverSurf) drops from one point to the next)
 function fallDist(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=LV.length,FD=new Float32Array(n).fill(1e9),FA=WORLD_TERRAIN.falls,gap=(a,b)=>Math.hypot(X[b]-X[a],Y[b]-Y[a]);
-  for(let a=0;a+1<n;a++){const g=gap(a,a+1);if(g>24||riverSurf(LV[a],LV[a+1],0)-riverSurf(LV[a],LV[a+1],1)<.5)continue;
+  const RR=WY.RR||(WY.RR=riverRamp(WY));// (no fall on a rapids' reach: riverRamp)
+  for(let a=0;a+1<n;a++){const g=gap(a,a+1);if(g>24||RR[a]===RR[a]||RR[a+1]===RR[a+1]||riverSurf(LV[a],LV[a+1],0)-riverSurf(LV[a],LV[a+1],1)<.5)continue;
     let d=g/2;for(let b=a;b>=0&&d<FA.lip;b--){if(Math.abs(FD[b])>d)FD[b]=-d;if(b>0){const h=gap(b-1,b);if(h>24)break;d+=h}}
     d=g/2;for(let b=a+1;b<n&&d<FA.pool;b++){if(Math.abs(FD[b])>d)FD[b]=d;if(b+1<n){const h=gap(b,b+1);if(h>24)break;d+=h}}}
   return FD}

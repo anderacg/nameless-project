@@ -54,7 +54,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   const T=WORLD_TERRAIN,PAL=terrainPal(),LV=WM.lv||(WM.lv=reliefOf(WM)),LH=landHeight(WM),W2=w*r,H2=h*r,HE2=HE*r,out=new ImageData(W2,H2),O=out.data,CW=new Uint8ClampedArray(W2*HE2*4),WK=new Uint8Array(W2*HE2),WA=new Float32Array(W2*HE2),WL=new Int16Array(W2*HE2),WS=new Int16Array(W2*HE2),PL=new Uint8Array(W2*HE2),KD=new Uint8Array(W2*HE2),NT=new Uint8Array(W2*HE2),MWA=new Float32Array(W2*HE2).fill(-1),TS=16,WY=waysOf(P),WV=WORLD_WAYS,Rv=WM.river,k2=r/2;
   // (the game px whose levels are worked: the chunk, a px round it, and south of it as far as the highest lift reaches (HE rows))
   const CV=caveRocks(X,Y,w,HE);// (the caves whose rocky ground reaches the chunk: caveShare)
-  const gx0=X-2,gy0=Y-2,GW=w+4,GH=HE+4,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH),SW=new Float32Array(GW*GH);
+  const gx0=X-2,gy0=Y-2,GW=w+4,GH=HE+4,Lv=new Float32Array(GW*GH),St=new Float32Array(GW*GH),Gx=new Float32Array(GW*GH),Gy=new Float32Array(GW*GH),Wa=new Uint8Array(GW*GH),SW=new Float32Array(GW*GH);const SEAK=new Uint8Array(GW*GH);// (its game px of still water: a fall's record, rec.falls)
   const tlv=(tx,ty)=>LV[Math.max(0,Math.min(MH-1,ty))*MW+Math.max(0,Math.min(MW-1,tx))],tix=(gx,gy)=>Math.max(0,Math.min(MH-1,gy>>4))*MW+Math.max(0,Math.min(MW-1,gx>>4));
   // (the ways near: the rivers' and brooks' curves and the roads, at game px over the levels' window and at fine px over the chunk;
   //  the sea's and the lakes' tiles (a river's mouth on them with them) keep the shore's water)
@@ -129,7 +129,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
     fordShare=(gx,gy)=>{const wx=gx+(wnoise2(gx/11,gy/11,527)-.5)*2*FB2.warp,wy=gy+(wnoise2(gx/11,gy/11,528)-.5)*2*FB2.warp,u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),bx=labBS(u-tx),by=labBS(v-ty);
       let s=0;for(let q=0;q<4;q++)for(let p=0;p<4;p++)s+=bx[p]*by[q]*isF(tx+p-1,ty+q-1);return sstep(Math.min(1,s/FB2.blend))};
   const WB0dw=(gx,gy)=>{const q=(gy-ey0)*EW+gx-ex0;return q>=0&&q<EW*EH?DW[q]:99},eq=(gx,gy)=>(gy-ey0)*EW+gx-ex0,seaAt=(gx,gy)=>{const q=eq(gx,gy);return q>=0&&q<EW*EH&&WAT[q]===1};
-  const seaT=ti=>ow(ti),surf=(q,t)=>{const a=WY.SP[q];return riverSurf(WY.LV[a],WY.LV[a+1],t)};
+  const seaT=ti=>ow(ti),surf=(q,t)=>riverLevel(WY,WY.SP[q],t),RRW=WY.RR||(WY.RR=riverRamp(WY)),rapidAt=k=>{const q=RG.Q[k];if(q<0)return false;const a=WY.SP[q];return RRW[a]===RRW[a]||RRW[a+1]===RRW[a+1]};// (stepped, or on a rapids' ramp: worldways.js riverRamp)
   for(let j=0;j<GH;j++){const gy=gy0+j;for(let i=0;i<GW;i++){const gx=gx0+i,u=(gx-8)/TS,v=(gy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,ti=tix(gx,gy),t=tiles[ti],sea=seaAt(gx,gy),k=j*GW+i;
       let e,wet=sea;
       if(sea)e=WLV[eq(gx,gy)];
@@ -138,7 +138,7 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
         const s=RG.S[k];if(s<0){e=surf(RG.Q[k],RG.T[k]);wet=true}else if(s<bankG){const sv=surf(RG.Q[k],RG.T[k])+.3;e=sv+(e-sv)*wsm(s/bankG)}
         // (a road at its graded height (the lab's), its shoulders cut into the land or banked up to it)
         if(!wet){const ds=DG.S[k];if(ds<shG){const q=DG.Q[k],t=DG.T[k],rz=WY.RZ[q*2]+(WY.RZ[q*2+1]-WY.RZ[q*2])*t;e=ds<0?rz:rz+(e-rz)*wsm(ds/shG)}}}
-      Lv[k]=Math.max(0,e);Wa[k]=wet?1:0}
+      Lv[k]=Math.max(0,e);Wa[k]=wet?1:0;SEAK[k]=sea?1:0}
     if(!(j&7))yield}
   // (the dry land within a lake's or a pool's tiles (the generator's levels hold it at the water's level: a flat square floor stepped
   //  up at the tile's edge; the owner, 2026-11-17: "Small water have a square shape around it") eased from the land round it down to its
@@ -218,6 +218,10 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
             col=wayWater(Q,CLIMS[ci],fx,fy,.04+.08*Math.abs(v)/f.hw,q,false);if(wnoise2(fx/(3*k2),fy/(1.6*k2),579)>.72)col=tmix(col,Q.fall[0],.45);break}
           // (a fall's white water, seen whichever way its river runs: its lip whitening as it goes over, a pool churning foam at its foot;
           //  only across its own channel (falls.wide of its half-width), fading in from its ends and its sides, never spread across a wide river's or a lake's water)
+          // (rapids where a wide river, or one near still water or a bridge, slopes down a drop instead of falling (worldways.js riverRamp):
+          //  broken white water in streaks along its current, the more the steeper, fading to its banks; lit live as a fall's (WK 3))
+          {const RR=WY.RR||(WY.RR=riverRamp(WY)),r0=RR[a],r1=RR[a+1];if(r0===r0&&r1===r1){const FRp=T.falls.rapid,g=Math.hypot(WY.X[a+1]-WY.X[a],WY.Y[a+1]-WY.Y[a])||1,sl=Math.abs(r0-r1)/g,u=Math.min(1,sl/FRp.white)*Math.max(0,1-c/hw)**.7;
+            if(u>.05){const nz=wnoise2(A/(FRp.streak*k2),c/(1.3*k2),581),nz2=hs(fx,fy,582);if(nz>1-.55*u){col=tmix(col,nz2<.35*u?Q.foam:Q.fall[nz2<.6?0:1],.35+.5*u);if(u>.4)WK[fi]=3}}}}
           const FD=WY.FD||(WY.FD=fallDist(WY)),f0=FD[a],f1=FD[a+1],FA=T.falls,cw=1-c/(hw*FA.wide);if((f0<1e8||f1<1e8)&&cw>0){const fd=f0<1e8&&f1<1e8?f0+(f1-f0)*tt:f0<1e8?f0:f1,nz=hs(fx,fy,577);
             if(fd<0&&fd>-FA.lip){const u=(1+fd/FA.lip)*Math.min(1,cw*3);col=tmix(col,Q.fall[nz<.4?0:1],.95*u);if(u>.3)WK[fi]=3}
             else if(fd>=0&&fd<FA.pool){const u=(1-fd/FA.pool)*Math.min(1,cw*3);col=tmix(col,nz<u*.7?Q.foam:Q.fall[1],.3*u+.65*u*u);if(u>.35)WK[fi]=3}}}
@@ -336,10 +340,12 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
       const wet=wt,wetB=WF[fN],n=syN-sy-1,ti=tix(gx,gy),t=tiles[ti],Q=PAL[CLG[k]],road=DG.S[k]<shG,wall=DG.S[k]<WORLD_WAYS.road.wall*WAY_LP&&!WY.RB[DG.Q[k]]&&!wetB,rocky=!road&&!(RG.S[k]<bankG+2)&&WK[fN]!==2&&(Math.hypot(Gx[k],Gy[k])>=T.steepG||Lv[k]>=T.rock-1||(L-LN)>=2*lh),snowy=Lv[k]>=T.snow-1,sand=!rocky&&Lv[k]<1.2&&!road;
       if(sy>=0&&sy<H2&&!wet&&!(n<=3&&SF[fi]<.5&&SF[fN]<.5)){const o=(sy*W2+fx)*4;if(snowy){O[o]=242;O[o+1]=246;O[o+2]=252}else{O[o]=Math.min(255,O[o]*1.12);O[o+1]=Math.min(255,O[o+1]*1.12);O[o+2]=Math.min(255,O[o+2]*1.12)}}
       // (a small drop on smooth ground or along water: no face, the lab's way: this top shading into the next)
-      if(n<=3&&(SF[fi]<.5&&SF[fN]<.5&&!(wetB&&!wet&&WK[fN]===2)||wet&&wetB)){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
+      // (nor a fall where either water is a rapids' (two rivers met, a steep reach): its water shades down into the next, white streaks on it)
+      if(n<=3&&(SF[fi]<.5&&SF[fN]<.5&&!(wetB&&!wet&&WK[fN]===2)||wet&&wetB)||wet&&wetB&&(rapidAt(k)||rapidAt(kN))){const ci2=((fy+1)*W2+fx)*4;for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0||yy>=H2)continue;const f=dz/(n+1),o=(yy*W2+fx)*4;
           O[o]=CW[ci]+(CW[ci2]-CW[ci])*f;O[o+1]=CW[ci+1]+(CW[ci2+1]-CW[ci+1])*f;O[o+2]=CW[ci+2]+(CW[ci2+2]-CW[ci+2])*f;O[o+3]=255;DEPF[yy*W2+fx]=fy;TOP[yy*W2+fx]=1}continue}
       for(let dz=1;dz<=n;dz++){const yy=sy+dz;if(yy<0)continue;if(yy>=H2)break;const f=dz/Math.max(1,n),zh=L-dz,nz=hs(gx*r+fx%r,fy+dz,331),afx=X*r+fx;let c;
-        if(wet&&wetB){const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1){FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0,0);FR.push(fy)}}
+        if(wet&&wetB){if(dz===1)(rec.falls||(rec.falls=[])).push(X+fx/r,Y+fy/r,n,SEAK[k]&&SEAK[kN]?2:SEAK[k]||SEAK[kN]?1:0);// (each fall's column, game px, its drop (fine px), 1 beside still water, 2 over it: tests/waterfalls.js)
+          const q=hs(afx,0,332);c=dz>=n-1?Q.foam:Q.fall[q<.35?0:q<.75?1:2];if(nz<.03)c=Q.foam;if(yy>=0&&yy<H2&&dz<n-1){FL.push(fx,yy,-1,(hs(afx,0,542)*20)|0,0);FR.push(fy)}}
         else if(wall){if(dz===1){rec.walls=(rec.walls||0)+1;if(wetB)rec.wallWet=(rec.wallWet||0)+1}// (counted: a chunk's masonry faces, none down to water, tests/bridgeroads.js)
           const row=Math.floor(dz/3),off=(row&1)*3;c=dz%3===0||(afx+off)%6===0?WAY_COL.stone[2]:WAY_COL.stone[hs(Math.floor((afx+off)/6),row,333)<.5?0:1]}
         else if(rocky){const RC=Q.rock;c=tmix(f<.5?RC[2]:RC[3],Q.face[2],.25);c=tmix(c,RC[4]||RC[3],Math.min(.5,f*.5));if(zh%lh===0)c=tmul(c,.62);else if((zh+1)%lh===0)c=tmul(RC[1],.95);
