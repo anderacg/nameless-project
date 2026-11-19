@@ -2,7 +2,7 @@
 // Captivity (world/captivity.js, doc/CAPTIVITY_DESIGN.md phase 1): beaten, you may get away or be taken; taken, you pay, persuade,
 // serve, wait for your realm or refuse; freed near a holding, it costs by the way out; your scattered soldiers find you again;
 // what they took is in their stash (phase 3), won back by clearing or raiding it or from a fence, sold off after a month.
-Kit.suite(({ok})=>{
+Kit.suite(({ok,info})=>{
  const t=T,P=t.P,G=t.G,W=t.W,C=t.Captivity,X=t.CAPTIVITY;Kit.begin('soldier',1);Kit.clear();Kit.world();t.GUIDE.on=false;
  const rnd=Math.random,roll=v=>{window.Math.random=()=>v},panel=()=>document.getElementById('panel').innerHTML;
  const band=()=>{const b=t.asParty({kind:'bandits',troops:Array(6).fill('militia'),x:P.x+30,y:P.y,cool:0});t.bandits.push(b);return b};
@@ -185,6 +185,22 @@ Kit.suite(({ok})=>{
    // (a lord is no robber: his page as ever)
    {setup();const f=t.FIDS[0],town=t.TOWNS.find(x=>x.owner===f);C.held={k:'realm',fac:f,name:'the men',since:G.day,ransom:100,tried:[],away:[],at:{k:'holding',town:town.name}};C.cv=null;C.open();
     ok(!C.held.took&&P.gold===400&&document.querySelector('[data-act="held-pay"]'),'a realm’s men take no purse: their ransom to pay, as before');C.held=null;t.hidePanel();G.mode='world';G.modal=false}}
+ // ---- freed, you can walk (the owner, 2026-11-18: "When I got captured by bandits and got released I cannot walk"): every way out
+ // leaves you on ground you can walk off by the router's own rules (loose: ledges, a bridge's sides, walls, deep water), nothing of
+ // before holding you (unbind: a chase, a follow, a camp), and a short walk moves you; a spot boxed in is left for open ground near
+ {const walks=()=>{const x0=P.x,y0=P.y;let best=0;for(const [dx,dy] of [[60,0],[-60,0],[0,60],[0,-60]]){P.x=x0;P.y=y0;P.tx=P.ty=null;t.worldMove(x0+dx,y0+dy);for(let i=0;i<150&&G.mode==='world';i++)t.updateWorld(1/30);best=Math.max(best,Math.hypot(P.x-x0,P.y-y0))}P.x=x0;P.y=y0;P.tx=P.ty=null;return best};
+  const out=how=>{setup();const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');if(!C.held)return 'not taken';
+   G.chase=b;G.follow={o:b,crumbs:[]};P.camp={at:0};
+   if(how==='serve')t.act('held-serve');else{t.act('held-refuse');if(how==='time')C.held.prison.day=X.prison.days+1;else roll(.01);let n=0;while(C.held&&n++<40){const a=[...document.querySelectorAll('#panel [data-act]')].map(e=>e.dataset.act);t.act(a.find(k=>how==='time'?/wait/.test(k):/break/.test(k))||a[a.length-1])}window.Math.random=rnd}
+   const why=C.held?'still held':!C.loose(P.x,P.y)?'boxed in':G.chase||G.follow||P.camp||P.tx!=null?'still bound':'';t.act('dlg-ok');G.encCool=99;return why||(walks()>15?'':'does not walk')};
+  for(const how of ['serve','time','broke']){const r=out(how);ok(!r,'freed ('+how+'): on open ground, nothing of before holding you, and you walk'+(r?' ('+r+')':''))}
+  // (a spot boxed in, the river beside a bridge (router.js bridgeSide): left for the open ground near, which you walk off)
+  {const W0=t.MW*t.MH;let k=-1;for(let i=0;i<W0&&k<0;i++)if(t.bridgeSide(i)&&t.walkTile(i))k=i;
+   if(k<0)info('no tile beside a bridge to test the boxed-in spot');else{setup();P.x=(k%t.MW+.5)*t.TILE;P.y=((k/t.MW|0)+.5)*t.TILE;const x0=P.x,y0=P.y,was=C.loose(x0,y0);C.loosen();C.unbind();G.encCool=99;
+    ok(!was&&C.loose(P.x,P.y)&&Math.hypot(P.x-x0,P.y-y0)<=X.release.loose.near*t.TILE*1.5&&walks()>15,'a spot boxed in (the river by a bridge): moved '+(Math.hypot(P.x-x0,P.y-y0)|0)+' px to open ground, and you walk')}}
+  // (saved while held: on load their page at once, not the map to walk while you are theirs)
+  {setup();const b=band();roll(.99);lose({kind:'party',ref:b,n:6,list:b.troops.slice(),band:'bandits'});window.Math.random=rnd;t.act('cont');if(C.held){const d=JSON.parse(JSON.stringify(t.saveRecord()));t.applySave(d);
+    ok(C.held&&G.mode==='dialog'&&/held-/.test(panel()),'saved while held: loaded, their page at once (mode '+G.mode+')');t.act('held-serve');t.act('dlg-ok')}}}
  }finally{window.Math.random=rnd;C.held=null;C.scattered=[];C.sells=sells;X.band.strip=strip0}
  ok(!ERR.length,'no runtime errors');
 });

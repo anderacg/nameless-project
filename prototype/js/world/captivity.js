@@ -50,7 +50,7 @@
    cell's page as ever. ---------- */
 const CAPTIVITY={escape:{base:.25,agi:.03,skill:.02,mounted:.15,night:.1,cover:.1,riders:.25,hurt:.15,min:.05,max:.9},
   ransom:{base:40,renown:.4,level:15,lord:1.5,harsh:1.25},persuade:{base:.2,cha:.04,pers:.04,renown:.001,honor:.004,regard:.004,war:.15,min:.05,max:.85,fine:.1},
-  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.25,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,share:.15,ch:.5,pers:.03,trade:.02,step:.15,war:.15,report:.6},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:[1,.75],fade:10,least:7,fence:.5,days:30,near:60},band:{strip:true},release:{by:2,out:5,far:12},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},straight:{band:.35,lord:.25,realm:.4,rel:.005,min:.05,max:.8},war:{price:3,realm:.08,parole:{rel:20,base:.02,per:.002,honor:.001,max:.1}},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
+  serve:{band:[4,6],lord:[5,8],rep:6,honor:4},realm:{honor:20,days:[3,5],daily:.25},prison:{days:21,hidden:.25,fall:.04,floor:.5,break:{base:.12,agi:.02,athl:.01,guard:.06,min:.03,max:.6,hurt:.4,fails:2},beat:.2,heal:.1,bribe:{base:20,guard:15,share:.15,ch:.5,pers:.03,trade:.02,step:.15,war:.15,report:.6},events:.35,help:.15,rescue:{each:.07,max:.3}},stash:{back:[1,.75],fade:10,least:7,fence:.5,days:30,near:60},band:{strip:true},release:{by:2,out:5,far:12,loose:{tiles:60,near:16}},sold:{daily:.05,renown:.0005,floor:.1,far:40,price:1.2,persuade:.6,work:[3,5],days:10,harder:.06},straight:{band:.35,lord:.25,realm:.4,rel:.005,min:.05,max:.8},war:{price:3,realm:.08,parole:{rel:20,base:.02,per:.002,honor:.001,max:.1}},traits:{slippery:{escape:.15,break:.1},silver:.15,oldsoldier:{cost:.75,serve:.5}},scatter:{base:.35,morale:.3,lead:.04,min:.2,max:.9,days:[1,3]},light:[1,2],
   beast:{hp:.25}};
 class Captivity{
   static held=null;static scattered=[];
@@ -227,7 +227,25 @@ class Captivity{
   // at their gate; their place gone, at the nearest holding not hostile to you (the rest of the way)
   static release(c,how,realm){const home=realm&&P.fac&&Spatial.nearest(fiefsOf(P.fac),P.x,P.y),s=!home&&c.at&&this.spot(c.at);
     const X=CAPTIVITY.release,war=!!P.fac&&!!c.fac&&atWar(P.fac,c.fac);if(home)heroAtGate(home);else if(s)this.put(s,war?X.far:how==='broke'||how==='rescued'?X.out:0);else{const safe=TOWNS.filter(t=>!hostileTo(t.owner));heroAtGate(Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y))}
-    G.lastTown=Spatial.nearestHolding(P.x,P.y);G.encCool=4;return home||s||G.lastTown}
+    this.loosen();this.unbind();G.lastTown=Spatial.nearestHolding(P.x,P.y);G.encCool=4;return home||s||G.lastTown}
+  // (can one walk off (x, y): the tiles one could step onto from it by findPath's own rules (world/router.js: a ledge, a bridge's
+  //  sides, a holding's walls, deep water for one who cannot swim), at least loose.tiles of them. A tile passable in itself (unstick)
+  //  may still be boxed in by them, and the land's pieces (landPieces) read only the tiles' kinds: Router.reach says yes there)
+  static loose(x,y){holdShut();const X=CAPTIVITY.release.loose,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),s=ty*MW+tx,swim=heroSwims(),can=i=>walkTile(i)&&!bridgeSide(i)&&!(SHUT&&SHUT[i])&&(swim||tiles[i]!==T_WATER||waterBand(i)<4);
+    if(tx<0||ty<0||tx>=MW||ty>=MH||!can(s))return false;const seen=new Set([s]),q=[s];
+    while(q.length&&seen.size<X.tiles){const i=q.pop(),cx=i%MW,cy=(i-cx)/MW;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const nx=cx+dx,ny=cy+dy,j=ny*MW+nx;
+      if((!dx&&!dy)||nx<0||ny<0||nx>=MW||ny>=MH||seen.has(j)||!can(j)||!ledgeOk(i,j))continue;seen.add(j);q.push(j)}}
+    return seen.size>=X.tiles}
+  // (you on ground you can walk off: where you stand, else the nearest such tile within loose.near, else at the gate of the nearest
+  //  holding not hostile to you; the owner, 2026-11-18: "When I got captured by bandits and got released I cannot walk")
+  static loosen(){if(this.loose(P.x,P.y))return true;const X=CAPTIVITY.release.loose,tx=Math.floor(P.x/TILE),ty=Math.floor(P.y/TILE);
+    for(let r=1;r<=X.near;r++){let best=null,bd=Infinity;for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;
+      const x=(tx+dx+.5)*TILE,y=(ty+dy+.5)*TILE,d=dx*dx+dy*dy;if(d<bd&&this.loose(x,y)){bd=d;best={x,y}}}if(best){P.x=best.x;P.y=best.y;return false}}
+    const safe=TOWNS.filter(t=>!hostileTo(t.owner));heroAtGate(Spatial.nearest(safe.length?safe:TOWNS,P.x,P.y));return false}
+  // (free, nothing of before holds you: no way, chase, follow, pitch or road trip still running, no page of a place or a fight, no
+  //  camp or stay left where you were taken; your army stands where you do)
+  static unbind(){P.tx=P.ty=null;P.stuck=0;G.chase=null;G.follow=null;G.pitch=null;G.byRoad=null;G.site=null;G.enc=null;P.stay=null;
+    if(P.camp){P.camp=null;CampSite.strike('you')}const a=MARCH_ARMIES.get(P);if(a)a.relocate(P.x,P.y)}
   // their stash: where it is (where they kept you, else placeOf), and the quest that marks it; null: nowhere
   // (since: the day it was taken)
   static stash(c,gold,gear,since=G.day){const holder=c.at||this.placeOf(c);
