@@ -898,7 +898,11 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 //  bridgePic) (W5, W6), and decks walked inside their rails, entered at their ends (router.js deckLane, map.js ledgeOk), which moves
 //  parties (W7, W8); with them the herds drawn as loose units (herdFlock) and the graphics quality (High in every test: unchanged).
 //  W1-W4, B2 and the sums hold. Were W5 7762de70, W6 6f514d91, W7 3abd9f22, W8 cd18c93b)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'09703e6f',W6:'e1f4bf45',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
+// (W6 re-recorded 2026-11-19, on purpose, the owner's "The water lines sometimes float on the land", "more line on the big river":
+//  a streak or foam pixel kept only where its water row is still the picture's last drawn there (worldterrain.js DEPF), and wide rivers'
+//  lanes nearer the banks, longer, more lit (WORLD_WAYS.river.flow.wide) in the view's live water. W1-W5, W7, W8, B2 and the sums hold.
+//  Was W6 e1f4bf45)
+const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'09703e6f',W6:'a2ec191a',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended
