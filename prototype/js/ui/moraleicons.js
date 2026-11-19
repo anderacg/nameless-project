@@ -77,8 +77,8 @@ const WEAK_N={surprised:'Surprised: caught off guard by an ambush; slow to answe
 const stateIcon=st=>['wavering','breaking','routing','rallying','shattered'].includes(st)?st:null;
 // a badge's pixels: [x, y, colour] (9×9: its rim, a dark inside, its 5×5 glyph in white; rim: another colour than its own)
 function badgePx(k,rim){rim=rim||BADGE_RIM[k]||'#e4e0cf';const G=GLYPH[k],out=[];BADGE.forEach((r,y)=>[...r].forEach((ch,x)=>{if(ch==='.')return;const gy=y-2,gx=x-2,g=G&&G[gy]&&G[gy][gx]==='g';out.push([x,y,ch==='x'?rim:g?'#ffffff':'#141822'])}));return out}
-// Shared illustrations for cards, details, wiki and tactical markers; badgePx is the loading fallback.
-function badgeSVG(k,size,rim){if(!k)return '';size=size||14;const art=typeof uiStatusIcon==='function'&&uiStatusIcon(k,size,rim||BADGE_RIM[k]||'#c4a365',CONFIDENCE_LABEL);if(art)return art;const confident=k==='confident';return '<svg class="mico" viewBox="0 0 9 9" width="'+size+'" height="'+size+'" shape-rendering="crispEdges"'+(confident?' data-status="confident" role="img" aria-label="'+CONFIDENCE_LABEL+'"':' aria-hidden="true"')+'>'+(confident?'<title>'+CONFIDENCE_LABEL+'</title>':'')+badgePx(k,rim).map(([x,y,c])=>'<rect x="'+x+'" y="'+y+'" width="1" height="1" fill="'+c+'"/>').join('')+'</svg>'}
+// Shared illustrations for cards, details, wiki and tactical markers; no legacy pixel glyphs are displayed while loading.
+function badgeSVG(k,size,rim){return k?uiStatusIcon(k,size||14,rim||BADGE_RIM[k]||'#c4a365',CONFIDENCE_LABEL):''}
 // a group's badges: its failing morale, then what weakens it
 const statusOf=mo=>[stateIcon(mo.state),mo.confident?'confident':null,mo.stand?'standfast':null,...mo.weak].filter(Boolean);// (standfast: Stand Fast!, commandpowers.js)
 // the unit types' glyphs on the icons (9×9)
@@ -127,16 +127,16 @@ const unitIconScale=()=>{const f=iconZoom();if(B?.world)return Math.max(1,Math.r
    the crossbar over it with gold knobs, on a pole through its middle from a gold finial (top art px over the cloth) down foot px
    under the fringe, pointing at its men (its health a bar on its left: battlehud.js drawGroupHealth). One picture a look (FLAG_PICS), its cloth's top left at (0, 0) */
 const FLAG={top:5,ch:15,foot:0,pole:'#7a5632',finial:'#e8b94a',out:'#0a0c12',trim:'#d6b052',trimLow:'#9a7a30',fringe:'#e8c86a'},FLAG_PICS=new Map();
-function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(key);if(c)return c;const F=FLAG,ch=F.ch,mid=(S-1)>>1,low=ch+5+F.foot;
-  c=document.createElement('canvas');c.width=S+2;c.height=F.top+low;const g=c.getContext('2d'),px=(x,y,col)=>{g.fillStyle=col;g.fillRect(x+1,y+F.top,1,1)};
-  // (the pole, dark-cased, from its finial to its foot; the crossbar over the cloth, its knobs gold)
-  for(let y=-F.top+1;y<low;y++){px(mid-1,y,F.out);px(mid+1,y,F.out);px(mid,y,F.pole)}px(mid,-F.top,F.out);px(mid,-F.top+1,F.finial);px(mid,low-1,F.out);
-  for(let x=-1;x<=S;x++){px(x,-2,F.out);px(x,-1,x<0||x===S?F.out:x===0||x===S-1?F.finial:F.pole)}
-  for(let y=0;y<ch;y++)for(let x=0;x<S;x++){const ed=x===0||x===S-1||y===0||y===ch-1,tr=x===1||x===S-2||y===1||y===ch-2;
-    px(x,y,ed?edge:tr?(x===S-2||y===ch-2?F.trimLow:F.trim):y===2?cols[1]:y>=ch-5?cols[2]:cols[0])}
-  for(let x=1;x<S;x+=2)px(x,ch,F.fringe);
-  FLAG_PICS.set(key,c);return c}
-const drawFlag0=(S,cols,edge)=>{const c=flagPic(S,cols,edge);ctx.imageSmoothingEnabled=false;ctx.drawImage(c,-1,-FLAG.top)};
+function flagPic(S,cols,edge){const key=S+cols.join()+edge;let c=FLAG_PICS.get(key);if(c)return c;const F=FLAG,ch=F.ch,low=ch+5+F.foot;
+ c=document.createElement('canvas');c.width=(S+2)*4;c.height=(F.top+low)*4;const g=c.getContext('2d');g.scale(4,4);g.translate(1,F.top);
+ const mid=S/2,metal=g.createLinearGradient(0,-4,S,0);metal.addColorStop(0,'#6c4e2d');metal.addColorStop(.4,'#f2d38b');metal.addColorStop(1,'#8c6634');
+ g.strokeStyle=metal;g.lineWidth=.8;g.lineCap='round';g.beginPath();g.moveTo(mid,-4);g.lineTo(mid,low-.5);g.moveTo(0,-1.5);g.lineTo(S,-1.5);g.stroke();
+ for(const [x,y] of [[mid,-4],[0,-1.5],[S,-1.5]]){g.beginPath();g.arc(x,y,.6,0,Math.PI*2);g.fillStyle=metal;g.fill()}
+ const p=new Path2D('M.3 0Q'+mid+' .6 '+(S-.3)+' 0L'+(S-.3)+' '+(ch-.5)+'Q'+mid+' '+(ch+1.5)+' .3 '+(ch-.5)+'Z'),cloth=g.createLinearGradient(0,0,S,ch);cloth.addColorStop(0,cols[1]);cloth.addColorStop(.38,cols[0]);cloth.addColorStop(.7,cols[2]);cloth.addColorStop(1,cols[0]);
+ g.fillStyle=cloth;g.fill(p);g.lineWidth=.65;g.strokeStyle=edge;g.stroke(p);g.strokeStyle=metal;g.lineWidth=.4;g.strokeRect(1.2,1.2,S-2.4,ch-2.2);
+ g.strokeStyle=F.fringe;g.lineWidth=.3;for(let x=1;x<S;x+=.8){g.beginPath();g.moveTo(x,ch);g.lineTo(x,ch+.7);g.stroke()}
+ FLAG_PICS.set(key,c);return c}
+const drawFlag0=(S,cols,edge)=>{const c=flagPic(S,cols,edge);ctx.imageSmoothingEnabled=true;ctx.drawImage(c,-1,-FLAG.top,c.width/4,c.height/4)};
 // (a flag's height for its place and its click: the cloth, its fringe, its pole's foot)
 const flagH=()=>FLAG.ch+6;
 const iconPx=v=>{const k=bview().k;return Math.round(v*k)/k};
@@ -187,13 +187,12 @@ function drawUnitIcons(){
     ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=(mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1)*fade;
     // the flag: its cloth in its side's colours, edged (gold when selected), hung on its crossbar and pole (flagPic)
     drawFlag0(S,team,edge);
-    // Its illustrated type; the compact glyph is the loading fallback.
-    const type=unitIcon(g,m),gl=UNIT_GLYPH[type];
-    if(!uiCanvasIcon(ctx,UI_UNIT_ART[type],2,3,9,9))for(const [col,dx] of [['rgba(0,0,0,.45)',1],['#f4efe0',0]]){ctx.fillStyle=col;gl.forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx+dx,3+ry+dx,1,1)}))}
+    // Its illustrated type appears when its local atlas is ready.
+    const type=unitIcon(g,m);uiCanvasIcon(ctx,UI_UNIT_ART[type],2,3,9,9);
     ctx.globalAlpha=fade;
     // (its health: the vertical bar beside it, battlehud.js drawGroupHealth: the owner, 2026-10-31)
     // what is wrong with it, beside it (two to a column)
-    st.forEach((k,i)=>{const bx=S+2+Math.floor(i/2)*10,by=(i%2)*10;if(!uiCanvasBadge(ctx,k,bx,by,9,BADGE_RIM[k]||'#c4a365'))for(const [px,py,c] of badgePx(k)){ctx.fillStyle=c;ctx.fillRect(bx+px,by+py,1,1)}});
+    st.forEach((k,i)=>{const bx=S+2+Math.floor(i/2)*10,by=(i%2)*10;uiCanvasBadge(ctx,k,bx,by,9,BADGE_RIM[k]||'#c4a365');});
     ctx.restore()}
 }
 /* the fog's ghosts (battlefog.js fogGhosts): where an enemy group was last seen, its icon greyed, fading over FOG.ghost s, a
@@ -204,10 +203,10 @@ function drawFogGhosts(){
     if(p.x<-40||p.x>BVW+40||p.y<0||p.y>BVH+60)continue;
     ctx.save();ctx.globalAlpha=.75*a;ctx.strokeStyle='#b8bcc4';ctx.setLineDash([3,3]);ctx.lineWidth=1;const rr=Math.max(8,Math.sqrt(m.length)*5)*z;ctx.beginPath();ctx.ellipse(Math.round(p.x),Math.round(p.y),rr,rr*.5,0,0,7);ctx.stroke();ctx.setLineDash([]);
     ctx.translate(x,y);ctx.scale(K,K);drawFlag0(S,['#6a6e78','#7a7e88','#585c66'],'#2a2d33');
-    ctx.fillStyle='#d8dae0';ctx.filter='grayscale(1)';if(!uiCanvasIcon(ctx,UI_UNIT_ART[unitIcon(g,m)],2,3,9,9))UNIT_GLYPH[unitIcon(g,m)].forEach((row,ry)=>[...row].forEach((c,rx)=>{if(c==='g')ctx.fillRect(2+rx,3+ry,1,1)}));ctx.restore()}}
+    ctx.fillStyle='#d8dae0';ctx.filter='grayscale(1)';uiCanvasIcon(ctx,UI_UNIT_ART[unitIcon(g,m)],2,3,9,9);ctx.restore()}}
 // over a soldier: a white flag while it runs, a blinking mark while it wavers
 function drawMorale(u,x,y){
   if(B.noMorale||u.mor==null||steady(u))return;
-  if(u.rout){ctx.fillStyle='#5a4a3a';ctx.fillRect(x+3,y-8,1,8);ctx.fillStyle='#f2efe6';ctx.fillRect(x+4,y-8,4,3)}
-  else if(u.mor<MORALE.waver&&Math.floor(B.t*4)%2)rect(ctx,'#ffd24a',x-1,y-3,2,2);
+  if(u.rout)uiIndicator(ctx,'flag',x+2,y-9,7,9,'#e8dfc4');
+  else if(u.mor<MORALE.waver&&Math.floor(B.t*4)%2)uiIndicator(ctx,'arrow',x-3,y-8,6,7,'#e8b94a',1,'bang');
 }

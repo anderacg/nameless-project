@@ -49,7 +49,12 @@ const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
 // what lies under a click: the nearest clickable thing you can see
 function pickAt(wx,wy){
-  const V=vis(),S=yourSight(V),c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&S.sees(o.x,o.y,1.2))c.push([d,o])};
+  const V=vis(),S=yourSight(V);let marker=null,md=Infinity;
+  // An overlaid service badge wins over the people or props beneath it; overlapping padding uses the nearer badge center.
+  if(typeof CampSpots!=='undefined')for(const o of CampSpots.all()){const b=o.box;if(!b||!o.here()||!CampSpots.shown(o.site)||wx<b[0]||wx>=b[2]||wy<b[1]||wy>=b[3]||!S.sees(o.x,o.y,1.2))continue;
+    const d=Math.hypot(wx-(b[0]+b[2])/2,wy-(b[1]+b[3])/2);if(d<md){marker=o;md=d}}
+  if(marker)return marker;
+  const c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&S.sees(o.x,o.y,1.2))c.push([d,o])};
   // structures answer anywhere on what is drawn of them, ranked as near as their own spot (a holding's gate) but never nearer
   // than 12 pixels away, so someone clicked on top of one is picked, and a click on the gate still picks the holding
   const box=(o,x0,y0,x1,y1,dy)=>{if(wx>=x0&&wx<x1&&wy>=y0&&wy<y1&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};

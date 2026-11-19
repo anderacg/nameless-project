@@ -13,6 +13,8 @@ Kit.suite(({ok,info})=>{
  const L=t.CampSpots.list(s),shown=()=>L.filter(o=>o.box);
  // ---- close: an icon each, apart from one another
  ok(L.map(o=>o.k).join()==='trade,hire,fire'&&shown().length===3,'close by: an icon for each service ('+shown().map(o=>o.k).join(', ')+'), within '+I.near+' px');
+ {const px=Math.round(I.css*t.dprOf()),cs=[...t.UI_ICON_CACHE].filter(([k])=>k.startsWith('marker:')).map(([,c])=>c);
+  ok(cs.length>=3&&cs.every(c=>c.width===px&&c.height===px),'camp artwork caches at screen DPR rather than world zoom');}
  const B=shown().map(o=>o.box),apart=B.every((a,i)=>B.every((b,j)=>i===j||a[2]-I.tap*0<=b[0]||b[2]<=a[0]||a[3]<=b[1]||b[3]<=a[1]||Math.max(0,Math.min(a[2],b[2])-Math.max(a[0],b[0]))*Math.max(0,Math.min(a[3],b[3])-Math.max(a[1],b[1]))<(a[2]-a[0])*(a[3]-a[1])*.25));
  ok(apart,'the icons kept apart (none over another by a quarter of its badge)');
  // ---- a tap on the camp's ground: walked to, no camp picked
@@ -24,6 +26,12 @@ Kit.suite(({ok,info})=>{
   G.mode='world';G.modal=false;t.interact(o);const panel=document.getElementById('panel'),items=panel.querySelectorAll('[data-act="site-tab"]');
   ok(G.mode==='site'&&G.site===s&&G.siteSolo===o.k&&G.siteTab===o.k&&items.length<=2&&panel.querySelector('[data-act="site-leave"]'),o.k+': opens that service alone ('+items.length+' rail item, Leave its way out)');
   t.act('site-leave');ok(G.mode==='world'&&!G.siteSolo,o.k+': Leave back to the map')}
+ // A trader directly underneath a fire badge must not steal its click and open Wagons.
+ {const o=L.find(o=>o.k==='fire'),p=t.CampFolk.of.get(s)?.ppl.find(p=>p.R.at==='trade');
+  if(o?.box&&p){const old={x:p.x,y:p.y,hid:p.hid},b=o.box,x=(b[0]+b[2])/2,y=(b[1]+b[3])/2;
+   try{p.x=x;p.y=y+4;p.hid=false;const hit=t.pickAt(x,y);ok(hit===o,'a camp service badge wins over a trader underneath');
+    t.interact(hit);ok(G.siteSolo==='fire'&&G.siteTab==='fire','the fire badge still opens Campfire with a trader underneath');t.act('site-leave');
+   }finally{Object.assign(p,old)}}}
  // ---- its people: the traders by their wares, the sellswords about the camp
  {const C=t.CampFolk.of.get(s),ring=C?C.ring+40:0,at=k=>C?C.ppl.filter(p=>p.R.at===k&&Math.hypot(p.x-s.x,p.y-s.y)<ring):[];
   ok(at('trade').length>0&&at('hire').length>0,'its traders ('+at('trade').length+') and its sellswords ('+at('hire').length+') stand in the camp');
@@ -44,3 +52,8 @@ Kit.suite(({ok,info})=>{
    const html=d.body();ok(/data-act="site-rec-amt"/.test(html)&&/>Max</.test(html),'the desk shows the stepper (−, the count, +, 1, 5, 10, Max)')}}
  G.site=null;G.siteSolo=null;G.mode='world';
 });
+// Artwork must be decoded before synchronous world/picking assertions; a cold marker never caches a blank or legacy glyph.
+{const run=window.RUN;window.RUN=async()=>{try{
+  await Promise.all([T.UI_MARKER_RIM.decode(),...Object.values(T.ENCAMP.icons.ico).map(k=>T.uiAtlasImage(T.UI_ILLUSTRATIONS[k][4]||0).decode())]);
+  run();window.requestAnimationFrame=()=>0;
+}catch(e){const r=Kit.report();r.exc(e);r.out()}}}

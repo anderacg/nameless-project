@@ -50,19 +50,14 @@ function wuiRing(rx,ry,col){const z=wuiZ(),k='r'+rx+','+ry+col+z;let c=WUIP.get(
 // the arrow, pointing down, outlined dark, lit on its upper left: standing, falling (drawn out), landing (squashed). tip: the
 // row of its point in the picture, cx its middle
 const WUI_ARROW={stand:['..###..','..###..','..###..','#######','.#####.','..###..','...#...'],fall:['.###.','.###.','.###.','.###.','.###.','#####','.###.','..#..'],squash:['..#####..','..#####..','#########','.#######.','...###...']};
-function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;const M=WUI_ARROW[k],h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]==='#',lt=wuiMix(col,.45),dk=wuiMix(col,-.32);
-  c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)||at(x-1,y-1)||at(x+1,y-1)))rect(g,WUI_K.dark,x+1,y+1);
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,!at(x,y-1)||!at(x-1,y)?lt:!at(x+1,y)||x>=w>>1&&!at(x,y+1)?dk:col,x+1,y+1)});
-  c.cx=(w+2)>>1;c.tip=h;WUIP.set(key,c);return c}
-// Shared crossed-sword artwork with a hostile rim (the original glyph while loading): the marker
+function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;const M=WUI_ARROW[k],h=M.length,w=M[0].length;
+ c=uiIndicatorCanvas('arrow',w+2,h+2,col,1,k);c.k=.25;c.cx=(w+2)/2;c.tip=h;WUIP.set(key,c);return c}
+// Shared crossed-sword artwork with a hostile rim (ready when the local atlas loads): the marker
 // over a party you go to attack. tip: the row of its pommels in the picture, cx its middle
-function wuiSwords(){let c=WUIP.get('x');if(c&&(c.uiIcon||!uiIconReady('attack')))return c;
-  if(uiIconReady('attack')){c=mkc(13,12,g=>{g.fillStyle=PEOPLE_OUT;g.strokeStyle=WUI_K.col.foe;g.lineWidth=1;g.beginPath();g.ellipse(6.5,6,5.7,5.4,0,0,Math.PI*2);g.fill();g.stroke();uiCanvasIcon(g,'attack',1.5,1,10,10)});c.cx=6;c.tip=10;c.uiIcon='attack';WUIP.set('x',c);return c}const I=ICONS.attack,M=I.px,h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]!=='.';
-  c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,PEOPLE_OUT,x+1,y+1);
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,I.p[M[y][x]],x+1,y+1)});
-  c.cx=(w+2)>>1;c.tip=h;WUIP.set('x',c);return c}
+function wuiSwords(){let c=WUIP.get('x');if(c)return c;if(!uiIconReady('attack'))return null;
+ c=mkc(52,48,g=>{g.scale(4,4);g.fillStyle=PEOPLE_OUT;g.strokeStyle=WUI_K.col.foe;g.lineWidth=1;g.beginPath();g.ellipse(6.5,6,5.7,5.4,0,0,Math.PI*2);g.fill();g.stroke();uiCanvasIcon(g,'attack',1.5,1,10,10)});c.k=.25;c.cx=6;c.tip=10;c.uiIcon='attack';WUIP.set('x',c);return c}
 // (a picture with its point (px, py) at the screen's (x, y))
-const wuiPut=(c,x,y,px,py)=>c.k?ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c.k):ctx.drawImage(c,x-px,y-py);// (k: a picture by the fine px, drawn back to its size)
+const wuiPut=(c,x,y,px,py)=>{if(!c)return;ctx.save();if(c.uiPainted||c.uiIcon)ctx.imageSmoothingEnabled=true;if(c.k)ctx.drawImage(c,x-px,y-py,c.width*c.k,c.height*c.k);else ctx.drawImage(c,x-px,y-py);ctx.restore()};// (k: fine artwork drawn back to its logical size)
 /* a footprint of the way (the owner, 2026-10-23: small footprints for its dots, in their gold, at their spacing): a foot's shape
    (worldterrain.js printFoot: its sole, the ball a little to its inner side, and its heel apart), a left one mirrored along its
    length. d: one of WUI_FOOT.dirs (16) ways, 0 east,
@@ -165,11 +160,11 @@ function wuiHover(now,dt){const H=WUI.hp,M=G.mouse;
 // (a world x or y on the screen: whole pixels, or to 1/VS px for what glides; cam: the camera's whole pixels)
 const wuiX=(x,cam)=>snapV(x)-cam.x,wuiY=(y,cam)=>snapV(y)-cam.y;
 // the arrow at screen (x, y): its point there; k its shape
-function wuiDrawArrow(x,y,k,col){const c=wuiArrow(k,col);wuiPut(c,x,y,c.cx,c.tip)}
+function wuiDrawArrow(x,y,k,col){const c=wuiArrow(k,col);ctx.save();ctx.imageSmoothingEnabled=true;wuiPut(c,x,y,c.cx,c.tip);ctx.restore()}
 // the crossed swords at screen (x, y): their pommels' row there; at least WUI_K.swords CSS px high (zoomed far out, a phone's
-// farthest: at a whole multiple of their pixels, still crisp)
-function wuiDrawSwords(x,y){const c=wuiSwords(),s=Math.max(1,Math.ceil(WUI_K.swords/(c.height*VS/dprOf())));
-  if(s===1)wuiPut(c,x,y,c.cx,c.tip);else ctx.drawImage(c,x-c.cx*s,y-c.tip*s,c.width*s,c.height*s)}
+// farthest: smooth artwork with the same minimum readable screen size)
+function wuiDrawSwords(x,y){const c=wuiSwords();if(!c)return;const k=c.k||1,s=Math.max(1,WUI_K.swords/(c.height*k*VS/dprOf()));
+  ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(c,x-c.cx*s,y-c.tip*s,c.width*k*s,c.height*k*s);ctx.restore()}
 // an arrow dropping onto (x, y) from t0: falls (drawn out), lands (squashed), then bobs; its shadow on the ground under it. put:
 // another marker in its place, dropping and bobbing as it does (wuiDrawSwords)
 function wuiDrop(x,y,t0,col,now,rm,ground,put){const e=(now-t0)/1000,D=WUI_K.drop,Ld=WUI_K.land;let h=0,k='stand';
@@ -287,8 +282,6 @@ function wuiEscorts(cam,now,rm){const c=wuiArrow('home',WUI_K.col.friend),bob=rm
    runs. It never moves: the same under reducedMotion ---- */
 const WUI_DROP={px:['..#..','.###.','.###.','#####','#####','#####','.###.'],dx:13,dy:12,col:['#9cd0f4','#5a9ad4','#3a6c9c'],empty:'#28323c'};
 // (its picture with k of its rows filled, made once each: cx its middle, tip its bottom row)
-function wuiDropPic(k){const key='w'+k;let c=WUIP.get(key);if(c)return c;const D=WUI_DROP,M=D.px,h=M.length,w=M[0].length,at=(x,y)=>y>=0&&y<h&&x>=0&&x<w&&M[y][x]==='#';
-  c=mkc(w+2,h+2,g=>{for(let y=-1;y<=h;y++)for(let x=-1;x<=w;x++)if(!at(x,y)&&(at(x-1,y)||at(x+1,y)||at(x,y-1)||at(x,y+1)))rect(g,WUI_K.dark,x+1,y+1);
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(at(x,y))rect(g,y<h-k?D.empty:!at(x-1,y)||!at(x,y-1)?D.col[0]:!at(x+1,y)||!at(x,y+1)?D.col[2]:D.col[1],x+1,y+1)});
-  c.cx=(w+2)>>1;c.tip=h;WUIP.set(key,c);return c}
+function wuiDropPic(k){const key='w'+k;let c=WUIP.get(key);if(c)return c;
+ c=uiIndicatorCanvas('water',9,11,'#a8b9ad',k/WUI_DROP.px.length);c.k=.25;c.cx=4.5;c.tip=10;WUIP.set(key,c);return c}
 function wuiFilling(cam){if(!SKINS.on)return;const D=WUI_DROP,c=wuiDropPic(Math.round(SKINS.share*D.px.length));wuiPut(c,Math.round(wuiX(P.x,cam))+D.dx,Math.round(wuiY(P.y,cam))-D.dy,c.cx,c.tip)}

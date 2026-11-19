@@ -1,0 +1,124 @@
+/* Windows and field controls share the campaign's illustrated iron and oak. */
+:root{
+  --ui-rim:url('art/ui/forged-rim.png');
+  --ui-oak:url('art/ui/oak-boards.png');
+  --ui-wood:linear-gradient(#17130ed9,#17130ed9),var(--ui-oak);
+  --ui-selected:linear-gradient(#a4864899,#594320c9),var(--ui-oak);
+  --ui-ink:#e7d7b3;--ui-muted:#baa984;--ui-line:#8e7448;
+}
+.screen:has(>.overlay:not([hidden]))>.hudlayer{visibility:hidden}
+
+/* Keep each window's scrolling and navigation; only its material changes. */
+.overlay .panel:not(.slain){
+  border:10px solid transparent;border-image:var(--ui-rim) 176/12px;
+  border-radius:0;background:var(--grain),linear-gradient(#271e16d9,#17140fce);
+  background-clip:padding-box;box-shadow:0 12px 40px #0008;
+  color:var(--ui-ink);font-family:var(--font);
+  --fg:#e7d7b3;--fg-2:#d0c1a2;--muted:#baa984;--line:#655133;--line-2:#977d50;
+}
+.panel:not(.slain)>:is(.top:first-child,.btns:last-child),
+.panel :is(.fb-head,.rwin>.top,.rwin>.nav,.rail-head){
+  background:var(--ui-wood);background-size:auto,640px 320px;
+  border-radius:0;border-image:none;border-color:var(--ui-line);
+  color:var(--ui-ink);
+}
+.panel :is(h2,.fb-title h3){color:#efdfb8;text-shadow:0 1px 2px #0009}
+.panel :is(.lab,.fb-lab,.rail-lab){color:#c6ad77;letter-spacing:.06em}
+.panel .fb-head{min-height:58px;padding:9px 14px}
+.panel :is(.fb-head,.rwin>.top) h2{font-size:23px}
+.panel :is(.fb-tabs,.rail){background:linear-gradient(#1c1711ad,#1c1711ad),var(--grain)}
+.panel :is(.fb-pane-head,.fb-title,.qw-head){border-color:#8e744866}
+.panel :is(.fb-pane,.fb-inspector,.fb-stage,.fb-person-detail){background-color:#201a1366}
+.panel :is(.row,.fb-person,.fb-gear-row,.qw-row){border-color:#92764744}
+.panel :is(.fb-stat,.fb-meter,.keys>div){border-color:#80673f66}
+.panel :is(.fb-figure,.fb-character-stage,.fb-portrait){background-color:transparent}
+
+/* Small iron frames; gold fills mark a choice without the old heavy underline. */
+.panel :is(.btn,.card,.rkact,.fb-choice),.mainmenu[data-mobile] .mm-btn,
+.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-speed-grid button,.mbh-dock button,.mbh-options button){
+  border:3px solid transparent;border-image:var(--ui-rim) 176/5px;
+  border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;
+  background-clip:padding-box;box-shadow:inset 0 1px #d8ba7618,0 2px 3px #0004;
+  color:var(--ui-ink);text-shadow:0 1px 1px #000a;
+}
+.panel .btn{padding:5px 11px;min-height:36px}
+.panel .btn.sm{min-height:30px;padding:3px 8px}
+.panel .fb-shell .btn,.panel>.nav .btn,.panel .rwin>.nav .btn{min-height:44px}
+.panel :is(.btn.primary,.btn.on,.card.on,.fb-choice.on,[aria-pressed="true"].btn,[aria-selected="true"].btn),
+.mainmenu .mm-btn:focus-visible,
+.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button):is(.on,.primary,[aria-pressed="true"],[aria-expanded="true"]){
+  background:var(--ui-selected);background-size:auto,640px 320px;
+  color:#fff0c9;box-shadow:inset 0 0 0 1px #e8c67788,0 2px 3px #0004;
+}
+.panel :is(.rail-i.on,.fb-person.on,.qw-row.on){
+  background:linear-gradient(90deg,#aa88462e,#aa884610);border-color:#b69a60;
+  box-shadow:inset 2px 0 #d5b572;
+}
+.panel :is(input:not([type="checkbox"],[type="radio"],[type="range"],[type="color"]),select,textarea){
+  background-color:#15130ed9;border-color:#94794c;border-radius:2px;
+  color:var(--ui-ink);box-shadow:inset 0 1px 3px #0008;max-width:100%;
+}
+.panel :is(input[type="checkbox"],input[type="radio"],input[type="range"]){accent-color:#c6a565}
+.panel :is(.gico,.item-illustration,.uc-ico,.tp-glyph){background:none;box-shadow:none;border:0}
+.panel :is(.fb-bar,.bar){border-color:#8c7545;border-radius:2px;background-color:#11150f}
+.panel :is(.fb-bar,.bar)>i{border-radius:1px}
+.panel :is(.btns.nav,.fb-tabs){gap:6px}
+.panel .btns.nav .btn{max-width:100%;white-space:normal}
+
+/* Battle drawers, deployment and the loading plaque keep the same frame family. */
+.screen[data-mode="battle"] :is(.btop,.binfo,.borders,.mbh-drawer,.mbh-dock),
+.screen .lwin{
+  border:6px solid transparent;border-image:var(--ui-rim) 176/8px;
+  border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;
+  background-clip:padding-box;box-shadow:0 4px 16px #0006;color:var(--ui-ink);
+}
+.screen.mobile-battle .mobile-battle-hud :is(.binfo,.borders){border:0;background:none;box-shadow:none}
+.screen.mobile-battle .mobile-battle-hud :is(.btop,.mbh-dock){border-width:1px;border-image-width:6px}
+.screen.mobile-battle:has(.mbh-drawer:not([hidden])) :is(.battle-start,.hint){visibility:hidden}
+.screen[data-mode="battle"] .ucard{
+  border:3px solid transparent;border-image:var(--ui-rim) 176/4px;
+  border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;
+  background-clip:padding-box;
+}
+.screen[data-mode="battle"] .ucard.on{
+  background:var(--ui-selected);background-size:auto,640px 320px;
+  box-shadow:inset 0 0 0 1px #e8c67788;
+}
+
+@media(hover:hover){
+  .panel :is(.btn,.card,.rkact,.fb-choice):hover:not(:disabled),.mainmenu .mm-btn:hover:not(:disabled),
+  .screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button):hover:not(:disabled){
+    background:linear-gradient(#846b3538,#846b3538),var(--ui-wood);
+    background-size:auto,auto,640px 320px;color:#fff3d3;
+    box-shadow:inset 0 0 0 1px #e4c67a88,0 2px 3px #0004;
+  }
+  .panel :is(.btn.on,.btn.primary,.btn[aria-pressed="true"],.btn[aria-selected="true"]):hover:not(:disabled){
+    background:var(--ui-selected);background-size:auto,640px 320px;
+  }
+}
+.panel :is(.btn,.card,.rkact,.fb-choice):is(:active,.ui-clicked):not(:disabled){
+  box-shadow:inset 0 2px 5px #0009;background:var(--ui-selected);background-size:auto,640px 320px;
+}
+.panel :is(button,input,select,textarea):focus-visible{outline:2px solid #f1d38f;outline-offset:2px}
+.panel :is(button,.btn):disabled{opacity:.45;filter:saturate(.45)}
+
+/* The same artwork at a smaller frame scale, with full-size touch targets. */
+@media(max-width:720px),(max-height:520px){
+  .overlay .panel:not(.slain){border:6px solid transparent;border-image:var(--ui-rim) 176/8px;box-shadow:none}
+  .panel .fb-head{min-height:44px;padding:6px 10px}
+  .panel :is(.fb-head,.rwin>.top) h2{font-size:19px}
+  .panel :is(.fb-head>.muted,.rwin>.top>.muted){font-size:11px}
+  .panel :is(.btns.nav,.rwin>.nav){gap:6px}
+}
+@media(pointer:coarse){
+  .panel :is(.btn,.btn.sm,.rkact,.fb-choice),
+  .panel .fb-shell .fb-bag-categories>.btn,
+  .panel .fb-shell .fb-inv-views>.btn,
+  .panel .fb-shell .fb-bag-footer .btn{min-height:44px}
+}
+
+/* Equipment popups live outside .screen, but use its locally bundled materials. */
+:is(.gc-tip,.gc-card,.slot-menu){border:6px solid transparent;border-image:var(--ui-rim) 176/8px;border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;background-clip:padding-box;color:var(--ui-ink)}
+.gc-card .btn{border:3px solid transparent;border-image:var(--ui-rim) 176/5px;border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;box-shadow:none}
+.gc-card .btn.primary{background:var(--ui-selected);background-size:auto,640px 320px}
+.slot-menu .sm-i:is(:hover,:focus-visible):not(:disabled){background:var(--ui-selected);background-size:auto,640px 320px}

@@ -1,5 +1,5 @@
 'use strict';
-/* Shared UI illustrations use transparent material atlases on both platforms. The pixel registry remains for world glyphs.
+/* Shared UI illustrations use transparent material atlases on both platforms. The legacy pixel registry remains as source data only.
    icon(name, size, class) gives the SVG used by cards, controls, menus and windows. */
 // Shared transparent illustrations for desktop and phone UI.
 const UI_ICON_SHEETS=[
@@ -367,4 +367,47 @@ function uiCanvasIcon(g,name,x,y,w,h){if(!uiIconReady(name))return false;
  else if(name==='tree'){g.translate(x,y);g.scale(w/100,h/100);g.fillStyle='#8c663b';g.fillRect(44,68,12,27);const path=new Path2D('M50 5L74 35H64L86 61H72L96 84H4L28 61H14L36 35H26Z'),light=g.createLinearGradient(0,0,100,0);light.addColorStop(0,'#b6c781');light.addColorStop(.5,'#65854c');light.addColorStop(1,'#344e32');g.fillStyle=light;g.fill(path);g.strokeStyle='#c2a567';g.lineWidth=3;g.stroke(path)}
 g.restore();return true}
 function uiCanvasBadge(g,key,x,y,size,rim){const A=UI_STATUS_ART[key];if(!A||!uiIconReady(A[0]))return false;g.drawImage(uiIconAt(g,'b:'+key+':'+rim,size,size,q=>uiBadgeArt(q,A,size,rim)),x,y,size,size);return true}
+// Screen-sized service markers: the HUD's forged rim and illustrations, with no pixel-art fallback cached while loading.
+const UI_MARKER_RIM=Object.assign(new Image(),{src:'art/ui/forged-rim.png'});
+function uiMarkerReady(name){return !!(uiIconReady(name)&&UI_MARKER_RIM.complete&&UI_MARKER_RIM.naturalWidth)}
+function uiCanvasMarker(g,name,w,h,plus=false){if(!uiMarkerReady(name))return false;
+  const pic=uiIconAt(g,'marker:'+name+(plus?'+':''),w,h,q=>{
+    q.imageSmoothingEnabled=true;const fill=q.createLinearGradient(0,0,0,h);fill.addColorStop(0,'#35291cdd');fill.addColorStop(1,'#17130eb8');q.fillStyle=fill;
+    q.beginPath();q.moveTo(2,0);q.lineTo(w-2,0);q.lineTo(w,2);q.lineTo(w,h-2);q.lineTo(w-2,h);q.lineTo(2,h);q.lineTo(0,h-2);q.lineTo(0,2);q.closePath();q.fill();q.save();q.clip();
+    const a=UI_MARKER_RIM,s=176,W=a.naturalWidth,H=a.naturalHeight,sx=[0,s,W-s],sy=[0,s,H-s],sw=[s,W-2*s,s],sh=[s,H-2*s,s],dx=[0,2,w-2],dy=[0,2,h-2],dw=[2,w-4,2],dh=[2,h-4,2];
+    for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(i!==1||j!==1)q.drawImage(a,sx[i],sy[j],sw[i],sh[j],dx[i],dy[j],dw[i],dh[j]);
+    uiCanvasIcon(q,name,2,2,w-4,h-4);
+    if(plus){const x=w*.73,y=h*.28,r=w*.16,light=q.createLinearGradient(x-r,y-r,x+r,y+r);light.addColorStop(0,'#8aa76a');light.addColorStop(1,'#415a31');
+      q.beginPath();q.arc(x,y,r,0,Math.PI*2);q.fillStyle=light;q.fill();q.strokeStyle='#e1c68e';q.lineWidth=Math.max(.7,w*.035);q.stroke();
+      q.beginPath();q.moveTo(x-r*.5,y);q.lineTo(x+r*.5,y);q.moveTo(x,y-r*.5);q.lineTo(x,y+r*.5);q.strokeStyle='#fff1c9';q.lineWidth=w*.065;q.lineCap='round';q.stroke();}q.restore();
+  });g.save();g.imageSmoothingEnabled=true;g.drawImage(pic,0,0,w,h);g.restore();return true;
+}
 function uiBadgeArt(g,A,size,rim){g.save();g.scale(size/100,size/100);g.fillStyle='#221f18';g.strokeStyle=rim;g.lineWidth=7;g.beginPath();g.arc(50,50,46,0,Math.PI*2);g.fill();g.stroke();g.strokeStyle='#c4a365';g.lineWidth=2;g.beginPath();g.arc(50,50,39,0,Math.PI*2);g.stroke();uiCanvasIcon(g,A[0],14,14,72,72);if(UI_ICON_MARKS[A[1]]){g.translate(14,14);g.scale(.72,.72);const path=new Path2D(UI_ICON_MARKS[A[1]]);g.lineCap=g.lineJoin='round';g.lineWidth=10;g.strokeStyle='#211c14';g.stroke(path);g.lineWidth=5;g.strokeStyle='#f1d18a';g.stroke(path)}g.restore()}
+
+// Material-painted indicators for states whose silhouette changes (awareness, refilling, navigation).
+// Render at display density or above; gradients and curved edges share the illustrated icons' palette.
+function uiIndicator(g,kind,x,y,w,h,col='#d6b052',level=1,mode='stand'){
+ g.save();g.translate(x,y);g.scale(w/100,h/100);g.imageSmoothingEnabled=true;
+ const metal=g.createLinearGradient(12,5,85,95);metal.addColorStop(0,'#fff0c1');metal.addColorStop(.3,col);metal.addColorStop(.72,col);metal.addColorStop(1,'#53442c');
+ g.fillStyle=metal;g.strokeStyle='#51412b';g.lineWidth=5;g.lineJoin=g.lineCap='round';
+ if(kind==='eye'){
+  const open=4+Math.max(0,Math.min(1,level))*27;
+  g.beginPath();g.moveTo(9,50);g.bezierCurveTo(31,50-open,69,50-open,91,50);g.bezierCurveTo(69,50+open,31,50+open,9,50);g.fillStyle='#29261e';g.fill();g.strokeStyle=metal;g.lineWidth=6;g.stroke();
+  if(level>.05){g.save();g.clip();g.beginPath();g.arc(50,50,7+level*10,0,Math.PI*2);g.fillStyle=metal;g.fill();g.beginPath();g.arc(50,50,3+level*6,0,Math.PI*2);g.fillStyle='#201d18';g.fill();g.beginPath();g.arc(46,45,2.5,0,Math.PI*2);g.fillStyle='#fff3d0';g.fill();g.restore()}
+ }else if(kind==='water'){
+  g.beginPath();g.moveTo(50,7);g.bezierCurveTo(40,29,17,47,18,65);g.bezierCurveTo(18,101,82,101,82,65);g.bezierCurveTo(83,47,60,29,50,7);g.closePath();g.fillStyle='#292e30';g.fill();g.save();g.clip();
+  const water=g.createLinearGradient(15,15,80,95);water.addColorStop(0,'#d9f0e8');water.addColorStop(.45,'#79b6bd');water.addColorStop(1,'#2f566a');g.fillStyle=water;g.fillRect(0,95-Math.max(0,Math.min(1,level))*88,100,100);g.restore();g.strokeStyle='#a8b9ad';g.lineWidth=4;g.stroke();
+  g.beginPath();g.moveTo(33,58);g.quadraticCurveTo(29,70,35,77);g.strokeStyle='#e3eee4';g.lineWidth=4;g.stroke();
+ }else if(kind==='flag'){
+  g.beginPath();g.moveTo(24,94);g.lineTo(24,10);g.strokeStyle='#947344';g.lineWidth=6;g.stroke();g.beginPath();g.moveTo(28,13);g.bezierCurveTo(48,3,64,25,87,12);g.lineTo(84,56);g.bezierCurveTo(62,70,48,44,28,55);g.closePath();g.fill();g.stroke();
+ }else if(mode==='bang'||mode==='ask'){
+  g.font='bold 86px Georgia';g.textAlign='center';g.textBaseline='middle';g.lineWidth=6;g.strokeStyle='#403522';g.strokeText(mode==='bang'?'!':'?',50,54);g.fillText(mode==='bang'?'!':'?',50,54);
+ }else{
+  const d=mode==='home'?'M15 46L50 13L85 46H75V87H57V62H43V87H25V46Z':'M35 9Q50 4 65 9L63 51H88L50 91L12 51H37Z';
+  const p=new Path2D(d);g.fill(p);g.stroke(p);g.beginPath();g.moveTo(43,16);g.lineTo(43,47);g.strokeStyle='#fff0c1';g.lineWidth=3;g.stroke();
+ }
+ g.restore();
+}
+function uiIndicatorCanvas(kind,w,h,col,level=1,mode='stand',density=4){
+ const c=document.createElement('canvas');c.width=Math.ceil(w*density);c.height=Math.ceil(h*density);c.uiPainted=true;const g=c.getContext('2d');g.scale(c.width/w,c.height/h);uiIndicator(g,kind,0,0,w,h,col,level,mode);return c;
+}
