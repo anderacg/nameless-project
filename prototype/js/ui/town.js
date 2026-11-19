@@ -329,7 +329,7 @@ function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?', 
 class Barracks extends Place{
   constructor(id){
     super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
-      ...Object.fromEntries(['pick','unit','refill','refillall','ok','no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
+      ...Object.fromEntries(['amt','pick','unit','refill','refillall','ok','no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
   }
   shut(t){
     const closed=Place.closed(t);

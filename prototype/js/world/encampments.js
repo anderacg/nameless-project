@@ -73,6 +73,12 @@ class Encampment extends Site{
   get tents(){const T=ENCAMP.tents;return clamp(Math.ceil(this.pop/T.per),1,T.most)}
   area(){const X=CAMP_SITE,r=this.tents>1?X.ring:4;return[this.x-r-8,this.y-r*X.squash-14,this.x+r+8,this.y+r*X.squash+3]}
   box(box){const a=this.area();box(this,a[0],a[1],a[2],a[3])}
+  // (no click answers on its ground (the owner, 2026-11-18: "I click at the area and it seems pointing to the camp tent"): a tap in it
+  // walks you there; its services answer on their icons (CampSpots) and its people on themselves (CampDweller))
+  pick(at){}
+  // (one of its services opened alone, from its icon or one of its people: its window that service's, Leave its way out; met any
+  // other way (the keyboard, a quest, the dev console) it opens whole, as before)
+  solo(k){G.lastSite=this;if(!this.enter())return;if(!this.places(regionAt(this.x,this.y)).some(p=>p&&p.k===k))return;G.siteTab=k;G.siteSolo=k;showSite()}
   reachRadius(){const a=this.area();return boxReach(this,{x0:a[0],y0:a[1],x1:a[2],y1:a[3]})}
   footing(){return []}// (walked among: its tents are cloth)
   inView(V){return this.known()}
@@ -261,8 +267,8 @@ class CampFolk{
   // (everyone out of his tent, for a click: world.js worldObjects)
   static all(){const out=[];for(const C of this.of.values())for(const p of C.ppl)if(!p.hid)out.push(p);return out}
   // (talked to: his camp's page, at his place in it if it has one (no wares: its fire), his greeting over it)
-  static meet(p){const s=p.site,at=p.R.at==='trade'&&!s.TR.goods.length||p.R.at==='hire'&&!s.unit?'fire':p.R.at;s.meet();if(G.site!==s)return;
-    G.siteTab=at;G.siteMsg=htmlText(p.name)+', '+p.calling+', '+p.R.say+'.';showSite()}
+  static meet(p){const s=p.site,at=p.R.at==='trade'&&!s.TR.goods.length||p.R.at==='hire'&&!s.unit?'fire':p.R.at;s.solo(at);if(G.site!==s)return;
+    G.siteMsg=htmlText(p.name)+', '+p.calling+', '+p.R.say+'.';showSite()}
   // each moment: the camps near you have their people, those far forget them; each walks to where he is going, stops a while, and
   // goes on to the next; going to sleep, he goes into his tent at its door (unseen), and out of it again when he wakes
   static step(d){const F=ENCAMP.folk;if(!W.sites)return;
@@ -294,3 +300,56 @@ class CampFolk{
 }
 Systems.add({name:'camp folk',order:{frame:141},frame:d=>CampFolk.step(d)});
 onWorld(()=>CampFolk.of.clear());
+/* ---------- a camp's services on the map (the owner, 2026-11-18: "Can we have an interactable icons instead for each camp sites and you
+   make them separated each menu around the actual camp site in the world map"; "icons when close"): a badge for each of its places
+   (its wagons: trade, its sellswords or volunteers: hire, its fire), over what it stands at (the wares, a tent, the fire), shown
+   while you are within ENCAMP.icons.near of the camp and in your sight; a tap walks you to it, and there opens that service alone
+   (Encampment#solo). At the screen's own size (CSS px, as the holdings' plaques), kept apart from one another and off your hero.
+   Drawn only: nothing of them is saved, the world's draws untouched ---------- */
+class CampSpot extends WorldObject{
+  constructor(site,k){super();this.site=site;this.k=k;this.x=site.x;this.y=site.y;this.box=null}
+  get mapKind(){return 'campspot'}
+  here(){return W.sites.includes(this.site)&&!this.site.cleared}
+  get meetsAnyTime(){return true}
+  inView(V){return !!this.box}
+  // (its badge as last drawn, in the ground's px, a finger's slack round it)
+  pick(at){const b=this.box;if(b)at.box(this,b[0],b[1],b[2],b[3])}
+  meet(){this.site.solo(this.k)}
+  get label(){return CampSpots.name(this.site,this.k)}
+  tip(){return '<b>'+this.label+'</b><small>'+this.site.name+'</small><span class="act">Click: go to it</span>'}
+}
+const CampSpots={
+  of:new Map(),
+  // (a camp's services as its places() offers them, without making their pages: trade with goods, hire with sellswords or volunteers)
+  keys(s){return[s.TR.goods.length&&'trade',s.unit&&'hire','fire'].filter(Boolean)},
+  name(s,k){return k==='trade'?'Wagons':k==='hire'?(s.TR.levy?'Volunteers':'Sellswords'):'Campfire'},
+  list(s){let L=this.of.get(s);const ks=this.keys(s);if(!L||L.map(o=>o.k).join()!==ks.join()){L=ks.map(k=>(L||[]).find(o=>o.k===k)||new CampSpot(s,k));this.of.set(s,L)}return L},
+  // (what each stands at: the wares (a stall, a wagon, the crates) or the first tent; a tent past it for the hire; the fire)
+  anchor(s,k){const U=ENCAMP.icons.up,L=s.layout(),P0=s.props(),by=ks=>P0.find(q=>ks.includes(q.type));
+    if(k==='fire')return{x:s.x,y:s.y,up:U.fire};
+    if(k==='trade'){const q=by(['stall','wagon','crates']);return q?{x:q.x,y:q.y,up:U.prop}:L[0]?{x:L[0].x,y:L[0].y,up:U.tent}:{x:s.x-14,y:s.y,up:U.prop}}
+    const q=L[L.length>2?2:L.length-1];return q&&L.length>1?{x:q.x,y:q.y,up:U.tent}:{x:s.x+14,y:s.y,up:U.prop}},
+  shown(s){return s instanceof Encampment&&!s.cleared&&s.known()&&Math.hypot(s.x-P.x,s.y-P.y)<=ENCAMP.icons.near},
+  all(){const out=[];for(const L of this.of.values())out.push(...L);return out},
+  // each frame: the camps near you, their badges laid out on the screen, then drawn (render.js drawWorld, over the land and its
+  // people); their boxes kept for a tap (pickAt), none for one not drawn
+  draw(cam){const I=ENCAMP.icons,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=sc/dpr,V=vis(),S=yourSight(V),put=[];
+    for(const [s,L] of this.of){if(!W.sites.includes(s)||!this.shown(s)){for(const o of L)o.box=null;if(!W.sites.includes(s))this.of.delete(s)}}
+    for(const s of W.sites){if(!this.shown(s))continue;for(const o of this.list(s)){o.box=null;const a=this.anchor(s,o.k);o.x=a.x;o.y=a.y;if(!S.sees(a.x,a.y,1.2))continue;
+      const lf=typeof liftAt==='function'?liftAt(a.x,a.y):0,wx=a.x-cam.x,wy=a.y-a.up-lf-cam.y;put.push({o,a,lf,cx:(m.a*wx+m.c*wy+m.e)/dpr,cy:(m.b*wx+m.d*wy+m.f)/dpr})}}
+    if(!put.length)return;const w=I.css,h=I.css,hx=(m.a*(P.x-cam.x)+m.e)/dpr,hy=(m.d*(P.y-(typeof liftAt==='function'?liftAt(P.x,P.y):0)-cam.y)+m.f)/dpr,hw=8*k,hh=24*k;
+    // (their places on the screen: each over its spot, its foot there; one on another moved aside; one on your hero over his head)
+    put.sort((p,q)=>p.cx-q.cx);for(let i=0;i<put.length;i++){const p=put[i];p.x0=p.cx-w/2;p.y0=p.cy-h;
+      if(Math.abs(p.cx-hx)<w/2+hw+I.gap&&p.y0<hy&&p.y0+h>hy-hh)p.y0=hy-hh-h-I.gap;
+      for(let j=0;j<i;j++){const q=put[j];if(p.x0<q.x0+w+I.gap&&p.x0+w+I.gap>q.x0&&p.y0<q.y0+h+I.gap&&p.y0+h+I.gap>q.y0)p.x0=q.x0+w+I.gap}}
+    for(const p of put){const T=I.tap,gx=x=>(x*dpr-m.e)/m.a+cam.x,gy=y=>(y*dpr-m.f)/m.d+cam.y+p.lf;p.o.box=[gx(p.x0-T),gy(p.y0-T),gx(p.x0+w+T),gy(p.y0+h+T)];
+      const ico=ICONS[I.ico[p.o.k]],pic=uiIconAt(ctx,'campspot:'+p.o.k,w,h,g=>campBadge(g,ico,w,h));
+      ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.imageSmoothingEnabled=false;
+      // (a thin stalk down to what it stands at)
+      ctx.fillStyle='rgba(30,24,16,.75)';ctx.fillRect(Math.round(p.x0+w/2-1),Math.round(p.y0+h),2,Math.max(0,Math.round(p.cy-p.y0-h)));
+      ctx.drawImage(pic,Math.round(p.x0),Math.round(p.y0),w,h);ctx.restore()}}
+};
+// (a badge: a dark plate with a gold rim, its icon's pixels on it, two CSS px each (ui/icons.js ICONS))
+function campBadge(g,ico,w,h){g.fillStyle='#221f18';g.fillRect(1,1,w-2,h-2);g.fillStyle='#c4a365';g.fillRect(1,0,w-2,1);g.fillRect(1,h-1,w-2,1);g.fillRect(0,1,1,h-2);g.fillRect(w-1,1,1,h-2);
+  if(!ico)return;const px=ico.px,q=Math.floor((w-4)/9),o=Math.floor((w-q*9)/2);for(let y=0;y<9;y++)for(let x=0;x<9;x++){const c=ico.p[px[y][x]];if(c){g.fillStyle=c;g.fillRect(o+x*q,o+y*q,q,q)}}}
+onWorld(()=>CampSpots.of.clear());

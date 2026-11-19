@@ -15,7 +15,7 @@
      Replenish (the barracks: its free volunteers)
      hire(k, n, group): {ok, cost, why}, the soldiers taken into that group ('new': a new unit)
    ---------- */
-const RECRUIT_UI={ask:.5};
+const RECRUIT_UI={ask:.5,steps:[1,5,10]};
 // (your units and men, for a desk's head: units in their slots, everyone you lead)
 const unitsLine=()=>{const r=partyRoster(P);return 'units '+r.slots+' / '+r.groupLimit+', '+partySize()+' men'};
 // (the window's scroll: read, or set)
@@ -29,13 +29,23 @@ class HireDesk{
   // a new unit of k: as many as are willing and your gold pays for, a full unit's size at most (the owner, 2026-11-15: "recruit from
   // camp, holding and etc. can be recruited based on availability, no need to recruit at full unit cap"; was a full unit or none):
   // its men (of size), its price, or why not
-  unit(k){const r=partyRoster(P),size=unitSize(k),c=this.src.cost(k),n=Math.min(size,this.pool(k),Math.floor(P.gold/Math.max(1,c))),cost=n*c,w=this.why(k);
-    return{n,size,cost,why:w||(r.slots>=r.groupLimit?'No free unit slot (units '+r.slots+' / '+r.groupLimit+')':!r.accepts(k)?'Not in your band':!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
+  unit(k){const r=partyRoster(P),size=unitSize(k),c=this.src.cost(k),max=Math.min(size,this.pool(k),Math.floor(P.gold/Math.max(1,c))),n=this.want('u:'+k,max),cost=n*c,w=this.why(k);
+    return{n,max,size,cost,why:w||(r.slots>=r.groupLimit?'No free unit slot (units '+r.slots+' / '+r.groupLimit+')':!r.accepts(k)?'Not in your band':!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
   // your units it could refill: of a kind on offer, short of their size (wounded count: they come back to it)
   short(){const r=partyRoster(P);return r.groups.filter(g=>this.src.kinds.includes(g.type)&&r.groupRoom(g.type,g.id)>0)}
   // a unit's refill: the men it lacks, how many it gets now (the willing, your gold), their price, or why not
-  fill(g){const r=partyRoster(P),k=g.type,need=r.groupRoom(k,g.id),c=this.src.cost(k)+Buffs.perMan(g.id),w=this.why(k),n=Math.min(need,this.pool(k),Math.floor(P.gold/Math.max(1,c)));
-    return{need,n,cost:n*c,why:w||(!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
+  fill(g){const r=partyRoster(P),k=g.type,need=r.groupRoom(k,g.id),c=this.src.cost(k)+Buffs.perMan(g.id),w=this.why(k),max=Math.min(need,this.pool(k),Math.floor(P.gold/Math.max(1,c))),n=this.want('g:'+g.id,max);
+    return{need,n,max,cost:n*c,why:w||(!this.pool(k)?'None willing':n<1?'Needs '+c+'g a man':'')}}
+  /* how many a row hires (the owner, 2026-11-18: "Bring back the recruit unit adjustable amount like I want to hire only 1/10"): the
+     amount chosen on its stepper (state amt, by row: u:kind, g:unit), at most its most now (the willing, your gold, its room); none
+     chosen, its most. The stepper: -, the count, +, then 1, 5, 10 (those under its most: RECRUIT_UI.steps) and Max */
+  want(key,max){const a=this.s.amt&&this.s.amt[key];return max<1?0:Math.max(1,Math.min(max,a==null?max:a))}
+  stepper(key,n,max){if(max<1)return '';const b=(v,l,why)=>this.btn('amt',key+'|'+v,l,why);
+    return b('-1','−',n<=1?'One at the least':'')+'<span class="rec-n" aria-live="polite" data-rec-n="'+key+'">'+n+'</span>'+b('+1','+',n>=max?'No more now':'')+
+      RECRUIT_UI.steps.filter(v=>v<max).map(v=>b('='+v,String(v),n===v?'Chosen':'')).join('')+b('=max','Max',n===max?'Chosen':'')}
+  // (a stepper pressed: key|v, v a step (-1, +1) or a count (=n, =max), kept within 1 and the row's most)
+  amt(arg){const [key,v]=String(arg).split('|'),k=key.slice(2),row=key[0]==='u'?this.unit(k):this.fill(partyRoster(P).groups.find(g=>g.id===k)||{type:''}),max=row.max||0,s=this.s;
+    const was=this.want(key,max),n=v==='=max'?max:v[0]==='='?+v.slice(1):was+(+v);(s.amt||(s.amt={}))[key]=Math.max(1,Math.min(max,n||1))}
   btn(a,arg,label,why,cls=''){return '<button class="btn sm'+cls+'" type="button" data-act="'+this.p+a+'"'+(arg!=null?' data-arg="'+arg+'"':'')+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+label+'</button>'}
   // the list (or, open, a unit's card over it on a small screen) and the question (when a press spends much)
   body(){const s=this.s;
@@ -44,20 +54,20 @@ class HireDesk{
     const units=ks.map(k=>{const st=ST[k],u=this.unit(k);
       return '<div class="rec-row'+(pick===k?' sel':'')+'" data-act="'+this.p+'pick" data-arg="'+k+'"><button class="rec-pic" type="button" data-act="'+this.p+'info" data-arg="'+k+'" aria-label="'+htmlText(st.n)+': its card"><img src="'+portrait(k)+'" alt=""><span class="rec-badge" aria-hidden="true">i</span></button>'+
         '<div class="rec-txt"><strong>'+glyphSVG(iconOfType(k),14)+' '+st.n+'</strong><small>Tier '+st.tier+(st.race?', '+raceOf(st.race).n:'')+', '+kind(st)+', <b>'+(u.n||u.size)+(u.n&&u.n<u.size?' of '+u.size:'')+' men</b>, <b class="gold">'+(u.n?u.cost:u.size*this.src.cost(k))+'g</b></small><small>'+S.line(k)+(u.why?', <span class="bad">'+htmlText(u.why)+'</span>':'')+'</small></div>'+
-        '<div class="rec-step">'+this.btn('unit',k,'Recruit unit',u.why,u.why?'':' primary')+'</div></div>'}).join('');
+        '<div class="rec-step">'+(u.why?'':this.stepper('u:'+k,u.n,u.max))+this.btn('unit',k,u.why?'Recruit':'Recruit '+u.n+', '+u.cost+'g',u.why,u.why?'':' primary')+'</div></div>'}).join('');
     const gs=this.short(),fills=gs.map(g=>{const f=this.fill(g),n=unitSize(g.type),w=r.wounded(g.id);
       return '<div class="rec-row rec-refill"><div class="rec-txt"><strong>'+groupBadge(g,12)+' '+htmlText(armyGroupLabel(g.id))+'</strong><span class="rec-meter" aria-hidden="true"><i style="width:'+Math.round(g.count/n*100)+'%"></i><b style="width:'+Math.round(w/n*100)+'%"></b></span>'+
         '<small>'+g.count+' / '+n+(w?', '+w+' wounded':'')+', needs '+f.need+(f.why?', <span class="bad">'+htmlText(f.why)+'</span>':f.n<f.need?', '+f.n+' now':'')+'</small></div>'+
-        '<div class="rec-step">'+this.btn('refill',g.id,'Refill'+(f.n?' +'+f.n+', '+f.cost+'g':''),f.why)+'</div></div>'}).join(''),
+        '<div class="rec-step">'+(f.why?'':this.stepper('g:'+g.id,f.n,f.max))+this.btn('refill',g.id,'Refill'+(f.n?' +'+f.n+', '+f.cost+'g':''),f.why)+'</div></div>'}).join(''),
       all=gs.map(g=>this.fill(g)).filter(f=>!f.why),allCost=all.reduce((a,f)=>a+f.cost,0);
     const ask=s.recAsk?'<div class="recruit-confirm" role="status">Spend '+s.recAsk.cost+'g, more than half your gold?<div class="btns">'+this.btn('ok',null,'Yes, hire','',' primary')+this.btn('no',null,'Cancel','')+'</div></div>':'';
     return '<div class="recwrap"><div class="reclist">'+ask+(s.recruitNotice?'<p class="rec-notice" role="status">'+s.recruitNotice+'</p>':'')+
-      '<div class="lab">New units <small class="muted">as many as will come, a full unit at most</small></div><div class="rec-rows">'+units+'</div>'+
+      '<div class="lab">New units <small class="muted">choose how many, a full unit at most</small></div><div class="rec-rows">'+units+'</div>'+
       '<div class="lab">Replenish your units</div><div class="rec-rows">'+(S.extra||'')+(fills||'<p class="muted">None of your units of these kinds is short.</p>')+'</div>'+
       (gs.length>1?'<div class="btns rec-all">'+this.btn('refillall',null,'Refill all'+(allCost?', '+allCost+'g':''),all.length?'':'None can be refilled now')+'</div>':'')+
       (S.note?'<p class="muted" style="font-size:12px">'+S.note+'</p>':'')+'</div><div class="reccard">'+(pick?unitCard(pick):'')+'</div></div>'}
   // ---- its acts (a: the act, its prefix taken off)
-  act(a,arg){const v=a.slice(this.p.length),f={pick:'pick',unit:'buy',refill:'buy',refillall:'buy',ok:'buy',no:'buy',info:'info','info-back':'info'}[v];
+  act(a,arg){const v=a.slice(this.p.length),f={amt:'amt',pick:'pick',unit:'buy',refill:'buy',refillall:'buy',ok:'buy',no:'buy',info:'info','info-back':'info'}[v];
     if(f)this[f](arg,v);return !!f}
   pick(arg){this.s.pick=arg}
   // Recruit unit, Refill, Refill all: asked first when it spends much (its question's Yes: ok, its No: no)

@@ -80,7 +80,7 @@ class Site extends WorldObject{
   // met (clicked: meet): a fight, or its window; false if nothing opened. A visit: what your scouts saw (G.siteSpy) is this visit's
   enter(){
     if(this.cleared&&this.empties&&!this.emptyPage){log('The '+this.name+' lies empty. Come back in '+Math.max(1,this.back-G.day)+' days.');return false}
-    G.site=this;G.siteMsg='';G.siteTab=null;G.siteSpy=null;G.mode='site';showSite();return true}
+    G.site=this;G.siteMsg='';G.siteTab=null;G.siteSolo=null;G.siteSpy=null;G.mode='site';showSite();return true}
   // its window (showSite): a place with rooms to walk between (its screen RAIL_SCREEN: the travellers) has its areas down the
   // rail: what it is (about: its overview), its places (each {k, n, short, ico, note (a few words on what is there, for the
   // overview), body (its window: people as cards, things as rows: window.js)}; one by default, its whole panel); a place with
@@ -658,6 +658,9 @@ function showSite(){
   if(s.screen===PAGE_SCREEN){const p=s.page(r,G.siteTab);return PAGE_SCREEN.show({ico:s.T.ico,title:p.title||s.name,sub:p.title?s.name:where,banner:s.view(),body:p.body,acts:p.acts,note:p.note,msg:p.msg??G.siteMsg,
     back:p.back||null,close:p.close||['site-leave',null,'Leave']},'site:'+s.i+':'+(G.siteTab||''))}
   const ps=s.places(r).filter(Boolean),p=ps.find(x=>x.k===G.siteTab);if(!p)G.siteTab=null;
+  // (one service opened alone (a camp's icon or one of its people: encampments.js solo): that place's window only, Leave its way out)
+  if(p&&G.siteSolo===p.k)return showRail({head:{act:['site-tab',p.k],on:true,ico:p.ico,name:p.n,sub:s.name,back:false},label:'',gold:true,items:[],
+    title:p.n,sub:s.name,body:p.body+(G.siteMsg?'<p class="gold">'+G.siteMsg+'</p>':''),back:null,close:['site-leave',null,'Leave']},'site:'+s.i+':solo:'+p.k);
   showRail({head:{act:['site-tab','home'],on:!p,ico:s.T.ico,name:s.name,sub:where,back:!!p},label:'Places',gold:true,
     items:ps.map(x=>({act:'site-tab',arg:x.k,ico:x.ico,n:x.n,short:x.short,on:x===p})),
     title:p?p.n:s.name,sub:p?s.name:where,
@@ -669,7 +672,7 @@ function siteAct(a,arg){
   if(!a.startsWith('site-'))return false;
   const s=G.site;if(G.mode!=='site'||!s)return true;
   const done=m=>{G.siteMsg=m;log(m.replace(/<[^>]+>/g,''));updateHUD(true);showSite();railFocus(a,arg)};
-  if(a==='site-leave'){G.site=null;G.siteHire=null;G.mode='world';hidePanel();saveGame(true);return true}
+  if(a==='site-leave'){G.site=null;G.siteHire=null;G.siteSolo=null;G.mode='world';hidePanel();saveGame(true);return true}
   if(a==='site-tab'){G.siteTab=arg==='home'?null:arg;G.siteMsg='';if(G.siteHire)G.siteHire.info=null;showSite();return true}// (a place on the rail, or home: the overview)
   s.act(a,arg,done);return true;
 }

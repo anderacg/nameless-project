@@ -371,6 +371,7 @@ function drawWorld(){
   drawBanners(cam);// (the parties' labels and the packs' markers, over all, their counts queued with the rest)
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   drawPlaques(cam);// (the holdings' bars, over all: structures.js)
+  drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)

@@ -830,6 +830,9 @@ body:has(.overlay:not([hidden])) .discover{visibility:hidden}
 .rec-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
 .rec-txt small{color:var(--muted);font-size:var(--fs-xs)}
 .rec-step{display:flex;align-items:center;gap:var(--sp-1);flex-wrap:wrap;justify-content:flex-end}
+/* (a row with its amount's stepper (hiredesk.js stepper): the row in two lines, its name, then the stepper and its button, all in reach) */
+.rec-row:has(.rec-n){flex-wrap:wrap}.rec-row:has(.rec-n) .rec-step{flex:1 0 100%;flex-wrap:nowrap;justify-content:flex-end;gap:3px}
+.rec-row:has(.rec-n) .rec-step .btn{min-width:34px;padding-left:6px;padding-right:6px}.rec-row:has(.rec-n) .rec-step .btn.primary{margin-left:auto}
 /* (the desk's Replenish: a unit's men as a bar, its fit gold and its wounded red after them; Refill all under the rows) */
 .rec-meter{display:flex;height:5px;margin:2px 0 1px;max-width:180px;background:var(--shade);border-radius:3px;overflow:hidden}.rec-meter i{background:var(--accent)}.rec-meter b{background:#b9463c}
 .rec-all{justify-content:flex-end;margin:var(--sp-1) 0}.rec-notice{margin:0 0 var(--sp-1)}
