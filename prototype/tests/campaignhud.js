@@ -38,5 +38,14 @@ Kit.suite(({ok})=>{
  document.querySelector('[data-speed="2"]').click();ok(t.G.speed===2,'the original speed buttons remain wired');
  hud.slot.click();t.updateHUD(true);t.frame();ok(t.G.mode==='fullmap'&&!visible(hud.resources),'campaign chrome leaves the full map unobstructed');t.closeOver();t.frame();
  ok(t.G.mode==='world'&&visible(hud.resources),'closing the map restores campaign chrome');
+ // (the panels' see-through fill, --campaign-surface and -l, laid on a panel of an odd size: no pixel of it covered by two of its
+ //  pieces (four corner halves each 51% across once laid it twice down the middle and across it, a dark cross: the owner, 2026-11-20))
+ for(const v of ['--campaign-surface','--campaign-surface-l']){const el=document.createElement('div');el.style.cssText='position:absolute;left:0;top:0;width:83px;height:47px;border:1px solid transparent;background:var('+v+')';screen.appendChild(el);
+   const cs=getComputedStyle(el),W=el.offsetWidth,H=el.offsetHeight,sz=cs.backgroundSize.split(','),pos=cs.backgroundPosition.split(','),cover=new Uint8Array(W*H);
+   // (a length as computed: px, a share of L, or calc(a% - b px); an entry's two values, a calc() one of them
+   const len=(q,L)=>{const m=/^calc\(([\d.]+)% - ([\d.]+)px\)$/.exec(q);return m?m[1]/100*L-m[2]:q.endsWith('%')?parseFloat(q)/100*L:parseFloat(q)},two=z=>z.trim().match(/calc\([^)]*\)|\S+/g);
+   sz.forEach((z,i)=>{const [zw,zh]=two(z),w=len(zw,W),h=len(zh,H),[px,py]=two(pos[i]),x=len(px,W-w),y=len(py,H-h);for(let j=Math.round(y);j<Math.round(y+h);j++)for(let k=Math.round(x);k<Math.round(x+w);k++)if(j>=0&&k>=0&&j<H&&k<W)cover[j*W+k]++});
+   el.remove();let twice=0,none=0;for(const c of cover){if(c>1)twice++;if(!c)none++}
+   ok(sz.length>1&&!twice&&!none,v+': its '+sz.length+' pieces cover an 83 x 47 panel once each, nowhere twice ('+twice+' px), nowhere left bare ('+none+' px)')}
  t.G.mode='title';t.frame();ok(!visible(hud.resources)&&!visible(hud.details),'campaign decorations do not leak onto the title screen');
 });
