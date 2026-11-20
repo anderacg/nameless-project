@@ -57,7 +57,7 @@ const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.set
    k: your past; 'world:<past>' (a past's card on the New game page) opens the New world screen first
    (worldsetup.js worldSetup, D30), whose Forge the world comes back here with its settings.
    A world other than the one in is made first (forgeSteps: the generator's stages; none when the New world screen's full preview
-   made it: worldPreviewTake), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
+   made it: worldPreviewTake), kept for the loads to come (core/worldkeep.js), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
    (WM.first: useWorld). Then the game put in, in one step (the session, your hero from your race and past, the world as it first
    stood, its sites, beasts and bands), then the land round you painted. A failure before the putting in leaves the last game as
    it was */
@@ -66,7 +66,7 @@ function begin(k,settings){
   const b=BGS[k];if(!b)return false;if(settings===undefined)settings=newWorldSettings();
   const want=settings||!WM?{gen:'ashmark-1',settings:normSettings(settings||classicSettings())}:null,
     made=want&&worldKey(want)!==worldKey(WM)?{r:want.settings&&worldPreviewTake(want.settings)}:null,t0=performance.now();
-  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstallSteps(made.r)}]:[]),
+  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>{WorldKeep.put(made.r);return forgeInstallSteps(made.r)}}]:[]),
     {id:'holds',label:'Raising the holdings',w:made?150:3,run:holdModelsWarm},// (before your start is chosen: its ways go round them, world/start.js; once, a piece at a time, not at once in it)
     {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGameSteps(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:()=>paintViewSteps()},{id:'near',label:'Building the villages',w:made?60:2,run:buildNear},{id:'walls',label:'Raising the walls',w:made?150:3,run:holdShutWarm}],
     {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)

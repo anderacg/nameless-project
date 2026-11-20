@@ -108,7 +108,7 @@ function worldFits(w,made){const names=new Set((made||MADE_HOLDINGS).map(h=>h.na
 function worldLoad(w){W.ships=[];W.folk=[];Saves.load(w)}
 /* loading a save, as steps behind "Returning to {world}…" (loading.js runSteps): the save read (gunzipped: a step that waits);
    the world it was made in made again first when it is not the one in (another gen or other settings: session.js forgeSteps,
-   the generator's stages); then, in one step, the save checked against that world (another checksum: another world version,
+   the generator's stages; none of them when that world is kept on the device, core/worldkeep.js); then, in one step, the save checked against that world (another checksum: another world version,
    refused; worldFits) and put in (that world, if made again; the world as it first stood, the session, the save's records);
    then the land under you painted. A failure shows the error, with the way back to the saves; one before the putting in leaves
    the game untouched */
@@ -119,9 +119,11 @@ function loadGame(slot){
   const M=h.world.map,made=worldKey(M)===worldKey(WM)?null:{};let d=null;
   runSteps('Returning to '+worldName(M)+'…',[
     {id:'read',label:'Reading the save',w:40,run:()=>{if(!h.z)return d=h;if(LOADING.sync)throw new Error('A gzipped save cannot be read at once.');return gunzip64(h.z).then(t=>{d=JSON.parse(t)})}},
-    ...(made?forgeSteps(M.gen,M.settings,r=>made.r=r):[]),
+    // (its world from those kept, when the kept one is the save's own (core/worldkeep.js): the generator's stages then pass at once)
+    ...(made?[{id:'kept',label:'Recalling the world',w:20,run:()=>{const got=r=>{made.r=r;made.kept=!!r};if(LOADING.sync)return got(WorldKeep.take(M));return WorldKeep.get(M).then(got)}},
+      ...forgeSteps(M.gen,M.settings,r=>made.r=r).map(st=>({...st,run:()=>made.kept?undefined:st.run()}))]:[]),
     {id:'apply',label:'Restoring holdings and parties',w:160,run:()=>{const r=made&&made.r;
-      if(d.world.map.sum!==(r?r.map.sum:WM.sum))throw new Error(OTHER_WORLD);worldFits(d.world,r&&r.holdings);if(r)forgeInstall(r);applySave(d)}},
+      if(d.world.map.sum!==(r?r.map.sum:WM.sum))throw new Error(OTHER_WORLD);worldFits(d.world,r&&r.holdings);if(r){if(!made.kept)WorldKeep.put(r);forgeInstall(r)}applySave(d)}},
     {id:'paint',label:'Painting the land',w:120,run:function*(){yield* paintViewSteps();G.saved={day:d.day,sig:saveSig(saveRecord())}}},{id:'near',label:'Building the villages',w:40,run:buildNear},{id:'walls',label:'Raising the walls',w:120,run:holdShutWarm}],// (as loaded: nothing to lose yet)
     {back:['Back to your saves',()=>showTitle('load')]}).catch(()=>{});// (a failure shows itself)
 }

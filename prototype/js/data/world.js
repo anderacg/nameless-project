@@ -275,6 +275,10 @@ const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','hou
 // how far (tiles) a site of a kind stands from every holding (world/sites.js siteSpot; the owner, 2026-11-14: "camps are not too close
 // to the holding. Caves, monster lair should be more far away as well"): any (were all 6), caves 20, camps where people live 14 (a kind
 // may set its own: data/encampments.js away)
+/* the made worlds kept on the device (core/worldkeep.js WorldKeep): on; disk: in the browser's store too (IndexedDB db), not only the
+   last one in the page; most: how many worlds the store holds, the oldest let go; v: the kept record's own shape (another v is not
+   read: made again) */
+const WORLD_KEEP={on:true,disk:true,v:1,most:3,db:'ashmark-worlds'};
 const SITE_AWAY={any:12,cave:20,travelers:14};
 // how far a site stands from the others and from a holding's lots (world/sites.js siteSpot; the owner, 2026-11-17: "sites such as stone
 // pillar, abandon places, are too close to each other and even too close to the holding"): gap tiles from every other site (was 9;
