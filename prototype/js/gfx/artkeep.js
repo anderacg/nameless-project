@@ -9,6 +9,8 @@
    show, and a signature of what the painter reads round it as it stands (sig: the tiles' kinds and features, the plan's clear
    ground, the lots and their models, the gates, camps, caves and trampled patches within WorldArt.REACH tiles). Anything else, or a
    store that cannot be read or does not answer in ART_KEEP.patience ms, and the chunk is painted as before.
+     The props' sprites come back each once: the keeper keys a sprite by its pixels and sends one it has sent before as its key
+   alone (sprs holds them: six chunks' 4100 sprites are 1000 pictures).
      ArtKeep.boot(): the stamp reckoned and the keeper started, once (false where it cannot be: no Worker, a test's page, a page
        not served over http: its scripts cannot be read back).
      ArtKeep.ask(cx, cy): true while the keeper is still to answer for that chunk (the painter waits); a kept one is put into
@@ -19,7 +21,7 @@
      ArtKeep.forgot(k), relot(l), reset(): a chunk's surroundings changed (WorldArt.forget, relot), the world or its plan did
        (invalidate). */
 const ArtKeep={
-  w:null,ok:false,ready:null,stamp:null,id:0,st:new Map(),wait:new Map(),calls:[],out:[],job:null,sc:null,hits:0,misses:0,puts:0,why:'',
+  w:null,ok:false,ready:null,stamp:null,id:0,st:new Map(),wait:new Map(),calls:[],out:[],job:null,sc:null,sprs:new Map(),hits:0,misses:0,puts:0,why:'',
   can(){return ART_KEEP.on&&typeof document!=='undefined'&&typeof Worker!=='undefined'&&typeof createImageBitmap!=='undefined'&&!(typeof window!=='undefined'&&window.PAINT_WORKER)},
   url(){const s=[...document.scripts].find(e=>/gfx\/artkeep\.js(\?|$)/.test(e.src));return s?s.src.replace(/artkeep\.js.*/,'artkeepworker.js'):null},
   // (the code's stamp: every script of the page and the keeper's own, their bytes as the page loaded them (the browser's cache), hashed)
@@ -54,6 +56,8 @@ const ArtKeep={
     return s.v==='wait'},
   msg(m){
     if(m.t==='kept'){this.puts++;return}if(m.t==='failed'){this.why=m.what+': '+m.msg;return}if(m.t!=='hit'&&m.t!=='miss')return;
+    // (the sprites it sends are kept by their keys, whatever becomes of the chunk: the keeper sends each once)
+    if(m.t==='hit')for(let i=0;i<m.spr.length;i++)if(m.spr[i])this.sprs.set(m.skeys[i],m.spr[i]);
     const q=this.wait.get(m.id);this.wait.delete(m.id);if(!q){this.shut(m);return}const [k,s]=q;
     if(this.st.get(k)!==s)this.shut(m);else if(m.t==='miss'){s.v='miss';this.misses++}else this.take(k,s,m);
     for(const c of this.calls.slice())if(c.ks.delete(k)&&!c.ks.size)this.settle(c)},
@@ -61,11 +65,13 @@ const ArtKeep={
   // (a kept chunk come back: put in as a painted one is, unless one as fine is there by now)
   take(k,s,m){const A=WorldArt,c=A.chunks.get(k);let rec;try{rec=this.unpack(m)}catch(e){this.shut(m);s.v='miss';return}
     if(rec.cx+rec.cy*A.cols!==k||c&&(c.fine||1)>=(rec.fine||1)){this.shut(m);s.v=c?'hit':'miss';return}
-    const j=A.jobs.get(k);if(j){A.jobs.delete(k);A.recycle(j.rec.cv)}if(c)A.recycle(c.cv);rec.kept=true;A.done({k,rec});s.v='hit';this.hits++},
-  shut(m){if(m.t!=='hit')return;for(const k in m.pics)m.pics[k].close();for(const b of m.spr)b.close()},
+    const j=A.jobs.get(k);if(j){A.jobs.delete(k);A.recycle(j.rec.cv)}if(c)A.recycle(c.cv);rec.kept=true;A.done({k,rec});s.v='hit';this.hits++;
+    // (more sprites held than ART_KEEP.sprites: let go, those the chunks still show theirs till they go; the keeper sends all again)
+    if(this.sprs.size>ART_KEEP.sprites){this.sprs=new Map();this.w.postMessage({t:'unsent'})}},
+  shut(m){if(m.t==='hit')for(const k in m.pics)m.pics[k].close()},
   unpack(m){const rec=m.meta;for(const k in m.pics)rec[k]=m.pics[k];
     for(const a of m.arrays){const p=a.path.split('.');let o=rec;for(let i=0;i<p.length-1;i++)o=o[p[i]];o[p[p.length-1]]=new self[a.type](a.buf)}
-    if(m.props)rec.props=m.props.map(p=>({...p,s:p.s>=0?m.spr[p.s]:null}));return rec},
+    if(m.props){const S=m.skeys.map(k=>this.sprs.get(k));if(S.some(b=>!b))throw new Error('a sprite not sent');rec.props=m.props.map(p=>({...p,s:p.s>=0?S[p.s]:null}))}return rec},
   // a chunk painted: queued to be kept, if it is as fine as the scene and all it holds can be kept
   made(k,rec){if(!this.ok||rec.kept||!rec.cv)return;const fine=typeof paintRes==='function'?paintRes():1,sea=farmSeason();if((rec.fine||1)<fine)return;
     let key;try{key=this.key(rec.cx,rec.cy,fine,sea)}catch(e){return}
@@ -94,7 +100,7 @@ const ArtKeep={
         for(const p of v){const q={};for(const f of Object.keys(p))if(f!=='s')q[f]=this.plain(p[f],'props.'+f,null,null,2);let i=-1;
           if(p.s){i=uniq.get(p.s);if(i===undefined){i=rects.length;uniq.set(p.s,i);const sw=p.s.width,sh=p.s.height;if(x+sw>W){x=0;y+=rh;rh=0}rects.push([x,y,sw,sh]);x+=sw;rh=Math.max(rh,sh)}}q.s=i;props.push(q)}
         yield;if(rects.length){const c=mkcv(W,y+rh),g=c.getContext('2d',{willReadFrequently:true});for(const [s,i] of uniq)g.drawImage(s,rects[i][0],rects[i][1]);yield;atlas=yield* this.pixels(c,tr)}}
-      else{meta[name]=this.plain(v,name,arrays,tr,0);yield}}
+      else{const n=arrays.length;meta[name]=this.plain(v,name,arrays,tr,0);if(arrays.length>n)yield}}
     if(this.w)this.w.postMessage({t:'put',key,meta,pics,atlas,rects,props,arrays},tr)},
   recall(list){if(!this.boot())return;
     return this.ready.then(()=>{if(!this.ok||!WM)return;const A=WorldArt,ks=new Set();for(const [cx,cy] of list){const k=cy*A.cols+cx;if(!A.chunks.has(k)&&this.ask(cx,cy))ks.add(k)}

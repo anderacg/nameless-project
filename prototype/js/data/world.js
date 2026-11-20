@@ -35,9 +35,10 @@ const ART_WORKERS={on:true,phone:0,most:4,help:400};
    (IndexedDB); most: how many chunks it holds, on a phone and elsewhere (a chunk about 2 MB kept), the oldest let go; touch: ms after
    which one read is written again as new; patience: ms the painter waits for the keeper's answer before it paints; strip: the rows of
    a picture read in one piece of a frame; sheet: the width (px) of the sheet a chunk's props' sprites are kept on; queue: painted
-   chunks waiting to be kept, at most; v: the kept record's shape (part of the stamp); stamp: a stamp given (the tests'), else the
+   chunks waiting to be kept, at most; sprites: the props' sprites the page holds from the keeper before it lets them go and has them
+   sent again; v: the kept record's shape (part of the stamp); stamp: a stamp given (the tests'), else the
    scripts' own hash */
-const ART_KEEP={on:true,v:1,db:'ashmark-ground',most:[48,160],touch:21600000,patience:1500,strip:128,sheet:1024,queue:12,stamp:null};
+const ART_KEEP={on:true,v:1,db:'ashmark-ground',most:[48,160],touch:21600000,patience:1500,strip:128,sheet:1024,queue:12,sprites:6000,stamp:null};
 /* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
    read at a place warped climWarp game px by noise, each px's picked from their shares (climPick: by a slow noise at sc game px, spread k, grain at its edge: ragged
    tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from

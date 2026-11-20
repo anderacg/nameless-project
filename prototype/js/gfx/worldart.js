@@ -644,15 +644,19 @@ const runGen=gen=>{let r;while(!(r=gen.next()).done);return r.value};
 //     picture (engine/worldnature.js standIndex: the trees, the small things standing, the ranges' rock in column runs; a chunk
 //     not painted yet is painted): fn(S, k) once for each entry k of a chunk's index S whose grid cells meet the rect (gfx/
 //     depth.js); without fn, a list of {x, y (its foot), s (its sprite; null, a run of rock), dx, dy (where s is drawn), box (its
-//     pixels in its chunk, [x0, y0, x1, y1])}, as the battle's props.
+//     pixels in its chunk, [x0, y0, x1, y1])}, as the battle's props. A chunk not painted yet is skipped, never painted for it:
+//     the lab's painter (paintSteps) keeps nothing in the index (what stands is a chunk's props, worldterrain.js), and a camp
+//     laying out its tents (CampSite.tentOk) painted a chunk whole in a frame for an empty answer (6 s on a slowed phone, 2026-11-20).
 //   deck(c): a bridge's picture (c, a crossing of WM.crossings), cut from the chunks' own drawing of it (artGenXing's rects, onto a
 //     canvas of its own: the same pixels), clear round it: {cv, x, y (its corner, map px), foot (its last row)}; kept until
 //     invalidate (world/ships.js: what sails under it).
 //   bytes(): what it holds.
 const WorldArt={
   plan:null,chunks:new Map(),jobs:new Map(),queue:[],miss:new Map(),pool:[],view:new Set(),full:null,dirty:new Set(),cnt:new Map(),minis:{},decks:new Map(),last:null,slice:4,sliceView:12,REACH:8,idleAt:-1e9,ahead:2,vel:0,hx:0,hy:0,frameMs:16,lastT:0,est:0,need:0,drawSpent:0,
-  // (in play (the game's loop, not a test's page: liveOk) no chunk is ever painted whole in a frame: ART_PACE)
-  liveOk:typeof location==='undefined'||!/[?&]test=/.test(location.search),live(){return this.liveOk&&performance.now()-this.idleAt<ART_PACE.alive},
+  // (in play (the game's loop, not a test's page: liveOk) no chunk is ever painted whole in a frame: ART_PACE. In play: the loop
+  //  gave the painter its time (idle) since the map was last drawn (idled), however long that frame took (a frame of 6 s made the next
+  //  paint a chunk whole, 2026-11-20), or within ART_PACE.alive ms)
+  liveOk:typeof location==='undefined'||!/[?&]test=/.test(location.search),idled:false,live(){return this.liveOk&&(this.idled||performance.now()-this.idleAt<ART_PACE.alive)},
   cap:typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900?20:32,
   get cols(){return Math.ceil(MW*TILE/CHUNK)},get rows(){return Math.ceil(MH*TILE/CHUNK)},
   ensure(){if(!this.plan){this.plan=worldArtPlan();ArtWorkers.planned()}return this.plan},// (a new plan: the painter workers' world sent again, ArtWorkers)
@@ -671,7 +675,7 @@ const WorldArt={
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
     const fr=typeof sceneRes==='function'?sceneRes():1;
-    const live=this.live(),now=performance.now(),AP=ART_PACE;let wait=false;for(const k of this.miss.keys())if(!this.view.has(k)||this.chunks.has(k))this.miss.delete(k);if(live&&!ArtWorkers.list.length)ArtWorkers.start();if(live)ArtKeep.boot();
+    const live=this.live(),now=performance.now(),AP=ART_PACE;let wait=false;this.idled=false;for(const k of this.miss.keys())if(!this.view.has(k)||this.chunks.has(k))this.miss.delete(k);if(live&&!ArtWorkers.list.length)ArtWorkers.start();if(live)ArtKeep.boot();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){if(live&&!this.chunks.has(cy*this.cols+cx)){const k=cy*this.cols+cx;if(!this.miss.has(k))this.miss.set(k,now);if(this.standIn(g,cx,cy,x0,y0,x1,y1,cam))wait=true;continue}const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
       if(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh))continue;// (none of it known: nothing drawn, the fog alone: fog.js VIEW_SEEN)
       if(fr>1&&c&&c.fcv&&c.fr===fr)g.drawImage(c.fcv,(sx-X)*fr,(sy-Y)*fr,sw*fr,sh*fr,sx-cam.x,sy-cam.y,sw,sh);else g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
@@ -718,9 +722,9 @@ const WorldArt={
   standIn(g,cx,cy,x0,y0,x1,y1,cam){const [X,Y,w,h]=this.rect(cx,cy),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;
     if(sw<=0||sh<=0||(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh)))return false;
     g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();return true},
-  // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; none queued, a piece of a
-  //  painted chunk handed to the keeper: main.js loop)
-  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));else ArtKeep.pump();this.drawSpent=0},
+  // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; then a piece of a painted
+  //  chunk handed to the keeper, one a frame (a strip of its pixels: artkeep.js pump): main.js loop)
+  idle(ms){this.idleAt=performance.now();this.idled=true;if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));ArtKeep.pump();this.drawSpent=0},
   step(ms){let Q=this.queue;if(ArtWorkers.feed(this)){const now=performance.now();Q=[...this.miss].filter(([k,t])=>now-t>ART_WORKERS.help).map(([k])=>[k%this.cols,(k/this.cols)|0]);if(!Q.length)return 0}
     const t0=performance.now();while(Q.length&&performance.now()-t0<ms){const [cx,cy]=Q[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){Q.shift();continue}const j=this.start(cx,cy),a=performance.now();let end=false;
       while(performance.now()-t0<ms)if(j.gen.next().done){end=true;break}
@@ -757,7 +761,7 @@ const WorldArt={
       rect(g,PAL[CLIMS[climate[i]]].mini[tiles[i]],x,y,1,1)}}))},
   deck(c){let d=this.decks.get(c);if(d)return d;d=wayDeck(c);this.decks.set(c,d);return d},
   standing(x0,y0,x1,y1,fn,ready){const out=fn?null:[],seen=this.seen||(this.seen=new Set());x0=Math.max(0,Math.floor(x0));y0=Math.max(0,Math.floor(y0));x1=Math.min(MW*TILE-1,Math.floor(x1));y1=Math.min(MH*TILE-1,Math.floor(y1));
-    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k)){if(ready)continue;this.chunk(cx,cy)}const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
+    for(let cy=Math.floor(y0/CHUNK);cy<=Math.floor(y1/CHUNK)&&x0<=x1;cy++)for(let cx=Math.floor(x0/CHUNK);cx<=Math.floor(x1/CHUNK);cx++){const k=cy*this.cols+cx;if(!this.chunks.has(k))continue;const S=this.chunks.get(k).n.stand,cs=S.cell;seen.clear();
       for(let j=Math.max(0,Math.floor((y0-S.Y)/cs));j<=Math.min(S.R-1,Math.floor((y1-S.Y)/cs));j++)for(let i=Math.max(0,Math.floor((x0-S.X)/cs));i<=Math.min(S.C-1,Math.floor((x1-S.X)/cs));i++){const q=j*S.C+i;
         for(let p=S.at[q];p<S.at[q+1];p++){const e=S.L[p];if(seen.has(e))continue;seen.add(e);if(fn){fn(S,e);continue}
           const E=S.E,o=e*4,dx=S.X+E[o],dy=S.Y+E[o+1],r=E[o+2],s=r>=0?PX.WN_SPR[r]:null,b=s?s.box:[0,0,0,-r-1];
