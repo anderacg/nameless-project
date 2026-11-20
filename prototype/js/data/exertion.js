@@ -1,7 +1,9 @@
 'use strict';
 // Escape capacity is in simulation seconds of continuous running. Player supplies are separate and unchanged.
 const ESCAPE_STAMINA={delay:5,recovery:.1,floor:.55,safe:100,capacity:{worker:16,refugee:18,caravan:24,lord:30,band:24,patrol:28,cparty:28,monster:24,other:20},wild:{rabbit:7,hare:8,fowl:9,deer:16,stag:22,ibex:18,reindeer:22,gazelle:20},mounted:1.25};
-const HUNT_AREA={radius:110,hp:4,alertOpen:2,alertCover:4,replan:1,threatShift:60};
+// (HUNT_AREA run: a hunted animal's gallop over its map speed (battle/hunting.js turn): a rested deer half again as fast as a footman
+//  running, a rabbit or a fowl still ahead of him, any of them winded at ESCAPE_STAMINA.floor about a footman's run)
+const HUNT_AREA={radius:110,hp:4,alertOpen:2,alertCover:4,replan:1,threatShift:60,run:1.4};
 // A herd after a hunt (battle/hunting.js finish, world/critters.js Herd): each animal left where it stood, its own spot about the
 // herd's point (Herd m), walking back to its place in the herd at gather map px a s (none jumps back); near px: all back, the herd
 // as before. Animals still bolting when it ended keep the herd running their way (on: their speed, run s more)

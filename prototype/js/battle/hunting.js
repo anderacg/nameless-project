@@ -24,8 +24,10 @@ class HuntTracks{
       l.forEach((p,i)=>{if(!this.readable(p,hunters,r))return;const a=1-(B.t-p.t)/HUNT_TRACK.life;if(a<=0)return;
         ctx.save();ctx.globalAlpha=Math.min(1,a);ctx.imageSmoothingEnabled=false;ctx.translate(p.x,p.y);ctx.scale(k,k);const S=trackPic(art,0,p.a,i&1,CR);ctx.drawImage(S,S.ox,S.oy);ctx.restore()})}}
 }
-// (where a herd's animal i stands on the map: its own spot, scattered by a hunt (HERD_SCATTER, Herd m), else a short file behind its
-//  point, as it always was)
+// (where a herd's animal i stands on the map: where the map draws it now (critters.js HERD_FLOCK: each animal walking about its own
+//  spot), its foot and its facing (the owner, 2026-11-20: "The hunting wildlife when hunt start should be start at the position in when
+//  player interact"); one never drawn, its own spot, scattered by a hunt (HERD_SCATTER, Herd m), else a short file behind its point)
+function herdSpotNow(c,i){const m=typeof HERD_FLOCK!=='undefined'&&HERD_FLOCK.get(c)?.m[i];return m?{x:m.x,y:m.y,f:m.f<0?-1:1}:herdSpot(c,i)}
 function herdSpot(c,i){const m=c.m?.[i];if(m)return {x:c.x+m.dx,y:c.y+m.dy};const off=i?Math.ceil(i/2)*3:0;return {x:c.x+(i%2?-1:1)*off,y:c.y-off*.3}}
 class HuntBattleArea extends WorldBattleArea{
   constructor(e){
@@ -49,6 +51,9 @@ class HuntBattleArea extends WorldBattleArea{
     }
     if(at<0)return null;const to={x:(at%g.C+.5)*g.cs,y:(Math.floor(at/g.C)+.5)*g.cs},p=routePath(g,u.x,u.y,to.x,to.y,{budget:g.cost.length});return u.huntWay={g,v:g.v,to,p,i:0,tx:threat.x,ty:threat.y,at:B.t+HUNT_AREA.replan};
   }
+  // (its flight: its map speed (CRITTERS spd) on the map's scale, as your men's steps are (terrain.js groundMul: fightSpace), at a
+  //  gallop, HUNT_AREA.run x; the owner, 2026-11-20: "they like walking not running": the map's scale was left out, a deer fled at a
+  //  third of a walking man's pace)
   turn(u,dt){
     if(!(dt>0)){u.spdNow=0;return}if(!this.inside(u,-2))return this.depart(u);if(u.stun>0){u.stun-=dt;u.spdNow=0;return}if(PHYSICS.on&&physDown(u,dt))return;
     const hunters=B.units.filter(v=>v.team===0&&v.hp>0&&!v.left&&!v.rout),near=Spatial.nearest(hunters,u.x,u.y),previous=u.huntThreat,dist=v=>v?Math.hypot(u.x-v.x,u.y-v.y):Infinity,threat=previous&&hunters.includes(previous)&&dist(previous)<=dist(near)/WILDLIFE_AWARE.switch?previous:near,D=CRITTERS[u.wildlife],seconds=dt/(WORLD_PACE*WORLD_SCALE.move*this.scale),distance=dist(threat),point=threat&&this.world(threat),hidden=point&&hiddenAt(point.x,point.y);u.huntThreat=threat;
@@ -57,7 +62,7 @@ class HuntBattleArea extends WorldBattleArea{
     // (out of sight of all of yours OPEN_FIGHT.lost s: got away, the field open round it)
     if(OPEN_FIGHT.on){if(seenBy(0,u))u.unseen=0;else if((u.unseen=(u.unseen||0)+seconds)>OPEN_FIGHT.lost)return this.depart(u)}
     u.spdNow=0;if(!threat||u.alert<1){u.rest=(u.rest||0)+seconds;if(u.rest>ESCAPE_STAMINA.delay)u.escapeSta=Math.min(u.escapeCap,u.escapeSta+u.escapeCap*ESCAPE_STAMINA.recovery*seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;return}
-    u.rest=0;const way=this.flight(u,threat),dir=this.escapeWay(u,way);if(!dir)return;const ratio=clamp(u.escapeSta/u.escapeCap,0,1),factor=ratio>=.6?1:ratio>=.25?.8+(ratio-.25)/.35*.2:ESCAPE_STAMINA.floor+ratio/.25*(.8-ESCAPE_STAMINA.floor),step=Math.min(dir[2],u.s.spd*factor*dt*BATTLE_RHYTHM.move);
+    u.rest=0;const way=this.flight(u,threat),dir=this.escapeWay(u,way);if(!dir)return;const ratio=clamp(u.escapeSta/u.escapeCap,0,1),factor=ratio>=.6?1:ratio>=.25?.8+(ratio-.25)/.35*.2:ESCAPE_STAMINA.floor+ratio/.25*(.8-ESCAPE_STAMINA.floor),step=Math.min(dir[2],u.s.spd*factor*dt*BATTLE_RHYTHM.move*fightSpace()*HUNT_AREA.run);
     const x=u.x+dir[0]*step,y=u.y+dir[1]*step;if(!lineClear(way.g,u.x,u.y,x,y))return;u.x=x;u.y=y;this.tracks.step(u);u.dir=Math.atan2(dir[1],dir[0]);u.face=dir[0]>=0?1:-1;u.spdNow=step/dt;u.escapeSta=Math.max(0,u.escapeSta-seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;
     if(!this.inside(u,-2))this.depart(u);
   }
@@ -94,7 +99,7 @@ class HuntBattleSetup extends WorldBattleSetup{
     super.createUnits();const a=this.area;
     for(const [index,c] of a.herds.entries()){
       const key=wildTroop(c.id);
-      for(let i=0;i<c.n;i++){const m=c.m?.[i],u=this.spawn(troopOf(key),1,0,0);Object.assign(u,a.field(herdSpot(c,i)),{grp:'wild_'+index,wildlife:c.id,herd:c,alert:c.run>0?1:0,escapeCap:EscapeStamina.capacity(c),escapeSta:m?.sta??c.escapeSta??EscapeStamina.capacity(c)});this.units.push(u);a.animals.push(u)}
+      for(let i=0;i<c.n;i++){const m=c.m?.[i],u=this.spawn(troopOf(key),1,0,0);Object.assign(u,a.field(herdSpotNow(c,i)),{grp:'wild_'+index,wildlife:c.id,herd:c,alert:c.run>0?1:0,escapeCap:EscapeStamina.capacity(c),escapeSta:m?.sta??c.escapeSta??EscapeStamina.capacity(c)});this.units.push(u);a.animals.push(u)}
     }
   }
   createState(){const b=super.createState();b.hunt=this.area;return b}
@@ -102,7 +107,7 @@ class HuntBattleSetup extends WorldBattleSetup{
     // Outpost combat initialization and original marching positions, with no opposing-army preparation phase; each animal's
     // place its first sighting (seen on the map, where the hunt was chosen: HuntTracks)
     super.initialize();const a=this.area;delete B.muster;B.ready=false;B.paused=false;B.auto=true;
-    for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u);Object.assign(u,a.field(herdSpot(c,index)));const f=c.m?.[index]?.f;if(f){u.face=f;u.dir=f<0?Math.PI:0}u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
+    for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),at=herdSpotNow(c,index);Object.assign(u,a.field(at));const f=at.f||c.m?.[index]?.f;if(f){u.face=f;u.dir=f<0?Math.PI:0}u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
   survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. '+(OPEN_FIGHT.on?'Game that runs out of reach gets away; what you kill lies where it fell: click it to take its meat and trophies.':'Wildlife can escape beyond the circle; kills provide meat and trophies.')}
