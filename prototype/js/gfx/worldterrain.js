@@ -557,20 +557,22 @@ function climShares(cw,cl,tx,ty,fu,fv){const bx=labBS(fu),by=labBS(fv);for(let q
 // (the pick among a px's climates' shares: by a slow noise, a little grain at its edge, so a climate's border runs in ragged tongues and
 //  islands, not px by px salt and pepper (the owner, 2026-11-16: "Snow area looks too hard"))
 function climPick(gx,gy){const C=WORLD_TERRAIN.climPick;return Math.max(0,Math.min(.999,.5+(wnoise2(gx/C.sc,gy/C.sc,604)-.5)*C.k+(hs(gx,gy,603)-.5)*C.grain))}
-/* (last frame's feet into the grass of the chunks in view (recs), r fine px a game px, n the most lean, dt s since: a clump within
-   push px of a foot (a big one's push times feet[1]; nearer across than along, as a stride) bent the way he walks across the screen
-   (vx: walking up or down it, or standing, away from him, parted to his sides), the more the nearer, held so while he is by it; within
-   flat[0] of that pressed down flat[1] of its height at most, the time he is on it counted (D: the longer, the slower it rises); a man
+/* (last frame's feet into the grass of the chunks in view (recs), r fine px a game px, n the most lean, dt s since: a clump whose foot
+   is in his footprint (touch: hw game px either side of his feet, a big one's big; up behind them, down in front), one his body
+   touches, bent the way he walks across the screen (vx: walking up or down it, or standing, away from him, parted to his sides), the
+   more the nearer his middle, held so while he is on it; none beyond it (the wind sways them all, terrainEnts); within flat[0] of his
+   half width pressed down flat[1] of its height at most, the whole time he is on it counted (D: the longer, the slower it rises); a man
    standing pushes feet[0] as much. Each its arrays made as it is first laid: P (its lean), F (pressed), D (s trodden), K (stays
    down), L, C (its lean and cut drawn), H (the frame a foot last held it)) */
 function grassFeet(recs,r,n,dt){const G=WORLD_FLORA.grass,F=GRASS_FEET.now,fr=++TGRASS.fr;GRASS_FEET.now=[];
   for(const c of recs){const Gr=c.grass;if(Gr&&!Gr.D){Gr.F=new Float32Array(Gr.n);Gr.D=new Float32Array(Gr.n);Gr.K=new Uint8Array(Gr.n);Gr.L=Gr.L||new Int8Array(Gr.n);Gr.C=new Uint8Array(Gr.n);Gr.H=new Uint32Array(Gr.n)}}
-  for(let i=0;i<F.length;i+=5){const x=F[i],y=F[i+1],s=F[i+2]?1:G.feet[0],R=G.push*(F[i+3]?G.feet[1]:1),vx=F[i+4],fx=x*r,fy=(y-liftAt(x,y))*r,Rf=R*G.flat[0],way=Math.abs(vx)>G.way?Math.sign(vx):0;
+  const TO=G.touch,U=TO.up*r,Dn=TO.down*r;
+  for(let i=0;i<F.length;i+=5){const x=F[i],y=F[i+1],s=F[i+2]?1:G.feet[0],R=(F[i+3]?TO.big:TO.hw)*r,vx=F[i+4],fx=x*r,fy=(y-liftAt(x,y))*r,Rf=R*G.flat[0],way=Math.abs(vx)>G.way?Math.sign(vx):0;
     if(viewState(x,y)<2)continue;// (out of your sight: still)
-    for(const c of recs){const Gr=c.grass;if(!Gr||!Gr.n)continue;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy-R/1.5)lo=m+1;else hi=m}
-      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+R/1.5;k++){const dx=Gr.X[k]-fx;if(dx>=R||dx<=-R)continue;const dy=(Gr.Y[k]-fy)*1.5,d=Math.sqrt(dx*dx+dy*dy);if(d>=R)continue;
-        const p=(way||(dx>=0?1:-1))*n*(1-d/R)*1.2*s;if(Math.abs(p)>=Math.abs(Gr.P[k])||Gr.H[k]!==fr){Gr.P[k]=Gr.H[k]===fr&&Math.abs(Gr.P[k])>Math.abs(p)?Gr.P[k]:p;Gr.H[k]=fr}
-        if(d<Rf){const f=(1-d/Rf)*G.flat[1]*s;if(f>Gr.F[k])Gr.F[k]=f;if(Gr.H[k]===fr)Gr.D[k]+=dt*(1-d/Rf)}}}}}
+    for(const c of recs){const Gr=c.grass;if(!Gr||!Gr.n)continue;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy-U)lo=m+1;else hi=m}
+      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+Dn;k++){const dx=Gr.X[k]-fx;if(dx>R||dx<-R)continue;const a=Math.abs(dx);
+        const p=(way||(dx>=0?1:-1))*n*(1-.5*a/R)*1.2*s;if(Math.abs(p)>=Math.abs(Gr.P[k])||Gr.H[k]!==fr){Gr.P[k]=Gr.H[k]===fr&&Math.abs(Gr.P[k])>Math.abs(p)?Gr.P[k]:p;Gr.H[k]=fr}
+        if(a<Rf){const f=(1-a/Rf)*G.flat[1]*s;if(f>Gr.F[k])Gr.F[k]=f;if(Gr.H[k]===fr)Gr.D[k]+=dt}}}}}
 function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)return;const WA=WorldArt,x0=cam.x-48,x1=cam.x+VW+48,y0=cam.y-8,y1=cam.y+VH+64,FL=PX.flora;
   const c0=Math.max(0,Math.floor(x0/CHUNK)),c1=Math.min(WA.cols-1,Math.floor(x1/CHUNK)),r0=Math.max(0,Math.floor(y0/CHUNK)),r1=Math.min(WA.rows-1,Math.floor(y1/CHUNK));
   const recs=[];for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=WA.chunks.get(cy*WA.cols+cx);if(c&&c.props&&c.fr===r)recs.push(c)}
