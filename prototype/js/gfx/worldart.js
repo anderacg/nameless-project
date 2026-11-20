@@ -664,14 +664,14 @@ const WorldArt={
     j=this.paintJob(cx,cy,typeof paintRes==='function'?paintRes():1,cv);this.jobs.set(k,j);return j},
   // (a chunk's painting at fine, onto cv (a new canvas if none): its steps, its record; no pool, no job kept (a painter worker's: paintworker.js))
   paintJob(cx,cy,fine,cv){const k=cy*this.cols+cx,[X,Y,w,h]=this.rect(cx,cy);cv=cv||mkcv(w,h);const rec={cx,cy,cv,fine};return{k,rec,gen:paintSteps(this.ensure(),X,Y,w,h,cv.getContext('2d', { willReadFrequently: true }),0,0,rec)}},
-  done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.capNow)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
+  done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);ArtKeep.made(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.capNow)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
   recycle(cv){if(cv&&cv.getContext&&this.pool.length<4)this.pool.push(cv)},// (a worker's picture is an ImageBitmap: never pooled)
   chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runGen(j.gen);this.done(j);return j.rec.cv},
   draw(g,cam){const W=MW*TILE,H=MH*TILE,x0=Math.max(0,cam.x),y0=Math.max(0,cam.y),x1=Math.min(W,cam.x+VW),y1=Math.min(H,cam.y+VH);if(x1<=x0||y1<=y0)return;
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);
     const fr=typeof sceneRes==='function'?sceneRes():1;
-    const live=this.live(),now=performance.now(),AP=ART_PACE;let wait=false;for(const k of this.miss.keys())if(!this.view.has(k)||this.chunks.has(k))this.miss.delete(k);if(live&&!ArtWorkers.list.length)ArtWorkers.start();
+    const live=this.live(),now=performance.now(),AP=ART_PACE;let wait=false;for(const k of this.miss.keys())if(!this.view.has(k)||this.chunks.has(k))this.miss.delete(k);if(live&&!ArtWorkers.list.length)ArtWorkers.start();if(live)ArtKeep.boot();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){if(live&&!this.chunks.has(cy*this.cols+cx)){const k=cy*this.cols+cx;if(!this.miss.has(k))this.miss.set(k,now);if(this.standIn(g,cx,cy,x0,y0,x1,y1,cam))wait=true;continue}const cv=this.chunk(cx,cy),X=cx*CHUNK,Y=cy*CHUNK,sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+cv.width)-sx,sh=Math.min(y1,Y+cv.height)-sy,c=this.chunks.get(cy*this.cols+cx);
       if(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh))continue;// (none of it known: nothing drawn, the fog alone: fog.js VIEW_SEEN)
       if(fr>1&&c&&c.fcv&&c.fr===fr)g.drawImage(c.fcv,(sx-X)*fr,(sy-Y)*fr,sw*fr,sh*fr,sx-cam.x,sy-cam.y,sw,sh);else g.drawImage(cv,sx-X,sy-Y,sw,sh,sx-cam.x,sy-cam.y,sw,sh)}
@@ -703,6 +703,8 @@ const WorldArt={
       for(const [,,gap,k] of miss){const j=this.jobs.get(k);cum+=Math.max(est*AP.rest,est-(j&&j.spent||0));rate=Math.max(rate,cum/Math.max(AP.soon,gap/sp*1000))}
       this.need=Math.min(AP.most,rate*this.frameMs*AP.safety);
       this.queue=[...miss.map(q=>[q[0],q[1]]),...vs.filter(k=>stale(k)&&this.chunks.has(k)).map(at),...ahead.filter(q=>this.chunks.has(q[2])).map(q=>[q[3],q[4]])]}
+    // (a chunk kept on the device comes from there: one the keeper is still to answer for waits a moment, unpainted: gfx/artkeep.js)
+    if(ArtKeep.ok)this.queue=this.queue.filter(([cx,cy])=>!ArtKeep.ask(cx,cy));
     const keep=new Set(this.queue.map(([cx,cy])=>cy*this.cols+cx));
     // (a job no longer queued let go; in play keep of them kept while near the view, their work not lost when the way bends)
     let spare=live?AP.keep:0;for(const [k,j] of this.jobs)if(!keep.has(k)){const [cx,cy]=at(k);if(spare>0&&cx>=c0-A-1&&cx<=c1+A+1&&cy>=r0-A-1&&cy<=r1+A+1){spare--;continue}this.jobs.delete(k);this.recycle(j.rec.cv)}
@@ -716,8 +718,9 @@ const WorldArt={
   standIn(g,cx,cy,x0,y0,x1,y1,cam){const [X,Y,w,h]=this.rect(cx,cy),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;
     if(sw<=0||sh<=0||(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh)))return false;
     g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();return true},
-  // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; main.js loop)
-  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));this.drawSpent=0},
+  // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; none queued, a piece of a
+  //  painted chunk handed to the keeper: main.js loop)
+  idle(ms){this.idleAt=performance.now();if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));else ArtKeep.pump();this.drawSpent=0},
   step(ms){let Q=this.queue;if(ArtWorkers.feed(this)){const now=performance.now();Q=[...this.miss].filter(([k,t])=>now-t>ART_WORKERS.help).map(([k])=>[k%this.cols,(k/this.cols)|0]);if(!Q.length)return 0}
     const t0=performance.now();while(Q.length&&performance.now()-t0<ms){const [cx,cy]=Q[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){Q.shift();continue}const j=this.start(cx,cy),a=performance.now();let end=false;
       while(performance.now()-t0<ms)if(j.gen.next().done){end=true;break}
@@ -726,16 +729,16 @@ const WorldArt={
   // (a chunk painted at the scene's resolution: its work (ms) eased into what one costs (est))
   learn(j){if((j.rec.fine||1)>=(typeof paintRes==='function'?paintRes():1))this.est=this.est?this.est+(j.spent-this.est)*ART_PACE.learn:j.spent},
   invalidate(r){ArtWorkers.stale(!r);this.plan=null;CLEAR=null;this.minis={};this.decks.clear();this.queue=[];for(const j of this.jobs.values())this.recycle(j.rec.cv);this.jobs.clear();
-    if(!r){for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
+    if(!r){ArtKeep.reset();for(const c of this.chunks.values())this.recycle(c.cv);this.chunks.clear();this.full=null;this.dirty.clear();this.cnt.clear();return}
     this.forget(r.x*TILE-this.REACH*TILE,r.y*TILE-this.REACH*TILE,(r.x+r.w+this.REACH)*TILE,(r.y+r.h+this.REACH)*TILE)},
   // a lot placed, taken away or its model changed (lots.js relot): the plan kept (its ground kept clear of the land's nature) and only
   // the chunks its yard reaches painted again (a chunk's window reaches PX.WN_APRON past it)
-  relot(l){if(ArtWorkers.list.length&&this.live()){const s=lotSig();if(s!==this.lsig){this.lsig=s;this.plan=null}}if(this.plan)this.plan.clear.fill(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);if(!this.chunks.size&&!this.jobs.size&&!this.full)return;
+  relot(l){ArtKeep.relot(l);if(ArtWorkers.list.length&&this.live()){const s=lotSig();if(s!==this.lsig){this.lsig=s;this.plan=null}}if(this.plan)this.plan.clear.fill(l.x*TILE-2,l.y*TILE-2,l.n*TILE+4,l.n*TILE+4);if(!this.chunks.size&&!this.jobs.size&&!this.full)return;
     const a=PX.WN_APRON+1;this.forget(l.x*TILE-a,l.y*TILE-a,(l.x+l.n)*TILE+a,(l.y+l.n)*TILE+a)},
   // (the chunks meeting the rect x0..x1, y0..y1 (px) let go, any being painted too, and marked to paint again in the whole picture)
   forget(x0,y0,x1,y1){
     for(let cy=Math.max(0,Math.floor(y0/CHUNK));cy<=Math.min(this.rows-1,Math.floor((y1-1)/CHUNK));cy++)for(let cx=Math.max(0,Math.floor(x0/CHUNK));cx<=Math.min(this.cols-1,Math.floor((x1-1)/CHUNK));cx++){
-      const k=cy*this.cols+cx,c=this.chunks.get(k),j=this.jobs.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(j){this.jobs.delete(k);this.recycle(j.rec.cv)}if(this.full)this.dirty.add(k);ArtWorkers.forgot(k)}},
+      const k=cy*this.cols+cx,c=this.chunks.get(k),j=this.jobs.get(k);if(c){this.chunks.delete(k);this.recycle(c.cv)}if(j){this.jobs.delete(k);this.recycle(j.rec.cv)}if(this.full)this.dirty.add(k);ArtWorkers.forgot(k);ArtKeep.forgot(k)}},
   whole(){const W=MW*TILE,H=MH*TILE;if(this.full&&(this.full.width!==W||this.full.height!==H))this.full=null;
     if(!this.full){this.full=mkcv(W,H);this.dirty=new Set();this.cnt.clear();for(let k=0;k<this.cols*this.rows;k++)this.dirty.add(k)}
     if(this.dirty.size){const g=this.full.getContext('2d', { willReadFrequently: true });
