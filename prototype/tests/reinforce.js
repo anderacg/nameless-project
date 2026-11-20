@@ -26,6 +26,11 @@ try{
  P.fac='vale';world();t.startEncounter({kind:'party',ref:band(),n:6,band:'bandits'});ok(G.enc.allies[0]===ally&&/At your side: Ser Help/.test(panel()),'your employer\'s lord joins you against bandits');
  // too far away
  ally.x=P.x+300;t.act('flee');world();t.startEncounter({kind:'party',ref:band(),n:6,band:'bandits'});ok(!G.enc.allies.length,'a lord far away cannot help');t.act('flee');ally.x=P.x+40;
+ // (only one in the fight's own ground on the map: the two sides' bodies (WorldBattleArea core), the ally's army's body reaching it, engage.js inFightReach;
+ //  the owner, 2026-11-20: "only consider them when they actually in the attack range")
+ {const at=k=>{world();const e={kind:'party',ref:band(),n:6,band:'bandits'},a=t.fightArea(e),body=t.marchOuter(ally);ally.x=a.x+a.r+body+k;ally.y=a.y;t.startEncounter(e);const r=[G.enc.allies.includes(ally),Math.round(a.r),Math.round(body)];t.act('flee');return r};
+  const [inn,r,body]=at(-6),[out]=at(6);ok(t.WORLD_BATTLE.on&&inn&&!out,'a friend whose army reaches 6 px into the ground the two sides stand on (r '+r+' px, his body '+body+' px) joins; one whose army stops 6 px short of it does not');
+  ally.x=P.x+40;ally.y=P.y}
  // honor alone is enough
  P.fac=null;P.honor={vale:30};world();t.startEncounter({kind:'party',ref:band(),n:6,band:'bandits'});ok(G.enc.allies[0]===ally,'a faction that honors you (30) also helps');
  // in battle: their own units, their own losses
