@@ -9,6 +9,8 @@
    the old slow clock); morale, tire: the share of a battle second morale and stamina run on (battle.js moraleTick, fatigue.js
    fatigueStep: as fast a real second as before). Measured: tests/battlespeed.js */
 const BATTLE_RHYTHM={move:.54,strike:2.2,shot:3.3,dmg:.65,morale:.33,tire:.33};
+// a broken man fleeing a fight on the map runs this x his own speed (battle/worldbattle.js escape: running for his life)
+const ROUT_RUN=1.1;
 const ST={
   militia:{n:'Militia',hp:26,dmg:5,spd:38,reach:11,range:0,cd:.9,tier:1},
   spearman:{n:'Spearman',hp:38,dmg:7,spd:38,reach:17,range:0,cd:.95,tier:2},
