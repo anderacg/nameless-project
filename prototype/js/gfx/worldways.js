@@ -238,7 +238,8 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     // (a bridge running north and south: its piers stand out of its sides as cutwaters, pointed up- and downstream, each pier's lit
     //  cap and south face down to the water under its deck's beams, foam at its foot; its long sides show no piers else)
     if(Math.abs(uy)>Math.abs(ux)&&sup.length){const out=CW.out*k,half=(b.stone?CW.half:CW.half*.6)*k,inP=(x,y)=>{const [t,v]=TV(x,y),e=Math.abs(v)-hw;
-        for(const s0 of sup){const d=Math.abs(t-s0),w=e>0?half*(1-e/out):half;if(e<out&&d<=w){const [fx,fy]=atT(s0);if(wetF(fx,fy)||DL-liftF(fx,fy)>beam+BG.open*k)return true}}return false};
+        for(const s0 of sup){if(s0<CW.end*k||s0>LEN-CW.end*k)continue;// (a support at its very end is its abutment on the bank: no pier standing out of the water there, a block of bridge beside the road)
+          const d=Math.abs(t-s0),w=e>0?half*(1-e/out):half;if(e<out&&d<=w){const [fx,fy]=atT(s0);if(wetF(fx,fy)||DL-liftF(fx,fy)>beam+BG.open*k)return true}}return false};
       for(let y=by0-out;y<=by1+out;y++)for(let x=bx0-out;x<=bx1+out;x++){if(!inP(x,y))continue;const lf=liftF(x,y),top=y-DL+beam+1;if(y-lf<=top)continue;
         put(x,top,inP(x,y-1)?C.stone[0]:C.cap);if(inP(x,y+1))continue;const lit=!inP(x-1,y);
         for(let yy=top+1;yy<y-lf;yy++)put(x,yy,course(x,yy,lit?1.08:.94));if(wetF(x,y)){put(x,y-lf,C.foam);put(x+1,y-lf,C.foam,150)}}}
@@ -265,7 +266,8 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
         //  water beside the bank: a shore crossing its end aslant left half of it over the water and a sheer wall of 20 px down to it
         //  beside the road, a piece of bridge out of place (the owner, 2026-11-21: "Bridge still bug"))
         const tS=TV(x,y+1)[0],gy=y+1-Math.max(liftF(x,y+1),tS<0?lA:tS>LEN?lB:0);for(let yy=sy+beam+1;yy<gy;yy++)put(x,yy,course(x,yy,yy===gy-1?.86:1));continue}
-      if(south&&sup.length&&t>=sup[0]-2.5*k&&t<=sup[sup.length-1]+2.5*k){const lf=liftF(x,y+1),gy=y+1-lf,top=sy+beam+1;if(gy<=top)continue;const n2=gy-top,wet=wetF(x,y+1),d=nearS(t),[tp,s]=bay(t),pw=b.stone?2.5*k:k;
+      if(south&&sup.length&&t>=sup[0]-2.5*k&&t<=sup[sup.length-1]+2.5*k){const tS=TV(x,y+1)[0],lf=Math.max(liftF(x,y+1),tS<0?lA:tS>LEN?lB:0),gy=y+1-lf,// (its very end's pier the same: down to its bank, as its abutment above)
+        top=sy+beam+1;if(gy<=top)continue;const n2=gy-top,wet=wetF(x,y+1)&&lf===liftF(x,y+1),d=nearS(t),[tp,s]=bay(t),pw=b.stone?2.5*k:k;
         for(let yy=top;yy<gy;yy++){const dz=yy-top;let c2=null;
           if(d<pw)c2=b.stone?course(x,yy,d>pw-k?.8:1):d<pw/2?C.plank[1]:C.beam[0];
           else if(b.stone){const q=(tp-pw)/Math.max(1,s-2*pw),ar=(n2-2*k)*(1-Math.sqrt(Math.max(0,1-(2*q-1)*(2*q-1))))+2*k;
