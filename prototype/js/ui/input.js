@@ -368,7 +368,7 @@ class MobileWorldHud{
     this.mapChoices=document.createElement('div');this.mapChoices.id='worldMapChoices';this.mapChoices.className='mwh-map';this.mapChoices.hidden=true;this.mapChoices.setAttribute('role','group');this.mapChoices.setAttribute('aria-label','Map view and zoom');this.mapChoices.innerHTML='<strong>Map view</strong><div class="mwh-map-actions"><div data-place="mapOut"></div><div data-place="mapIn"></div><div data-place="mapFull"></div></div>';this.root.appendChild(this.mapChoices);this.mapChoices.addEventListener('click',e=>{if(e.target.closest('[data-act="hunt-area"]')){WildHunt.toggle();this.close()}});
     this.mapButton=document.createElement('button');this.mapButton.type='button';this.mapButton.id='mapToggle';this.mapButton.className='dbtn';this.mapButton.setAttribute('aria-controls','worldMapChoices');this.mapButton.setAttribute('aria-expanded','false');this.mapButton.innerHTML=icon('map',18)+'<span class="dl">Map ▴</span>';this.root.querySelector('[data-place="map"]').appendChild(this.mapButton);
     this.mapButton.addEventListener('click',()=>{const open=this.mapChoices.hidden;this.close();this.mapChoices.hidden=!open;this.mapButton.setAttribute('aria-expanded',String(open))});
-    const node=(selector,place)=>{const el=$(selector),home=document.createComment('mobile control home');el.before(home);return{el,home,to:this.root.querySelector('[data-place="'+place+'"]')||this.choices}};
+    const node=(selector,place)=>{return HudControls.bind($(selector),this.root.querySelector('[data-place="'+place+'"]')||this.choices,()=>this.enabled,20)};
     this.nodes=[node('#pause','pause'),node('#mapBtn','mapFull'),node('#zoomOut','mapOut'),node('#zoomIn','mapIn'),node('#charBtn','army'),node('#menuBtn','menu'),node('#wday','day'),node('.wtime','speed')];
     this.speedButton.addEventListener('click',()=>{const open=this.choices.hidden;this.close();this.choices.hidden=!open;this.speedButton.setAttribute('aria-expanded',String(open));this.speed()});
     this.partyButton.addEventListener('click',()=>{const open=this.partyButton.getAttribute('aria-expanded')!=='true';this.close();this.partyButton.setAttribute('aria-expanded',String(open));this.screen.classList.toggle('party-open',open)});
@@ -383,7 +383,7 @@ class MobileWorldHud{
     const mobile=this.media.matches;if(this.mobile!==mobile){this.mobile=mobile;this.screen.classList.toggle('mobile-controls',mobile)}
     const enabled=mobile&&G.mode==='world'&&!G.modal;if(enabled===this.enabled)return;
     this.close();this.enabled=enabled;this.screen.classList.toggle('mobile-world',enabled);this.root.hidden=!enabled;
-    for(const n of this.nodes)if(enabled)n.to.appendChild(n.el);else n.home.after(n.el);
+    HudControls.sync();
     $('#mapBtn .dl').textContent=enabled?'Full map':'Map';
     this.measure();
   }

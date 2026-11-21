@@ -615,7 +615,7 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
     t0=performance.now(),AP=PX.WN_APRON,x0=Math.max(0,X-AP),y0=Math.max(0,Y-AP),ww=Math.min(Wp,X+w+AP)-x0,wh=Math.min(Hp,Y+HE+AP)-y0,img=new ImageData(ww,wh),D=img.data,KP={};
   yield* artGenGround(P,D,x0,y0,ww,wh,{x:x0,y:y0,w:ww,h:wh},KP);
   const G0=new Uint8ClampedArray(D);
-  for(const t of P.tramples)trample(P,D,x0,y0,ww,wh,t);
+  for(const t of P.tramples){trample(P,D,x0,y0,ww,wh,t);yield}
   yield* townGround(P,D,x0,y0,ww,wh);
   rec.n={trees:0,fen:0,hills:0,peaks:0,decor:0,flat:0,rock:0,ms:0,tm:{},stand:{X:x0,Y:y0,w:ww,h:wh,cell:32,C:1,R:1,at:new Int32Array(2),L:[],E:[]}};
   const E=mkcv(w,HE),eg=E.getContext('2d',{willReadFrequently:true});eg.putImageData(img,x0-X,y0-Y,X-x0,Y-y0,w,HE);
@@ -715,7 +715,7 @@ const WorldArt={
     // (sliceView ms a frame while a chunk in view still waits for its fine paint; those ahead in the frame's time left over once it is
     //  drawn (idle: main.js), slice ms here only while no game loop gives it that (the tests' frames))
     let inView=false;for(const k of this.view)if(stale(k)){inView=true;break}
-    if(live){this.drawSpent=this.step(wait?AP.view:inView?this.sliceView:0);return}
+    if(live){this.drawSpent=this.step(Math.min(FRAME_TIME.task,FrameBudget.left(),wait?AP.view:inView?this.sliceView:0));return}
     this.step(inView?this.sliceView:performance.now()-this.idleAt<250?0:this.slice)},
   // (a chunk in view not painted yet, in play: the minimap's colours (mini, a px a tile) smoothed over its part of the view, as long
   //  as it takes; none where you know none of its land)
@@ -724,8 +724,9 @@ const WorldArt={
     g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();return true},
   // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; then a piece of a painted
   //  chunk handed to the keeper, one a frame (a strip of its pixels: artkeep.js pump): main.js loop)
-  idle(ms){this.idleAt=performance.now();this.idled=true;if(this.queue.length)this.step(Math.max(this.slice,ms,this.need-this.drawSpent));ArtKeep.pump();this.drawSpent=0},
-  step(ms){let Q=this.queue;if(ArtWorkers.feed(this)){const now=performance.now();Q=[...this.miss].filter(([k,t])=>now-t>ART_WORKERS.help).map(([k])=>[k%this.cols,(k/this.cols)|0]);if(!Q.length)return 0}
+  keepLive(){this.idleAt=performance.now();this.idled=true},
+  idle(ms){this.keepLive();if(this.queue.length&&ms>0)this.step(ms);ArtKeep.pump();this.drawSpent=0},
+  step(ms){if(!(ms>0))return 0;let Q=this.queue;if(ArtWorkers.feed(this)){const now=performance.now();Q=[...this.miss].filter(([k,t])=>now-t>ART_WORKERS.help).map(([k])=>[k%this.cols,(k/this.cols)|0]);if(!Q.length)return 0}
     const t0=performance.now();while(Q.length&&performance.now()-t0<ms){const [cx,cy]=Q[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){Q.shift();continue}const j=this.start(cx,cy),a=performance.now();let end=false;
       while(performance.now()-t0<ms)if(j.gen.next().done){end=true;break}
       j.spent=(j.spent||0)+performance.now()-a;if(end){this.learn(j);this.done(j);Q.shift()}}

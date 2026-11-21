@@ -77,10 +77,15 @@ const Systems={
   hour(h){
     for(const s of this.of('hour'))if(this.hold&&this.hold.has(s.name))this.waiting.push([s,'hour',h]);else this.run(s,'hour',()=>s.hour(h));
   },
-  day(){
+  *daySteps(){
     if(this.slices.length)this.drain(true);
-    for(const s of this.of('day'))if(this.hold&&this.hold.has(s.name))this.waiting.push([s,'day']);else this.run(s,'day',()=>s.day());
+    for(const s of this.of('day')){
+      if(this.hold&&this.hold.has(s.name))this.waiting.push([s,'day']);
+      else this.run(s,'day',()=>s.day());
+      yield;
+    }
   },
+  day(){for(const step of this.daySteps()){}},
   release(){const w=this.waiting;this.hold=null;this.waiting=[];for(const [s,phase,h] of w)this.run(s,phase,()=>s[phase](h))},
   // (one system's run: timed while the frame timings are on, ui/frameprof.js; else as it is)
   timer:null,

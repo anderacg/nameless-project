@@ -2,8 +2,7 @@
 /* ---------- graphics quality applied (data/quality.js QUALITY; Settings → Graphics: PREFS gfx, ui.js) ----------
    Quality.level: the level in force ('low', 'medium', 'high'), Quality.now its numbers; apply() as the setting changes (at once, no
    reload: the map's chunks painted coarser are painted finer again in the background, worldart.js); pick(v) what a setting means
-   here (Auto: the phone test, the weak phone remembered); watch(now) Auto's first frames on a phone (main.js paintIdle, by
-   frameSpare); note() the line Settings shows under the choice */
+   here (Auto: the phone test, the weak phone remembered); watch(now) Auto's first frames on a phone (main.js paintIdle); note() the line Settings shows under the choice */
 const Quality={
   base:null,level:'high',now:null,testAuto:false,W:null,
   phone(){try{return typeof matchMedia==='function'&&matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<QUALITY.auto.short}catch(e){return false}},
@@ -21,6 +20,4 @@ const Quality={
     const W=this.W||(this.W={t0:now,f:[]});if(now-W.t0<A.after||W.done)return;W.f.push(performance.now()-now);if(W.f.length<A.frames)return;
     W.done=true;const m=W.f.slice().sort((a,b)=>a-b)[W.f.length>>1];W.median=m;if(m>A.slow){this.setWeak(true);this.apply();if(typeof toast==='function')toast('Graphics set to '+QUALITY.names[this.level]+' for this device (Settings → Graphics).')}},
   note(){const v=prefGet('gfx'),n=QUALITY.names;return (v==='auto'?'Auto: '+n[this.level]+' on this device. ':'')+'The land, trees and grass look the same at every level. Low: fewer effects, ambient life and mist, the screen a little coarser, at 30 frames a second; Medium: fewer particles, at 30; High: everything, at up to 60.'}};
-// the frame's spare time on the map (main.js paintIdle): Auto's watch, then a holding's buildings made ahead (structures.js lotWarm)
-function frameSpare(now,ms){Quality.watch(now);lotWarm(ms)}
 Quality.apply();

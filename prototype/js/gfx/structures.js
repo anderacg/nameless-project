@@ -72,7 +72,7 @@ function lotsAhead(V){const t0=performance.now(),R=performance.now()-LOT_WARM.at
 // (a site's picture at the scene's finer resolution: its model made r times finer by its maker (siteCanvas mk), with its own touches
 // (deco) drawn r times larger; asked for when it is drawn (fineOf), made ahead with the lots (FINE_Q), drawn where it is made (drawFine),
 // else the picture itself)
-/* a holding's buildings made ahead in the frame's spare time (main.js paintIdle, by quality.js frameSpare; the owner, 2026-11-18: "go
+/* a holding's buildings made ahead in the frame's spare time (main.js paintIdle, through FrameBudget; the owner, 2026-11-18: "go
    ahead with 1-3"): the lots of the holdings within r px past your sight, the nearest the way you go first (ahead: how much a px
    of it the way you face counts), one lot a call at most (a fine model can take a hundred ms: never two in one slice), none while the
    frame has under min ms left. While it works (called in the last 250 ms: at) lotsAhead makes in the frame only what lies within near

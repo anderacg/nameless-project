@@ -44,7 +44,7 @@
   <div class="hudlayer">
     <section class="pcard" id="stats" aria-label="Your party"></section>
     <div class="toasts" id="log" aria-live="polite"></div>
-    <!-- the left panel's own group at the bottom left: its notices (today, points to spend on a level up: render.js lvBox) -->
+    <!-- the left panel's own group at the bottom left: its notices (today, points to spend on a level up: ui/hud.js lvBox) -->
     <div class="lgroup" id="lgroup" aria-label="Notices"></div>
     <!-- the top bar: the day and the time, and the time's speed; under it, a hint for where you are -->
     <div class="wtop" id="wtop">
@@ -189,6 +189,7 @@
 <script src="js/core/systems.js"></script>
 <script src="js/core/saves.js"></script>
 <script src="js/core/clock.js"></script>
+<script src="js/core/frametime.js"></script>
 <script src="js/core/timed.js"></script>
 <script src="js/core/bus.js"></script>
 <script src="js/core/rng.js"></script>
@@ -221,6 +222,7 @@
 <script src="js/gfx/worldart.js"></script>
 <script src="js/gfx/worldterrain.js"></script>
 <script src="js/gfx/worldways.js"></script>
+<script src="js/world/ground.js"></script>
 <script src="js/world/weather.js"></script>
 <script src="js/gfx/sprites.js"></script>
 <script src="js/gfx/people.js"></script>
@@ -396,6 +398,7 @@
 <script src="js/battle/siegeworks.js"></script>
 <script src="js/battle/drops.js"></script>
 <script src="js/world/march.js"></script>
+<script src="js/gfx/marchdraw.js"></script>
 <script src="js/world/gatefile.js"></script>
 <script src="js/world/campsite.js"></script>
 <script src="js/world/marchstyles.js"></script>
@@ -406,6 +409,7 @@
 <script src="js/scene/town.js"></script>
 <script src="js/gfx/scenedraw.js"></script>
 <script src="js/gfx/render.js"></script>
+<script src="js/ui/hud.js"></script>
 <script src="js/gfx/stagger.js"></script>
 <script src="js/gfx/depth.js"></script>
 <script src="js/gfx/vfx.js"></script>

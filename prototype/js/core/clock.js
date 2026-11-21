@@ -79,12 +79,20 @@ const Clock={
     return d/WORLD_PACE*24/DAY_SECONDS;
   },
   // the clock on by u clock units, a moment on the map (world.js updateWorld): a new day's tick (world.js dayTick) when it rolls
-  // over, then each new hour's (Systems.hour, core/systems.js)
-  advance(u){
+  // over, then each new hour's (Systems.hour, core/systems.js). Only the live map opts into cooperative midnight work.
+  advance(u,live=false){
     const h0=this.hourCount();
     G.clock+=u;
     if(G.clock>=DAY){
       G.clock-=DAY;
+      // A live midnight uses the existing loading transaction: input and simulation wait, with the last frame retained.
+      if(live&&!LOADING.sync&&!LOADING.on&&G.mode==='world'){
+        const clock=this;
+        runSteps('A new day…',[{id:'day',label:'The world wakes',w:1,run:function*(){
+          G.day++;yield* Systems.daySteps();clock.hoursFrom(h0);
+        }}],{back:['Return to title',()=>toTitle()]}).catch(()=>{});
+        return LOADING.on;
+      }
       dayTick();
     }
     this.hoursFrom(h0);

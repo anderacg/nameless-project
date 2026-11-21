@@ -305,7 +305,13 @@ function updateWorld(dt){
   if(G.paused)return;
   fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
-  Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
+  if(Clock.advance(dt*G.speed*DAY/DAY_SECONDS,true)){
+    // Finish this simulation step after the daily transaction releases input; an encounter may start its own loading job.
+    LOADING.task.then(()=>{try{worldMoment(d,dt)}catch(e){if(typeof loopError==='function')loopError(e);else setTimeout(()=>{throw e})}},()=>{});return;
+  }
+  worldMoment(d,dt);
+}
+function worldMoment(d,dt){
   if(G.dead){if(G.mode!=='dead')showDeath();return}// (your hero died on the road in that time: the game is over, ui.js)
   G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);
   // then every system's step in its order (core/systems.js; Systems.names('frame') lists them: a stay first, a holding you reach
