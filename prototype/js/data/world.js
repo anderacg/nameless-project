@@ -90,7 +90,8 @@ const WORLD_FLORA={step:9,
     swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2},pool:{lily:.1,reeds:.12}}},
   grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
     kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
-    patch:38,wind:1,gust:[90,.65],touch:{hw:2,big:4,up:1,down:2},lean:3,way:.15,back:[1.6,1.2,8],flat:[.9,.55,3],stay:[.3,2.5],feet:[.4]}};
+    patch:38,wind:1,gust:[90,.65],touch:{hw:2,big:4,up:1,down:2},lean:3,way:.15,back:[1.6,1.2,8],flat:[.9,.55,3],stay:[.3,2.5],feet:[.4],
+    layer:{every:2,margin:8,band:32}}};// (layer: in play the grass layer made every every-th frame, margin fine px round the view, cleared, put and laid by band-row strips: worldterrain.js terrainEnts)
 /* the world's ways drawn finer (gfx/worldways.js; the owner, 2026-11-15: "make the lab river several sizes, there can be a big
    river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
    generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
