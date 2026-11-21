@@ -1,0 +1,1412 @@
+[
+  {
+    "block": "general",
+    "type": "cottage",
+    "before": "8e4cd9a0",
+    "after": "70e1e989"
+  },
+  {
+    "block": "general",
+    "type": "townhouse",
+    "before": "58d456e5",
+    "after": "a878948c"
+  },
+  {
+    "block": "general",
+    "type": "fisherhut",
+    "before": "2d6d2bf1",
+    "after": "06c8f023"
+  },
+  {
+    "block": "general",
+    "type": "chapel",
+    "before": "762d3bbe",
+    "after": "ee701b42"
+  },
+  {
+    "block": "general",
+    "type": "stall",
+    "before": "48ec423e",
+    "after": "4767df6f"
+  },
+  {
+    "block": "general",
+    "type": "tower",
+    "before": "6acd7ef2",
+    "after": "39385c43"
+  },
+  {
+    "block": "general",
+    "type": "yurt",
+    "before": "86b1b101",
+    "after": "e4f2a051"
+  },
+  {
+    "block": "general",
+    "type": "longhouse",
+    "before": "408305ca",
+    "after": "7662b79f"
+  },
+  {
+    "block": "general",
+    "type": "tavern",
+    "before": "fa45015b",
+    "after": "c7ba38b8"
+  },
+  {
+    "block": "general",
+    "type": "smithy",
+    "before": "ec87f9ed",
+    "after": "b0819529"
+  },
+  {
+    "block": "general",
+    "type": "church",
+    "before": "cc12a724",
+    "after": "67220c36"
+  },
+  {
+    "block": "general",
+    "type": "barn",
+    "before": "6e101819",
+    "after": "49d574b4"
+  },
+  {
+    "block": "general",
+    "type": "granary",
+    "before": "de56ef0e",
+    "after": "f988c2b4"
+  },
+  {
+    "block": "general",
+    "type": "windmill",
+    "before": "b61f4af0",
+    "after": "c772137a"
+  },
+  {
+    "block": "general",
+    "type": "watermill",
+    "before": "830ea6cc",
+    "after": "0951441d"
+  },
+  {
+    "block": "general",
+    "type": "warehouse",
+    "before": "e1d6564f",
+    "after": "9aec496c"
+  },
+  {
+    "block": "general",
+    "type": "gatehouse",
+    "before": "086b156b",
+    "after": "9dba6038"
+  },
+  {
+    "block": "general",
+    "type": "hidehall",
+    "before": "29442873",
+    "after": "a95045b6"
+  },
+  {
+    "block": "general",
+    "type": "watchtower",
+    "before": "fee9afe9",
+    "after": "136aae17"
+  },
+  {
+    "block": "general",
+    "type": "treehouse",
+    "before": "15172543",
+    "after": "9c1e7963"
+  },
+  {
+    "block": "general",
+    "type": "elfhall",
+    "before": "c3176da7",
+    "after": "85e2227d"
+  },
+  {
+    "block": "general",
+    "type": "spire",
+    "before": "b2b90839",
+    "after": "b2011903"
+  },
+  {
+    "block": "general",
+    "type": "stonehall",
+    "before": "3a7b6dc9",
+    "after": "4a3fa0ba"
+  },
+  {
+    "block": "general",
+    "type": "forge",
+    "before": "ca2badee",
+    "after": "54f9007c"
+  },
+  {
+    "block": "general",
+    "type": "keep",
+    "before": "a79864f4",
+    "after": "1fe24a40"
+  },
+  {
+    "block": "general",
+    "type": "citadel",
+    "before": "2dd8a20d",
+    "after": "9921b68c"
+  },
+  {
+    "block": "general",
+    "type": "well",
+    "before": "33e99b97",
+    "after": "b2fa5ca0"
+  },
+  {
+    "block": "general",
+    "type": "tent",
+    "before": "df76730a",
+    "after": "13411678"
+  },
+  {
+    "block": "general",
+    "type": "minehead",
+    "before": "422e6aa4",
+    "after": "45d6809c"
+  },
+  {
+    "block": "general",
+    "type": "lumbershed",
+    "before": "40678a64",
+    "after": "61622b7d"
+  },
+  {
+    "block": "general",
+    "type": "crane",
+    "before": "797e027a",
+    "after": "d840c1d9"
+  },
+  {
+    "block": "general",
+    "type": "village",
+    "before": "669be472",
+    "after": "8186a1f9"
+  },
+  {
+    "block": "general",
+    "type": "chiefyurt",
+    "before": "b2ed7c38",
+    "after": "24010cc2"
+  },
+  {
+    "block": "general",
+    "type": "warcamp",
+    "before": "5ab3c989",
+    "after": "e5d74e75"
+  },
+  {
+    "block": "general",
+    "type": "horselines",
+    "before": "107a7786",
+    "after": "42069c16"
+  },
+  {
+    "block": "general",
+    "type": "camp_ridge",
+    "before": "eb9dca82",
+    "after": "41f214ef"
+  },
+  {
+    "block": "general",
+    "type": "camp_bell",
+    "before": "c49c5a68",
+    "after": "a00cb86c"
+  },
+  {
+    "block": "general",
+    "type": "camp_tepee",
+    "before": "6fe3dea3",
+    "after": "8ee2bbe2"
+  },
+  {
+    "block": "general",
+    "type": "camp_yurt",
+    "before": "cf0f58bd",
+    "after": "debbea23"
+  },
+  {
+    "block": "general",
+    "type": "camp_pavilion",
+    "before": "dfedf669",
+    "after": "db8633a9"
+  },
+  {
+    "block": "general",
+    "type": "camp_leanto",
+    "before": "946cec6c",
+    "after": "0810aa48"
+  },
+  {
+    "block": "general",
+    "type": "camp_pup",
+    "before": "c4226c77",
+    "after": "2175db7d"
+  },
+  {
+    "block": "general",
+    "type": "camp_marquee",
+    "before": "e9a0799c",
+    "after": "6d188498"
+  },
+  {
+    "block": "general",
+    "type": "camp_porch",
+    "before": "145611ee",
+    "after": "b894e8c7"
+  },
+  {
+    "block": "general",
+    "type": "camp_hut",
+    "before": "6d04f737",
+    "after": "14bc425c"
+  },
+  {
+    "block": "general",
+    "type": "camp_wagon",
+    "before": "4a2609cc",
+    "after": "4325596f"
+  },
+  {
+    "block": "general",
+    "type": "camp_stall",
+    "before": "e405f09e",
+    "after": "42f15a39"
+  },
+  {
+    "block": "general",
+    "type": "camp_rack",
+    "before": "cfb1cc8a",
+    "after": "a3051e89"
+  },
+  {
+    "block": "general",
+    "type": "cluster:inn",
+    "before": "d5167dce",
+    "after": "a1ab7573"
+  },
+  {
+    "block": "general",
+    "type": "cluster:townhall",
+    "before": "2b66b7a9",
+    "after": "a1c3ecb7"
+  },
+  {
+    "block": "general",
+    "type": "cluster:market",
+    "before": "66dac74d",
+    "after": "5046c0c6"
+  },
+  {
+    "block": "general",
+    "type": "cluster:camp",
+    "before": "089187bb",
+    "after": "cf52188c"
+  },
+  {
+    "block": "general",
+    "type": "cluster:hideout",
+    "before": "93aaf3c0",
+    "after": "4d701c66"
+  },
+  {
+    "block": "general",
+    "type": "cluster:travelers",
+    "before": "9fe8f14e",
+    "after": "8399e3e7"
+  },
+  {
+    "block": "vale",
+    "type": "cottage",
+    "before": "596a2542",
+    "after": "1675dbaa"
+  },
+  {
+    "block": "vale",
+    "type": "townhouse",
+    "before": "493f1766",
+    "after": "c4c6e8ab"
+  },
+  {
+    "block": "vale",
+    "type": "stall",
+    "before": "34446497",
+    "after": "ec2b41a4"
+  },
+  {
+    "block": "vale",
+    "type": "longhouse",
+    "before": "73990eff",
+    "after": "0793e251"
+  },
+  {
+    "block": "vale",
+    "type": "tavern",
+    "before": "a2e66800",
+    "after": "cc00a199"
+  },
+  {
+    "block": "vale",
+    "type": "tent",
+    "before": "ae51fca4",
+    "after": "5ac8ad61"
+  },
+  {
+    "block": "vale",
+    "type": "camp_ridge",
+    "before": "10bd46e4",
+    "after": "d021427d"
+  },
+  {
+    "block": "vale",
+    "type": "camp_bell",
+    "before": "2ad5c801",
+    "after": "6435e7dd"
+  },
+  {
+    "block": "vale",
+    "type": "camp_tepee",
+    "before": "9197c783",
+    "after": "f3366fdc"
+  },
+  {
+    "block": "vale",
+    "type": "camp_yurt",
+    "before": "cf501643",
+    "after": "70228908"
+  },
+  {
+    "block": "vale",
+    "type": "camp_pavilion",
+    "before": "a0547ffe",
+    "after": "f5e472bc"
+  },
+  {
+    "block": "vale",
+    "type": "camp_leanto",
+    "before": "bf82a6e3",
+    "after": "77820105"
+  },
+  {
+    "block": "vale",
+    "type": "camp_pup",
+    "before": "61676863",
+    "after": "8e33161d"
+  },
+  {
+    "block": "vale",
+    "type": "camp_marquee",
+    "before": "db15ee2b",
+    "after": "2ed8e73c"
+  },
+  {
+    "block": "vale",
+    "type": "camp_porch",
+    "before": "efdef117",
+    "after": "91a4e2eb"
+  },
+  {
+    "block": "vale",
+    "type": "camp_hut",
+    "before": "cf9e96f7",
+    "after": "8be0d3c1"
+  },
+  {
+    "block": "vale",
+    "type": "camp_wagon",
+    "before": "79bf75d0",
+    "after": "b039ffc4"
+  },
+  {
+    "block": "vale",
+    "type": "camp_stall",
+    "before": "b41488e9",
+    "after": "62f78699"
+  },
+  {
+    "block": "vale",
+    "type": "camp_rack",
+    "before": "5306c85e",
+    "after": "e320f251"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:yard",
+    "before": "eb0ce1a9",
+    "after": "1de0b6d3"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:smithy",
+    "before": "a566ed9e",
+    "after": "e9ff97f2"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:inn",
+    "before": "c1fbac0c",
+    "after": "26e89d07"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:chapel",
+    "before": "418271b7",
+    "after": "cdb18f9d"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:fort",
+    "before": "5f0a454c",
+    "after": "45e95b3c"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:townhall",
+    "before": "4a86be91",
+    "after": "544ad52a"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:market",
+    "before": "a0ddb1e4",
+    "after": "2c2e118e"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:lumber",
+    "before": "1a26eb8c",
+    "after": "210322b8"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:mine",
+    "before": "ab2b3d72",
+    "after": "3069756e"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:quarry",
+    "before": "c083246b",
+    "after": "933c973d"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:workshop",
+    "before": "9a2b5a9d",
+    "after": "47cbe8d5"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:camp",
+    "before": "09b48755",
+    "after": "e218825e"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:hideout",
+    "before": "e7f386e7",
+    "after": "fdcec507"
+  },
+  {
+    "block": "vale",
+    "type": "cluster:travelers",
+    "before": "352d686e",
+    "after": "0a287e3d"
+  },
+  {
+    "block": "league",
+    "type": "cottage",
+    "before": "ac264369",
+    "after": "5c8bfd68"
+  },
+  {
+    "block": "league",
+    "type": "townhouse",
+    "before": "5dc0a33c",
+    "after": "20ef3234"
+  },
+  {
+    "block": "league",
+    "type": "stall",
+    "before": "7a3166a8",
+    "after": "01fe78d2"
+  },
+  {
+    "block": "league",
+    "type": "longhouse",
+    "before": "9eb146bf",
+    "after": "4f3ac671"
+  },
+  {
+    "block": "league",
+    "type": "tavern",
+    "before": "6f8e047b",
+    "after": "c7d0d701"
+  },
+  {
+    "block": "league",
+    "type": "camp_ridge",
+    "before": "10bd46e4",
+    "after": "d021427d"
+  },
+  {
+    "block": "league",
+    "type": "camp_bell",
+    "before": "2ad5c801",
+    "after": "6435e7dd"
+  },
+  {
+    "block": "league",
+    "type": "camp_tepee",
+    "before": "9197c783",
+    "after": "f3366fdc"
+  },
+  {
+    "block": "league",
+    "type": "camp_yurt",
+    "before": "cf501643",
+    "after": "70228908"
+  },
+  {
+    "block": "league",
+    "type": "camp_pavilion",
+    "before": "a0547ffe",
+    "after": "f5e472bc"
+  },
+  {
+    "block": "league",
+    "type": "camp_leanto",
+    "before": "bf82a6e3",
+    "after": "77820105"
+  },
+  {
+    "block": "league",
+    "type": "camp_pup",
+    "before": "61676863",
+    "after": "8e33161d"
+  },
+  {
+    "block": "league",
+    "type": "camp_marquee",
+    "before": "db15ee2b",
+    "after": "2ed8e73c"
+  },
+  {
+    "block": "league",
+    "type": "camp_porch",
+    "before": "efdef117",
+    "after": "91a4e2eb"
+  },
+  {
+    "block": "league",
+    "type": "camp_hut",
+    "before": "cf9e96f7",
+    "after": "8be0d3c1"
+  },
+  {
+    "block": "league",
+    "type": "camp_wagon",
+    "before": "79bf75d0",
+    "after": "b039ffc4"
+  },
+  {
+    "block": "league",
+    "type": "camp_stall",
+    "before": "b41488e9",
+    "after": "62f78699"
+  },
+  {
+    "block": "league",
+    "type": "camp_rack",
+    "before": "5306c85e",
+    "after": "e320f251"
+  },
+  {
+    "block": "league",
+    "type": "cluster:yard",
+    "before": "54b1814f",
+    "after": "a3b6b6e7"
+  },
+  {
+    "block": "league",
+    "type": "cluster:smithy",
+    "before": "ed1817a9",
+    "after": "a9654850"
+  },
+  {
+    "block": "league",
+    "type": "cluster:inn",
+    "before": "ff1ff1c6",
+    "after": "ce9d64c3"
+  },
+  {
+    "block": "league",
+    "type": "cluster:chapel",
+    "before": "0cb25743",
+    "after": "8556e1da"
+  },
+  {
+    "block": "league",
+    "type": "cluster:fort",
+    "before": "67ad734e",
+    "after": "e34c0c27"
+  },
+  {
+    "block": "league",
+    "type": "cluster:townhall",
+    "before": "fada6cef",
+    "after": "632c4d70"
+  },
+  {
+    "block": "league",
+    "type": "cluster:market",
+    "before": "44bf2bc0",
+    "after": "239fc002"
+  },
+  {
+    "block": "league",
+    "type": "cluster:lumber",
+    "before": "390841d2",
+    "after": "59f77591"
+  },
+  {
+    "block": "league",
+    "type": "cluster:mine",
+    "before": "66f50c5f",
+    "after": "17c92d2c"
+  },
+  {
+    "block": "league",
+    "type": "cluster:quarry",
+    "before": "8a3b6c08",
+    "after": "de546355"
+  },
+  {
+    "block": "league",
+    "type": "cluster:workshop",
+    "before": "6139d9fa",
+    "after": "90e44e85"
+  },
+  {
+    "block": "league",
+    "type": "cluster:camp",
+    "before": "cfb6b85a",
+    "after": "57841c3f"
+  },
+  {
+    "block": "league",
+    "type": "cluster:hideout",
+    "before": "d0a14404",
+    "after": "0e1a81ab"
+  },
+  {
+    "block": "league",
+    "type": "cluster:travelers",
+    "before": "8e172ee6",
+    "after": "3d6ca223"
+  },
+  {
+    "block": "karn",
+    "type": "stall",
+    "before": "f4079858",
+    "after": "e2608f07"
+  },
+  {
+    "block": "karn",
+    "type": "tent",
+    "before": "d5e846c9",
+    "after": "a9f97f45"
+  },
+  {
+    "block": "karn",
+    "type": "camp_ridge",
+    "before": "10bd46e4",
+    "after": "d021427d"
+  },
+  {
+    "block": "karn",
+    "type": "camp_bell",
+    "before": "2ad5c801",
+    "after": "6435e7dd"
+  },
+  {
+    "block": "karn",
+    "type": "camp_tepee",
+    "before": "9197c783",
+    "after": "f3366fdc"
+  },
+  {
+    "block": "karn",
+    "type": "camp_yurt",
+    "before": "cf501643",
+    "after": "70228908"
+  },
+  {
+    "block": "karn",
+    "type": "camp_pavilion",
+    "before": "a0547ffe",
+    "after": "f5e472bc"
+  },
+  {
+    "block": "karn",
+    "type": "camp_leanto",
+    "before": "bf82a6e3",
+    "after": "77820105"
+  },
+  {
+    "block": "karn",
+    "type": "camp_pup",
+    "before": "61676863",
+    "after": "8e33161d"
+  },
+  {
+    "block": "karn",
+    "type": "camp_marquee",
+    "before": "db15ee2b",
+    "after": "2ed8e73c"
+  },
+  {
+    "block": "karn",
+    "type": "camp_porch",
+    "before": "efdef117",
+    "after": "91a4e2eb"
+  },
+  {
+    "block": "karn",
+    "type": "camp_hut",
+    "before": "cf9e96f7",
+    "after": "8be0d3c1"
+  },
+  {
+    "block": "karn",
+    "type": "camp_wagon",
+    "before": "79bf75d0",
+    "after": "b039ffc4"
+  },
+  {
+    "block": "karn",
+    "type": "camp_stall",
+    "before": "b41488e9",
+    "after": "62f78699"
+  },
+  {
+    "block": "karn",
+    "type": "camp_rack",
+    "before": "5306c85e",
+    "after": "e320f251"
+  },
+  {
+    "block": "karn",
+    "type": "cluster:townhall",
+    "before": "287bbe84",
+    "after": "2109b346"
+  },
+  {
+    "block": "karn",
+    "type": "cluster:market",
+    "before": "7f84b2bb",
+    "after": "91c94384"
+  },
+  {
+    "block": "karn",
+    "type": "cluster:camp",
+    "before": "39a37826",
+    "after": "4a0e82ad"
+  },
+  {
+    "block": "karn",
+    "type": "cluster:hideout",
+    "before": "82cf44bd",
+    "after": "70ddba43"
+  },
+  {
+    "block": "karn",
+    "type": "cluster:travelers",
+    "before": "bebf4729",
+    "after": "f26c8561"
+  },
+  {
+    "block": "ashgor",
+    "type": "cottage",
+    "before": "e60b3361",
+    "after": "dd863fde"
+  },
+  {
+    "block": "ashgor",
+    "type": "townhouse",
+    "before": "7b911f18",
+    "after": "de788e25"
+  },
+  {
+    "block": "ashgor",
+    "type": "fisherhut",
+    "before": "d708d2b4",
+    "after": "336d8639"
+  },
+  {
+    "block": "ashgor",
+    "type": "chapel",
+    "before": "d7c681c6",
+    "after": "47d105c0"
+  },
+  {
+    "block": "ashgor",
+    "type": "stall",
+    "before": "9ac45d76",
+    "after": "affb38f8"
+  },
+  {
+    "block": "ashgor",
+    "type": "tower",
+    "before": "afb99a51",
+    "after": "c194b62e"
+  },
+  {
+    "block": "ashgor",
+    "type": "yurt",
+    "before": "21f7117d",
+    "after": "9e37a10e"
+  },
+  {
+    "block": "ashgor",
+    "type": "longhouse",
+    "before": "b1a9ed80",
+    "after": "1c128df3"
+  },
+  {
+    "block": "ashgor",
+    "type": "tavern",
+    "before": "6058997f",
+    "after": "948955f2"
+  },
+  {
+    "block": "ashgor",
+    "type": "smithy",
+    "before": "36e9c96c",
+    "after": "33cb353d"
+  },
+  {
+    "block": "ashgor",
+    "type": "church",
+    "before": "2b0a3357",
+    "after": "f871bc81"
+  },
+  {
+    "block": "ashgor",
+    "type": "barn",
+    "before": "1c30bfd1",
+    "after": "9eee6250"
+  },
+  {
+    "block": "ashgor",
+    "type": "granary",
+    "before": "331ae95b",
+    "after": "c55a50d9"
+  },
+  {
+    "block": "ashgor",
+    "type": "windmill",
+    "before": "9022c5cc",
+    "after": "c856d3d9"
+  },
+  {
+    "block": "ashgor",
+    "type": "watermill",
+    "before": "0ce37d8f",
+    "after": "ec4f5735"
+  },
+  {
+    "block": "ashgor",
+    "type": "warehouse",
+    "before": "efeb83b4",
+    "after": "8e3235cf"
+  },
+  {
+    "block": "ashgor",
+    "type": "gatehouse",
+    "before": "e41e61a5",
+    "after": "baaffc3c"
+  },
+  {
+    "block": "ashgor",
+    "type": "hidehall",
+    "before": "de00969a",
+    "after": "e0dd4ec6"
+  },
+  {
+    "block": "ashgor",
+    "type": "watchtower",
+    "before": "5d7bcadc",
+    "after": "5afb43ab"
+  },
+  {
+    "block": "ashgor",
+    "type": "keep",
+    "before": "1735c8a4",
+    "after": "af531d7a"
+  },
+  {
+    "block": "ashgor",
+    "type": "citadel",
+    "before": "7d4d5948",
+    "after": "a540020d"
+  },
+  {
+    "block": "ashgor",
+    "type": "well",
+    "before": "3056a38a",
+    "after": "5d96bda2"
+  },
+  {
+    "block": "ashgor",
+    "type": "tent",
+    "before": "81523c0e",
+    "after": "df17ff1f"
+  },
+  {
+    "block": "ashgor",
+    "type": "minehead",
+    "before": "af48187f",
+    "after": "e1d369ff"
+  },
+  {
+    "block": "ashgor",
+    "type": "lumbershed",
+    "before": "0b04a4b0",
+    "after": "0a071b75"
+  },
+  {
+    "block": "ashgor",
+    "type": "crane",
+    "before": "5beb8a76",
+    "after": "2eeee207"
+  },
+  {
+    "block": "ashgor",
+    "type": "village",
+    "before": "090a1b0e",
+    "after": "d308a4d9"
+  },
+  {
+    "block": "ashgor",
+    "type": "chiefyurt",
+    "before": "00a92765",
+    "after": "fb33a873"
+  },
+  {
+    "block": "ashgor",
+    "type": "warcamp",
+    "before": "5cb9dcc8",
+    "after": "c11d2269"
+  },
+  {
+    "block": "ashgor",
+    "type": "horselines",
+    "before": "4310f68e",
+    "after": "92ec79c0"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_ridge",
+    "before": "10bd46e4",
+    "after": "d021427d"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_bell",
+    "before": "2ad5c801",
+    "after": "6435e7dd"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_tepee",
+    "before": "9197c783",
+    "after": "f3366fdc"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_yurt",
+    "before": "cf501643",
+    "after": "70228908"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_pavilion",
+    "before": "a0547ffe",
+    "after": "f5e472bc"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_leanto",
+    "before": "bf82a6e3",
+    "after": "77820105"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_pup",
+    "before": "61676863",
+    "after": "8e33161d"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_marquee",
+    "before": "db15ee2b",
+    "after": "2ed8e73c"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_porch",
+    "before": "efdef117",
+    "after": "91a4e2eb"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_hut",
+    "before": "cf9e96f7",
+    "after": "8be0d3c1"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_wagon",
+    "before": "79bf75d0",
+    "after": "b039ffc4"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_stall",
+    "before": "b41488e9",
+    "after": "62f78699"
+  },
+  {
+    "block": "ashgor",
+    "type": "camp_rack",
+    "before": "5306c85e",
+    "after": "e320f251"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:row",
+    "before": "6f37a8b3",
+    "after": "bc7e0c3e"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:yard",
+    "before": "8c5e6a5c",
+    "after": "d8cad183"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:farmstead",
+    "before": "be15f5ec",
+    "after": "ed422389"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:smithy",
+    "before": "cda12f34",
+    "after": "1a685dfe"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:inn",
+    "before": "0a2fc031",
+    "after": "e4b35e60"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:chapel",
+    "before": "180343ad",
+    "after": "c3189fe2"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:fort",
+    "before": "76dd2e14",
+    "after": "5d674376"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:townhall",
+    "before": "c5484554",
+    "after": "53bb9f6c"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:market",
+    "before": "5a9ef698",
+    "after": "1a2d8d00"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:mill",
+    "before": "af424a6c",
+    "after": "59b5f61d"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:lumber",
+    "before": "7ba20a43",
+    "after": "71590d79"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:mine",
+    "before": "2186bd52",
+    "after": "0bb61df0"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:quarry",
+    "before": "197ae080",
+    "after": "edcccac5"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:fishery",
+    "before": "48aec8da",
+    "after": "8f3d1f4e"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:pasture",
+    "before": "5df02688",
+    "after": "d4adc599"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:brewery",
+    "before": "fb81b083",
+    "after": "248e332f"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:granary",
+    "before": "44faa862",
+    "after": "4f1ee46b"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:workshop",
+    "before": "6dd65b34",
+    "after": "d7807989"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:quarter",
+    "before": "7f6a7ebe",
+    "after": "c535b3a2"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:camp",
+    "before": "e32017c4",
+    "after": "10c67fde"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:hideout",
+    "before": "26fbd183",
+    "after": "df9e5cbe"
+  },
+  {
+    "block": "ashgor",
+    "type": "cluster:travelers",
+    "before": "1127d220",
+    "after": "a97a1634"
+  },
+  {
+    "block": "sylvan",
+    "type": "cottage",
+    "before": "1e3b72af",
+    "after": "bbaa13c0"
+  },
+  {
+    "block": "sylvan",
+    "type": "stall",
+    "before": "715229ce",
+    "after": "5be53a2f"
+  },
+  {
+    "block": "sylvan",
+    "type": "longhouse",
+    "before": "a384d465",
+    "after": "657d772d"
+  },
+  {
+    "block": "sylvan",
+    "type": "tavern",
+    "before": "00c9616e",
+    "after": "8dbe8428"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_ridge",
+    "before": "10bd46e4",
+    "after": "d021427d"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_bell",
+    "before": "2ad5c801",
+    "after": "6435e7dd"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_tepee",
+    "before": "9197c783",
+    "after": "f3366fdc"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_yurt",
+    "before": "cf501643",
+    "after": "70228908"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_pavilion",
+    "before": "a0547ffe",
+    "after": "f5e472bc"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_leanto",
+    "before": "bf82a6e3",
+    "after": "77820105"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_pup",
+    "before": "61676863",
+    "after": "8e33161d"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_marquee",
+    "before": "db15ee2b",
+    "after": "2ed8e73c"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_porch",
+    "before": "efdef117",
+    "after": "91a4e2eb"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_hut",
+    "before": "cf9e96f7",
+    "after": "8be0d3c1"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_wagon",
+    "before": "79bf75d0",
+    "after": "b039ffc4"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_stall",
+    "before": "b41488e9",
+    "after": "62f78699"
+  },
+  {
+    "block": "sylvan",
+    "type": "camp_rack",
+    "before": "5306c85e",
+    "after": "e320f251"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:yard",
+    "before": "a1508683",
+    "after": "91812699"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:farmstead",
+    "before": "491eae10",
+    "after": "0d7fdf6f"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:smithy",
+    "before": "866a19a9",
+    "after": "b7806072"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:chapel",
+    "before": "a2f4e4c6",
+    "after": "60a08da3"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:fort",
+    "before": "29a79f5c",
+    "after": "2bb5810d"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:townhall",
+    "before": "4c861811",
+    "after": "56023621"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:market",
+    "before": "b1d511fa",
+    "after": "20622f29"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:lumber",
+    "before": "f452b0fe",
+    "after": "e73e71b1"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:mine",
+    "before": "9141220d",
+    "after": "f6baa3de"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:quarry",
+    "before": "d71db679",
+    "after": "0dbc9d2a"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:workshop",
+    "before": "dfaf8454",
+    "after": "edbb2247"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:camp",
+    "before": "950b2f90",
+    "after": "82cf669c"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:hideout",
+    "before": "65ecadbe",
+    "after": "4f63c25c"
+  },
+  {
+    "block": "sylvan",
+    "type": "cluster:travelers",
+    "before": "7feebb92",
+    "after": "157c17b0"
+  }
+]
