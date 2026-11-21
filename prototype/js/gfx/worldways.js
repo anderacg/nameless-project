@@ -93,7 +93,7 @@ function waysOf(P){if(P.ways)return P.ways;
     decks=WM.crossings.filter(c=>c.kind==='bridge').map(c=>{const d=bridgeDeck(c);return [((c.i%MW)+.5)*TILE,(((c.i/MW)|0)+.5)*TILE,((c.j%MW)+.5)*TILE,(((c.j/MW)|0)+.5)*TILE,d]});
   for(let k0=0;k0<nR;){let k1=k0;while(k1+1<nR&&RL[k1+1]>0)k1++;const px=[S[k0*5]],py=[S[k0*5+1]];for(let k=k0;k<=k1;k++){px.push(S[k*5+2]);py.push(S[k*5+3])}
     const n=px.length,z=px.map((x,i)=>lvAt(x,py[i])),d=[0];for(let i=1;i<n;i++)d.push(Math.hypot(px[i]-px[i-1],py[i]-py[i-1]));
-    const lift=()=>{for(let i=0;i<n;i++)for(const [ax,ay,bx,by,dk] of decks)if(Math.hypot(px[i]-ax,py[i]-ay)<WORLD_WAYS.bridge.ramp||Math.hypot(px[i]-bx,py[i]-by)<WORLD_WAYS.bridge.ramp)z[i]=Math.max(z[i],dk)};
+    const lift=()=>{for(let i=0;i<n;i++)for(const [ax,ay,bx,by,dk] of decks)if(Math.hypot(px[i]-ax,py[i]-ay)<WORLD_WAYS.bridge.fill||Math.hypot(px[i]-bx,py[i]-by)<WORLD_WAYS.bridge.fill)z[i]=Math.max(z[i],dk)};
     for(let it=0;it<6;it++){for(let i=1;i<n;i++)z[i]=Math.min(Math.max(z[i],z[i-1]-G*d[i]),z[i-1]+G*d[i]);for(let i=n-2;i>=0;i--)z[i]=Math.min(Math.max(z[i],z[i+1]-G*d[i+1]),z[i+1]+G*d[i+1])}
     for(let it=0;it<2;it++){const q=z.slice();for(let i=0;i<n;i++){let a=0,m=0;for(let j=Math.max(0,i-3);j<=Math.min(n-1,i+3);j++){a+=q[j];m++}z[i]=a/m}}
     lift();for(let it=0;it<3;it++){for(let i=1;i<n;i++)z[i]=Math.max(z[i],z[i-1]-G*d[i]);for(let i=n-2;i>=0;i--)z[i]=Math.max(z[i],z[i+1]-G*d[i+1])}
@@ -190,6 +190,12 @@ function wayRoad(fx,fy,sd,hw,t,flat,land,k){const RR=WORLD_WAYS.road,C=WAY_COL,a
    on their very edge, a taller post at each corner (a stone one's capped parapets), its north rail's shade on the deck; its shadow on
    what lies under it, to the south-east (the owner, 2026-11-15: "make sure the bridge look like the bridge", the lab's). Px by px, north to south, the nearer over the farther. At r fine px a game px: {cv, x, y (its corner, map px), y1 (its
    south edge on the ground, map px)} */
+/* a bridge's end comes down to a bank lower than its deck by stairs (the owner, 2026-11-21: "Why dont you make a stairs based on the
+   height that player have to go up?"), as many steps as the height: bridgeFall(d, k): how far under its deck (fine px) it stands d
+   fine px out along its stairs, a step of stair.rise down every stair.tread (lab px, k fine px each), the first at its deck's end */
+function bridgeFall(d,k){const S=WORLD_WAYS.bridge.stair;return d>0?Math.ceil(d/(S.tread*k))*S.rise*k:0}
+// (its height (fine px) t fine px along it from its first end: p its picture's measures (b.pr))
+function bridgeH(p,t){const k=p.r/2;return t<p.sA?p.DL-bridgeFall(p.sA-t,k):t>p.sB?p.DL-bridgeFall(t-p.sB,k):p.DL}
 function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh,k=r/2;
   {const mx=b.mx*r,my=b.my*r,ux=b.ux,uy=b.uy,nx=-uy,ny=ux,hl=b.L*r/2,hw=Math.round(b.hw*r),R=Math.round(BG.rail*k),SH=Math.ceil(BG.shade*k);
     // (what lies under it: the land's lift there (fine px) and whether it is water: the water as drawn where its chunk is painted, else the tiles')
@@ -198,7 +204,7 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
     /* (its ends on the land (the owner, 2026-11-16: "Make sure bridge fully connect to the land"): each runs on past the water as it is
        drawn under its middle to dry ground, and up a bank's face to its top (on to the first dry ground at its deck's level within reach),
        reach game px at most; its deck at its level or the higher bank's; to a lower
-       bank a ramp falls at slope (fine px a fine px), a stone abutment under it: never a step nor a gap at its end) */
+       bank its stairs come down (bridgeFall), a stone abutment under them: never a gap at its end) */
     const wetAt=s=>wetF(mx+ux*s,my+uy*s),upAt=s=>liftF(mx+ux*s,my+uy*s),D0=Math.round(b.dk*lh),
       // (a bank's top at the deck's level within reach: the deck runs on to it, over the low shore or the water before it (the owner,
       //  2026-11-18: "Why bridge not connect to the land?"), never ending on a strip of shore against the bank's face; its end already on
@@ -206,10 +212,10 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
       top=sg=>{for(let e=-1;e<=BG.reach*r;e++){const s1=sg*(hl+e+1);if(!wetAt(s1)&&upAt(s1)>=D0-k)return Math.max(0,e)}return -1},
       runOn=sg=>{const t0=top(sg);if(t0>=0)return t0;let e=0;while(e<BG.reach*r){const s1=sg*(hl+e+1);if(!(wetAt(s1)||wetAt(sg*(hl+e+3))||upAt(sg*(hl+e+4*k))>upAt(s1)+k))break;e++}return e};
     const eA=runOn(-1),eB=runOn(1),lA=Math.max(0,liftF(mx-ux*(hl+eA+2),my-uy*(hl+eA+2))),lB=Math.max(0,liftF(mx+ux*(hl+eB+2),my+uy*(hl+eB+2))),DL=Math.max(Math.round(b.dk*lh),lA,lB);
-    // (each ramp falls at slope from the deck till it meets the land under it, never past it into a hollow with the land rising again)
-    const ramp=(sg,e0)=>{const n=Math.ceil(DL/BG.slope);for(let e=0;e<=n;e++)if(upAt(sg*(hl+e0+e))>=DL-e*BG.slope-k)return e;return n};
+    // (its stairs fall from the deck (bridgeFall) till they meet the land under them, never past it into a hollow with the land rising again)
+    const ramp=(sg,e0)=>{const n=Math.ceil(DL*BG.stair.tread/BG.stair.rise);for(let e=0;e<=n;e++)if(upAt(sg*(hl+e0+e))>=DL-bridgeFall(e,k)-k)return e;return n};
     const rA=ramp(-1,eA),rB=ramp(1,eB),lo=-(hl+eA+rA),hi=hl+eB+rB,LEN=hi-lo,sA=-(hl+eA)-lo,sB=hl+eB-lo,
-      H=t=>t<sA?DL-(sA-t)*BG.slope:t>sB?DL-(t-sB)*BG.slope:DL,HL=Math.max(-lo,hi);b.pr={lo,hi,sA,sB,DL,r,lA,lB};
+      HL=Math.max(-lo,hi),pr=b.pr={lo,hi,sA,sB,DL,r,lA,lB},H=t=>bridgeH(pr,t);
     const CS=BG.cast,CX=Math.ceil(CS[0]*DL),CY=Math.ceil(CS[1]*DL);// (its shadow's reach from its deck at its highest: cast)
     const ext=Math.abs(ux)*HL+Math.abs(nx)*hw+2,eyt=Math.abs(uy)*HL+Math.abs(ny)*hw+2,bx0=Math.floor(mx-ext),bx1=Math.ceil(mx+ext)+SH+CX,by0=Math.floor(my-eyt),by1=Math.ceil(my+eyt);
     const py0=by0-DL-R-3,PW=bx1-bx0+1,PH=by1+SH+CY+2-py0+1,img=new ImageData(PW,PH),O=img.data;
@@ -251,8 +257,10 @@ function bridgePic(b,r){const BG=WORLD_WAYS.bridge,C=WAY_COL,lh=WORLD_TERRAIN.lh
         else{const row=Math.floor(vv/FH),o=(row&1)*FW/2,q=hs(Math.floor((t+o)/FW),row,541);c=tmul(C.sett[0],1-FL.vary/2+FL.vary*q);if((t+o)%FW<.8||vv%FH<.8)c=tmul(c,FL.mortar);else if(hs(x,y,545)<.06)c=tmul(c,.94)}}
       else{c=C.plank[Math.floor(hs(pl,7,542)*3)];if(t%(4*k)<.6*k)c=tmul(C.plank[1],.72);else if(hs(pl,Math.floor(v/k),543)<.05)c=tmul(c,.82);if((Math.abs(v)>hw-2.2*k)&&hs(pl,v>0?1:2,544)<.5)c=tmul(c,.9)}
       if(Math.abs(Math.abs(v)-hw*WORLD_WAYS.road.track)<1.3*k)c=tmul(c,.92);if(v*north>hw-1.5*k-2.5*k&&v*north<hw-1.5*k)c=tmul(c,.82);if(!inB(x,y-1))c=tmul(c,1.1);
-      // (a ramp reads as a slope: lit where it falls toward the sun (north-west), shaded where it falls away, a tread's line across it every tread px)
-      if(t<sA||t>sB){const dn=t<sA?-1:1;c=tmul(c,-(ux+uy)*dn>0?BG.fall[0]:BG.fall[1]);if(Math.floor(t/(BG.tread*k))!==Math.floor((t+1)/(BG.tread*k)))c=tmul(c,BG.fall[2])}put(x,sy,c);
+      // (on its stairs: each tread a slab, shaded by turns, its outer edge lit; where they come down toward you, each one's riser
+      //  under its edge, down to the tread below)
+      const dS=t<sA?sA-t:t>sB?t-sB:0;if(dS>0){const ST=BG.stair,TW=ST.tread*k,n=Math.ceil(dS/TW);c=tmul(b.stone?C.stone[1]:C.plank[0],ST.shade[n&1]);if(n*TW-dS<1)c=tmul(c,ST.nose)}
+      put(x,sy,c);if((t<sA||t>sB)&&inB(x,y+1)){const dz=Math.round(H(t))-Math.round(H(TV(x,y+1)[0]));for(let j=1;j<=dz;j++)put(x,sy+j,tmul(b.stone?C.stone[2]:C.beam[0],BG.stair.riser))}
       // (a beam under its every edge)
       //  (its face under its edge where it stands over the ground: a stone one's dressed stone, its lit lip and its shade under it, not
       //   timber; a wooden one's beam; none where its end lies on the land)
@@ -363,19 +371,23 @@ function fallDist(WY){const X=WY.X,Y=WY.Y,LV=WY.LV,n=LV.length,FD=new Float32Arr
 let ON_DECK=false;
 // (the bridges whose span (and half its width either side) reaches each tile: a map from the tile's index, kept on the bridges' list,
 // so a mover asks only those by him, not every bridge in the world each frame)
-function bridgeTiles(BR){if(BR._bt)return BR._bt;const M=new Map();for(const b of BR){if(b.ex===undefined)continue;const m=b.hw+3,
+function bridgeTiles(BR){if(BR._bt)return BR._bt;const M=new Map();for(const b of BR){if(b.ex===undefined)continue;const m=b.hw+3+WORLD_WAYS.bridge.reach+WORLD_WAYS.bridge.stair.run,// (and its run-on and its stairs past its end tiles)
+   
     x0=Math.floor((Math.min(b.ex,b.fx)-m)/TILE),x1=Math.floor((Math.max(b.ex,b.fx)+m)/TILE),y0=Math.floor((Math.min(b.ey,b.fy)-m)/TILE),y1=Math.floor((Math.max(b.ey,b.fy)+m)/TILE);
     for(let ty=y0;ty<=y1;ty++)for(let tx=x0;tx<=x1;tx++){const k=ty*MW+tx;let L=M.get(k);if(!L)M.set(k,L=[]);L.push(b)}}
   return BR._bt=M}
 function bridgeShift(x,y){const P0=WorldArt.plan;if(!P0||!P0.ways||!P0.ways.bridges||typeof liftAt!=='function')return null;
   const near=bridgeTiles(P0.ways.bridges).get(Math.floor(y/TILE)*MW+Math.floor(x/TILE));if(!near)return null;
-  for(const b of near){const p=b.pr;if(!p||b.ex===undefined)continue;const s=(x-b.ex)*b.ax+(y-b.ey)*b.ay,q=(y-b.ey)*b.ax-(x-b.ex)*b.ay;if(s<0||s>b.al||Math.abs(q)>b.hw+2)continue;
+  for(const b of near){const p=b.pr;if(!p||b.ex===undefined)continue;const s=(x-b.ex)*b.ax+(y-b.ey)*b.ay,q=(y-b.ey)*b.ax-(x-b.ex)*b.ay;if(Math.abs(q)>b.hw+2)continue;
+    // (past its end tiles but on its run-on or its stairs, a straight one's: on it all the same, at their height: he was drawn on the
+    //  ground under its stairs and the bank laid over him)
+    if(s<0||s>b.al){if(b.diag)continue;const t0=((x-b.mx)*b.ux+(y-b.my)*b.uy)*p.r-p.lo;if(t0<0||t0>p.hi-p.lo)continue}
     const r=p.r,A=[b.mx+b.ux*p.lo/r,b.my+b.uy*p.lo/r],Bp=[b.mx+b.ux*p.hi/r,b.my+b.uy*p.hi/r];let vx=x,vy=y,t;
     if(b.diag){const la=Math.hypot(A[0]-b.ex,A[1]-b.ey),ld=(p.hi-p.lo)/r,lb=Math.hypot(b.fx-Bp[0],b.fy-Bp[1]),v=s/b.al*(la+ld+lb);
       if(v<la){const f=v/la;vx=b.ex+(A[0]-b.ex)*f;vy=b.ey+(A[1]-b.ey)*f}else if(v<la+ld){const f=(v-la)/ld;vx=A[0]+(Bp[0]-A[0])*f;vy=A[1]+(Bp[1]-A[1])*f}else{const f=(v-la-ld)/(lb||1);vx=Bp[0]+(b.fx-Bp[0])*f;vy=Bp[1]+(b.fy-Bp[1])*f}
       const qx=-b.uy,qy=b.ux;vx+=qx*q*.5;vy+=qy*q*.5}
     t=((vx-b.mx)*b.ux+(vy-b.my)*b.uy)*r-p.lo;const dq=Math.abs((vy-b.my)*b.ux-(vx-b.mx)*b.uy);
-    const on=t>=0&&t<=p.hi-p.lo&&dq<=b.hw+1,H=t<p.sA?p.DL-(p.sA-t)*WORLD_WAYS.bridge.slope:t>p.sB?p.DL-(t-p.sB)*WORLD_WAYS.bridge.slope:p.DL,
+    const on=t>=0&&t<=p.hi-p.lo&&dq<=b.hw+1,H=bridgeH(p,t),
       want=on?Math.max(H/r,liftAt(vx,vy)):liftAt(vx,vy);
     return [vx-x,vy-y-(want-liftAt(x,y)),on]}
   return null}

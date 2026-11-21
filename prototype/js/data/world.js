@@ -120,7 +120,7 @@ const WORLD_FLORA={step:9,
    bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; along its road's line
    across the water, over game px onto each bank; over open space (water, or more than open px under its beams) a pile every pile px
    at most (a stone bridge's arch every arch), evenly, nothing under it where its bank carries it; rails rail px tall, a
-   post every post px; no pier standing out of its sides within cut.end px of its very end (its abutment on the bank); its shadow shade px to the south-east and cast x its height over what lies under it more (east, south: worldways.js bridgePic), shadow its alpha (0-255); a ramp lit fall[0] or shaded fall[1] by the way it falls, a tread's line fall[2] across it every tread px; the road's fill under only abut game px of each
+   post every post px; no pier standing out of its sides within cut.end px of its very end (its abutment on the bank); its shadow shade px to the south-east and cast x its height over what lies under it more (east, south: worldways.js bridgePic), shadow its alpha (0-255); to a bank lower than its deck it comes down by stairs (the owner, 2026-11-21: "Why dont you make a stairs based on the height that player have to go up?"; worldways.js bridgeFall): a step of stair.rise down every stair.tread px (lab px), as many as its height, its treads shaded stair.shade by turns, each one's edge lit stair.nose, its riser stair.riser, one on them looked for within stair.run game px past its end; the road raised to its deck within fill game px of each end (0: none, the bank left as it lies and the stairs down to it; it was ramp px, an earth fill up to the deck, both its ends at one height); the road's fill under only abut game px of each
    end, its open span the river and its banks as they are (worldways.js bridgeOpen); a brook under a road: a small bridge along
    the road, the brook's width and brook.span px of bank each side, its deck brook.clear levels over the water at least, none within
    brook.apart px of another bridge; on a track or over a brook under brook.ford px wide, a natural ford instead (shallow over gravel);
@@ -135,7 +135,7 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
     wide:{hw:[1.5,9],edge:[.55,.88],on:[.62,.34],len:[5,15],mid:.45,speed:[1.3,.8],per:3.2}}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
-    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3,end:10},reach:28,slope:.4,diag:.45,walk:2,cast:[.55,.3],fall:[1.07,.86,.8],tread:3}};
+    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3,end:10},reach:28,diag:.45,walk:2,cast:[.55,.3],fill:0,stair:{rise:2,tread:3,shade:[1,.92],nose:1.12,riser:.7,run:24}}};
 // (prints: footprints, the lab's: one every step px a man walks (a foot's stride: left, then right), side px off his way, fading over
 // fade s, max kept; on snow, sand, the marsh, and ground within bank px of drawn water, in their colours, a print's rim rim of its
 // strength: worldterrain.js stepPrint; each a foot's shape (PRINT_FOOT), pointing the way he walks)

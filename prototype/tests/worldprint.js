@@ -911,13 +911,19 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, W6 re-recorded 2026-11-19 again, on purpose, the owner's "please fix that straight line steep hill": a face's rock and sand
 //  blended by noise, not picked per column, and painted as earth or rock with a ragged grassy lip, strata, cracks, roots and scree
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
-const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'dad150d3',W6:'6c01e664',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
+const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12addb',W6:'d974d304',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
 //  shared Math.random in another order, which moves parties (W8) and what the save holds after 3 days (W7). With farEvery 4 both hold
 //  (measured); the route tables' new search (router.js wayEdges), the wide grid box and folkNear change neither. W6 fails as on the
 //  untouched tree (42fcc344: the stealth eye, re-recorded below). W1-W5, B2 and the sums hold. Were
 //  W7 5c44bdb4, W8 5466914a)
+// (W5, W6 re-recorded 2026-11-21, on purpose, the owner's "Why dont you make a stairs based on the height that player have to go up?
+//  For those bridges": the road is no longer raised on a fill to a bridge's deck within 28 px of its ends (data/world.js
+//  WORLD_WAYS.bridge.fill 0), the bank painted as it lies and the bridge down to it by stairs, so the painted ground by every
+//  bridge differs (W5); W6 draws that ground, and with it the hails' marks at one scale (the "!" in a square, the edge's arcs a
+//  fine px: worldui.js) and a bridge's shadow cast by its height: after those two alone it was a56c5f43 (measured), with the
+//  stairs d974d304. W1-W4, W7, W8, B2 and the sums hold. Were W5 dad150d3, W6 6c01e664)
 // (W6 re-recorded 2026-11-21, on purpose, the owner's "Recheck encounter and ui icons whether they are scale correctly": your stealth
 //  eye, which W6 draws over your men, is painted at its drawn size in device px and laid one px to one (render.js devPic, putDev), not
 //  a 72 px picture shrunk at every draw (tests/pixels.js failed on it), so its px differ; the minimap's rim the same. Measured twice,
