@@ -33,6 +33,22 @@ Kit.suite(({ok,info})=>{
     gap.push(((b.mx+b.ux*tip/r)|0)+','+((b.my+b.uy*tip/r)|0))}}
   if(drowned.length)info('a bridge end whose own road tile is painted as water (the lake drawn over it, no land to meet): '+drowned.join(' '));
   ok(!gap.length,'every bridge ('+BR.length+') meets the land at both its ends, its deck level with the dry ground at its tip or just past it'+(gap.length?': not '+gap.slice(0,6).join(' '):''));
+  // ---- a bridge reads as high (the owner, 2026-11-21: "it like floating, even weird to draw over trees without shadow or something to
+  //  tell that it's higher"; worldways.js bridgePic, WORLD_WAYS.bridge cast): its shadow lies off it by its height over what is under
+  //  it, and its end's face stops at the bank it lands on ("Bridge still bug": a sheer wall down to the water beside the road)
+  {const BG=t.WORLD_WAYS.bridge,k=r/2,SH=Math.ceil(BG.shade*k),NS=BR.filter(b=>Math.abs(b.uy)>.99&&b.pic&&b.pr),rows=[],walls=[];
+   for(const b of NS){const q=b.pic,p=b.pr,g=q.cv.getContext('2d',{willReadFrequently:true}),D=g.getImageData(0,0,q.cv.width,q.cv.height).data,PW=q.cv.width,PH=q.cv.height,hw=Math.round(b.hw*r),cx=Math.round(b.mx*r-q.x*r),east=cx+hw;
+    // (how far east of its deck's east side its shadow reaches, and its height over the water at its middle)
+    let far=0;for(let y=0;y<PH;y++)for(let x=PW-1;x>east;x--){const o=(y*PW+x)*4;if(D[o+3]===BG.shadow&&D[o]===14){far=Math.max(far,x-east);break}}
+    let high=0;for(let s=p.lo;s<=p.hi;s+=2)high=Math.max(high,p.DL-Math.round(t.liftAt(b.mx,b.my+b.uy*s/r)*r));rows.push([high,far,b]);
+    // (under its south end: no masonry more than its beams and a course below the bank it lands on)
+    const sg=b.uy>0?1:-1,yEnd=Math.round(b.my*r+(sg>0?p.hi:-p.lo)),land=sg>0?p.lB:p.lA,row0=yEnd-Math.min(p.DL,land)+Math.round(3*k)+4-Math.round(q.y*r);let n=0;
+    for(let y=Math.max(0,row0);y<PH;y++)for(let x=cx-hw;x<=cx+hw;x++){const o=(y*PW+x)*4;if(D[o+3]===255)n++}if(n)walls.push(((b.mx)|0)+','+((b.my)|0)+' ('+n+' px)')}
+   if(!NS.length)info('no bridge running north and south on this world');else{
+    rows.sort((a,b)=>a[0]-b[0]);const lo=rows[0],hi=rows[rows.length-1];info(NS.length+' bridges north to south: the lowest '+lo[0]+' fine px over what is under it, its shadow '+lo[1]+' px off it; the highest '+hi[0]+', '+hi[1]);
+    ok(rows.every(([h,f])=>f>=SH+Math.floor(BG.cast[0]*h)-3&&f<=SH+Math.ceil(BG.cast[0]*h)+3),'each one\'s shadow lies off its deck by its height over what is under it (cast '+BG.cast[0]+' x: '+rows.map(([h,f])=>h+'>'+f).join(' ')+')');
+    ok(hi[0]>lo[0]?hi[1]>lo[1]:true,'the higher the deck the farther its shadow');
+    ok(!walls.length,'no bridge end\'s masonry falls past the bank it lands on'+(walls.length?': '+walls.join('; '):''))}}
   // (its deck walked only inside its rails: a spot by its edge is off the lane and put back inside it; a walker's step there kept in)
   const hw=(t.WORLD_WAYS.road.hw[1]-1)*t.WAY_LP,half=hw-t.WORLD_WAYS.bridge.walk,B=m.crossings.filter(c=>c.kind==='bridge'),off=[];
   for(const c of B){const ex=((c.i%W)+.5)*TL,ey=(((c.i/W)|0)+.5)*TL,fx=((c.j%W)+.5)*TL,fy=(((c.j/W)|0)+.5)*TL,l=Math.hypot(fx-ex,fy-ey),ax=(fx-ex)/l,ay=(fy-ey)/l,i=c.tiles[c.tiles.length>>1],mx=((i%W)+.5)*TL,my=(((i/W)|0)+.5)*TL;

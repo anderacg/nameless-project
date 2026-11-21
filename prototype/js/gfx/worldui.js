@@ -50,7 +50,10 @@ function wuiRing(rx,ry,col){const z=wuiZ(),k='r'+rx+','+ry+col+z;let c=WUIP.get(
 // the arrow, pointing down, outlined dark, lit on its upper left: standing, falling (drawn out), landing (squashed). tip: the
 // row of its point in the picture, cx its middle
 const WUI_ARROW={stand:['..###..','..###..','..###..','#######','.#####.','..###..','...#...'],fall:['.###.','.###.','.###.','.###.','.###.','#####','.###.','..#..'],squash:['..#####..','..#####..','#########','.#######.','...###...']};
-function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;const M=WUI_ARROW[k],h=M.length,w=M[0].length;
+// (a "!" or a "?" is a letter, painted in a square as tall as its rows, never squeezed to its pattern's 3 or 5 px (the owner,
+// 2026-11-21, a needle of a "!" over a hail: "What is that "!" And why it scale like that?"); an arrow's own box is its squash and stretch)
+const WUI_LETTER=['bang','ask'];
+function wuiArrow(k,col){const key='a'+k+col;let c=WUIP.get(key);if(c)return c;const M=WUI_ARROW[k],h=M.length,w=WUI_LETTER.includes(k)?h:M[0].length;
  c=uiIndicatorCanvas('arrow',w+2,h+2,col,1,k);c.k=.25;c.cx=(w+2)/2;c.tip=h;WUIP.set(key,c);return c}
 // Shared crossed-sword artwork with a hostile rim (ready when the local atlas loads): the marker
 // over a party you go to attack. tip: the row of its pommels in the picture, cx its middle
@@ -238,26 +241,33 @@ WUI_ARROW.ask=['.###.','##.##','...##','..##.','.##..','.##..','.....','.##..','
 /* (under them: sound waves, rings rippling out from their feet along the ground one after another, fading as they spread; the
    map's own crisp rings (wuiRing), WAVE: s a ring takes (t), rings at once (n), how far past the scene it spreads (px), the
    ground's tilt (ry: of rx), its strength at the start (a); at the screen's edge: arcs at once, how far they roll in (edge, px),
-   their half width (span, radians), how far past the edge their centre lies (src, px). In the encounters' blue (WUI_K.col.enc), as their "!". Still, under reducedMotion: one ring half out) */
-const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85,edge:22,arcs:4,span:.75,src:10};
+   their half width (span, radians), how far past the edge their centre lies (src, px), how far off the minimap an edge's mark keeps (mini, px). In the encounters' blue (WUI_K.col.enc), as their "!". Still, under reducedMotion: one ring half out) */
+const WAVE={t:1.8,n:3,px:20,ry:.5,a:.85,edge:22,arcs:4,span:.75,src:10,mini:8};
 // (an arc of a wave rolling in from the screen's edge: radius r, its middle facing d (sixteenths of a turn, 0 east, clockwise),
 // WAVE.span radians each way; crisp, shadowed as the rings are; its centre at (cx, cy) in the picture)
-function wuiArc(r,d,col){const k='c'+r+','+d+col;let c=WUIP.get(k);if(c)return c;const pts=new Set(),a0=d/16*6.2832,n=Math.max(8,Math.round(4*r*WAVE.span));
-  for(let i=0;i<=n;i++){const a=a0-WAVE.span+2*WAVE.span*i/n;pts.add((Math.round(r+1+Math.cos(a)*r))+','+(Math.round(r+1+Math.sin(a)*r)))}
-  c=mkc(2*r+3,2*r+4,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
-  c.cx=r+1;c.cy=r+1;WUIP.set(k,c);return c}
+// (by the fine px, as the rings are (wuiRing): a line one fine px wide, where it was a game px wide and twice as coarse as the rings
+// beside it)
+function wuiArc(r,d,col){const z=wuiZ(),k='c'+r+','+d+col+z;let c=WUIP.get(k);if(c)return c;const pts=new Set(),a0=d/16*6.2832,n=Math.max(8,Math.round(4*r*z*WAVE.span));
+  for(let i=0;i<=n;i++){const a=a0-WAVE.span+2*WAVE.span*i/n;pts.add((Math.round((r+1)*z+Math.cos(a)*r*z))+','+(Math.round((r+1)*z+Math.sin(a)*r*z)))}
+  c=mkc((2*r+3)*z,(2*r+4)*z,g=>{const P2=[...pts].map(p=>p.split(',').map(Number));g.globalAlpha=.7;for(const [x,y] of P2)rect(g,WUI_K.dark,x,y+1);g.globalAlpha=1;for(const [x,y] of P2)rect(g,col,x,y)});
+  c.cx=r+1;c.cy=r+1;c.k=1/z;WUIP.set(k,c);return c}
+// (a mark at the screen's edge kept clear of the minimap, which hid it: slid to the minimap's nearer side, WAVE.mini px off it)
+function wuiOffMini(ax,ay){const r=typeof worldMiniRect==='function'?worldMiniRect():null,p=WAVE.mini;if(!r||ax<r.x-p||ax>r.x+r.w+p||ay<r.y-p||ay>r.y+r.h+p)return [ax,ay];
+  return ax-(r.x-p)<(r.y+r.h+p)-ay?[r.x-p,ay]:[ax,r.y+r.h+p]}
 // (the rings round (x, y) from r0 out: ry their height to their width; k a phase of its own, so two side by side do not beat as one)
 function wuiWaves(x,y,r0,px,ry,k,now,rm,col=WUI_K.col.enc){for(let i=0;i<(rm?1:WAVE.n);i++){const q=rm?.5:((now/1000/WAVE.t+i/WAVE.n+k*.37)%1),rx=r0+Math.round(q*px),c=wuiRing(rx,Math.max(1,Math.round(rx*ry)),col);
   ctx.globalAlpha=WAVE.a*(1-q)*Math.min(1,q*6);wuiPut(c,x,y,c.cx,c.cy)}ctx.globalAlpha=1}
 // Silent finds keep their sight mark without sound waves, including at the screen edge.
 function wuiRoadUnder(cam,now,rm){const V=vis();for(const e of roadList()){if(!e.marked()||e.D.silent||!e.inView(V))continue;const b=e.box();
   wuiWaves(Math.round(wuiX((b[0]+b[2])/2,cam)),Math.round(wuiY(b[3]-1,cam)),Math.max(6,Math.round((b[2]-b[0])*.5)),WAVE.px,WAVE.ry,e.seed||0,now,rm)}}
+// (its call in the map's own text at the screen's px (sprites.js mapTxt), as every label on the map: drawn after the labels'
+// pass, txt wrote it in the 8 px font enlarged VS times, letters a finger high across the screen)
 function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('bang',col),p=rm?1:(1+Math.sin(now/1000*5))/2,bob=rm?0:Math.round(p*2);
   for(const e of roadList()){if(!e.marked()||e.D.silent&&!e.inView(V))continue;const b=e.box(),x=Math.round(wuiX((b[0]+b[2])/2,cam)),top=Math.floor(wuiY(b[1],cam)),y=wuiY(e.y,cam);
     if(x>=0&&x<=VW&&top>=4&&y<=VH){const by=top-2-bob;ctx.globalAlpha=.75+.25*p;wuiPut(bang,x,by,bang.cx,bang.tip);ctx.globalAlpha=1;
-      if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);txt(prFill(e.D.call,null),x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
+      if(e.D.call&&e.inView(V)){let t0=ROAD_SAY.get(e);if(t0==null)ROAD_SAY.set(e,t0=now);const q=(now-t0)/1000;if(q<ENC_LIFE.say){ctx.globalAlpha=Math.min(1,(ENC_LIFE.say-q)*2);mapTxt(prFill(e.D.call,null),x,by-bang.tip-3,'#fff2c8','center');ctx.globalAlpha=1}}
       continue}
-    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx),ux=Math.cos(a),uy=Math.sin(a);
+    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=(top+y)/2-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),[ax,ay]=wuiOffMini(Math.round(cx+dx*k),Math.round(cy+dy*k)),a=Math.atan2(dy,dx),ux=Math.cos(a),uy=Math.sin(a);
     const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+ux*WAVE.src),sy=Math.round(ay+uy*WAVE.src),nA=rm?2:WAVE.arcs;
     for(let i=0;i<(e.D.silent?0:nA);i++){const q=rm?(i+1)/(nA+1):((now/1000/WAVE.t+i/nA+(e.seed||0)*.37)%1),c=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(c,sx,sy,c.cx,c.cy)}
     ctx.globalAlpha=.8+.2*p;const in_=WAVE.edge-WAVE.src+12;wuiPut(bang,Math.round(ax-ux*in_),Math.round(ay-uy*in_)+4,bang.cx,bang.tip);ctx.globalAlpha=1}}
@@ -266,7 +276,7 @@ function wuiRoadOver(cam,now,rm){const V=vis(),col=WUI_K.col.enc,bang=wuiArrow('
 function wuiDistractions(cam,now,rm){const col=DISTRACTION.col;
   for(const c of DISTRACTIONS.active(now)){const x=Math.round(wuiX(c.x,cam)),y=Math.round(wuiY(c.y,cam)),age=now-c.t;
     if(x>=8&&x<=VW-8&&y>=8&&y<=VH-8){wuiWaves(x,y,4,WAVE.px,WAVE.ry,0,age,rm,col);continue}
-    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=y-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),ax=Math.round(cx+dx*k),ay=Math.round(cy+dy*k),a=Math.atan2(dy,dx);
+    const mx=12,my=24,cx=VW/2,cy=VH/2,dx=x-cx,dy=y-cy,k=Math.min((cx-mx)/Math.max(1e-6,Math.abs(dx)),(cy-my)/Math.max(1e-6,Math.abs(dy))),[ax,ay]=wuiOffMini(Math.round(cx+dx*k),Math.round(cy+dy*k)),a=Math.atan2(dy,dx);
     const d=(Math.round((a+Math.PI)/(Math.PI/8))%16+16)%16,sx=Math.round(ax+Math.cos(a)*WAVE.src),sy=Math.round(ay+Math.sin(a)*WAVE.src),n=rm?2:WAVE.arcs;
     for(let i=0;i<n;i++){const q=rm?(i+1)/(n+1):((age/1000/WAVE.t+i/n)%1),arc=wuiArc(4+Math.round(q*WAVE.edge),d,col);ctx.globalAlpha=WAVE.a*Math.min(1,q*5)*(1-q*q);wuiPut(arc,sx,sy,arc.cx,arc.cy)}ctx.globalAlpha=1;
   }
