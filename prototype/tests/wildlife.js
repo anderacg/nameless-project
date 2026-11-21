@@ -93,6 +93,8 @@ Kit.suite(({ok,info})=>{
   const run=(c,s0,s1,fn)=>{const A0=t.critterArt(c.id,0,c.coat);let F=null;for(let s=s0;s<s1;s+=1/30){if(fn)fn(c,1/30);F=t.herdFlock(c,A0,s*1000)}return F},
     pairs=F=>{let lo=1e9,sum=0;F.m.forEach((p,i)=>{let nn=1e9;F.m.forEach((q,j)=>{if(i!==j)nn=Math.min(nn,Math.hypot(p.x-q.x,p.y-q.y))});sum+=nn;lo=Math.min(lo,nn)});return [sum/F.m.length,lo]},
     spread=(F,c)=>F.m.reduce((a,m)=>a+Math.hypot(m.x-c.x,m.y-c.y),0)/F.m.length;
+  // (the flock's own shape, on open ground: its animals' ground, a river bank's or a cliff's edge, is tests/wildground.js's)
+  const land0=window.flockLand,push0=window.flockPush;window.flockLand=(c,q)=>q;window.flockPush=(c,m,dx,dy)=>{m.x+=dx;m.y+=dy};
   try{// (at rest: spread round its point, none on another, each grazing, looking up and turning on its own time)
    const c=herd('reindeer',5),A0=t.critterArt(c.id,0,c.coat),w=A0.w;let F=run(c,0,4),low=1e9,same=0,samples=0,flips=0,prev=null;
    for(let s=4;s<34;s+=1/30){F=t.herdFlock(c,A0,s*1000);const pn=performance.now;performance.now=()=>s*1000;let hows;try{hows=F.m.map((m,i)=>t.herdPose(c,i,t.herdGoes(c,m),0).how)}finally{performance.now=pn}
@@ -119,10 +121,10 @@ Kit.suite(({ok,info})=>{
    const c2=herd('fowl',6),A2=t.critterArt(c2.id,0,c2.coat),knots=F=>{const g=i=>F.m.filter((m,j)=>j%2===i),cen=a=>[a.reduce((s,m)=>s+m.x,0)/a.length,a.reduce((s,m)=>s+m.y,0)/a.length];const [a,b]=[cen(g(0)),cen(g(1))];return Math.hypot(a[0]-b[0],a[1]-b[1])};
    let lo2=1e9,hi2=0;for(let s=0;s<140;s+=1/10){const F2=t.herdFlock(c2,A2,s*1000);if(s>4){const k=knots(F2);lo2=Math.min(lo2,k);hi2=Math.max(hi2,k)}}
    ok(hi2>lo2+A2.w*FL.gap*.8,'a herd of '+c2.n+' splits in two knots drifting apart ('+hi2.toFixed(1)+' px between them at most) and back ('+lo2.toFixed(1)+')')}
-  finally{G.speed=gs0}}
+  finally{G.speed=gs0;window.flockLand=land0;window.flockPush=push0}}
  // ---- steady, never jittering (the owner, 2026-11-18: "The wildlife sometimes jumping rapidly and looping left and right rapidly"):
  //      a herd caught between fleeing and watching, its point jinking, its facing flipping each moment, at 30 and 60 frames a second
- {const FL=L.flock,gs0=G.speed;G.speed=1;
+ {const FL=L.flock,gs0=G.speed,land0=window.flockLand,push0=window.flockPush;G.speed=1;window.flockLand=(c,q)=>q;window.flockPush=(c,m,dx,dy)=>{m.x+=dx;m.y+=dy};// (on open ground, as above)
   try{for(const fps of [30,60]){const dt=1/fps,c={crit:true,id:'deer',x:5000,y:5000,hx:5000,hy:5000,n:5,t:0,a:0,dir:1,tire:0,cool:0,coat:11,st:'graze'},A0=t.critterArt(c.id,0,c.coat);
     let F=null,over=0,worst=0,fast=0,flick=0,frames=0;const hist=new Map(),last=new Map(),seen=new Map();
     for(let k=0;k<fps*20;k++){const s=k*dt,ms=s*1000,ph=Math.floor(k/(fps>30?3:2));
@@ -135,7 +137,7 @@ Kit.suite(({ok,info})=>{
     // (a flicker: a pose shown under 0.3 s between two of the same)
     for(const H of hist.values())for(let j=1;j+1<H.length;j++)if(H[j-1][0]===H[j+1][0]&&H[j+1][1]-H[j][1]<.3)flick++;
     ok(!over&&!fast&&!flick,fps+' fps, a herd torn between flight and watching 12 s: no animal steps further than its walk allows in a frame ('+worst.toFixed(2)+' px at most, '+over+' over), none turns about sooner than '+FL.face.hold+' s after its last turn ('+fast+'), no pose flickers under 0.3 s ('+flick+')')}}
-  finally{G.speed=gs0}
+  finally{G.speed=gs0;window.flockLand=land0;window.flockPush=push0}
   // (a duck's way wobbling about the vertical and a lizard darting to and fro: drawn turning at most once in AMBIENT.face s; a duck's mate
   //  at the bank drawn swimming or standing only once it has been over the water or the land AMBIENT.duck.wet s)
   {const e={t:0,dir:1};let n=0,fd=1,lt=-9,early=0;for(let k=0;k<120;k++){e.t=k/60;e.dir=k%3?1:-1;t.ambFace(e);if(e.fd!==fd){if(e.t-lt<A.face-1e-9)early++;lt=e.t;fd=e.fd;n++}}

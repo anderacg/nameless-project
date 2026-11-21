@@ -33,10 +33,13 @@ const WILD_ART={on:true};
    about at most once in hold s, by its own walk only when its eased speed across is v px a s or more; hold: s the herd's doing must
    last before its animals show another (st; fleeing at once) and an animal's legs walking or still (go); move: the herd on the move
    above [0] px a s, at rest again below [1] for [2] s; hd: rad a s its heading (its wedge's way) turns; snap: px its point moves in
-   a frame for its animals to go straight to their spots) */
+   a frame for its animals to go straight to their spots; pull: the shares of its way out from the herd's point an animal's spot is
+   tried at, the first on ground it may stand on (critters.js flockLand))
+   (wade: an animal in the drawn water (critters.js herdWade): most, the share of its picture the water takes at most) */
 const WILD_LIFE={night:.55,wary:1.6,drink:{chance:.25,r:4,at:6,time:[4,8]},town:48,graze:[6,12],look:[2,4],bound:3,hop:2,leap:10,
   flock:{most:6,gap:1.8,jit:.35,flee:1.8,pace:[.85,.3],amble:5,catch:1.6,start:[.6,2.4],keep:.8,wander:[.22,7,13],split:{n:4,far:2.4,per:[35,70]},turn:[3,8],
-    face:{hold:.6,v:1.2},hold:{st:.4,go:.3},move:[.8,.3,.5],hd:2.5,snap:160},
+    face:{hold:.6,v:1.2},hold:{st:.4,go:.3},move:[.8,.3,.5],hd:2.5,snap:160,pull:[1,.6,.3]},
+  wade:{most:.6},
   bounders:['deer','stag','reindeer','gazelle','ibex'],hoppers:['rabbit','hare']};
 const CRITTERS={
   rabbit:{n:'Rabbits',one:'rabbit',where:['grass','forest'],herd:[2,4],meat:1,mat:['rabbitfur',.5],xp:2,spd:30,shy:50,w:4,size:1,col:'#b8a088'},

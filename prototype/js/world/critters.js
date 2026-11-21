@@ -29,8 +29,11 @@ class Herd extends WorldObject{
     // (what it shows held steady (flockHold): the herd's doing as drawn, each animal's legs walking or still: never flickering frame to frame)
     const now=performance.now(),st=flockSt(F,c.st,now);
     F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);grassFoot(m.x,m.y,go,true,m);ents.push({x:m.x,y:m.y,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
-      ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),y-1,w,2);
-      ctx.save();ctx.translate(x,y-q.up);ctx.scale(m.f<0?-a.k:a.k,a.k);ctx.drawImage(a.s,-(a.s.width>>1),-a.s.height+(a.k<1?2:1));ctx.restore();
+      // (in the drawn water it wades, as a marcher does (herdWade): under it from its feet up, no shadow, no leap; else on its shadow)
+      const cut=herdWade(m,a),sx=m.f<0?-a.k:a.k,bx=-(a.s.width>>1),by=-a.s.height+(a.k<1?2:1);
+      if(!cut){ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),y-1,w,2)}
+      ctx.save();ctx.translate(x,y-(cut?0:q.up));ctx.scale(sx,a.k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,a.s.width+16,a.s.height+8-cut);ctx.clip()}ctx.drawImage(a.s,bx,by);ctx.restore();
+      if(cut)drawWading(a.s,x,y,sx,a.k,bx,by,cut,v0+i,go,cam);
       if(i)return;if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&DEV.on&&c.fromYou()<90)txt(String(c.n),Math.round(c.x-cam.x),Math.round(c.y-cam.y)-A.h-4,'#c8e0a0','center')}})})}
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
@@ -71,9 +74,9 @@ function herdFlock(c,A,now){const L=WILD_LIFE.flock,n=Math.min(L.most,Math.max(1
     m.x+=sx;m.y+=sy;m.d+=Math.hypot(sx,sy);m.go=Math.hypot(sx,sy)>.01;
     // (facing its way by its eased speed across, never by a step's tiny sway or a push from its neighbour)
     m.vx=(m.vx||0)+(sx/Math.max(dt,1e-3)-(m.vx||0))*Math.min(1,dt*6);if(Math.abs(m.vx)>L.face.v)flockFace(m,m.vx>0?1:-1,now)});
-  // (kept apart: any two nearer than keep x its width pushed apart, half each)
-  const kp=Math.max(2,A.w*L.keep);for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const p=F.m[i],q=F.m[j];let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);if(d>=kp)continue;
-    if(d<.01){dx=p.h-.5||.3;dy=q.h-.5||.2;d=Math.hypot(dx,dy)}const k=(kp-d)/2/d;p.x-=dx*k;p.y-=dy*k;q.x+=dx*k;q.y+=dy*k}
+  // (kept apart: any two nearer than keep x its width pushed apart, half each, none off the ground it may stand on (flockPush))
+  const kp=Math.max(2,A.w*L.keep),dry=typeof drawnWet!=='function'||!drawnWet(c.x,c.y);for(let i=0;i<n;i++)for(let j=i+1;j<n;j++){const p=F.m[i],q=F.m[j];let dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy);if(d>=kp)continue;
+    if(d<.01){dx=p.h-.5||.3;dy=q.h-.5||.2;d=Math.hypot(dx,dy)}const k=(kp-d)/2/d;flockPush(c,p,-dx*k,-dy*k,dry);flockPush(c,q,dx*k,dy*k,dry)}
   // (standing: each turns on its own time; wary, all watch who comes)
   F.m.forEach((m,i)=>{if(m.go)return;if(wary){flockFace(m,c.dir<0?-1:1,now);return}if(bed)return;const T=L.turn[0]+m.h*(L.turn[1]-L.turn[0]),k=Math.floor(now/1000/T+m.h*5);if(m.tk!==k){if(m.tk!=null)flockFace(m,PX.hash(v0+i,k,53)<.5?-1:1,now);m.tk=k}});
   return F}
@@ -89,14 +92,31 @@ const herdGoes=(c,m)=>m.go&&!(m.drift&&(c.st==='graze'||c.st==='drink'||c.st==='
 // (an animal's spot about its herd's point: a hunt's scatter (c.m) its own; on the way, a loose wedge behind the first along the herd's
 //  way, its ranks gap apart and its files to either side, jittered, flee x wider as it bolts; at rest a loose blob round the point,
 //  each drifting about its spot over its own time, a herd of split.n or more in two knots that drift apart and back)
-function flockSpot(c,F,i,n,gap,now,moving){const L=WILD_LIFE.flock,v0=c.coat||0,h1=PX.hash(v0,i,17),h2=PX.hash(v0,i,29),j=L.jit*gap,t=now/1000;
-  const m=c.m&&c.m[i];if(m)return [m.dx,m.dy];
+function flockSpot(c,F,i,n,gap,now,moving){const m=c.m&&c.m[i];return m?[m.dx,m.dy]:flockLand(c,flockOut(c,F,i,n,gap,now,moving))}
+function flockOut(c,F,i,n,gap,now,moving){const L=WILD_LIFE.flock,v0=c.coat||0,h1=PX.hash(v0,i,17),h2=PX.hash(v0,i,29),j=L.jit*gap,t=now/1000;
   if(moving||c.st==='flee'){const k=c.st==='flee'?L.flee:1,r=Math.ceil(i/2),back=gap*.9*r*k+(i?(h1-.5)*j:0),side=i?(i%2?1:-1)*gap*(.45+.5*h2)*k:0,ca=Math.cos(F.hd),sa=Math.sin(F.hd);
     return [-back*ca-side*sa,-back*sa+side*ca]}
   const W0=L.wander,wa=W0[0]*gap,wp=W0[1]+h1*(W0[2]-W0[1]),ang=i*2.39996+h1*.9,rad=i?gap*(.5+.8*Math.sqrt(i/n))+(h2-.5)*j:0;
   let x=Math.cos(ang)*rad+Math.sin(t*6.283/wp+h2*6)*wa,y=Math.sin(ang)*rad*.7+Math.cos(t*6.283/(wp*1.3)+h1*6)*wa*.7;
   const S=L.split;if(n>=S.n){const per=S.per[0]+PX.hash(v0,0,61)*(S.per[1]-S.per[0]),u=.5-.5*Math.cos(t*6.283/per+PX.hash(v0,1,61)*6),ga=PX.hash(v0,2,61)*6.283,off=u*S.far*gap*.5*(i%2?1:-1);x+=Math.cos(ga)*off;y+=Math.sin(ga)*off*.7}
   return [x,y]}
+/* the ground under each animal (the owner, 2026-11-21: "Wildlife doesnt seems to be effected by water, rivers or hills?"). Its herd's
+   point kept to its habitat, off water and never over a ledge (HERD_MIND, world.js walk), but each animal's own spot about it was
+   checked against nothing: one in twelve herds had an animal standing on a river, a mountain, a lot or the far side of a cliff.
+   flockOk: may an animal of herd c stand at (x, y)? Ground it could walk to from its herd's point: no water tile and no mountain, no
+   ledge between, wild game off the holdings' lots, livestock on its own grazing; dry: and off the drawn water (a brook or a bank's
+   over the land), asked while its herd's own point is dry. flockLand: its spot q pulled in toward its herd's point (WILD_LIFE.flock
+   .pull shares of its way out) to the first it may stand on, the point itself if none.
+   herdWade: one in the drawn water all the same (crossing a brook its herd stands in, or on its way round a pool) wades as a man
+   does: the water up its picture by its depth (march.js wadeCut, a man's figure px made its own by their two scales), WILD_LIFE.wade.most of it
+   at most (its back and head out: swimming) */
+function flockOk(c,x,y,dry){const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE);if(tx<0||ty<0||tx>=MW||ty>=MH||!passable(tAt(tx,ty))||!ledgePass(c.x,c.y,x,y))return false;
+  if(dry&&typeof drawnWet==='function'&&drawnWet(x,y))return false;return CRITTERS[c.id].live?grazeOk(c.id,x,y,c.pen):!(OCC&&occAt(tx,ty))}
+function flockLand(c,q){const dry=typeof drawnWet!=='function'||!drawnWet(c.x,c.y);for(const k of WILD_LIFE.flock.pull)if(flockOk(c,c.x+q[0]*k,c.y+q[1]*k,dry))return k===1?q:[q[0]*k,q[1]*k];return [0,0]}
+// (an animal pushed (dx, dy) by its neighbour, but never from ground it may stand on to ground it may not)
+function flockPush(c,m,dx,dy,dry){if(flockOk(c,m.x+dx,m.y+dy,dry)||!flockOk(c,m.x,m.y,dry)){m.x+=dx;m.y+=dy}}
+function herdWade(m,a){if(typeof drawnWet!=='function'||!drawnWet(m.x,m.y))return 0;const K=WILD_LIFE.wade,d=wadeCut(drawnDepth(m.x,m.y))||WATER.cut[1];
+  return Math.max(1,Math.min(Math.round(a.s.height*K.most),Math.round(d*WORLD_BATTLE.sprite/WORLD_BATTLE.scale/a.k)))}
 // (its record in a save: packed on a generated world, worldobject.js packRec, its grazing drawn again on its next moment (t, a:
 // 0); herdRec reads it back, either way)
 const HERD_KEYS=['id','x','y','hx','hy','n','dir','tire','cool','idle','escapeSta'];

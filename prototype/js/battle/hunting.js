@@ -1,7 +1,9 @@
 'use strict';
 /* Hunting is a world battle: ordinary armies and attacks, individual fleeing wildlife, species loot. */
+// (the ground a kind of game is at home on, as a race's (data/races.js home): its habitats, a snow wood a wood too)
+const wildHome=D=>D.where?D.where.concat(D.where.includes('snowwood')?['forest']:[]):[];
 // (a wild animal's troop kind, made the first time it is asked: 'wild_' + its kind; the fallen's too, world/carcasses.js)
-function wildTroop(id){const D=CRITTERS[id],key='wild_'+id;if(!ST[key]&&D)ST[key]={n:D.n,hp:D.size*HUNT_AREA.hp,dmg:0,spd:D.spd,reach:2,range:0,cd:1,tier:1,beast:true,wildlife:id,arm:0};return key}
+function wildTroop(id){const D=CRITTERS[id],key='wild_'+id;if(!ST[key]&&D)ST[key]={n:D.n,hp:D.size*HUNT_AREA.hp,dmg:0,spd:D.spd,reach:2,range:0,cd:1,tier:1,beast:true,wildlife:id,arm:0,home:wildHome(D)};return key}
 /* the hunt's tracks: each animal's prints as it runs (HUNT_TRACK), where each was last seen, what your hunters can read of them,
    and where a group with no prey in sight goes to find some: along the freshest trail it reads, else to the nearest last sighting */
 class HuntTracks{
@@ -53,7 +55,9 @@ class HuntBattleArea extends WorldBattleArea{
   }
   // (its flight: its map speed (CRITTERS spd) on the map's scale, as your men's steps are (terrain.js groundMul: fightSpace), at a
   //  gallop, HUNT_AREA.run x; the owner, 2026-11-20: "they like walking not running": the map's scale was left out, a deer fled at a
-  //  third of a walking man's pace)
+  //  third of a walking man's pace); and by the ground under it as theirs are (the owner, 2026-11-21: "Wildlife doesnt seems to be
+  //  effected by water, rivers or hills?": terrain.js speedFor, which its step left out with the scale): slower up a slope, through
+  //  a ford or a marsh, in a wood, but at home on its own ground (wildHome: a deer in its wood, a goat on its hill)
   turn(u,dt){
     if(!(dt>0)){u.spdNow=0;return}if(!this.inside(u,-2))return this.depart(u);if(u.stun>0){u.stun-=dt;u.spdNow=0;return}if(PHYSICS.on&&physDown(u,dt))return;
     const hunters=B.units.filter(v=>v.team===0&&v.hp>0&&!v.left&&!v.rout),near=Spatial.nearest(hunters,u.x,u.y),previous=u.huntThreat,dist=v=>v?Math.hypot(u.x-v.x,u.y-v.y):Infinity,threat=previous&&hunters.includes(previous)&&dist(previous)<=dist(near)/WILDLIFE_AWARE.switch?previous:near,D=CRITTERS[u.wildlife],seconds=dt/(WORLD_PACE*WORLD_SCALE.move*this.scale),distance=dist(threat),point=threat&&this.world(threat),hidden=point&&hiddenAt(point.x,point.y);u.huntThreat=threat;
@@ -62,7 +66,7 @@ class HuntBattleArea extends WorldBattleArea{
     // (out of sight of all of yours OPEN_FIGHT.lost s: got away, the field open round it)
     if(OPEN_FIGHT.on){if(seenBy(0,u))u.unseen=0;else if((u.unseen=(u.unseen||0)+seconds)>OPEN_FIGHT.lost)return this.depart(u)}
     u.spdNow=0;if(!threat||u.alert<1){u.rest=(u.rest||0)+seconds;if(u.rest>ESCAPE_STAMINA.delay)u.escapeSta=Math.min(u.escapeCap,u.escapeSta+u.escapeCap*ESCAPE_STAMINA.recovery*seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;return}
-    u.rest=0;const way=this.flight(u,threat),dir=this.escapeWay(u,way);if(!dir)return;const ratio=clamp(u.escapeSta/u.escapeCap,0,1),factor=ratio>=.6?1:ratio>=.25?.8+(ratio-.25)/.35*.2:ESCAPE_STAMINA.floor+ratio/.25*(.8-ESCAPE_STAMINA.floor),step=Math.min(dir[2],u.s.spd*factor*dt*BATTLE_RHYTHM.move*fightSpace()*HUNT_AREA.run);
+    u.rest=0;const way=this.flight(u,threat),dir=this.escapeWay(u,way);if(!dir)return;const ratio=clamp(u.escapeSta/u.escapeCap,0,1),factor=ratio>=.6?1:ratio>=.25?.8+(ratio-.25)/.35*.2:ESCAPE_STAMINA.floor+ratio/.25*(.8-ESCAPE_STAMINA.floor),step=Math.min(dir[2],u.s.spd*factor*dt*groundMul(u,dir[0],dir[1])*HUNT_AREA.run);
     const x=u.x+dir[0]*step,y=u.y+dir[1]*step;if(!lineClear(way.g,u.x,u.y,x,y))return;u.x=x;u.y=y;this.tracks.step(u);u.dir=Math.atan2(dir[1],dir[0]);u.face=dir[0]>=0?1:-1;u.spdNow=step/dt;u.escapeSta=Math.max(0,u.escapeSta-seconds);u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;
     if(!this.inside(u,-2))this.depart(u);
   }
