@@ -911,7 +911,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, W6 re-recorded 2026-11-19 again, on purpose, the owner's "please fix that straight line steep hill": a face's rock and sand
 //  blended by noise, not picked per column, and painted as earth or rock with a ragged grassy lip, strata, cracks, roots and scree
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
-const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'dad150d3',W6:'8248ed12',W7:'5c44bdb4',W8:'5466914a',B2:'23d198e7'};
+const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'dad150d3',W6:'42fcc344',W7:'5c44bdb4',W8:'5466914a',B2:'23d198e7'};
+// (W6 re-recorded 2026-11-21, on purpose, the owner's "that weird grey line" (163c1df): your stealth eye shut is now a closed lid
+//  and four lashes (ui/icons.js uiIndicator), not a lens 4 deep, and W6 draws your men with others about, their eye shut over them.
+//  Bisected: f17f8e7 gives 8248ed12, 163c1df 42fcc344; the grass's half rate (dd7540f) holds it. Were W6 8248ed12)
 // (W6 re-recorded 2026-11-20, on purpose, the owner's "The grasses should shake only the one that touch unit" (the wind's sway
 //  kept): a clump bends only under a man's own footprint (data/world.js WORLD_FLORA.grass touch, worldterrain.js grassFeet), 1 clump
 //  under a man's foot where 4 bent, 2 under a rider's where 8; W6 draws the land with your men standing in its grass. The rest hold.
