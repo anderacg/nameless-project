@@ -15,3 +15,11 @@ Buildmodels still recorded earlier building artwork. The 235 changed hashes were
 The untouched artpace suite reports first live draw 1072 ms and longest incremental frame 2284 ms despite passing. Its incremental and synchronous chunk hashes match (`f0605ca6`). A synchronous day probe took 213 ms in this environment; trainers, sieges, economy and autosave all contributed. These timings include browser/environment variation and are diagnostic, not hardware guarantees.
 
 The accepted order is baseline, frame timing and daily work, HUD and icon names, shared ground query, then marching presentation. Renderer passes and terrain worker dependency work wait for an engine decision. Full test sweeping remains the coordinator's responsibility.
+
+The legacy bridges suite also referenced removed `BRIDGE_ART` and a removed ferry on/off comparison. It now examines the visible `bridgePic` artwork rather than `WorldArt.deck` (a monochrome clearance mask), checking colour detail, transparency and deterministic redraw. Ferry rope, shadow and post checks remain, with the always-enabled artwork checked directly. No bridge artwork changes or bridge hash updates are part of this repair.
+
+## Runtime validation notes
+
+The isolated page-painter comparison disables workers in both revisions. Both pass all 12 checks, including interleaving two unfinished chunks, with matching `f0605ca6` pixels. This run measured first live draw 323 ms before and 195 ms after; the longest incremental frame was 282 ms before and 292 ms after. These outliers remain: the cooperative frame budget is not a hard limit on one operation or garbage collection. The earlier multi-second measurements also included worker startup and parallel world rebuilding and must not be compared as a clean before/after speedup.
+
+Live midnight cooperates only when requested by the map loop. Direct Clock.advance calls (including bulk developer commands), explicit waits and synchronous tests retain their original behavior. The interrupted world step resumes once after the daily transaction releases, preserving movement and allowing an encounter to start its own transaction. The existing loading overlay may become visible for a slow midnight; daily callbacks themselves remain indivisible.
