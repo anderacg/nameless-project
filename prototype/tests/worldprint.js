@@ -911,13 +911,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, W6 re-recorded 2026-11-19 again, on purpose, the owner's "please fix that straight line steep hill": a face's rock and sand
 //  blended by noise, not picked per column, and painted as earth or rock with a ragged grassy lip, strata, cracks, roots and scree
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
-const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12addb',W6:'d974d304',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
+const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
 //  shared Math.random in another order, which moves parties (W8) and what the save holds after 3 days (W7). With farEvery 4 both hold
 //  (measured); the route tables' new search (router.js wayEdges), the wide grid box and folkNear change neither. W6 fails as on the
 //  untouched tree (42fcc344: the stealth eye, re-recorded below). W1-W5, B2 and the sums hold. Were
 //  W7 5c44bdb4, W8 5466914a)
+// (W6 re-recorded 2026-11-21, on purpose, the owner's "check why one of the house roof seem flat": Vale's townhouse's roof rises 9
+//  over its 8 px half span either way it lies (engine/build-vale.js look.townRise; it rose 6 along its front, 8 gable to the
+//  street), and W6 draws a holding with townhouses in it. W1-W5, W7, W8, B2 and the sums hold. Were W6 d974d304)
 // (W5, W6 re-recorded 2026-11-21, on purpose, the owner's "Why dont you make a stairs based on the height that player have to go up?
 //  For those bridges": the road is no longer raised on a fill to a bridge's deck within 28 px of its ends (data/world.js
 //  WORLD_WAYS.bridge.fill 0), the bank painted as it lies and the bridge down to it by stairs, so the painted ground by every

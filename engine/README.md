@@ -57,6 +57,7 @@ The owner's rule (doc/references/assets/REALM_STRUCTURE_ART_DESIGN.md): **the cu
   - Materials: `roof`, `rural` (the country's roof on the rural types, or null), `walls` (one by the seed) or `wall` (one for all), `frame`, `stone` (chapels, churches), `fort` (towers, castles, smithies), `fieldstone` (wells, shrines, ruins), `wood` (a lookout's planks), `silo` (a round granary), `felt` (a yurt; null: the first wall), `trim`, `accent`, `ground` (its yards; null: the type's own).
   - Forms: `forms` (a house's roofs, one by the seed), `cones` (castle towers under cones, or flat), `hall` (its hall type).
   - Decals: `door`, `win` (`house()` takes them unless a plan says). Ornaments: `finial`.
+  - Vale's `townRise`: its townhouse's roof's rise (px over an 8 px half span; 9).
   - The generic plans' say: `townhouse: {upper, lower}`, `village: {form, rise, wall, door, fmat, chim, foot, pick, win, vmat, lamp, goods}`; an own type's say under its name (`hidehall`, `elfhall`).
   - `swap`: the types it builds in place of others in its clusters (the Clans: `{smithy:'forge'}`).
   - Climates: `desert`, `swamp`, `frost`, laid over the rest in that climate. Today only the desert's `wall`. The desert's flat roofs, awnings and palms go here.
