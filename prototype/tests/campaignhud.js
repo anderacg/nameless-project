@@ -47,5 +47,10 @@ Kit.suite(({ok})=>{
    sz.forEach((z,i)=>{const [zw,zh]=two(z),w=len(zw,W),h=len(zh,H),[px,py]=two(pos[i]),x=len(px,W-w),y=len(py,H-h);for(let j=Math.round(y);j<Math.round(y+h);j++)for(let k=Math.round(x);k<Math.round(x+w);k++)if(j>=0&&k>=0&&j<H&&k<W)cover[j*W+k]++});
    el.remove();let twice=0,none=0;for(const c of cover){if(c>1)twice++;if(!c)none++}
    ok(sz.length>1&&!twice&&!none,v+': its '+sz.length+' pieces cover an 83 x 47 panel once each, nowhere twice ('+twice+' px), nowhere left bare ('+none+' px)')}
+ // (a command's button not on the page when the HUD first looks (the owner's stack from a phone, 2026-11-21: a game's first update
+ //  stopped in sync on a button it did not find): passed by, the rest given their art, and it given its own once it is there)
+ {const b=document.getElementById('campBtn'),home=document.createComment('camp'),art=()=>b.querySelectorAll('.campaign-command-art').length;b.before(home);b.remove();b.querySelector('.campaign-command-art')?.remove();hud.iconsReady=false;
+  let err='';try{hud.sync()}catch(x){err=x.message}ok(!err&&!hud.iconsReady&&document.querySelectorAll('#mapBtn .campaign-command-art').length===1,'a button missing from the page does not stop the HUD: the others keep their one picture'+(err?' ('+err+')':''));
+  home.after(b);home.remove();hud.sync();hud.sync();ok(hud.iconsReady&&art()===1,'back on the page it is given its picture, once')}
  t.G.mode='title';t.frame();ok(!visible(hud.resources)&&!visible(hud.details),'campaign decorations do not leak onto the title screen');
 });

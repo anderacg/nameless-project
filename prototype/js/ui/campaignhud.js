@@ -31,7 +31,10 @@ class CampaignHud{
     this.mobileMini.hidden=!this.phone;
     for(const n of this.moves){if(this.desktop){if(n.el.parentNode!==n.to)n.to.appendChild(n.el)}else if(n.el.parentNode===n.to)n.home.after(n.el)}
     const resourceHome=this.desktop?this.company:this.root.querySelector('.campaign-rail');if(this.resources.parentNode!==resourceHome)resourceHome.prepend(this.resources);
-    if(!this.iconsReady){for(const [id,box] of this.commandArt)document.getElementById(id).insertAdjacentHTML('afterbegin',this.art(box,'campaign-command-art'));this.iconsReady=true}
+    // (each command's art laid into its button once; a button not on the page yet is passed by and tried again, never the end of the
+    //  frame: a game's first HUD update on a phone stopped here on a button it did not find, the owner's stack, 2026-11-21)
+    if(!this.iconsReady){let all=true;for(const [id,box] of this.commandArt){const el=document.getElementById(id);if(!el){all=false;continue}
+        if(!el.querySelector('.campaign-command-art'))el.insertAdjacentHTML('afterbegin',this.art(box,'campaign-command-art'))}this.iconsReady=all}
     this.screen.classList.toggle('campaign-world',G.mode==='world'&&!G.modal);
     const home=this.desktop?document.querySelector('.dockrow.sys'):this.helpHome.parentNode;if(this.help.parentNode!==home){if(this.desktop)home.appendChild(this.help);else this.helpHome.after(this.help)}
   }
