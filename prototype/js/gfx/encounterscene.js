@@ -67,19 +67,20 @@ function roadFire(n){n%=2;const k='rpFire'+n;return spr[k]||(spr[k]=encPic(18,8,
 function roadEmbers(n){n%=3;const k='rpEmbers'+n;if(spr[k])return spr[k];const A=ENC_INK.ash,R=ENC_INK.ember;
   return spr[k]=encPic(18,8,g=>encRing(g,()=>{rect(g,A[1],5,3,8,3);rect(g,A[2],6,3,6,1);rect(g,A[3],7,3,2,1);rect(g,ENC_INK.coal,6+n,4,5,1);rect(g,A[0],5,5,8,1);
     for(let i=0;i<5;i++){const x=5+Math.floor(hash(i,n,11)*8),y=3+Math.floor(hash(i,n,12)*3);rect(g,R[i%R.length],x,y)}}))}
-// (a bedroll left in the grass: a blanket rolled up and strapped, its end showing the roll; a wool of five)
+// (a bedroll left in the grass: a blanket rolled up and strapped, its end showing the roll; a wool of five. 9 fine px long, as a rolled
+// blanket is about a metre against a man's 16 (the owner, 2026-11-21: "Recheck encounter ... whether they are scale correctly"))
 function roadBedroll(n){n%=ENC_INK.wool.length;const k='rpBed'+n;if(spr[k])return spr[k];const R=ENC_INK.wool[n],S=ENC_INK.strap;
-  return spr[k]=encPic(18,6,g=>{rect(g,R[3],2,1,12,1);rect(g,R[2],1,2,13,2);rect(g,R[1],1,4,13,1);rect(g,R[0],2,5,12,1);rect(g,R[3],2,2,4,1);
-    rect(g,R[1],14,1,3,5);rect(g,R[3],15,2,1,3);rect(g,R[0],15,3);rect(g,R[2],16,2,1,3);rect(g,R[0],14,5,2,1);
-    for(const x of [5,11]){rect(g,S[0],x,1,1,5);rect(g,S[1],x,3)}})}
-// (an herbalist's basket: woven wicker under a looped handle, full of what she gathered: greens, flowers, or mushrooms)
+  return spr[k]=encPic(10,5,g=>{rect(g,R[3],1,1,6,1);rect(g,R[2],0,2,7,1);rect(g,R[1],0,3,7,1);rect(g,R[0],1,4,6,1);
+    rect(g,R[1],7,1,2,4);rect(g,R[3],8,2,1,2);rect(g,R[0],7,4,2,1);
+    for(const x of [2,5]){rect(g,S[0],x,1,1,4);rect(g,S[1],x,2)}})}
+// (an herbalist's basket: woven wicker under a looped handle, full of what she gathered: greens, flowers, or mushrooms. 5 fine px across,
+// half a metre against a man's 16)
 function roadBasket(n){n%=3;const k='rpBasket'+n;if(spr[k])return spr[k];const W=ENC_INK.wicker,L=ENC_INK.leaf,F=ENC_INK.bloom,C=ENC_INK.cap;
-  return spr[k]=encPic(12,10,g=>{for(const [x,y] of [[2,4],[2,3],[3,2],[4,1],[5,1],[6,1],[7,1],[8,2],[9,3],[9,4]])rect(g,y<2?W[3]:x<6?W[2]:W[1],x,y);
-    for(let y=3;y<6;y++)for(let x=2;x<10;x++)if(hash(x,y,n)<.75)rect(g,L[Math.min(3,Math.floor(hash(x,y,n+4)*3)+(x<6?1:0))],x,y);
-    if(n===1)for(const [x,y,c] of [[3,3,0],[6,3,1],[8,4,0],[5,4,2]])rect(g,F[c],x,y);
-    if(n===2)for(const x of [3,7]){rect(g,C[1],x,3,2,1);rect(g,C[2],x,3);rect(g,C[0],x,4,2,1)}
-    for(let y=5;y<10;y++)for(let x=1;x<11;x++){const e=y===5?4:y===9?0:((x>>1)+y)%2?2:3;rect(g,W[Math.max(0,e-(x>=8&&y>5?1:0)+(x<2&&y>5?1:0))],x,y)}
-    rect(g,W[1],1,9);rect(g,W[1],10,9)})}
+  return spr[k]=encPic(7,6,g=>{for(const [x,y] of [[1,2],[1,1],[2,0],[3,0],[4,0],[5,1],[5,2]])rect(g,y<1?W[3]:x<3?W[2]:W[1],x,y);
+    for(let x=1;x<6;x++)rect(g,L[Math.min(3,Math.floor(hash(x,2,n)*3)+(x<3?1:0))],x,2);
+    if(n===1)for(const [x,c] of [[2,0],[4,1]])rect(g,F[c],x,2);
+    if(n===2){rect(g,C[1],2,2,2,1);rect(g,C[2],2,2)}
+    for(let y=3;y<6;y++)for(let x=1;x<6;x++){const e=y===3?4:y===5?0:(x+y)%2?2:3;rect(g,W[Math.max(0,e-(x>=4&&y>3?1:0))],x,y)}})}
 // (a toll's barrier, as a medieval road was barred (the owner, 2026-11-16: "Make sure all sprites are medieval theme not modern"): a
 // barked log laid across on two pairs of crossed stakes, its end sawn, a strip of the toll's realm's cloth tied round its middle)
 function roadBarrier(col){const k='rpBar'+col;if(spr[k])return spr[k];const C=PX.ramp(col),B=ENC_INK.bark,E=ENC_INK.end;

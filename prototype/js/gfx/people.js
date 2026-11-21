@@ -844,7 +844,7 @@ function figCarrier(type,v,tint,job,pose){const cl=ST[type]?.peasant?DRESS.clim:
 /* kneeling: the body FIG_KNEEL rows down, sat back on its heels, the near knee forward and the far foot out behind (a robe's hem on
    the ground); lying: the standing figure turned a quarter, head to the right, as the battle's fallen are (sprites.js corpseOf);
    blood: in a pool of it (FIG_BLOOD: [colour, x, y, w, h] in a 16 cell's px, as the map's was, grown to its own) */
-const FIG_KNEEL=2,FIG_BLOOD=[['#5a1414',3,13,10,1],['#6e1a18',1,14,14,1],['#8a2a22',5,14,5,1],['#5a1414',3,15,10,1]];
+const FIG_KNEEL=2,FIG_BLOOD=[['#5a1414',5,13,6,1],['#6e1a18',4,14,8,1],['#8a2a22',6,14,3,1],['#5a1414',5,15,6,1]];
 function figKneel(key,race,v){return figKeep('mrk'+key+race+v,()=>{const L=ENC_LOOK[key](race,v),R=GEAR.room,g=pgrid(24+2*R,19+R+(dollable(L)?1-DOLL_FIGS.dy:0)),sh=L.short?1:0,ox=4+R,gy=3+R+14-sh+(dollable(L)?DOLL_FIGS.dy:0);// (a doll's knees on the row his feet stand on, his grid as tall as his standing one's)
   // (a doll in its own kneeling pose, one knee down and the other up (dollfigs.js DOLL_MOVES.kneel); the old figure cut at its knees)
   const D=dollable(L),A=D?drawFigure(g,L,ox,3+R,-1,'kneel',-1):drawFigure(g,L,ox,3+R+FIG_KNEEL,-1,null,-1,12-sh);

@@ -1,7 +1,7 @@
 'use strict';
 // Grass under feet, and nothing drawn beyond your sight (the owner, 2026-11-17: "Make grass more realistic when player walk by", "Don't
 // draw anything beyond visibility"; gfx/worldterrain.js grassFeet, GRASS_FEET; world/fog.js VIEW_SEEN): every man drawn bends the
-// grass he walks by, the way he walks (away from him standing or going up or down the screen), the more the nearer, and presses it
+// grass his body touches (its foot in his footprint), the way he walks (away from him standing or going up or down the screen), the more the nearer, and presses it
 // down under his feet; left, it eases back slowly, never past upright, the slower the longer he stood on it, and some long trodden
 // stay down; a man standing bends it less, a rider wider; no grass in a man's ghost behind a wall. The view's cells: in your sight, land you
 // remember, land you never saw; a chunk of the land none of which you know not drawn; out of your sight the grass still, on land you
@@ -15,7 +15,7 @@ Kit.suite(({ok,info})=>{
  const C=fine();
  if(r<=1||!C){info('no fine chunk under you (scene '+r+'): grass not checked');}else{
   // ---- a clump by you, in your sight, away from your own men (their feet bend the grass too)
-  t.drawWorld();const A=t.MARCH_ARMIES.get(P),men=A?A.units.map(u=>[u.x,u.y]):[[P.x,P.y]],Gr=C.grass,far=GR.push*GR.feet[1]/r+6;
+  t.drawWorld();const A=t.MARCH_ARMIES.get(P),men=A?A.units.map(u=>[u.x,u.y]):[[P.x,P.y]],Gr=C.grass,far=GR.touch.big+6;
   let k=-1;for(let i=0;i<Gr.n&&k<0;i++){const x=Gr.X[i]/r,y=Gr.Y[i]/r,d=Math.hypot(x-P.x,y-P.y);if(d>40&&d<90&&t.viewState(x,y)===2&&men.every(([a,b])=>Math.hypot(a-x,b-y)>far))k=i}
   if(k<0)info('no clump in your sight away from your men');else{
    const gx=Gr.X[k]/r,gy=Gr.Y[k]/r,foot=(dx,go=true,big=false)=>{const x=gx+dx;t.grassFoot(x,gy+t.liftAt(x,gy),go,big)};
@@ -25,8 +25,17 @@ Kit.suite(({ok,info})=>{
    ok(p1>0&&f1>0&&c1>0,'a foot by a clump bends it away from him ('+p1.toFixed(2)+' px east of a foot west of it) and presses it down ('+(f1*100).toFixed(0)+'% of its height, '+c1+' px of its tips not drawn)');
    clr();foot(1.5);t.drawWorld();ok(Gr.P[k]<0,'a foot east of it: it leans west ('+Gr.P[k].toFixed(2)+')');
    clr();foot(-1.5,false);t.drawWorld();const ps=Gr.P[k];ok(ps>0&&ps<p1,'a man standing by it bends it less than one walking ('+ps.toFixed(2)+' against '+p1.toFixed(2)+')');
-   clr();const wide=GR.push/r*1.2;foot(-wide);t.drawWorld();const pn=Gr.P[k];clr();foot(-wide,true,true);t.drawWorld();
+   clr();const TO=GR.touch,wide=(TO.hw+TO.big)/2;foot(-wide);t.drawWorld();const pn=Gr.P[k];clr();foot(-wide,true,true);t.drawWorld();
    ok(Math.abs(pn)<.01&&Gr.P[k]>0,'a rider or a beast bends it wider: '+wide.toFixed(1)+' px off, a man none ('+pn.toFixed(2)+'), a rider '+Gr.P[k].toFixed(2));
+   // (only a clump his body touches (the owner, 2026-11-20: "pushing should be based on character touch"): its foot in his footprint,
+   //  TO.hw either side of his feet, TO.up behind them, TO.down in front; one just past it, either side, behind or in front, stays as
+   //  the wind leans it)
+   {const at=(dx,dy)=>{clr();const x=gx+dx,y=gy+dy;t.grassFoot(x,y+t.liftAt(x,y),true,false);t.drawWorld();return Gr.P[k]},e=.4;
+    const under=at(0,0),side=[at(-TO.hw-e,0),at(TO.hw+e,0)],ahead=at(0,-TO.down-e),behind=at(0,TO.up+e),edge=[at(-TO.hw+e,0),at(0,-TO.down+e)];
+    ok(under!==0&&edge.every(v=>v!==0),'a clump under a man bends ('+under.toFixed(2)+'), and one at the edge of his footprint ('+edge.map(v=>v.toFixed(2)).join(', ')+'; '+TO.hw+' px either side, '+TO.down+' px in front)');
+    ok([...side,ahead,behind].every(v=>v===0),'one just past his footprint does not: either side '+side.map(v=>v.toFixed(2)).join(', ')+', in front '+ahead.toFixed(2)+', behind '+behind.toFixed(2));
+    clr();t.GRASS_FEET.now.length=0;t.drawWorld();const fr=t.TGRASS.fr;let wind=0;for(let i=0;i<Gr.n;i++)if(Gr.L[i]&&Gr.H[i]!==fr)wind++;
+    info('the wind leans '+wind+' clumps no foot touches this frame (its sway kept)')}
    // (walking across the screen it bends his way, whichever side of him it stands)
    {clr();const who={};t.grassFoot(gx-1.5,gy+t.liftAt(gx,gy),true,false,who);t.GRASS_FEET.now.length=0;t.grassFoot(gx+1.5,gy+t.liftAt(gx,gy),true,false,who);t.drawWorld();
     ok(Gr.P[k]>0,'a man walking east by it bends it east, though it stands west of him ('+Gr.P[k].toFixed(2)+')')}

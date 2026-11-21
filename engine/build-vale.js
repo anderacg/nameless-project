@@ -97,9 +97,12 @@
       if(lv>=3&&form==='gable')dormer(Q,'dm',h.u,h.v,h.z,d.pick([-4,4]));stilts(Q,h.u,h.v);Q.lift=0;if(!o.bare)yard(Q,o,0,(door-.5)*w,dd/2,w)},
     // a townhouse: a pale stone ground floor, the upper of framed plaster jettied over it, its gable to the street or along it; the
     // blue door, a royal banner beside it or the shield in the street gable; a brick chimney
+    // (its roof steep, look.townRise px over its 8 px half span either way it lies (the owner, 2026-11-21, a townhouse end on in a hamlet:
+    //  "check why one of the house roof seem flat": a roof along its front rose 6, 37 degrees, and end on its far gable was a low
+    //  flat-topped hump))
     townhouse(Q,o){const d=o.d,L=o.look,K=L.townhouse,w=16,dd=14,dw=Q.home('townhouse','home',2),front=d.chance(.6),wall=K.upper||o.wall,lo=K.lower||'stone';
       Q.box('lo',[-w/2,w/2],[-dd/2,dd/2],[0,11],lo,{dw});Q.box('h',[-w/2,w/2],[-dd/2-1,dd/2+1],[11,18],wall,{dw,frame:L.frame});
-      Q.roof('h','gable',front?'v':'u',front?8:6,o.roofMat,{lip:1,ov:1});chimney(Q,[w/2-3,-dd/2+3],16,front?26:24);
+      Q.roof('h','gable',front?'v':'u',L.townRise,o.roofMat,{lip:1,ov:1});chimney(Q,[w/2-3,-dd/2+3],16,18+L.townRise);
       const da=d.pick([.28,.72]);Q.dec('lo.S',L.door,da);Q.dec('lo.S',front?L.win:L.banner,1-da,front?3:2);Q.dec('h.S',L.win,.25,1);Q.dec('h.S',L.win,.75,1);if(front)Q.dec('h.S',L.plaque,.5,8,true);
       Q.dec('lo.N',L.door,.5);Q.dec('h.N',L.win,.5,1);for(const k of ['E','W'])for(const a of [.3,.7]){Q.dec('h.'+k,'Win',a,1);Q.dec('lo.'+k,'Win',a,3)}},
     // a fisher's hut (the coast): limewashed under a low roof, storm shutters, its net on a rack, a boat drawn up before it
@@ -361,7 +364,7 @@
       roof:'tile',rural:'thatch',walls:['whitewash','whitewash','daub'],frame:'timber',stone:'stone',fort:'stone',fieldstone:'stone',wood:'plank',silo:'stone',felt:'canvas',
       trim:'valeBlue',accent:'gold',ground:null,
       forms:['gable','gable','front','hip'],cones:true,hall:'longhouse',door:'DoorVale',win:'WinVale',finial:'timber',
-      townhouse:{upper:'whitewash',lower:'stone'},
+      townhouse:{upper:'whitewash',lower:'stone'},townRise:9,
       village:{form:'gable',rise:10,door:'DoorVale2',chim:[8,-16],goods:['hay','barrel']},
       decals:{Door:'DoorVale',Door2:'DoorVale2',WinS:'WinVale',Sign:'SignVale'},door2:'DoorVale2',banner:'BannerVale',plaque:'ShieldVale',sign:'SignVale',chimney:'valeBrick',
       awnings:['awningB','awningB','awning'],tents:['canvas','canvasB','canvas'],yard:'garden',green:'wheat',barnWall:'daub',shed:'plank',rise:1,eave:0,flat:false,flatMat:'mud',

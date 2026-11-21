@@ -167,11 +167,14 @@ function labField(L,cw,ch,k,seed){const T=LAB_GEN,S=T.steps,s=(seed|0)+911,q=32*
    after made of each tile (its level now less the lab's at its middle: a river's bed, a lake, banks raised, a brook's bed cut); calm
    within calm tiles of water or a brook (only the tiles' levels there, smooth: the banks keep the water's level); never under the
    floor beside a river or lake (its water and bank over it, spread fr tiles round falling fdrop levels a tile) nor LAB_GEN.floor; on
-   water never over its level. landClasses: each land tile's slope class, the steepest of it (samples over it, a lab px's rise between
+   water never over its level. It is made once and kept for its map (LANDH), as the land lay when it was made (genValleys' fresh
+   one: the stages after, the roads, the holdings, the brooks cut, leave it): landBase the fields it is made of, plain layers, and
+   landFrom the land from them, so a world kept on the device (core/worldkeep.js) has the very land it was made with. landClasses: each land tile's slope class, the steepest of it (samples over it, a lab px's rise between
    neighbours) against LAB_GEN.cls: 0 flat, 1 a slope, 2 steep, 3 a cliff */
 const LAB_DRAW={calm:4,fr:3,fdrop:.35};
 const LANDH=new WeakMap();
-function landHeight(m,fresh){let f=!fresh&&LANDH.get(m);if(f)return f;const W=m.w,H=m.h,N=W*H,K=m.kind,L0=levelsOf(m),T=LAB_DRAW,LB=m.lab,BK=GEN_RIVER.brook;
+function landHeight(m,fresh){const f=!fresh&&LANDH.get(m);return f||landFrom(m,landBase(m))}
+function landBase(m){const W=m.w,H=m.h,N=W*H,K=m.kind,L0=levelsOf(m),T=LAB_DRAW,LB=m.lab,BK=GEN_RIVER.brook;
   const sea=i=>K[i]===T_WATER&&!(m.feat[i]&2)&&!(m.river[i]&3),C=new Float32Array(N),F0=new Float32Array(N),F1=new Float32Array(N),DL=new Float32Array(N),RAW=LB?LB.raw:L0;
   {const D=new Uint8Array(N).fill(255),q=[];for(let i=0;i<N;i++)if(K[i]===T_WATER||(m.flow[i]&31)>=BK){D[i]=0;q.push(i)}
     for(let h=0;h<q.length;h++){const i=q[h],x=i%W,y=(i-x)/W,d=D[i]+1;if(d>T.calm)continue;for(const [a,b] of [[1,0],[-1,0],[0,1],[0,-1]]){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(D[j]>d){D[j]=d;q.push(j)}}}
@@ -180,11 +183,12 @@ function landHeight(m,fresh){let f=!fresh&&LANDH.get(m);if(f)return f;const W=m.
     for(let b=-1;b<=1;b++)for(let a=-1;a<=1;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const j=v*W+u;if(K[j]===T_WATER&&!sea(j))f=Math.max(f,L0[j]+GEN_RELIEF.bank/GEN_RELIEF.per)}F0[i]=f}
   for(let i=0;i<N;i++){const x=i%W,y=(i-x)/W;let f=F0[i];for(let b=-T.fr;b<=T.fr;b++)for(let a=-T.fr;a<=T.fr;a++){const u=x+a,v=y+b;if(u<0||v<0||u>=W||v>=H)continue;const F=F0[v*W+u];if(F>0)f=Math.max(f,F-T.fdrop*Math.sqrt(a*a+b*b))}F1[i]=f}
   for(let i=0;i<N;i++)DL[i]=sea(i)?0:L0[i]-(K[i]===T_WATER?RAW[i]:Math.max(LAB_GEN.floor,RAW[i]));
-  const raw=LB?labField(LB,W,H,1,m.seedNum):null;
-  f=(x,y)=>{const u=x/32-.5,v=y/32-.5;labWeights(W,H,u,v);const rb=labSum(RAW,W,H),c=labSum(C,W,H),dl=labSum(DL,W,H),f1=labSum(F1,W,H);let e=rb+(raw?(raw(x,y)-rb)*c:0)+dl;
+  return{C,F1,DL,L0}}
+function landFrom(m,B){const W=m.w,H=m.h,K=m.kind,LB=m.lab,{C,F1,DL,L0}=B,RAW=LB?LB.raw:L0,raw=LB?labField(LB,W,H,1,m.seedNum):null;
+  const f=(x,y)=>{const u=x/32-.5,v=y/32-.5;labWeights(W,H,u,v);const rb=labSum(RAW,W,H),c=labSum(C,W,H),dl=labSum(DL,W,H),f1=labSum(F1,W,H);let e=rb+(raw?(raw(x,y)-rb)*c:0)+dl;
     const ti=Math.max(0,Math.min(H-1,Math.floor(y/32)))*W+Math.max(0,Math.min(W-1,Math.floor(x/32)));
     return K[ti]===T_WATER?Math.min(e,L0[ti]):Math.max(LAB_GEN.floor,f1,e)};
-  LANDH.set(m,f);return f}
+  f.base=B;LANDH.set(m,f);return f}
 function landClasses(m,fresh){const W=m.w,H=m.h,N=W*H,K=m.kind,hf=landHeight(m,fresh),C=LAB_GEN.cls,S=new Uint8Array(N),L0=levelsOf(m);
   // (high ground, where the shelves rise, 6 x 6 samples 6 lab px apart; low ground 3 x 3, 12 apart)
   for(let ty=0;ty<H;ty++)for(let tx=0;tx<W;tx++){const i=ty*W+tx;if(K[i]===T_WATER)continue;const hi=L0[i]>2,n=hi?6:3,st=hi?6:12,x0=tx*32+1,y0=ty*32+1,v=[];for(let b=0;b<n;b++)for(let a=0;a<n;a++)v.push(hf(x0+a*st,y0+b*st));

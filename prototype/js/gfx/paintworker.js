@@ -30,7 +30,7 @@ const PW={booted:false,world:-1};
 }
 // the world to paint from the page's save record: made again from its seed when it is not the one in (session.js forgeSteps, all its
 // stages at once), then the record put in as a save is (save.js applySave), the plan made again from it when next wanted
-function pwWorld(d){const M=d.world.map;if(!WM||worldKey(M)!==worldKey(WM)){let made=null;for(const st of forgeSteps(M.gen,M.settings,r=>{made=r})){const v=st.run();if(v&&typeof v.next==='function')runGen(v)}forgeInstall(made)}
+function pwWorld(d){const M=d.world.map;if(!WM||worldKey(M)!==worldKey(WM)){let made=null;for(const st of forgeSteps(M.gen,M.settings,r=>{made=r})){const v=st.run();if(v&&typeof v.next==='function')runGen(v)}if(made.map.sum!==M.sum)throw new Error(OTHER_WORLD);forgeInstall(made)}
   applySave(d);WorldArt.invalidate()}
 // (a sprite's key: its size and pixels, the same on the page as here)
 const pwKey=sp=>{if(sp._key)return sp._key;let h=2166136261;const mix=v=>{h=Math.imul(h^v,16777619)};mix(sp.width|0);mix(sp.height|0);

@@ -57,7 +57,7 @@ const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.set
    k: your past; 'world:<past>' (a past's card on the New game page) opens the New world screen first
    (worldsetup.js worldSetup, D30), whose Forge the world comes back here with its settings.
    A world other than the one in is made first (forgeSteps: the generator's stages; none when the New world screen's full preview
-   made it: worldPreviewTake), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
+   made it: worldPreviewTake), kept for the loads to come (core/worldkeep.js), then put in ("Drawing borders": forgeInstall); the one in is used again as it first stood
    (WM.first: useWorld). Then the game put in, in one step (the session, your hero from your race and past, the world as it first
    stood, its sites, beasts and bands), then the land round you painted. A failure before the putting in leaves the last game as
    it was */
@@ -66,9 +66,9 @@ function begin(k,settings){
   const b=BGS[k];if(!b)return false;if(settings===undefined)settings=newWorldSettings();
   const want=settings||!WM?{gen:'ashmark-1',settings:normSettings(settings||classicSettings())}:null,
     made=want&&worldKey(want)!==worldKey(WM)?{r:want.settings&&worldPreviewTake(want.settings)}:null,t0=performance.now();
-  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>forgeInstallSteps(made.r)}]:[]),
+  runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>{WorldKeep.put(made.r);return forgeInstallSteps(made.r)}}]:[]),
     {id:'holds',label:'Raising the holdings',w:made?150:3,run:holdModelsWarm},// (before your start is chosen: its ways go round them, world/start.js; once, a piece at a time, not at once in it)
-    {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGameSteps(k,b)},{id:'paint',label:'Painting the first lands',w:made?150:3,run:()=>paintViewSteps()},{id:'near',label:'Building the villages',w:made?60:2,run:buildNear},{id:'walls',label:'Raising the walls',w:made?150:3,run:holdShutWarm}],
+    {id:'world',label:'Peopling the land',w:made?150:4,run:()=>startGameSteps(k,b)},{id:'ground',label:'Recalling the land',w:made?10:1,run:recallView},{id:'paint',label:'Painting the first lands',w:made?150:3,run:()=>paintViewSteps()},{id:'near',label:'Building the villages',w:made?60:2,run:buildNear},{id:'walls',label:'Raising the walls',w:made?150:3,run:holdShutWarm}],
     {back:['Back to the title',()=>showTitle()]}).catch(()=>{});// (a failure shows itself: its error view)
 }
 /* (a generated world but the classic one starts as its seed says (doc/WORLD_DESIGN.md §4.4, D30): its first sites, herds, bands and
@@ -121,12 +121,18 @@ function paintView(){runGen(paintViewSteps(false))}
 // keeps moving; the owner, 2026-11-14, "the game lags when start"), and with ring the chunks round the view too (WorldArt.draw's ring,
 // as many as its cap leaves room for), which play would otherwise paint while you first walk (START_WARM; in play only, not the
 // tests' games: WorldArt.liveOk)
-function* paintViewSteps(ring=START_WARM.ring>0&&WorldArt.liveOk){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH)),A=WorldArt,
+function paintViewList(ring=START_WARM.ring>0&&WorldArt.liveOk){const x0=Math.round(clamp(P.x-VW/2,0,MW*TILE-VW)),y0=Math.round(clamp(P.y-VH/2,0,MH*TILE-VH)),A=WorldArt,
     c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x0+VW-1)/CHUNK),r1=Math.floor((y0+VH-1)/CHUNK),list=[];
   for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)list.push([cx,cy]);
   if(ring){const n=Math.min(START_WARM.ring,Math.max(0,A.capNow-list.length)),mx=(c0+c1)/2,my=(r0+r1)/2,R=[];for(let cy=r0-1;cy<=r1+1;cy++)for(let cx=c0-1;cx<=c1+1;cx++)if(cx>=0&&cy>=0&&cx<A.cols&&cy<A.rows&&!(cx>=c0&&cx<=c1&&cy>=r0&&cy<=r1))R.push([Math.hypot(cx-mx,cy-my),cx,cy]);
     R.sort((a,b)=>a[0]-b[0]);for(const [,cx,cy] of R.slice(0,n))list.push([cx,cy])}
-  for(let i=0;i<list.length;i++){const [cx,cy]=list[i],k=cy*A.cols+cx;if(A.chunks.has(k))continue;const j=A.start(cx,cy);while(!j.gen.next().done)yield (i+.5)/list.length;A.done(j);yield (i+1)/list.length}}
+  return list}
+// (those of them kept on the device come from there first (gfx/artkeep.js: the step before, recallView); the rest painted, and then
+// handed to the keeper)
+const recallView=()=>LOADING.sync?undefined:ArtKeep.recall(paintViewList());
+function* paintViewSteps(ring){const A=WorldArt,list=paintViewList(ring);
+  for(let i=0;i<list.length;i++){const [cx,cy]=list[i],k=cy*A.cols+cx;if(A.chunks.has(k))continue;const j=A.start(cx,cy);while(!j.gen.next().done)yield (i+.5)/list.length;A.done(j);yield (i+1)/list.length}
+  yield* ArtKeep.flushSteps()}
 // (the buildings round where you start, their models made in the loading steps, not as they first come into view; px round you;
 // ring: the chunks round the view painted there too, the nearest first (the owner, 2026-11-18: "I dont mind building at the start"))
 const START_WARM={ring:2,near:1200};

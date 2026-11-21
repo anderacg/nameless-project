@@ -33,7 +33,7 @@ function fieldStaminaBack(){
   if(m.length)P.bsta=clamp(m.reduce((a,u)=>a+st(u),0)/m.length/FATIGUE.max*100,0,100);
   if(b.units.some(u=>bandSoldier(u)&&u.hp<=0&&!u.left))BAND.hurt=[{why:'battle wounds',day:G.day},...BAND.hurt.filter(h=>h.why!=='battle wounds')].slice(0,SUPPLY.hurt)}
 // each moment: running spends, charging spends twice that; walking, or fighting in place, neither spends nor restores; standing restores
-function fatigueStep(u,dt,moved,walking,charging,fighting){
+function fatigueStep(u,dt,moved,walking,charging,fighting){dt*=BATTLE_RHYTHM.tire;
   if(heroSta(u)){if(moved&&!walking)staSpend(u,FATIGUE.run*(charging?2:1)*dt*groundSta(u));else if(!moved&&!fighting){const X=heroState();X.sp=Math.min(maxSP(),X.sp+FATIGUE.rest*maxSP()/FATIGUE.max*(1+tm('spRegen'))*dt)}return}
   if(u.hero||u.sta==null)return;
   const vg=u.vig||1;if(moved){if(!walking)u.sta-=FATIGUE.run*(charging?2:1)*dt/vg*groundSta(u);else{const w=groundWade(u);if(w)u.sta-=FATIGUE.run*w*dt/vg}}/* (marsh and uphill tire him faster; wading deep water tires him walking too: terrain.js) */else if(!fighting)u.sta+=FATIGUE.rest*dt*vg;

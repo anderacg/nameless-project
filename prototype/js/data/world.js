@@ -22,14 +22,23 @@ const WORLD_VIEW={fine:2,build:.5,house:1,sites:{shrine:2},zoom:2,phoneZoom:1.5,
    begun) over the time before the view reaches them at its speed (speed game px a second at least; soon ms at the least), safety
    times over, slice ms a frame at least, most at most. The view's speed and the frame's length eased by ease. A chunk half painted
    is kept, keep of them at most, while it stays near the view. In play while the game's loop drew within alive ms (one slow frame,
-   a model made, never makes the next paint a chunk whole) */
-const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2,alive:2000};
+   a model made, never makes the next paint a chunk whole). The way the view moves: its heading eased by turn a frame, a way taken
+   where the heading leans lean or more along it (.38: aslant takes both), none while the view's speed is still px a second or less */
+const ART_PACE={view:25,most:18,slice:4,est:3000,learn:.3,rest:.1,speed:8,soon:250,safety:1.25,ease:.1,keep:2,alive:2000,turn:.15,lean:.38,still:4};
 // the map's painter workers (gfx/worldart.js ArtWorkers): on in play; how many on a phone, and at most elsewhere (never more than the
 // device's cores less one; each worker holds a whole second copy of the game and its world, about 300 MB at a phone's size, so one on a
 // phone); help: ms a chunk in view may wait for a worker before it is painted here too (the first done kept)
 // (phone 0: none on a phone till one is measured there (each worker holds a whole second game, ~300 MB; Safari may close the tab), ?workers
 //  for one: the owner, 2026-11-18)
 const ART_WORKERS={on:true,phone:0,most:4,help:400};
+/* the painted ground kept on the device (gfx/artkeep.js ArtKeep, its keeper gfx/artkeepworker.js): on; db: the browser's store
+   (IndexedDB); most: how many chunks it holds, on a phone and elsewhere (a chunk about 3 MB kept: 100 MB on a phone), the oldest let go; touch: ms after
+   which one read is written again as new; patience: ms the painter waits for the keeper's answer before it paints; strip: the rows of
+   a picture read in one piece of a frame; sheet: the width (px) of the sheet a chunk's props' sprites are kept on; queue: painted
+   chunks waiting to be kept, at most; sprites: the props' sprites the page holds from the keeper before it lets them go and has them
+   sent again; v: the kept record's shape (part of the stamp); stamp: a stamp given (the tests'), else the
+   scripts' own hash */
+const ART_KEEP={on:true,v:1,db:'ashmark-ground',most:[32,160],touch:21600000,patience:1500,strip:128,sheet:1024,queue:12,sprites:6000,stamp:null};
 /* the world's terrain drawn finer (gfx/worldterrain.js; doc/OPEN_WORLD_DESIGN.md phases 1 and 2; the world lab's look): its climates
    read at a place warped climWarp game px by noise, each px's picked from their shares (climPick: by a slow noise at sc game px, spread k, grain at its edge: ragged
    tongues and islands, not salt and pepper), so no climate's edge follows the tiles; the frost's snow in drifts (snowPatch: its noise from
@@ -63,11 +72,12 @@ const ART_WORKERS={on:true,phone:0,most:4,help:400};
    tile; hills; mountain; village: a holding's lot within two tiles; each mix by weight) and the chance of each thing a cell of step
    fine px by the ground: woods (a forest tile; trees at woods, thinner at its edge), open ground (grass and meadow), hills, the
    mountains, the banks, the swamp's pools (lily: a pad's chance on one, reeds: round its edge, the lab's); grass: a clump's chance by the ground and the clumps' kinds (the flora's GRASS_KINDS); how it moves (gfx/worldterrain.js
-   grassFeet): wind, gust, push (fine px a foot bends it within), lean (its most, px), way (game px a frame across the screen a walker
+   grassFeet): wind, gust (every clump's sway, touched or not), touch (the footprint a character bends it within, game px: hw half its
+   width at his feet, a man's and a rider's or beast's (big), up behind his feet, down in front of them: only a clump whose foot is
+   in it, one his body touches; the owner, 2026-11-20: "pushing should be based on character touch"), lean (its most, px), way (game px a frame across the screen a walker
    bends it his way, else away from him), back ([s it eases back upright in, never past it; s more for each s it was trodden; the most
-   s counted]), flat ([the share of push under a foot it is pressed within, the most of its height pressed down, s to rise again]),
-   stay ([the share of clumps trodden at least stay[1] s that stay down]), feet ([a man standing's share of a walker's push, a rider's
-   or beast's push times]) */
+   s counted]), flat ([the share of the footprint's half width under his feet it is pressed within, the most of its height pressed down, s to rise again]),
+   stay ([the share of clumps trodden at least stay[1] s that stay down]), feet ([a man standing's share of a walker's push]) */
 const WORLD_FLORA={step:9,
   look:{grass:{rock:'grey',bush:'oak',snow:false,moss:1},desert:{rock:'sand',bush:'dry',snow:false,moss:0},frost:{rock:'cold',bush:'dark',snow:true,moss:0},swamp:{rock:'grey',bush:'dark',snow:false,moss:1.6}},
   trees:{grass:{lowland:{oak:5,beech:3,birch:2.5,ash:2,maple:.6,poplar:.4,dead:.25},waterside:{willow:4,alder:3,birch:1,poplar:1},hills:{pine:4,fir:3,birch:1.5,oak:1,dead:.3},mountain:{fir:4,spruce:4,pine:1,dead:.5},village:{apple:3,oak:1,poplar:1}},
@@ -80,7 +90,8 @@ const WORLD_FLORA={step:9,
     swamp:{woods:.5,open:{tree:.02,bush:.02,stone:.0015,flowers:.006},hills:{tree:.05,bush:.02,boulder:.004},mountain:{tree:.02,boulder:.02,stone:.03},woods2:{bush:.06,log:.025,stump:.016,fern:.06,mushroom:.035},bank:{cattail:.2},pool:{lily:.1,reeds:.12}}},
   grass:{step:6,chance:{grass:{open:.38,meadow:.55,woods:.12,dune:.3},desert:{open:.05,meadow:.015,woods:.2,dune:.12},frost:{open:.3,meadow:.03,woods:.02,dune:.12},swamp:{open:.5,meadow:.3,woods:.22,dune:.35}},
     kinds:{grass:{open:'grass',meadow:'meadow',woods:'wood',dune:'dune'},desert:{open:'dry',meadow:'dry',woods:'dry',dune:'dune'},frost:{open:'frost',meadow:'frost',woods:'frost',dune:'frost'},swamp:{open:'marsh',meadow:'marsh',woods:'wood',dune:'marsh'}},
-    patch:38,wind:1,gust:[90,.65],push:12,lean:3,way:.15,back:[1.6,1.2,8],flat:[.5,.55,3],stay:[.3,2.5],feet:[.4,1.6]}};
+    patch:38,wind:1,gust:[90,.65],touch:{hw:2,big:4,up:1,down:2},lean:3,way:.15,back:[1.6,1.2,8],flat:[.9,.75,26],stay:[.3,2.5],feet:[.4],
+    layer:{every:2,margin:8,band:32}}};// (layer: in play the grass layer made every every-th frame, margin fine px round the view, cleared, put and laid by band-row strips: worldterrain.js terrainEnts)
 /* the world's ways drawn finer (gfx/worldways.js; the owner, 2026-11-15: "make the lab river several sizes, there can be a big
    river"), in the lab's px (two a game px). river: half-widths by size (hw: [unused], a river one, two and three tiles wide (the
    generator's widths); a brook's from brook[0] to brook[1] by its flow); its bank (mud) bank px; depth (levels) down its middle by
@@ -109,7 +120,7 @@ const WORLD_FLORA={step:9,
    bridge: its deck clear levels over the water, the road ramped up to it within ramp game px of each end; along its road's line
    across the water, over game px onto each bank; over open space (water, or more than open px under its beams) a pile every pile px
    at most (a stone bridge's arch every arch), evenly, nothing under it where its bank carries it; rails rail px tall, a
-   post every post px; its shadow shade px to the south-east, shadow its alpha (0-255); the road's fill under only abut game px of each
+   post every post px; no pier standing out of its sides within cut.end px of its very end (its abutment on the bank); its shadow shade px to the south-east and cast x its height over what lies under it more (east, south: worldways.js bridgePic), shadow its alpha (0-255); to a bank lower than its deck it comes down by stairs (the owner, 2026-11-21: "Why dont you make a stairs based on the height that player have to go up?"; worldways.js bridgeFall): a step of stair.rise down every stair.tread px (lab px), as many as its height, its treads shaded stair.shade by turns, each one's edge lit stair.nose, its riser stair.riser, one on them looked for within stair.run game px past its end; the road raised to its deck within fill game px of each end (0: none, the bank left as it lies and the stairs down to it; it was ramp px, an earth fill up to the deck, both its ends at one height); the road's fill under only abut game px of each
    end, its open span the river and its banks as they are (worldways.js bridgeOpen); a brook under a road: a small bridge along
    the road, the brook's width and brook.span px of bank each side, its deck brook.clear levels over the water at least, none within
    brook.apart px of another bridge; on a track or over a brook under brook.ford px wide, a natural ford instead (shallow over gravel);
@@ -124,7 +135,7 @@ const WORLD_WAYS={river:{step:1,spring:2.4,simp:.45,meanderL:110,meanderBig:18,h
     wide:{hw:[1.5,9],edge:[.55,.88],on:[.62,.34],len:[5,15],mid:.45,speed:[1.3,.8],per:3.2}}},
   road:{hw:[13,13],sh:22,vary:.18,bend:3,grade:.06,fade:36,biome:{mix:[.1,.3,.35,.22],patch:[.72,.56,.58,.6]},track:.42,wander:1.3,gravel:.07,puddle:.74,edge:3,wall:5},
   bridge:{clear:1.4,ramp:28,over:6,abut:4,open:3,brook:{span:3,clear:.6,apart:24,ford:1.6},pile:12,arch:26,rail:5,post:8,shade:3,shadow:96,
-    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3},reach:28,slope:.4,diag:.45,walk:2}};
+    flag:{w:6,h:4,mortar:.86,kerb:2,vary:.14},cut:{out:5,half:3,end:10},reach:28,diag:.45,walk:2,cast:[.55,.3],fill:0,stair:{rise:2,tread:3,shade:[1,.92],nose:1.12,riser:.7,run:24}}};
 // (prints: footprints, the lab's: one every step px a man walks (a foot's stride: left, then right), side px off his way, fading over
 // fade s, max kept; on snow, sand, the marsh, and ground within bank px of drawn water, in their colours, a print's rim rim of its
 // strength: worldterrain.js stepPrint; each a foot's shape (PRINT_FOOT), pointing the way he walks)
@@ -145,7 +156,7 @@ const CAVE_ROCK={r:30,feather:16,warp:11,grain:3,up:6,flat:1.3,rock:.55,bare:.55
    fine px across and down, mix its say); rock in strata band px tall of blocks block px wide, their bedding broken (crackGap), a joint
    by joint of them, wavering wob px along wobSc; earth's horizons along horizon px, pebble of its px; shaded shade either way by noise at
    sc px, foot darker down it; foam on foam of a wet foot's px; log: each face column recorded (tests only, off) */
-const WORLD_TERRAIN={face:{low:5,lowK:.62,over:2.4,overSc:6,overRock:1,overK:.9,root:.06,rootLen:4,rockN:[1.4,2.6],steep:[.85,1.15],sand:[1.05,1.4],blot:[5,4],mix:.7,band:5,block:[4,10],crackGap:.22,joint:.6,wob:4,wobSc:17,horizon:11,pebble:.03,shade:.12,sc:[6,15],foot:.22,foam:.3,log:false},prints:{step:2.6,side:.8,rim:.5,fade:18,max:1500,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52]]},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16,basin:7},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2,rapid:{hw:8,mouth:48,join:16,bridge:14,ramp:22,white:.09,streak:5}},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
+const WORLD_TERRAIN={face:{low:5,lowK:.62,over:2.4,overSc:6,overRock:1,overK:.9,root:.06,rootLen:4,rockN:[1.4,2.6],steep:[.85,1.15],sand:[1.05,1.4],blot:[5,4],mix:.7,band:5,block:[4,10],crackGap:.22,joint:.6,wob:4,wobSc:17,horizon:11,pebble:.03,shade:.12,sc:[6,15],foot:.22,foam:.3,log:false},prints:{step:2.6,side:.8,rim:.5,fade:40,max:4000,bank:6,kinds:{snow:0,sand:1,marsh:2,wet:3,grass:4,dirt:5},col:[[110,130,170],[150,112,66],[44,38,24],[96,78,52],[50,42,26],[54,38,22]],strong:[1,1,1,1,.85,.75],seen:2,pad:1.2},climWarp:14,climPick:{sc:7,k:2.2,grain:.3},snowPatch:{lo:.5,hi:.63,grain:.06,shade:9,tufts:.85},over:{keep:.25,grain:.08,feather:4,blur:3,warp:10},meadow:{at:.62,band:.06,quick:.3,grain:.025},shore:{warp:9,sc:34,bias:.15,river:.62,bank:.6,lip:2,unstep:3,reach:12,ice:16,basin:7},liftMax:20,steepG:.22,cliffG:.44,lh:8,detail:.7,sc:46,mount:1.5,steps:{from:.16,to:.32,min:.45,band:1},falls:{lip:4,pool:9,wide:1.2,rapid:{hw:8,mouth:48,join:16,bridge:14,ramp:22,white:.09,streak:5}},rim:{drop:3,north:.68,side:.8},flat:6,rock:11,snow:14,wet:5,sand:34,dune:80,oasis:22,pools:{at:.56,lo:4,deep:3.5,sc:44},blend:{r:8,k:.85,warp:10},
   decor:{flower:[[236,220,90],[236,240,246],[200,150,210],[240,160,120]],marram:[[214,204,150],[180,172,116]],drift:[[160,138,108],[196,178,146]],shell:[238,230,216],litter:[[110,92,50],[96,80,44],[128,104,58]]},bank:5,depth:.32,clear:.9,water:{murk:.3,clear:.6,mouth:18,rim:1.6,hw:6,foam:.5,bankFoam:.4},shade:.55};
 const WORLD_SCALE={
   // every step on the map is moveStep(pace, d): pace (px per world second, unscaled) x d x move. Flee odds and chase choices
@@ -274,6 +285,10 @@ const DISCOVER={on:true,r:1,site:3,start:10,scout:6,show:4.2,core:['centre','hou
 // how far (tiles) a site of a kind stands from every holding (world/sites.js siteSpot; the owner, 2026-11-14: "camps are not too close
 // to the holding. Caves, monster lair should be more far away as well"): any (were all 6), caves 20, camps where people live 14 (a kind
 // may set its own: data/encampments.js away)
+/* the made worlds kept on the device (core/worldkeep.js WorldKeep): on; disk: in the browser's store too (IndexedDB db), not only the
+   last one in the page; most: how many worlds the store holds, the oldest let go; v: the kept record's own shape (another v is not
+   read: made again) */
+const WORLD_KEEP={on:true,disk:true,v:1,most:3,db:'ashmark-worlds'};
 const SITE_AWAY={any:12,cave:20,travelers:14};
 // how far a site stands from the others and from a holding's lots (world/sites.js siteSpot; the owner, 2026-11-17: "sites such as stone
 // pillar, abandon places, are too close to each other and even too close to the holding"): gap tiles from every other site (was 9;
@@ -285,13 +300,14 @@ const SITE_AWAY={any:12,cave:20,travelers:14};
 const SITE_SPACE={gap:14,relax:.6,lots:8,own:{hideout:9,goblins:9},first:['goblins']};
 /* nothing built at a hill's edge (the owner, 2026-11-19: "Buildings should not be spawn at the edge of hills"; world/map.js edgeNear):
    a steep edge is where the land's height (its lift, ledgeHt, px) rises or falls more than steep px from one point to the next of a
-   grid every step px; what is built keeps margin px of ground round its footprint free of one. A holding (worldplace.js, its centre's
-   box: box tiles round its tile, up 1 more), a hamlet, a bandits' camp (genCamps: its spots clear of one first), a lot (lots.js
-   lotSpot), a site (sites.js siteSpot, its box r px across and up: a travellers' camp its ring of tents, encampments.js) and an
+   grid every step px; what is built keeps margin px of ground round its footprint free of one. A lot (lots.js lotSpot), a site
+   placed in play (sites.js siteSpot, its box r px across and up: a travellers' camp its ring of tents, encampments.js) and an
    outpost (outposts.js stand) take a spot clear of one where they can (cost: how much dearer one by an edge is, in each's own score:
-   lots' tiles, a holding's liking, an outpost's tiles squared), and only where none is, one by an edge, so none is lost; a camp's
-   tent or piece (campsite.js tentOk) never stands by one. free: kinds of site an edge is for (a cave's mouth is in a cliff) */
-const EDGE_PLACE={step:4,steep:6,margin:8,box:2,r:[16,20],cost:{lot:1000,hold:1.5,hamlet:1,outpost:400},free:['cave']};
+   lots' tiles, an outpost's tiles squared), and only where none is, one by an edge, so none is lost; a camp's tent or piece
+   (campsite.js tentOk) never stands by one. A holding's middle and a bandits' camp stay where the generator puts them (worldplace.js:
+   moving them re-lays the roads, bridges and realms); a bandits' camp by one moves to a spot near it
+   clear of one, camp tiles at most (holding.js campOffEdge), where there is one. free: kinds of site an edge is for (a cave's mouth is in a cliff) */
+const EDGE_PLACE={step:4,steep:6,margin:8,r:[16,20],cost:{lot:1000,outpost:400},camp:3,free:['cave']};
 const DENSITY={
   classic:{bandits:30,camps:12,monsterStart:48,monsterCap:60,critterStart:96,critterCap:120,caravans:72,refugees:42,ships:30,
     sites:{cave:30,hideout:24,ruins:21,shrine:18,goblins:12},daily:{bandits:1,monsters:3,critters:3}},

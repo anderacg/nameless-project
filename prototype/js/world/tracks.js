@@ -35,11 +35,21 @@ const trackHeading=(dx,dy)=>compass(dx,dy).replace(/north|south|east|west/g,w=>w
 // (where a band's prints are laid this moment (the owner, 2026-11-01: "please also change the tracks to the head as well"): its army's
 // head, marched man by man (march.js), the foremost of its men the way it went (dx, dy); else (TRACKS.head off, no army near) where it
 // stands. One answer, written afresh)
-const TRACK_AT={x:0,y:0};
-function trackHead(o,dx,dy){const T=TRACK_AT,a=TRACKS.head&&WORLD_BATTLE.on&&MARCH_ARMIES.get(o);T.x=o.x;T.y=o.y;if(!a||!a.units.length||Math.hypot(o.x-a.x,o.y-a.y)>MARCH_MOVE.teleport)return T;
-  let b=-Infinity;for(const u of a.units)if(!u.dead){const k=(u.x-o.x)*dx+(u.y-o.y)*dy;if(k>b){b=k;T.x=u.x;T.y=u.y}}return T}
+// (and how wide it walks there (the owner, 2026-11-21: "Tracks are not follow the characters"): w half the width of its men across its
+//  way (px; -1 not known: no army marched), c how far the middle of them lies to the side of its head (its way's left hand negative))
+const TRACK_AT={x:0,y:0,w:-1,c:0};
+function trackHead(o,dx,dy){const T=TRACK_AT,a=TRACKS.head&&WORLD_BATTLE.on&&MARCH_ARMIES.get(o);T.x=o.x;T.y=o.y;T.w=-1;T.c=0;if(!a||!a.units.length||Math.hypot(o.x-a.x,o.y-a.y)>MARCH_MOVE.teleport)return T;
+  const l=Math.hypot(dx,dy)||1,nx=-dy/l,ny=dx/l;let b=-Infinity,lo=Infinity,hi=-Infinity,hq=0;
+  for(const u of a.units)if(!u.dead){const k=(u.x-o.x)*dx+(u.y-o.y)*dy,q=(u.x-o.x)*nx+(u.y-o.y)*ny;if(k>b){b=k;T.x=u.x;T.y=u.y;hq=q}if(q<lo)lo=q;if(q>hi)hi=q}
+  if(hi>=lo){T.w=(hi-lo)/2;T.c=(lo+hi)/2-hq}return T}
 class Track{
-  constructor(k,n,m,nm,q){this.k=k;this.n=n;this.m=m;this.nm=nm;this.q=q||0;this.p=[];this.box=[Infinity,Infinity,-Infinity,-Infinity]}
+  constructor(k,n,m,nm,q){this.k=k;this.n=n;this.m=m;this.nm=nm;this.q=q||0;this.p=[];this.box=[Infinity,Infinity,-Infinity,-Infinity];this.w=-1;this.c=0;this.rt=null}
+  // (kept aside, never saved: w, c how wide its band walked and where its middle lay off its line (trackHead, eased as it is laid);
+  //  rt: for each point laid while its men's own prints were being drawn (worldterrain.js stepPrint), the real time, ms: its
+  //  stretch is theirs while they last (gfx/tracks.js drawTracks))
+  get wide(){return this.w>=0?this.w:Math.max(0,Math.sqrt(this.n)-1)*TRACKS.spread}
+  walked(w,c){if(w<0)return;if(this.w<0){this.w=w;this.c=c}else{this.w+=(w-this.w)*TRACKS.ease;this.c+=(c-this.c)*TRACKS.ease}}
+  stamp(ms){if(!ms)return;if(!this.rt)this.rt=[];this.rt[this.size-1]=ms}
   get own(){return this.k==='you'}
   get size(){return this.p.length/3}
   // how old its stretch from point i is, in hours at now (trackNow): as old as its newer end (a band that stood a while, then walked
@@ -55,7 +65,7 @@ class Track{
     return this.m&&kind!=='caravan'?A.mounted:A.who[kind]||A.style[this.style]}
   add(x,y,t){x=Math.round(x);y=Math.round(y);this.p.push(x,y,t);const b=this.box;if(x<b[0])b[0]=x;if(y<b[1])b[1]=y;if(x>b[2])b[2]=x;if(y>b[3])b[3]=y}
   // its first n points gone (the oldest), its bounds again
-  trim(n){if(n<=0)return;this.p.splice(0,3*n);const b=this.box,p=this.p;b[0]=b[1]=Infinity;b[2]=b[3]=-Infinity;
+  trim(n){if(n<=0)return;this.p.splice(0,3*n);if(this.rt)this.rt.splice(0,n);const b=this.box,p=this.p;b[0]=b[1]=Infinity;b[2]=b[3]=-Infinity;
     for(let i=0;i<p.length;i+=3){if(p[i]<b[0])b[0]=p[i];if(p[i+1]<b[1])b[1]=p[i+1];if(p[i]>b[2])b[2]=p[i];if(p[i+1]>b[3])b[3]=p[i+1]}}
   toJSON(){const p=this.p,a=[this.k,this.n,this.m,this.nm,this.q];if(p.length)a.push(p[0],p[1],p[2]);for(let i=3;i<p.length;i+=3)a.push(p[i]-p[i-3],p[i+1]-p[i-2],p[i+2]-p[i-1]);return a}
   static from(a){const tr=new Track(a[0],a[1],a[2],a[3],a[4]);if(a.length<8)return tr;let x=a[5],y=a[6],t=a[7];tr.add(x,y,t);
@@ -104,7 +114,7 @@ const Tracks={
     const dx=o.x-s.x,dy=o.y-s.y,d2=dx*dx+dy*dy,S=TRACKS.sample;if(d2<S*S)return;
     if(d2>S*S*TRACKS.gap*TRACKS.gap)s.tr=null;
     else{const h=trackHead(o,dx,dy),hx=h.x,hy=h.y;if(!trackGround(hx,hy))s.tr=null;
-      else{if(!s.tr||s.tr.gone){s.tr=this.start(o,k);const fx=s.hx??s.x,fy=s.hy??s.y;if(trackGround(fx,fy)){s.tr.add(fx,fy,s.t);this.n++}}s.tr.add(hx,hy,now);this.n++}
+      else{if(!s.tr||s.tr.gone){s.tr=this.start(o,k);const fx=s.hx??s.x,fy=s.hy??s.y;if(trackGround(fx,fy)){s.tr.add(fx,fy,s.t);this.n++}}s.tr.add(hx,hy,now);this.n++;s.tr.walked(h.w,h.c);s.tr.stamp(typeof printsSeen==='function'?printsSeen(o):0)}
       s.hx=hx;s.hy=hy}
     s.x=o.x;s.y=o.y;s.t=now},
   // each frame: every band on the map (no list made: the frame's own), then the cap

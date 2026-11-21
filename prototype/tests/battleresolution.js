@@ -131,7 +131,14 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  (world/sites.js), which moves the parties and the save. Were: retreat_caught 8db0136b, lord_win f23a6430, auto_loss e82296d4, auto_resolve 210b3141)
   // (lord_loss re-recorded 2026-11-18, on purpose, none for a battle rule: high edges block movement and the river by a bridge is shut
   //  (world/map.js LEDGE, router.js bridgeSide), which moves the world this fight is fought from. Was 5abf0f90)
-  const REC={field_win:'29808af7',field_loss:'bfba6f5c',retreat_away:'62e4fa27',retreat_caught:'ae506e55',carried_retreat:'d8e8ccb8',tournament_win:'aed93b18',tournament_loss:'a8c55aa8',siege_win:'67a22594',siege_loss:'02195ec0',lord_win:'574c3f91'/* (re-recorded 2026-11-01, on purpose: a lord you do not know changes his mind quietly (relations.js Relations.change; the owner: "I randomly get to know lords that I'm not even met yet"), so the beaten lord's “thinks less of you” is no longer in the log. Proof: that guard taken out gives fd9d15a9 again. Was fd9d15a9) */,lord_loss:'82859d4b',monster_win:'8b112ce7',auto_win:'703c81f7',auto_loss:'5f44103d',auto_resolve:'59e7ac6f'};
+  // (re-recorded 2026-11-19, on purpose, none for a battle rule: two at once: battles at real speed, the owner's "not look like
+  //  slow motion ... battle not so fast pace": BATTLE_TEMPO and BATTLE_PACE 1, the battle's own rhythm in data/units.js
+  //  BATTLE_RHYTHM (move .54, strike 2.2, shot 3.3, dmg .65, morale .33, tire .33); and the world these fights begin on moved with
+  //  the owner's "Buildings should not be spawn at the edge of hills": lots, sites placed in play and outposts off a hill's edge by
+  //  a cost, a bandits' camp by one nudged to a clear spot near (data/world.js EDGE_PLACE, holding.js campOffEdge), a moving camp
+  //  never back onto its own spot (encampments.js), which moves the parties and the save. Were: field_loss bfba6f5c, retreat_caught
+  //  ae506e55, lord_win 574c3f91, auto_resolve 59e7ac6f)
+  const REC={field_win:'29808af7',field_loss:'55be19f1',retreat_away:'62e4fa27',retreat_caught:'0eafa6eb',carried_retreat:'d8e8ccb8',tournament_win:'aed93b18',tournament_loss:'a8c55aa8',siege_win:'67a22594',siege_loss:'02195ec0',lord_win:'83efe0ae'/* (re-recorded 2026-11-01, on purpose: a lord you do not know changes his mind quietly (relations.js Relations.change; the owner: "I randomly get to know lords that I'm not even met yet"), so the beaten lord's “thinks less of you” is no longer in the log. Proof: that guard taken out gives fd9d15a9 again. Was fd9d15a9) */,lord_loss:'82859d4b',monster_win:'8b112ce7',auto_win:'703c81f7',auto_loss:'5f44103d',auto_resolve:'d7b0ced7'};
   // (field_loss and auto_loss re-recorded 2026-11-11, on purpose: a band strips you as it takes you (world/captivity.js CAPTIVITY.band.strip,
   //  ca9d60c; the owner: "when you captured by bandits normally you'll lose all your golds or inventories"): your gold in these two is the
   //  quarter you hid, 50 of 200, the rest and your spare gear taken (took). Were field_loss e6c2d381, auto_loss 918cfb3d; checked: with

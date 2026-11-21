@@ -132,7 +132,9 @@ function unpackRec(a,keys,o={}){keys.forEach((k,i)=>{if(a[i]!==null)o[k]=a[i]});
    in round yours (core/spatial.js ChunkGrid, chunk px a side: the painted map's), sorted every .every s of real time by lodTick
    (plain data too), which files every mover in grid as it goes. Near (near rings: you see them): every frame. Mid (to mid rings):
    every midEvery-th frame, with that many times d. Far: its kind's farStep (beasts and herds hold where they are: they wander
-   only near you), else as mid (a party's route by time waits on a travel that spends a whole step: router.js). on false: every
+   only near you), else every farEvery-th frame with that many times d, spread as mid (a party's route by time waits on a travel
+   that spends a whole step: router.js; 12 frames, 0.4 s, a party a few px a step at a walk; it was as mid, 4: the owner,
+   2026-11-21, "I still get lag my phone"). on false: every
    one near, every frame, as before the tiers (the tests). lag: px the grid may be behind (what moved since it was filed): asked
    with that margin. (n: frames so far in this world or since this load, so the same game thinks on the same frames; t: till the
    next sorting, 0 with a new world; cx, cy: your chunk then) */
@@ -143,7 +145,7 @@ function unpackRec(a,keys,o={}){keys.forEach((k,i)=>{if(a[i]!==null)o[k]=a[i]});
    each band filed again after its moment), not through every band; land: the land looked at once before the beasts' moments and held through them (territory.js
    landHeldFor: none of them changes it), and an outpost's part of its key from the outposts alone (outposts.js) */
 const WORLD_FAST={feud:true,land:true};
-const WORLD_LOD={on:true,chunk:512,near:1,mid:4,midEvery:4,every:.5,lag:512,t:0,n:0,cx:0,cy:0,grid:null},TIERS=new WeakMap();
+const WORLD_LOD={on:true,chunk:512,near:1,mid:4,midEvery:4,farEvery:12,every:.5,lag:512,t:0,n:0,cx:0,cy:0,grid:null},TIERS=new WeakMap();
 WORLD_LOD.grid=new ChunkGrid(WORLD_LOD.chunk);
 // (a world goes in, or a game is loaded: its movers are other objects, filed afresh when next asked, the frames counted afresh; never saved)
 const lodForget=()=>{WORLD_LOD.t=0;WORLD_LOD.n=0;WORLD_LOD.grid.file([]);TravelAwareness.far=null};
@@ -170,10 +172,10 @@ function lodBox(pad){const L=WORLD_LOD;if(!L.on||!(L.mid<1e6))return null;const 
 const lodIn=(b,x,y)=>!b||x>=b[0]&&y>=b[1]&&x<=b[2]&&y<=b[3];
 // one thing's moment by its tier, from its kind's thinker (a Brain, brains.js; BEAST_MIND, HERD_MIND, SHIP_MIND): think(o, d, x)
 // near; mid, on every midEvery-th frame (k, its place in its list, spreads them out) with that many times d; far, farStep(o, d, x,
-// k) if the kind has one, else as mid. True when it opened an encounter
-const lodMid=(by,o,k,d,x)=>{const n=WORLD_LOD.midEvery;return (WORLD_LOD.n+k)%n===0&&by.think(o,n*d,x)};
+// k) if the kind has one, else on every farEvery-th frame, so spread, with that many times d. True when it opened an encounter
+const lodMid=(by,o,k,d,x,n=WORLD_LOD.midEvery)=>(WORLD_LOD.n+k)%n===0&&by.think(o,n*d,x);
 function lodThink(by,o,k,d,x){if(fightHolds(o))return false;const t=tierOf(o);// (one in the fight on the map, or stepped aside from it: the fight moves it, worldbattle.js)
-  return t==='near'?by.think(o,d,x):t==='far'&&by.farStep?by.farStep(o,d,x,k):lodMid(by,o,k,d,x)}
+  return t==='near'?by.think(o,d,x):t!=='far'?lodMid(by,o,k,d,x):by.farStep?by.farStep(o,d,x,k):lodMid(by,o,k,d,x,WORLD_LOD.farEvery)}
 // each of a list in turn, by its tier; true as soon as one opens an encounter (the rest wait). by: their thinker, else each one's brain
 function lodEach(list,by,d,x){let k=0;for(const o of list)if(lodThink(by||o.brain,o,k++,d,x))return true;return false}
 /* walk cycles by distance (doc §2.2 R13): walk (world.js) adds up how far each thing goes; a figure's frame is frameOf(o, stride,

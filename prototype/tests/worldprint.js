@@ -911,7 +911,38 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, W6 re-recorded 2026-11-19 again, on purpose, the owner's "please fix that straight line steep hill": a face's rock and sand
 //  blended by noise, not picked per column, and painted as earth or rock with a ragged grassy lip, strata, cracks, roots and scree
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
-const EXPECT={W1:'2fc54212',W2:'5d0e0087',W3:'e7fea2d6',W4:'2e253f27',W5:'e9f4056f',W6:'fd6aba67',W7:'7eb11ba5',W8:'1c2960d1',B2:'05b4d278'};
+const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
+// (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
+//  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
+//  shared Math.random in another order, which moves parties (W8) and what the save holds after 3 days (W7). With farEvery 4 both hold
+//  (measured); the route tables' new search (router.js wayEdges), the wide grid box and folkNear change neither. W6 fails as on the
+//  untouched tree (42fcc344: the stealth eye, re-recorded below). W1-W5, B2 and the sums hold. Were
+//  W7 5c44bdb4, W8 5466914a)
+// (W6 re-recorded 2026-11-21, on purpose, the owner's "check why one of the house roof seem flat": Vale's townhouse's roof rises 9
+//  over its 8 px half span either way it lies (engine/build-vale.js look.townRise; it rose 6 along its front, 8 gable to the
+//  street), and W6 draws a holding with townhouses in it. W1-W5, W7, W8, B2 and the sums hold. Were W6 d974d304)
+// (W5, W6 re-recorded 2026-11-21, on purpose, the owner's "Why dont you make a stairs based on the height that player have to go up?
+//  For those bridges": the road is no longer raised on a fill to a bridge's deck within 28 px of its ends (data/world.js
+//  WORLD_WAYS.bridge.fill 0), the bank painted as it lies and the bridge down to it by stairs, so the painted ground by every
+//  bridge differs (W5); W6 draws that ground, and with it the hails' marks at one scale (the "!" in a square, the edge's arcs a
+//  fine px: worldui.js) and a bridge's shadow cast by its height: after those two alone it was a56c5f43 (measured), with the
+//  stairs d974d304. W1-W4, W7, W8, B2 and the sums hold. Were W5 dad150d3, W6 6c01e664)
+// (W6 re-recorded 2026-11-21, on purpose, the owner's "Recheck encounter and ui icons whether they are scale correctly": your stealth
+//  eye, which W6 draws over your men, is painted at its drawn size in device px and laid one px to one (render.js devPic, putDev), not
+//  a 72 px picture shrunk at every draw (tests/pixels.js failed on it), so its px differ; the minimap's rim the same. Measured twice,
+//  on the fork's tree and merged: 6c01e664. W1-W5, W7, W8, B2 and the sums hold. Were W6 42fcc344)
+// (W6 re-recorded 2026-11-21, on purpose, the owner's "that weird grey line" (163c1df): your stealth eye shut is now a closed lid
+//  and four lashes (ui/icons.js uiIndicator), not a lens 4 deep, and W6 draws your men with others about, their eye shut over them.
+//  Bisected: f17f8e7 gives 8248ed12, 163c1df 42fcc344; the grass's half rate (dd7540f) holds it. Were W6 8248ed12)
+// (W6 re-recorded 2026-11-20, on purpose, the owner's "The grasses should shake only the one that touch unit" (the wind's sway
+//  kept): a clump bends only under a man's own footprint (data/world.js WORLD_FLORA.grass touch, worldterrain.js grassFeet), 1 clump
+//  under a man's foot where 4 bent, 2 under a rider's where 8; W6 draws the land with your men standing in its grass. The rest hold.
+//  Were W6 fb9bd4c5)
+// (W1, W3-W8, B2 re-recorded 2026-11-19, on purpose, the owner's "Buildings should not be spawn at the edge of hills": lots, sites
+//  placed in play and outposts off a hill's edge by a cost, a bandits' camp by one nudged to a clear spot near, its tiles opened
+//  (data/world.js EDGE_PLACE, holding.js campOffEdge), a moving camp never back onto its own spot (encampments.js); W2 and the
+//  generator's sums hold, the made world's tiles as they were. Were: W1 2fc54212, W3 e7fea2d6, W4 2e253f27, W5 e9f4056f, W6 fd6aba67, W7
+//  7eb11ba5, W8 1c2960d1, B2 05b4d278)
 // (G5, G6 re-recorded 2026-10-22, on purpose, the owner's fourth play-test (agent N: gfx/worldart.js, engine/worldnature.js): the
 //  grass's hills shaded lighter (what read as swamp) and running on under the roads, their palette and a wood's floor by the
 //  climates' covers (PX.WN_BLEND), the trees across a climate's edge an ecotone (PX.WN_ECO, ecoLean), a road's colour blended

@@ -85,7 +85,9 @@ class SpatialIndex{
    a chunk px wide (the painted map's, 512). file(lists) files them all afresh, in the lists' order (each one once, its place
    in that order its ord, the list it came from its tag); box(x0, y0, x1, y1, out) gathers into out those filed in the chunks
    the rect (px) touches, back in that order. A snapshot, as the index above: what moved since stands where it was filed, so
-   ask with a margin */
+   ask with a margin. A wide rect (more than SCAN chunks: the mid rings round you, asked each frame by the herds' threats, the
+   beasts' prey and who sees you) is read off the filing's own list in order, each by the chunk it was filed in, not gathered
+   and sorted back: the same answer, a sort of hundreds by their places saved each time (2026-11-21) */
 class ChunkGrid{
   constructor(px){
     this.px=px;
@@ -94,6 +96,9 @@ class ChunkGrid{
     this.tag=new WeakMap();
     this.gen=0;
     this.n=0;
+    this.all=[];
+    this.ac=[];
+    this.ar=[];
   }
   key(cx,cy){
     return (cx+32768)*65536+(cy+32768);
@@ -106,12 +111,12 @@ class ChunkGrid{
   has(o){return (this.ord.get(o)||0)>this.gen*1e7-1}
   file(lists){
     for(const c of this.cells.values())c.length=0;
-    const base=++this.gen*1e7;let i=0;
+    const base=++this.gen*1e7,A=this.all,AC=this.ac,AR=this.ar;let i=0;A.length=AC.length=AR.length=0;
     lists.forEach((L,t)=>{for(const o of L){
       if(!o||(this.ord.get(o)||0)>=base)continue;
       this.ord.set(o,base+i++);
       this.tag.set(o,t);
-      const k=this.key(this.at(o.x),this.at(o.y));let c=this.cells.get(k);
+      const cx=this.at(o.x),cy=this.at(o.y),k=this.key(cx,cy);A.push(o);AC.push(cx);AR.push(cy);let c=this.cells.get(k);
       if(!c)this.cells.set(k,c=[]);
       c.push(o);
     }});
@@ -120,6 +125,7 @@ class ChunkGrid{
   }
   box(x0,y0,x1,y1,out){
     const n0=out.length,c0=this.at(x0),c1=this.at(x1),r0=this.at(y0),r1=this.at(y1);
+    if((c1-c0+1)*(r1-r0+1)>ChunkGrid.SCAN){const A=this.all,AC=this.ac,AR=this.ar;for(let i=0;i<A.length;i++){const c=AC[i],r=AR[i];if(c>=c0&&c<=c1&&r>=r0&&r<=r1)out.push(A[i])}return out}
     for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){
       const b=this.cells.get(this.key(c,r));
       if(b)for(const o of b)out.push(o);
@@ -128,6 +134,7 @@ class ChunkGrid{
     return out;
   }
 }
+ChunkGrid.SCAN=16;
 const Spatial={
   nearest(list,x,y,filter){
     let best=null,bd=1e9;

@@ -11,12 +11,11 @@
 function heralded(units){const teams=B.sides?.active?B.sides.teams():[0,1];for(const u of units){const p=u.ls||(u.ls=[]);for(const t of teams)if(t!==u.team){p[2*t]=u.x;p[2*t+1]=u.y}}}
 // (where a joining army comes in: the marker's radius r px, its colours by where it stands with you, its pulse a second, its fade s once in)
 const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0605a',neutral:'#dba75f'}};
-// (who rides into a world battle unasked, bands and beasts (wild) not of the kind you fight (kin): from reach px past its ring, weighing it every every s: a band
+// (who rides into a world battle unasked, bands and beasts (wild) not of the kind you fight (kin): once they reach it (WorldBattleArea#knows), weighing it every every s: a band
 // when the field is small (small men a side at most) or worn (after after s, worn of its men down), by chance; a hungry beast never
 // within near px of a holding, by chance: WorldBattleArea#tempted)
-// hear: how far a fight is heard past its edge: base px, per fighter in it, at most max (the owner, 2026-11-01: a troll came in that
-// could not have known of the fight: only one that sees or hears it may join, WorldBattleArea#knows)
-const JOIN_RULES={reach:120,every:5,hear:{base:20,per:.5,max:60},band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
+// (the owner, 2026-11-01: a troll came in that could not have known of the fight; 2026-11-20: none but once it reaches the fight, WorldBattleArea#knows)
+const JOIN_RULES={every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
 // (walk: a fight's walking share of a man's pace, the field's own (battle.js MARCH.base; was .75, near the map's march, when a fight on
@@ -111,7 +110,8 @@ class WorldBattleArea{
     if(this.fight)for(const o of this.initial){if(o===P)continue;const reach=Math.max(marchOuter(o),MarchArmy.spread(o)),dx=o.x-this.x,dy=o.y-this.y,dist=Math.hypot(dx,dy);if(dist+reach<=this.r)continue;if(reach>=dist+this.r){this.x=o.x;this.y=o.y;this.r=reach}else{const size=(this.r+dist+reach)/2,k=dist?(size-this.r)/dist:0;this.x+=dx*k;this.y+=dy*k;this.r=size}}
     // (ring: the field as the ring had it, who hears of the fight measured from it as ever (knows: the owner, 2026-11-14, "the join range
     // should be not that far, reduce to the original range"); r: the field, OPEN_FIGHT.reach as wide in the open)
-    this.ring=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);this.r=this.ring*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);
+    // (core: the ground the fighting sides stand on, both armies' bodies: where they reach one another, who takes part counted by it)
+    this.core=this.r;this.ring=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);this.r=this.ring*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);
     this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
     this.joinedFight=!!this.fight;this.made=made;this.held=other;this.starts=[a,{x:b.x,y:b.y,facing:other instanceof Party?marchFacing(other):Math.atan2(a.y-b.y,a.x-b.x)}];this.participants=new Set([...this.initial,other,this.fight,...(e.kind==='villagers'?other?.ws||[]:[])]);this.pending=[];this.turned=new Set();this.arrivals=[];this.serial=0;this.marchClamp=p=>this.world(this.constrain(this.field(p),18));this.marchInside=p=>this.inside(this.field(p),6);
   }
@@ -246,8 +246,12 @@ class WorldBattleArea{
   // boundary"))
   escape(u,dt){const keep=!u.shattered&&!B.over,hold=()=>{const p=this.constrain(u);u.x=p.x;u.y=p.y};
     if(!this.inside(u,-2)){if(keep)hold();else{this.depart(u);return}}
-    const exit=this.escapePlan(u)?.to||this.exit(u,2),way=this.escapeWay(u),p=way?{x:u.x+way[0]*way[2],y:u.y+way[1]*way[2]}:exit,d=Math.hypot(p.x-u.x,p.y-u.y),s=Math.min(d,u.s.spd*1.1*dt*tiredMul(u).spd);
-    if(d>0){u.x+=(p.x-u.x)*s/d;u.y+=(p.y-u.y)*s/d;u.dir=Math.atan2(p.y-u.y,p.x-u.x);u.face=Math.cos(u.dir)>0?1:-1;u.spdNow=u.s.spd}fatigueStep(u,dt,s>0,false,false);
+    // (he runs as any man runs (actors.js: his speed, tired or spent the slower, groundMul: the map's scale, the ground, the battle's
+    //  pace), a tenth faster for his life; out of breath (FATIGUE.runMin) he walks; drawn as he goes, running or walking; the owner,
+    //  2026-11-20: "when they flee they run. But running and all those also based on stamina")
+    const exit=this.escapePlan(u)?.to||this.exit(u,2),way=this.escapeWay(u),p=way?{x:u.x+way[0]*way[2],y:u.y+way[1]*way[2]}:exit,d=Math.hypot(p.x-u.x,p.y-u.y),
+      wk=staOf(u)<FATIGUE.runMin,spd=(wk?u.s.spd*MARCH.walk:u.s.spd*ROUT_RUN)*tiredMul(u).spd,s=d>0?Math.min(d,spd*dt*groundMul(u,(p.x-u.x)/d,(p.y-u.y)/d)):0;
+    if(d>0){u.x+=(p.x-u.x)*s/d;u.y+=(p.y-u.y)*s/d;u.dir=Math.atan2(p.y-u.y,p.x-u.x);u.face=Math.cos(u.dir)>0?1:-1;u.spdNow=spd}fatigueStep(u,dt,s>0,wk,false);
     if(!this.inside(u,-2)){if(keep)hold();else this.depart(u)}
   }
   depart(u){
@@ -278,14 +282,17 @@ class WorldBattleArea{
     if(o.mapKind==='band'&&e.kind==='party')return (o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits')?1:-1;
     return o.mapKind==='cparty'?0:o.mapKind==='lord'&&lordWhy(e,o)||o.mapKind==='patrol'&&watchWhy(e,o)?0:-1;
   }
-  /* whether o knows of the fight: its edge within o's own sight (WORLD_SCALE.sight, by its kind) and the fight's noise (JOIN_RULES.hear:
-     louder the more fight it), never past the reach of old (reach for bands and beasts, WORLD_BATTLE.join for the rest); your
-     companions' parties and the lords riding in your host are with you: they know, as ever */
-  knows(o,hear){const d=Math.hypot(o.x-this.x,o.y-this.y),r=this.ring??this.r;if(d>r+(JOIN_RULES.wild(o)?JOIN_RULES.reach:WORLD_BATTLE.join))return false;
-    return o.mapKind==='cparty'||!!o.follow||d-r<=(WORLD_SCALE.sight[o.mapKind]??WORLD_SCALE.sight.lord)+hear}
+  /* whether o takes part in the fight (the owner, 2026-11-20: "only consider them when they actually in the attack range"): its own
+     body (march.js marchOuter) reaching the ground the fight is fought on, R (reach: the sides' bodies it began with, core, or as far
+     out as a man still fights now), as engage.js inFightReach counts the armies at its start; one walking into it mid-fight joins
+     then. An army counted in it at its start (the encounter's allies and foes) is in it wherever it stands, and walks in. Your
+     companions' parties and the lords riding in your host are with you: they know of it from as far as of old, WORLD_BATTLE.join
+     past the ring's edge */
+  knows(o,R=this.reach()){const d=Math.hypot(o.x-this.x,o.y-this.y),e=G.enc;if(e&&[...(e.allies||[]),...(e.foes||[])].some(f=>(f.src||f)===o))return true;
+    return o.mapKind==='cparty'||o.follow?d<=(this.ring??this.r)+WORLD_BATTLE.join:d-marchOuter(o)<=R}
+  reach(){let r=this.core??this.r;if(B?.world===this)for(const u of B.units)if(fighting(u)){const w=this.world(u);r=Math.max(r,Math.hypot(w.x-this.x,w.y-this.y))}return r}
   reinforce(dt){
-    const H=JOIN_RULES.hear,hear=Math.min(H.max,H.base+H.per*B.units.reduce((n,u)=>n+(fighting(u)?1:0),0));
-    for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||!this.knows(o,hear)||!this.tempted(o))continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}
+    const R=this.reach();for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||!this.knows(o,R)||!this.tempted(o))continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}
     for(let i=this.pending.length-1;i>=0;i--){const a=this.pending[i],o=a.o,d=Math.hypot(o.x-this.x,o.y-this.y);if(this.sides){const r=this.sides.byOwner.get(o);if(r)a.team=r.team}if(d>this.r-3){const sp=Math.min(d,partySpeed(o,o.troops)*dt/this.scale);walk(o,this.x-o.x,this.y-o.y,sp);MARCH_ARMIES.get(o)?.step(dt/(this.scale*WORLD_SCALE.move),false);if(d<(a.best??Infinity)-1){a.best=d;a.stuck=0}else if((a.stuck=(a.stuck||0)+dt)>WORLD_BATTLE.stall)this.turnAway(i);continue}if(this.sides&&!this.sides.room(o,a.existing?a.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null)){if((a.full=(a.full||0)+dt)>WORLD_BATTLE.stall)this.turnAway(i);continue}if(a.existing){for(const id of a.existing){const g=B.groups[id],m=B.units.filter(u=>u.grp===id);for(const u of m){u.hp=u.hpLeft;delete u.left;delete u.waiting}this.place(g,m,o,{x:0,y:(a.existing.indexOf(id)-(a.existing.length-1)/2)*5},o);if(g.resolve){g.resolve.refreshState();g.resolve.sync()}}if(this.sides){const r=this.sides.byOwner.get(o);if(r)r.joined=true}B.cmdT=0;B.moraleNext=0;B.sight=null;log((o.mapKind==='lord'?lordName(o):o.name||o.label?.()||'An army')+' enters the battle.',a.team?'bad':'good','war');battleEvent('reinforcement',{party:o,team:a.team});setOrderUI()}else this.join(o,a.team);this.pending.splice(i,1)}
   }
   /* whether a band or a beast (JOIN_RULES.wild) near the fight rides in now (the owner, 2026-10-30: beasts joining a battle in the
@@ -410,4 +417,6 @@ class WorldBattleSetup extends BattleSetup{
   present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera();if(B.muster?.active)toast('Armies are moving to their starting formations. Combat begins only after Start Battle.')}
   start(after){this.survey();this.terrain();this.muster();this.open();if(after)after();return Promise.resolve()}
 }
-function worldBattleEligible(opts){return WORLD_BATTLE.on&&!opts.sandbox&&!opts.tournament&&G.enc&&['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin','outpost'].includes(G.enc.kind)}
+// (the encounters fought on the map, in the world battle: engage.js inFightReach reads it too)
+const WORLD_BATTLE_KINDS=['party','lord','patrol','caravan','monster','field','villagers','estate','camp','ruin','outpost'];
+function worldBattleEligible(opts){return WORLD_BATTLE.on&&!opts.sandbox&&!opts.tournament&&G.enc&&WORLD_BATTLE_KINDS.includes(G.enc.kind)}

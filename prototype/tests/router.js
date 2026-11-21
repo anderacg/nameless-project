@@ -9,6 +9,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 try{
  W0=t.WM;const pct=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(s.length*p))]};
  ok(t.WAY.pace===t.MAP_BASE,'the graph\'s days are at MAP_BASE\'s pace (WAY.pace '+t.WAY.pace+')');
+ // ---- a chunk's table over its box's steps worked out once (wayEdges, wayLocalE) to the last bit wayLocal's, every chunk of the
+ //  world in, from every node of it; and how much quicker (the owner, 2026-11-21: "I still get lag my phone": a far trip built 62
+ //  tables in a frame, 1.7 s)
+ {const G=t.WM.graph,tA=[0,0];let n=0,diff=0,tables=0;
+  for(let c=0;c<G.coff.length-1;c++){const ids=G.cnode.subarray(G.coff[c],G.coff[c+1]);if(!ids.length)continue;const cx=c%G.cols,cy=(c-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs,x1=Math.min(t.MW,x0+G.cs),y1=Math.min(t.MH,y0+G.cs);tables++;
+   let a=performance.now();const old=[...ids].map(v=>t.wayLocal(G.tile[v],x0,y0,x1,y1,false));tA[0]+=performance.now()-a;
+   a=performance.now();const E=t.wayEdges(x0,y0,x1,y1),now=[...ids].map(v=>t.wayLocalE(G.tile[v],E));tA[1]+=performance.now()-a;
+   for(let k=0;k<old.length;k++){n++;const A=old[k],B=now[k];for(let i=0;i<A.length;i++)if(A[i]!==B[i]&&!(A[i]!==A[i]&&B[i]!==B[i])){diff++;break}}}
+  ok(n>0&&!diff,'every chunk\'s searches over its steps worked out once give wayLocal\'s very costs: '+n+' searches, '+tables+' tables, '+diff+' differ');
+  info('the tables of the whole world: '+tA[0].toFixed(0)+' ms each step worked out in each search, '+tA[1].toFixed(0)+' ms over the box\'s steps worked out once')}
  // ---- the generator's rules, by the text of buildWayGraph and what it calls
  {const src=[t.buildWayGraph,t.wayStep,t.wayDay].map(f=>f.toString()).join('\n'),bad=['Math.random','hypot','Math.sin','Math.cos','Math.exp','Math.pow','Math.log','atan2','rnd(','rint(','pick('].filter(w=>src.includes(w));
   ok(!bad.length,'buildWayGraph keeps the generator\'s rules: no Math.random, hypot, sin, cos, exp, pow, log or atan2'+(bad.length?': '+bad.join(', '):''))}

@@ -62,7 +62,8 @@ class Encampment extends Site{
   // (a seasonal or wandering camp moves on at its time, unseen (in your sight, it waits): the same people, to their kind's ground
   // elsewhere, new wares)
   day(){super.day();if(this.until==null||G.day<this.until||G.site===this||yourSight().sees(this.x,this.y,1.3))return;
-    const p=siteSpot('travelers',W.sites.filter(o=>o!==this),SITE_SPACE.gap,Encampment.spec(this.kind));if(p){this.tx=p[0];this.ty=p[1];this.placed()}
+    // (elsewhere: where it stood one of the others, so it goes SITE_SPACE.gap tiles off at least, never back onto its own spot)
+    const p=siteSpot('travelers',W.sites.filter(o=>o!==this).concat({tx:this.tx,ty:this.ty,type:this.type}),SITE_SPACE.gap,Encampment.spec(this.kind));if(p){this.tx=p[0];this.ty=p[1];this.placed()}
     this.seen=false;this.stockUp();CampFolk.forget(this);if(G.lastSite===this)G.lastSite=null}
   // (its flag: a travelling band's pennant in its colour, its people's device (figures.js SHIELD_ART))
   flag(){return{k:'pennant',col:this.TR.col,dev:SHIELD_ART.dev[this.folkRace]||null}}

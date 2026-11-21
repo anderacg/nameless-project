@@ -80,13 +80,20 @@ function heroTagAt(cam){const a=marchPicked(P),u=a&&a.carrier&&!a.carrier.dead?a
 // (a banner planted on a pole, your camp's (supply.js campPole), standing over o; null for what flies none (a site's banner()
 // is its camp flag's colour, structures.js); c: the point it stands over)
 function bannerAt(o,f){const b=o.banner&&o.banner();if(!b||typeof b!=='object')return null;const s=bannerSprite(b,f),c=armyHome(o);return{s,c,x:Math.round(c.x)-s.px,y:o.headY()+Math.round(c.y)-Math.round(o.y)-BANNER_GAP-s.py}}
+/* an illustrated badge at the screen's own density (the owner, 2026-11-21: "Recheck ... ui icons whether they are scale correctly"):
+   painted at its drawn size in device px (paint(g, w, h), cached by key and size), and laid at a whole device px, one of its px to
+   one of the screen's (putDev), never a bigger picture shrunk at every draw (tests/pixels.js) */
+const DEV_PIC=new Map();
+function devPic(key,w,h,paint){const W=Math.max(1,Math.round(w)),H=Math.max(1,Math.round(h)),k=key+'|'+W+'x'+H;let c=DEV_PIC.get(k);
+  if(!c){c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');g.imageSmoothingEnabled=true;paint(g,W,H);DEV_PIC.set(k,c)}return c}
+// (c laid with its corner at (x, y) in game px, put to the screen's own px (snapV), one of its px to one device px (VS a game px))
+function putDev(c,x,y){ctx.drawImage(c,snapV(x),snapV(y),c.width/VS,c.height/VS)}
 // Travel cover reduces detection distance; this is the same closed-eye badge used by battle concealment.
 const TRAVEL_HIDE={size:14,gap:4,s:null};
 function drawTravelConcealment(cam){
   if(B||P.stay||!hiddenAt(P.x,P.y))return null;
   const e=heroTagAt(cam),k=e.k,size=TRAVEL_HIDE.size*k,x=e.right+TRAVEL_HIDE.gap*k,y=e.bottom-size;
-  const s=TRAVEL_HIDE.s||(TRAVEL_HIDE.s=uiIndicatorCanvas('eye',14,14,'#b8c7a1',0));
-  ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size};
+  const D=TRAVEL_HIDE.size*dprOf();putDev(TRAVEL_HIDE.s=devPic('hide',D,D,(g,w,h)=>uiIndicator(g,'eye',0,0,w,h,'#b8c7a1',0)),x,y);return{x,y,w:size,h:size};
 }
 // (both badges put to the screen's own pixel (snapV), as the figure under them and the eye beside them are (the owner, 2026-11-08:
 // "the moving icon seems to not smooth attach to the army"): rounded to whole game px, they stepped a game px at a time, several
@@ -97,17 +104,14 @@ const TRAVEL_PACE={size:14,gap:4,cache:new Map()};
 function drawTravelPace(cam){
   if(!DEV.on||B||P.stay||P.camp||!(P.tx!=null||G.chase||G.follow))return null;
   const e=heroTagAt(cam),kind='walk',k=e.k,size=TRAVEL_PACE.size*k,x=e.right+(TRAVEL_PACE.gap+(hiddenAt(P.x,P.y)?TRAVEL_HIDE.size+3:0))*k,y=e.bottom-size;
-  let s=TRAVEL_PACE.cache.get(kind);if(!s){s=uiIndicatorCanvas('arrow',14,14,'#d6b052');if(uiIconReady('speed')){const q=s.getContext('2d');q.clearRect(0,0,s.width,s.height);uiCanvasIcon(q,'speed',0,0,s.width,s.height);TRAVEL_PACE.cache.set(kind,s)}}
-  ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(s,snapV(x),snapV(y),size,size);ctx.restore();return{x,y,w:size,h:size,kind};
+  const D=TRAVEL_PACE.size*dprOf(),ready=uiIconReady('speed'),paint=(g,w,h)=>ready?uiCanvasIcon(g,'speed',0,0,w,h):uiIndicator(g,'arrow',0,0,w,h,'#d6b052');
+  const s=ready?devPic('pace:'+kind,D,D,paint):devPic('pace0',D,D,paint);if(ready)TRAVEL_PACE.cache.set(kind,s);putDev(s,x,y);return{x,y,w:size,h:size,kind};
 }
 const STEALTH_EYE={size:18,player:18,gap:4,cache:new Map()};
-function stealthEyeSprite(exposure,col,width=18){
- const level=Math.round(clamp(exposure,0,1)*4),w=Math.max(72,Math.ceil(width)),key=level+':'+col+':'+w;let s=STEALTH_EYE.cache.get(key);if(s)return s;
- s=uiIndicatorCanvas('eye',w,w*2/3,col,level/4,'stand',1);STEALTH_EYE.cache.set(key,s);return s;
-}
-function drawStealthEye(exposure,col,x,y,size){
- const s=stealthEyeSprite(exposure,col,size*dprOf());ctx.save();ctx.imageSmoothingEnabled=true;ctx.drawImage(s,Math.round(x*VS)/VS,Math.round(y*VS)/VS,size*dprOf()/VS,size*dprOf()/VS*2/3);ctx.restore();
-}
+// (an awareness eye width device px across, two thirds as tall: painted at that size, devPic)
+function stealthEyeSprite(exposure,col,width=18){const level=Math.round(clamp(exposure,0,1)*4);
+ return devPic('eye:'+level+':'+col,width,width*2/3,(g,w,h)=>uiIndicator(g,'eye',0,0,w,h,col,level/4,'stand'))}
+function drawStealthEye(exposure,col,x,y,size){putDev(stealthEyeSprite(exposure,col,size*dprOf()),x,y)}
 // (drawn only: worked out again at most every DETECT_DRAW ms of real time, not each frame; afresh after TravelAwareness.reset)
 const DETECT_DRAW=100;let DETECT_LAST=null;
 function travelDetectionState(){const now=performance.now();const gen=TravelAwareness.gen;if(DETECT_LAST&&DETECT_LAST.gen===gen&&now-DETECT_LAST.at<DETECT_DRAW)return DETECT_LAST.v;const v=travelDetectionNow();DETECT_LAST={at:now,gen,v};return v}
@@ -127,7 +131,9 @@ function drawTravelDetection(cam){
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
     const q=!d.sees&&detectSkill().near&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,liftY(q.x,q.y)-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
-  const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player);ctx.restore();
+  // (your own eye only while someone is about who could see you (the owner, 2026-11-21: alone in a wood the shut eye read as "that
+  //  weird grey line"): shut while none of them has, open as they do)
+  if(state.rows.length){const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player)}ctx.restore();
   return state;
 }
 // (what is queued over all: a pack's marker and its count; a party's label (armyTagAt); a banner planted on a pole, fluttering in
@@ -222,11 +228,13 @@ function mapDots(V,fn){const T=LOD_TAG,G=lodGrid(),L=MAP_NEAR,r=V+WORLD_LOD.lag,
 // the two minimaps' frame: the management windows' brown and gold, outside their unchanged map and hit rectangles
 const MAP_FRAME={bg:'#141116',edge:'#967744',light:'#c9a24e',view:'#e7d7b3',muted:'#b5a88e'};
 MAP_FRAME.art=new Image();MAP_FRAME.art.src='art/ui/forged-rim.png';
+// (its forged rim, 2 game px deep, painted at the screen's density for its size (devPic), not the 1254 px art shrunk at every draw)
 function drawMapFrame(r){ctx.save();const a=MAP_FRAME.art;
   if(a.complete&&a.naturalWidth){
-    const s=176,w=a.naturalWidth,h=a.naturalHeight,x=r.x-2,y=r.y-2,W=r.w+4,H=r.h+4,
-      sx=[0,s,w-s],sy=[0,s,h-s],sw=[s,w-2*s,s],sh=[s,h-2*s,s],dx=[x,x+2,x+W-2],dy=[y,y+2,y+H-2],dw=[2,W-4,2],dh=[2,H-4,2];
-    ctx.imageSmoothingEnabled=true;for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(i!==1||j!==1)ctx.drawImage(a,sx[i],sy[j],sw[i],sh[j],dx[i],dy[j],dw[i],dh[j]);
+    const k=VS,W=(r.w+4)*k,H=(r.h+4)*k;
+    putDev(devPic('mapframe',W,H,(g,cw,ch)=>{const s=176,w=a.naturalWidth,h=a.naturalHeight,b=2*k,
+      sx=[0,s,w-s],sy=[0,s,h-s],sw=[s,w-2*s,s],sh=[s,h-2*s,s],dx=[0,b,cw-b],dy=[0,b,ch-b],dw=[b,cw-2*b,b],dh=[b,ch-2*b,b];
+      for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(i!==1||j!==1)g.drawImage(a,sx[i],sy[j],sw[i],sh[j],dx[i],dy[j],dw[i],dh[j])}),r.x-2,r.y-2);
   }else{ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
     ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2)}ctx.restore()}
 // The campaign's desktop slot, in game pixels; its drawing and full-map tap share this rectangle.
@@ -256,8 +264,10 @@ function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{
 let MINI_PIC=null;
 function miniPic(v){const M=MINIMAP,c=MINI_PIC,S=seenArr(),now=performance.now(),bw=Math.min(MW,Math.ceil(v.tw*M.box)),bh=Math.min(MH,Math.ceil(v.th*M.box));landFresh();
   const seenIn=b=>{let n=0;for(let y=b.y;y<b.y+b.h;y++){const o=y*MW;for(let x=b.x;x<b.x+b.w;x++)n+=S[o+x]}return n};
-  if(c&&c.m===WM&&c.S===S&&c.ver===landVer&&c.w===bw&&c.h===bh&&v.ox>=c.x&&v.oy>=c.y&&v.ox+v.tw<=c.x+bw&&v.oy+v.th<=c.y+bh){if(now-c.t<M.refresh)return c;c.t=now;const n=seenIn(c);if(n===c.n)return c}
+  // (kept while the view stays in its box, or while the box made now would be its own: at the map's edge the view, rounded to the
+  //  minimap's px, may reach a fraction past the map and so past any box, and was made again each frame)
   const b={x:clamp(Math.floor(v.ox+v.tw/2-bw/2),0,MW-bw),y:clamp(Math.floor(v.oy+v.th/2-bh/2),0,MH-bh),w:bw,h:bh};
+  if(c&&c.m===WM&&c.S===S&&c.ver===landVer&&c.w===bw&&c.h===bh&&(v.ox>=c.x&&v.oy>=c.y&&v.ox+v.tw<=c.x+bw&&v.oy+v.th<=c.y+bh||c.x===b.x&&c.y===b.y)){if(now-c.t<M.refresh)return c;c.t=now;const n=seenIn(c);if(n===c.n)return c}
   return MINI_PIC={...b,m:WM,S,ver:landVer,t:now,n:seenIn(b),cv:fullMapPic(WM,1,S,LAND,TOWNS,b)}}
 // (its paper's darkened edge at w x h, kept by its size)
 let MINI_EDGE=null;

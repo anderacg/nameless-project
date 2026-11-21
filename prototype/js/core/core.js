@@ -90,11 +90,15 @@ const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 // (doc/WORLD_DESIGN.md D9: it was 120 s at .6) keeps 72 units of the world's time to a day, so every timer counted in it lasts
 // the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
 const DAY_SECONDS=293,NIGHT_AT=.5;// (180, times the world lab's walk over the map's old one: data/world.js WORLD_SCALE.move)
-const WORLD_PACE=.4,BATTLE_PACE=.6,HERO_PACE=.85;
+// (a battle's clock: 1, a battle second a real second at 1x, so a swing, a shot, a fall play at their own speed (the owner, 2026-11-19:
+//  "make it not look like slow motion please but just want a battle not to be so fast pace"); the calm pace is the battle's own rules,
+//  data/units.js BATTLE_RHYTHM. Your hero out of his ranks HERO_PACE, as ever .85/.6 his men's (were .6 and .85 at a tempo of .55))
+const WORLD_PACE=.4,BATTLE_PACE=1,HERO_PACE=.85/.6;
 // a battle's tempo on screen (the owner, 2026-11-17: "Can you reduce the speed in battle?"): the real time a frame of a battle runs on,
 // at its 1x (main.js); its rules and its tests' steps untouched. The world round a fight on the map keeps its own speed
-// (.55, was .7: the owner, 2026-11-18: "Reduce moving speed in the world and battle speed")
-const BATTLE_TEMPO=.55;
+// (.55, was .7: the owner, 2026-11-18: "Reduce moving speed in the world and battle speed"; 1 since 2026-11-19, the slow motion gone,
+//  BATTLE_PACE above)
+const BATTLE_TEMPO=1;
 // the map's tempo on screen (the owner, 2026-11-18: "Reduce moving speed in the world"): the real time a frame on the map runs on, at its
 // 1x (main.js), the same way as a battle's; everything on the map goes slower together, its clock too (a day 293 s / WORLD_TEMPO), so
 // what a day holds is the same; its rules and its tests' steps untouched

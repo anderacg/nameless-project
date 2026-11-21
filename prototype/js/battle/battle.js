@@ -100,7 +100,7 @@ const BATTLE_EARS=[];
 const battleOn=f=>{BATTLE_EARS.push(f)};
 function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}
 // Actor execution lives in actors.js; shared group defaults and frame orchestration remain here.
-// rt is real time; fighting runs on dt, slowed by BATTLE_PACE, while effects keep real time
+// rt is real time; fighting runs on dt (BATTLE_PACE, 1: real time, calmed by data/units.js BATTLE_RHYTHM), effects on rt
 function updateBattle(rt){
   if(B?.muster?.active){B.muster.step(rt);return}
   if(B?.world){
@@ -120,8 +120,9 @@ function battleStep(rt,world){
   //  on BATTLE_PACE, at BATTLE_TEMPO on screen (main.js), so a swing, a shot, a cooldown and a morale tick take as long on the map as on
   //  a field; its men drawn WORLD_BATTLE.sprite times their size step as many times as far (fightSpace: groundMul, the missiles), so
   //  they cross as many of their own lengths a second. The world inside a fight on the map (its comers, bystanders, the regrouping)
-  //  keeps the map's own travel clock, dw (data/world.js moveStep), as those marching by)
-  const dt=rt*BATTLE_PACE,dw=world?moveStep(1,rt*WORLD_PACE,true)*B.world.scale:dt;B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
+  //  keeps the map's own travel clock, dw (data/world.js moveStep), as those marching by: WORLD_TEMPO, as main.js steps the map)
+  const dt=rt*BATTLE_PACE,dw=world?moveStep(1,rt*WORLD_TEMPO*WORLD_PACE,true)*B.world.scale:dt;
+  B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
   // World combat keeps the campaign clock: a hero impact must not freeze every army.
   if(world){B.slow=0;if(B.hx)B.hx.stop=0}
   // hit-stop: heavy blows freeze the fight for a moment while effects keep moving
@@ -145,7 +146,7 @@ function battleStep(rt,world){
     updateProjectiles(dt*fightSpace());// (a missile as many of his lengths a second: fightSpace)
     if(B.works)B.works.step(dt);// (a siege's gate under the ram: battle/siegeworks.js)
     sightStep();// (who sees whom, every SIGHT.every s: hidden in woods or behind a rise, out of sight in the fog, terrain.js; nothing with neither)
-    moraleTick(dt);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
+    moraleTick(dt*BATTLE_RHYTHM.morale);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
     checkBattleOver();
   }
   if(B.over){B.endT-=rt;if(B.endT<=0){finishBattle();return}}

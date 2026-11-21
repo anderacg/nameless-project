@@ -39,7 +39,8 @@ const WATCH={refill:1,
 // base + per x every fighter in it (world time), each side wearing the other down by their strength; a side whose strength
 // falls below rout x the other's breaks. join: how close a lord or patrol must be to ride in
 const FIGHT={base:3,per:.25,rout:.3,join:60};
-// reinforcements: armies near your fight that join it (battle/engage.js nearAllies; the owner, 2026-10-23). r: how near (px);
+// reinforcements: armies near your fight that join it (battle/engage.js nearAllies; the owner, 2026-10-23). r: how near you (px) for a
+// fight on the battle screen (a siege, a cave); a fight on the map takes those whose army reaches its sides' ground (engage.js inFightReach);
 // max: how many join you (the nearest first; of those within band px of each other, the strongest); foes: how many join your
 // enemy; guards: the guards a caravan you save on the road fights with. A neutral one (a lord neither friend nor hostile, a
 // watch off its land) helps against a common enemy by chance: chance at a relation of 0, rising to sure at RELATION.helpAt and

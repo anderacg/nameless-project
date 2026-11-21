@@ -492,7 +492,11 @@ const terrainHalf=(s,r)=>s._h||(s._h=mkc(Math.ceil(s.width/r),Math.ceil(s.height
    on the units movement"), written into one buffer at the scene's resolution and laid once. Only what you see moves:
    land you remember is drawn still, land you never saw not at all (fog.js VIEW_SEEN; the owner, 2026-11-17: "Make grass more
    realistic when player walk by", "Don't draw anything beyond visibility") */
-const TGRASS={buf:null,cv:null,t:0,fr:0};
+const TGRASS={buf:null,cv:null,t:0,fr:0,skip:0,cam0:null,r:0,b0:null,b1:null};
+// (the grass layer laid on the scene: the window w x h of it from (sx, sy) (its fine px), its strips with anything in them only)
+function grassLay(sx,sy,w,h,r){const T=TGRASS,BD=WORLD_FLORA.grass.layer.band,b0=T.b0,b1=T.b1;if(!b0)return;
+  for(let b=0;b<b0.length;b++){if(b1[b]<0)continue;const ya=Math.max(b*BD,sy),yb=Math.min((b+1)*BD,sy+h,T.cv.height),xa=Math.max(b0[b],sx),xb=Math.min(b1[b]+1,sx+w);
+    if(ya<yb&&xa<xb)ctx.drawImage(T.cv,xa,ya,xb-xa,yb-ya,(xa-sx)/r,(ya-sy)/r,(xb-xa)/r,(yb-ya)/r)}}
 // (the feet that bend the grass: each drawn man, beast and worker on the map says where he stands as he is drawn (marchDraw, the
 //  workers', the herds', the hunters', you alone): game px x, y, walking or standing, big (a rider, a beast: wider), who (his way
 //  across the screen since he last said, by who: last); the grass reads last frame's, as it is laid before they are drawn)
@@ -514,9 +518,9 @@ function grassOver(x,y,hw){const r=typeof sceneRes==='function'?sceneRes():1,T=T
   if(!U)return;GRASS_OVER.cv.getContext('2d').putImageData(GRASS_OVER.buf,0,0,0,0,BW,BH);
   ctx.drawImage(GRASS_OVER.cv,0,0,BW,BH,fx0/r-T.cam.x,oy/r+L-T.cam.y,BW/r,BH/r)}
 // footprints, the lab's (LAB.prints; the owner, 2026-11-16: "Do all that"): a man walking leaves a print every step px, left and right of his
-// way, where the ground takes one (printGround: snow, sand, the marsh, wet ground by the water), fading over fade s; kept in a ring
+// way, where the ground takes one (printGround: snow, sand, the marsh, wet ground by the water, and fainter grass and a dirt road), fading over fade s; kept in a ring
 // (fine px x, y lifted with the land, the time, the ground, the side), drawn under the grass (terrainEnts)
-const FOOTPRINTS={buf:null,n:0,at:0,walk:new WeakMap()};
+const FOOTPRINTS={buf:null,n:0,at:0,walk:new WeakMap(),seen:new WeakMap()};
 // (a footprint's px pointing way d of PRINT_FOOT.dirs (0 east, on clockwise), a left or right foot, at z fine px a game px (its sizes
 // z/2 times PRINT_FOOT's): [x, y, deep (1 within its deep middle, else 0), along (px toward its toe)] about its middle, kept)
 const FOOT_MASK=new Map();
@@ -524,13 +528,27 @@ function printFoot(d,left,z=2){const F=PRINT_FOOT,key=d+(left?'l':'r')+z;let m=F
   const S=F.sole.map(v=>v*k),H=F.heel.map(v=>v*k),R=Math.ceil(3*k)+1;
   for(let y=-R;y<=R;y++)for(let x=-R;x<=R;x++){const u=x*ux+y*uy,v=y*ux-x*uy,qs=((u-S[0])/S[1])**2+((v-vc)/S[2])**2,qh=((u-H[0])/H[1])**2+(v/H[2])**2,q=Math.min(qs,qh);if(q<=1)m.push([x,y,q<=F.deep*F.deep?1:0,u])}
   FOOT_MASK.set(key,m);return m}
-function printGround(x,y){const t=terrAt(x,y);if(t===T_WATER||t===T_FORD||t===T_ROAD||t===T_MOUNT||RoadBand.on(x,y))return -1;const c=CLIMS[terClimate(Math.floor(x),Math.floor(y))],K=WORLD_TERRAIN.prints.kinds;
+// (on every ground a trail is kept on (the owner, 2026-11-21: "Tracks are not follow the characters, can you make it more realistic follow
+//  the characters and amount of steps"): grass and a dirt road's dust too, fainter (prints.strong by its kind), none on paving, a
+//  bridge's deck, water or the peaks. PRINT_AT.s: how strong there, by its ground's cover as a trail's (data/tracks.js cover))
+const PRINT_AT={s:1};
+function printGround(x,y){const t=terrAt(x,y),PR=WORLD_TERRAIN.prints,K=PR.kinds,P0=PRINT_AT;P0.s=1;if(t===T_WATER||t===T_FORD||t===T_MOUNT)return -1;
+  if(t===T_ROAD||RoadBand.on(x,y)){if(typeof trackRoad!=='function'||trackRoad(x,y,t)!=='dirt')return -1;P0.s=PR.strong[K.dirt];return K.dirt}
+  const c=CLIMS[terClimate(Math.floor(x),Math.floor(y))];
   if(c==='frost'||(WM.lv&&WM.lv[Math.floor(y/TILE)*MW+Math.floor(x/TILE)]>=SLOPE.snow))return K.snow;if(c==='desert')return K.sand;if(c==='swamp')return K.marsh;
-  const b=WORLD_TERRAIN.prints.bank;return drawnWet(x+b,y)||drawnWet(x-b,y)||drawnWet(x,y+b)||drawnWet(x,y-b)?K.wet:-1}
-function stepPrint(u){const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,r=typeof sceneRes==='function'?sceneRes():1;if(r<=1)return;let w=F.walk.get(u);if(!w){F.walk.set(u,{x:u.x,y:u.y,d:0,side:1});return}
+  const b=PR.bank;if(drawnWet(x+b,y)||drawnWet(x-b,y)||drawnWet(x,y+b)||drawnWet(x,y-b))return K.wet;
+  P0.s=PR.strong[K.grass]*(typeof TRACKS==='undefined'?1:t===T_FOREST?Math.max(.5,TRACKS.cover.forest*2):t===T_HILL?TRACKS.cover.hill:1);return K.grass}
+// (pad: a hoof's or a paw's, a round print, not a boot's; o: whose he is: his band's trail is told its men's prints are being drawn
+//  (printsSeen), so its own strewn prints wait while theirs last. Kept: its strength with its side's sign, its shape with its ground)
+function stepPrint(u,pad,o){const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,r=typeof sceneRes==='function'?sceneRes():1;if(r<=1)return;let w=F.walk.get(u);if(!w){F.walk.set(u,{x:u.x,y:u.y,d:0,side:1});return}
   const dx=u.x-w.x,dy=u.y-w.y,l=Math.hypot(dx,dy);w.x=u.x;w.y=u.y;if(!l||l>PR.step*4)return;w.d+=l;if(w.d<PR.step)return;w.d=0;w.side=-w.side;
   const px=u.x-dy/l*w.side*PR.side,py=u.y+dx/l*w.side*PR.side,g=printGround(px,py);if(g<0)return;const D=PRINT_FOOT.dirs,d=((Math.round(Math.atan2(dy,dx)/6.2832*D))%D+D)%D;
-  if(!F.buf)F.buf=new Float32Array(PR.max*6);const o=F.at*6,B=F.buf;B[o]=px*r;B[o+1]=(py-liftAt(px,py))*r;B[o+2]=performance.now();B[o+3]=g;B[o+4]=w.side;B[o+5]=d;F.at=(F.at+1)%PR.max;F.n=Math.min(PR.max,F.n+1)}
+  if(!F.buf)F.buf=new Float32Array(PR.max*6);const q=F.at*6,B=F.buf,nw=performance.now();B[q]=px*r;B[q+1]=(py-liftAt(px,py))*r;B[q+2]=nw;B[q+3]=g+(pad?16:0);B[q+4]=w.side*PRINT_AT.s;B[q+5]=d;F.at=(F.at+1)%PR.max;F.n=Math.min(PR.max,F.n+1);if(o)F.seen.set(o,nw)}
+// (o's men's own prints laid within prints.seen s: the time now (ms), else 0)
+function printsSeen(o){const t=FOOTPRINTS.seen.get(o),nw=performance.now();return t&&nw-t<WORLD_TERRAIN.prints.seen*1000?nw:0}
+// (a hoof's or a paw's print: a round pad pad lab px across, its middle deep; kept by its scale)
+const PAD_MASK=new Map();
+function printPad(z=2){let m=PAD_MASK.get(z);if(m)return m;m=[];const R=WORLD_TERRAIN.prints.pad*z/2,n=Math.ceil(R);for(let y=-n;y<=n;y++)for(let x=-n;x<=n;x++){const q=(x*x+y*y)/(R*R);if(q<=1)m.push([x,y,q<=.3?1:0,0])}PAD_MASK.set(z,m);return m}
 // (the blend's scratch, kept between chunks)
 let TER_BLUR=null;
 const terBlurBuf=n=>TER_BLUR&&TER_BLUR.length>=n?TER_BLUR:(TER_BLUR=new Float32Array(n));
@@ -557,45 +575,58 @@ function climShares(cw,cl,tx,ty,fu,fv){const bx=labBS(fu),by=labBS(fv);for(let q
 // (the pick among a px's climates' shares: by a slow noise, a little grain at its edge, so a climate's border runs in ragged tongues and
 //  islands, not px by px salt and pepper (the owner, 2026-11-16: "Snow area looks too hard"))
 function climPick(gx,gy){const C=WORLD_TERRAIN.climPick;return Math.max(0,Math.min(.999,.5+(wnoise2(gx/C.sc,gy/C.sc,604)-.5)*C.k+(hs(gx,gy,603)-.5)*C.grain))}
-/* (last frame's feet into the grass of the chunks in view (recs), r fine px a game px, n the most lean, dt s since: a clump within
-   push px of a foot (a big one's push times feet[1]; nearer across than along, as a stride) bent the way he walks across the screen
-   (vx: walking up or down it, or standing, away from him, parted to his sides), the more the nearer, held so while he is by it; within
-   flat[0] of that pressed down flat[1] of its height at most, the time he is on it counted (D: the longer, the slower it rises); a man
+/* (last frame's feet into the grass of the chunks in view (recs), r fine px a game px, n the most lean, dt s since: a clump whose foot
+   is in his footprint (touch: hw game px either side of his feet, a big one's big; up behind them, down in front), one his body
+   touches, bent the way he walks across the screen (vx: walking up or down it, or standing, away from him, parted to his sides), the
+   more the nearer his middle, held so while he is on it; none beyond it (the wind sways them all, terrainEnts); within flat[0] of his
+   half width pressed down flat[1] of its height at most, the whole time he is on it counted (D: the longer, the slower it rises); a man
    standing pushes feet[0] as much. Each its arrays made as it is first laid: P (its lean), F (pressed), D (s trodden), K (stays
    down), L, C (its lean and cut drawn), H (the frame a foot last held it)) */
 function grassFeet(recs,r,n,dt){const G=WORLD_FLORA.grass,F=GRASS_FEET.now,fr=++TGRASS.fr;GRASS_FEET.now=[];
   for(const c of recs){const Gr=c.grass;if(Gr&&!Gr.D){Gr.F=new Float32Array(Gr.n);Gr.D=new Float32Array(Gr.n);Gr.K=new Uint8Array(Gr.n);Gr.L=Gr.L||new Int8Array(Gr.n);Gr.C=new Uint8Array(Gr.n);Gr.H=new Uint32Array(Gr.n)}}
-  for(let i=0;i<F.length;i+=5){const x=F[i],y=F[i+1],s=F[i+2]?1:G.feet[0],R=G.push*(F[i+3]?G.feet[1]:1),vx=F[i+4],fx=x*r,fy=(y-liftAt(x,y))*r,Rf=R*G.flat[0],way=Math.abs(vx)>G.way?Math.sign(vx):0;
+  const TO=G.touch,U=TO.up*r,Dn=TO.down*r;
+  for(let i=0;i<F.length;i+=5){const x=F[i],y=F[i+1],s=F[i+2]?1:G.feet[0],R=(F[i+3]?TO.big:TO.hw)*r,vx=F[i+4],fx=x*r,fy=(y-liftAt(x,y))*r,Rf=R*G.flat[0],way=Math.abs(vx)>G.way?Math.sign(vx):0;
     if(viewState(x,y)<2)continue;// (out of your sight: still)
-    for(const c of recs){const Gr=c.grass;if(!Gr||!Gr.n)continue;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy-R/1.5)lo=m+1;else hi=m}
-      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+R/1.5;k++){const dx=Gr.X[k]-fx;if(dx>=R||dx<=-R)continue;const dy=(Gr.Y[k]-fy)*1.5,d=Math.sqrt(dx*dx+dy*dy);if(d>=R)continue;
-        const p=(way||(dx>=0?1:-1))*n*(1-d/R)*1.2*s;if(Math.abs(p)>=Math.abs(Gr.P[k])||Gr.H[k]!==fr){Gr.P[k]=Gr.H[k]===fr&&Math.abs(Gr.P[k])>Math.abs(p)?Gr.P[k]:p;Gr.H[k]=fr}
-        if(d<Rf){const f=(1-d/Rf)*G.flat[1]*s;if(f>Gr.F[k])Gr.F[k]=f;if(Gr.H[k]===fr)Gr.D[k]+=dt*(1-d/Rf)}}}}}
+    for(const c of recs){const Gr=c.grass;if(!Gr||!Gr.n)continue;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy-U)lo=m+1;else hi=m}
+      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy+Dn;k++){const dx=Gr.X[k]-fx;if(dx>R||dx<-R)continue;const a=Math.abs(dx);
+        const p=(way||(dx>=0?1:-1))*n*(1-.5*a/R)*1.2*s;if(Math.abs(p)>=Math.abs(Gr.P[k])||Gr.H[k]!==fr){Gr.P[k]=Gr.H[k]===fr&&Math.abs(Gr.P[k])>Math.abs(p)?Gr.P[k]:p;Gr.H[k]=fr}
+        if(a<Rf){const f=(1-a/Rf)*G.flat[1]*s;if(f>Gr.F[k])Gr.F[k]=f;if(Gr.H[k]===fr)Gr.D[k]+=dt}}}}}
 function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)return;const WA=WorldArt,x0=cam.x-48,x1=cam.x+VW+48,y0=cam.y-8,y1=cam.y+VH+64,FL=PX.flora;
   const c0=Math.max(0,Math.floor(x0/CHUNK)),c1=Math.min(WA.cols-1,Math.floor(x1/CHUNK)),r0=Math.max(0,Math.floor(y0/CHUNK)),r1=Math.min(WA.rows-1,Math.floor(y1/CHUNK));
   const recs=[];for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const c=WA.chunks.get(cy*WA.cols+cx);if(c&&c.props&&c.fr===r)recs.push(c)}
   // (the grass)
   const Q=typeof viewSeen==='function'?viewSeen(cam):null,vs=(x,y)=>Q?viewState(x,y):2;
-  {const now=performance.now(),dt=Math.min(.1,(now-(TGRASS.t||now))/1000),G=WORLD_FLORA.grass,t=now/1000,BW=(VW+1)*r,BH=(VH+1)*r,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
-      w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],B=G.back,SD=G.stay;TGRASS.t=now;
+  // (in play, the layer made afresh every LY.every-th frame (WORLD_FLORA.grass layer): between, the last one laid again, shifted
+  //  by what the camera moved since, as long as that is within its margin (M fine px round the view, made with it); the wind, the
+  //  foam and the bending all on the frames it is made. Only its strips with anything in them cleared, put and laid (grassLay))
+  const LY=WORLD_FLORA.grass.layer,half=WorldArt.liveOk&&LY.every>1,M=half?LY.margin:0,VWr=(VW+1)*r,VHr=(VH+1)*r,T0=TGRASS.cam0,
+    sdx=T0?(cam.x-T0.x)*r:0,sdy=T0?(cam.y-T0.y)*r:0;
+  if(half&&TGRASS.skip<LY.every-1&&TGRASS.cv&&TGRASS.r===r&&TGRASS.cv.width===VWr+2*M&&TGRASS.cv.height===VHr+2*M&&Math.abs(sdx)<=M&&Math.abs(sdy)<=M){TGRASS.skip++;grassLay(M+sdx,M+sdy,VWr,VHr,r)}
+  else{const now=performance.now(),dt=Math.min(.1,(now-(TGRASS.t||now))/1000),G=WORLD_FLORA.grass,t=now/1000,BW=VWr+2*M,BH=VHr+2*M,A=FL.grassAtlas(),n=FL.lean,GW=FL.GW,GH=FL.GH,
+      w1=t*1.9,w2=t*G.gust[1]*6.28/3,g2=6.28/G.gust[0],B=G.back,SD=G.stay,cxr=cam.x*r-M,cyr=cam.y*r-M;TGRASS.t=now;TGRASS.skip=0;TGRASS.cam0={x:cam.x,y:cam.y};TGRASS.r=r;
     const QN=typeof Quality!=='undefined'&&Quality.now,QG=QN?QN.grass:1;if(!QN||QN.feet)grassFeet(recs,r,n,dt);else GRASS_FEET.now.length=0;// (the graphics level's: gfx/quality.js)
-    if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkg(BW,BH)}
-    const U=TGRASS.buf.u;U.fill(0);let any=false;
+    if(!TGRASS.buf||TGRASS.buf.width!==BW||TGRASS.buf.height!==BH){TGRASS.buf=new ImageData(BW,BH);TGRASS.buf.u=new Uint32Array(TGRASS.buf.data.buffer);TGRASS.cv=mkg(BW,BH);
+      const nb=Math.ceil(BH/LY.band);TGRASS.b0=new Int32Array(nb).fill(1e9);TGRASS.b1=new Int32Array(nb).fill(-1)}
+    // (what was written last time cleared, strip by strip, row by row; then each strip's span reckoned afresh as it is written)
+    const U=TGRASS.buf.u,BD=LY.band,b0=TGRASS.b0,b1=TGRASS.b1;
+    for(let b=0;b<b0.length;b++){if(b1[b]<0)continue;for(let y=b*BD,ye=Math.min(BH,y+BD);y<ye;y++)U.fill(0,y*BW+b0[b],y*BW+b1[b]+1);b0[b]=1e9;b1[b]=-1}
+    const mk=(xa,xb,ya,yb)=>{if(xa<0)xa=0;if(xb>=BW)xb=BW-1;if(ya<0)ya=0;if(yb>=BH)yb=BH-1;if(xa>xb||ya>yb)return;for(let b=(ya/BD)|0,be=(yb/BD)|0;b<=be;b++){if(xa<b0[b])b0[b]=xa;if(xb>b1[b])b1[b]=xb}};
     // (footprints, the lab's, fading: under the grass)
   //  each a foot's shape pointing his way (printFoot), deeper in its middle
-  {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*6,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cam.x*r),y=Math.round(B[o+1]-cam.y*r);
-      if(x<4||y<4||x>=BW-4||y>=BH-4||vs(B[o]/r,B[o+1]/r)<2)continue;const c=PR.col[B[o+3]],c0=c[2]<<16|c[1]<<8|c[0],A1=Math.round(204*a),A0=Math.round(204*a*PR.rim);
-      for(const q of printFoot(B[o+5],B[o+4]<0,r)){const i=(y+q[1])*BW+x+q[0],v=((q[2]?A1:A0)<<24|c0)>>>0;if((U[i]>>>24)<(v>>>24))U[i]=v}any=true}}
+  {const F=FOOTPRINTS,PR=WORLD_TERRAIN.prints,nw=now,B=F.buf;for(let k=0;k<F.n;k++){const o=k*6,a=1-(nw-B[o+2])/1000/PR.fade;if(a<=0)continue;const x=Math.round(B[o]-cxr),y=Math.round(B[o+1]-cyr);
+      if(x<4||y<4||x>=BW-4||y>=BH-4||vs(B[o]/r,B[o+1]/r)<2)continue;const c=PR.col[B[o+3]&15],c0=c[2]<<16|c[1]<<8|c[0],st=Math.abs(B[o+4]),A1=Math.round(204*a*st),A0=Math.round(204*a*st*PR.rim);
+      for(const q of B[o+3]>=16?printPad(r):printFoot(B[o+5],B[o+4]<0,r)){const i=(y+q[1])*BW+x+q[0],v=((q[2]?A1:A0)<<24|c0)>>>0;if((U[i]>>>24)<(v>>>24))U[i]=v}{const R=Math.ceil(1.5*r)+1;mk(x-R,x+R,y-R,y+R)}}}
   // (the water moving, the lab's: foam riding the shore, the river's current in streaks running down it (a lit crest, a darker trough
     //  behind it, each px of a streak sharing its phase with those beside it, so they run as lines, not dots), white down a fall)
     {const ts=now/1000,FO=0xd8f6f4ec,SP=0x5cf2ece0,SL=0x30eee4d4,WF=0x99fffcfa,RW=WORLD_WAYS.river.flow;
-      for(const c of recs){const S=c.shore,F=c.flow,ox=c.cx*CHUNK*r-cam.x*r-5+5,oy=c.cy*CHUNK*r-cam.y*r;
-        if(S)for(let k=0;k<S.length;k+=3){const x=S[k]+ox,y=S[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;if(Math.sin(ts*1.6+S[k+2]/100)>.45){U[y*BW+x]=FO;any=true}}
-        if(F)for(let k=0;k<F.length;k+=5){const x=F[k]+ox,y=F[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs(x/r+cam.x,y/r+cam.y)<2)continue;
-          if(F[k+2]===-1){if((((F[k+1]+c.cy*CHUNK*r)*.5-ts*24+F[k+3])%5+5)%5<1){U[y*BW+x]=WF;any=true}}
-          else if(F[k+2]===-2){if(((ts*7+F[k+3]*.37)|0)%4===0){U[y*BW+x]=(F[k+3]&1)?WF:SP;any=true}}else{const v=F[k+4],len=(v&255)/10||RW.len,sp=(v>>8)/20||1,P=Math.max(RW.period,len*RW.wide.per),q=((F[k+2]-ts*RW.speed*sp+F[k+3])%P+P)%P;if(q<len){U[y*BW+x]=q>len-1.2?WF:q>len*.4?SP:SL;any=true}}}}}
-    for(const c of recs){const Gr=c.grass;if(!Gr)continue;const fy0=cam.y*r-4,fy1=(cam.y+VH)*r+GH;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy0)lo=m+1;else hi=m}
-      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cam.x*r-5,by=Y-cam.y*r-9;if(bx<-GW||bx>BW||QG<1&&hs(X,Y,439)>=QG)continue;const st=vs(X/r,Y/r);if(!st)continue;any=true;
+      const put=(x,y,v)=>{U[y*BW+x]=v;const b=(y/BD)|0;if(x<b0[b])b0[b]=x;if(x>b1[b])b1[b]=x};
+      for(const c of recs){const S=c.shore,F=c.flow,ox=c.cx*CHUNK*r-cxr,oy=c.cy*CHUNK*r-cyr;
+        if(S)for(let k=0;k<S.length;k+=3){const x=S[k]+ox,y=S[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs((x+cxr)/r,(y+cyr)/r)<2)continue;if(Math.sin(ts*1.6+S[k+2]/100)>.45)put(x,y,FO)}
+        if(F)for(let k=0;k<F.length;k+=5){const x=F[k]+ox,y=F[k+1]+oy;if(x<0||y<0||x>=BW||y>=BH||vs((x+cxr)/r,(y+cyr)/r)<2)continue;
+          if(F[k+2]===-1){if((((F[k+1]+c.cy*CHUNK*r)*.5-ts*24+F[k+3])%5+5)%5<1)put(x,y,WF)}
+          else if(F[k+2]===-2){if(((ts*7+F[k+3]*.37)|0)%4===0)put(x,y,(F[k+3]&1)?WF:SP)}else{const v=F[k+4],len=(v&255)/10||RW.len,sp=(v>>8)/20||1,P=Math.max(RW.period,len*RW.wide.per),q=((F[k+2]-ts*RW.speed*sp+F[k+3])%P+P)%P;if(q<len)put(x,y,q>len-1.2?WF:q>len*.4?SP:SL)}}}}
+    for(const c of recs){const Gr=c.grass;if(!Gr)continue;const fy0=cyr-4,fy1=cyr+2*M+VH*r+GH;let lo=0,hi=Gr.n;while(lo<hi){const m=(lo+hi)>>1;if(Gr.Y[m]<fy0)lo=m+1;else hi=m}
+      for(let k=lo;k<Gr.n&&Gr.Y[k]<=fy1;k++){const X=Gr.X[k],Y=Gr.Y[k],bx=X-cxr-5,by=Y-cyr-9;if(bx<-GW||bx>BW||QG<1&&hs(X,Y,439)>=QG)continue;const st=vs(X/r,Y/r);if(!st)continue;
         // (left, it eases back, never past upright: over back[0] s, back[1] s more for each s it was trodden (up to back[2]); pressed
         //  down, over flat[2] s and as much more; one trodden stay[1] s or more stays down, stay[0] of them; none of it out of sight)
         let lean=0,cut=0;if(st===2){const wind=G.wind*(Math.sin(w1+X*.05+Y*.03)+.8*Math.sin(w2+X*g2-Y*.01));let Pv=Gr.P[k];
@@ -603,8 +634,11 @@ function terrainEnts(ents,cam){const r=sceneRes();bridgeEnts(ents,cam);if(r<=1)r
             Pv*=Math.exp(-dt/(B[0]+m));if(Pv<.05&&Pv>-.05)Pv=0;Gr.P[k]=Pv;Gr.F[k]*=Math.exp(-dt/(G.flat[2]+m));if(Gr.F[k]<.04)Gr.F[k]=0;if(!Pv&&!Gr.F[k])Gr.D[k]=0}}
           cut=Math.round(Gr.F[k]*GH);lean=Math.max(-n,Math.min(n,Math.round(Pv?wind*(1-Math.min(1,Math.abs(Pv)/n)*.7)+Pv:wind)))}
         const sp=A.px[(Gr.T[k]*4+Gr.V[k])*(2*n+1)+lean+n],D=sp.D,Cc=sp.C;Gr.L[k]=lean;Gr.C[k]=cut;
+        if(!sp.ex){let a0=1e9,a1=-1e9,c0=1e9,c1=-1e9;for(let q=0;q<D.length;q+=2){a0=Math.min(a0,D[q]);a1=Math.max(a1,D[q]);c0=Math.min(c0,D[q+1]);c1=Math.max(c1,D[q+1])}sp.ex=[a0,a1,c0,c1]}// (its pixels' reach, once)
+        mk(bx+sp.ex[0],bx+sp.ex[1],by+sp.ex[2],by+sp.ex[3]);
         for(let j=0,q=0;j<Cc.length;j++,q+=2){if(D[q+1]<cut)continue;const x=bx+D[q],y=by+D[q+1];if(x>=0&&y>=0&&x<BW&&y<BH)U[y*BW+x]=Cc[j]}}}
-    if(any){TGRASS.cv.getContext('2d').putImageData(TGRASS.buf,0,0);ctx.drawImage(TGRASS.cv,0,0,BW/r,BH/r)}}
+    {const g=TGRASS.cv.getContext('2d');for(let b=0;b<b0.length;b++)if(b1[b]>=0){const y=b*BD;g.putImageData(TGRASS.buf,0,0,b0[b],y,b1[b]-b0[b]+1,Math.min(BD,BH-y))}}
+    grassLay(M,M,VWr,VHr,r)}
   TGRASS.recs=recs;TGRASS.cam=cam;
   // (the props, by their feet, among the buildings)
   //  (only those whose picture meets the screen across: the chunks' margin is for the lift down it; each drawn at its lift by fl, no

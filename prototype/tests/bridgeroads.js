@@ -27,12 +27,39 @@ Kit.suite(({ok,info})=>{
   let walls=0,wet=0;for(const k of ks){WA.chunk(k%WA.cols,(k/WA.cols)|0);const c=WA.chunks.get(k);walls+=c.walls||0;wet+=c.wallWet||0}
   ok(wet===0,'no road masonry down to the water by any of the '+X.length+' bridges and fords ('+ks.size+' chunks painted: '+walls+' columns of masonry, '+wet+' falling to water)');
   // (each bridge's deck meets the land at its two ends: its tip, a game px on, dry and within 1.5 px of the deck there)
-  const r=t.sceneRes(),BR=(t.waysOf(WA.ensure()).bridges||[]).filter(b=>!b.small),SL=t.WORLD_WAYS.bridge.slope,gap=[],drowned=[];
-  for(const b of BR){for(const sg of [-1,0,1]){const x=b.mx+sg*b.ux*(b.L/2+t.WORLD_WAYS.bridge.reach+8),y=b.my+sg*b.uy*(b.L/2+t.WORLD_WAYS.bridge.reach+8);WA.chunk(Math.max(0,Math.min(WA.cols-1,Math.floor(x/C))),Math.max(0,Math.min(WA.rows-1,Math.floor(y/C))))}b.pic=t.bridgePic(b,r);b.picR=r;const p=b.pr;for(const [sg,tip,h] of [[-1,p.lo,p.DL-p.sA*SL],[1,p.hi,p.DL-((p.hi-p.lo)-p.sB)*SL]]){const meet=d=>{const x=b.mx+b.ux*(tip/r+sg*d),y=b.my+b.uy*(tip/r+sg*d);return !t.drawnWet(x,y)&&Math.abs(h/r-t.liftAt(x,y))<=1.5};
+  const r=t.sceneRes(),BR=(t.waysOf(WA.ensure()).bridges||[]).filter(b=>!b.small),gap=[],drowned=[];
+  // ---- a bridge reads as high (the owner, 2026-11-21: "it like floating, even weird to draw over trees without shadow or something to
+  //  tell that it's higher"; worldways.js bridgePic, WORLD_WAYS.bridge cast): its shadow lies off it by its height over what is under
+  //  it. shadowOf: one running north and south, measured as it is made (its land's lift is let go with its chunk): its east side's
+  //  height over what is under it, how far east of its deck its shadow reaches (told by its alpha, its colour coming back
+  //  premultiplied), and how far it should (the farthest any px of its deck throws it)
+  const BGS=t.WORLD_WAYS.bridge,SHD=Math.ceil(BGS.shade*r/2),shades=[];
+  // ---- its stairs (the owner, 2026-11-21: "Why dont you make a stairs based on the height that player have to go up?"; worldways.js
+  //  bridgeFall, bridgeH, bridgeShift): to a bank lower than its deck a bridge comes down by steps, as many as the height. stairsOf: a
+  //  bridge's two ends, measured as it is made: its steps, the height they come down, and one standing half-way down them
+  const ST=BGS.stair,RISE=ST.rise*r/2,TREAD=ST.tread*r/2,flights=[],wrong=[],offIt=[];
+  const stairsOf=b=>{const p=b.pr,LEN=p.hi-p.lo;for(const [len,tip,mid] of [[p.sA,0,p.sA/2],[LEN-p.sB,LEN,(p.sB+LEN)/2]]){const steps=Math.ceil(len/TREAD),down=p.DL-t.bridgeH(p,tip);
+      if(steps!==Math.round(down/RISE)||down>p.DL)wrong.push((b.mx|0)+','+(b.my|0)+': '+steps+' steps, '+down+' px');if(steps<2)continue;flights.push([steps,down]);
+      if(b.diag)continue;const x=b.mx+b.ux*(mid+p.lo)/r,y=b.my+b.uy*(mid+p.lo)/r,bs=t.bridgeShift(x,y),at=bs?t.liftAt(x,y)-bs[1]:-1,due=Math.max(t.bridgeH(p,mid)/r,t.liftAt(x,y));
+      if(!bs||!bs[2]||Math.abs(at-due)>.01)offIt.push((x|0)+','+(y|0)+(bs?': drawn '+at.toFixed(1)+' px up, its step '+due.toFixed(1):': not on it'))}};
+  const shadowOf=b=>{const q=b.pic,p=b.pr,g=q.cv.getContext('2d',{willReadFrequently:true}),PW=q.cv.width,PH=q.cv.height,D=g.getImageData(0,0,PW,PH).data,hw=Math.round(b.hw*r),east=Math.round(b.mx*r-q.x*r)+hw-1,fe=Math.round(b.mx*r)+hw-1;
+    let far=0;for(let y=0;y<PH;y++)for(let x=PW-1;x>east;x--)if(D[(y*PW+x)*4+3]===BGS.shadow){far=Math.max(far,x-east);break}
+    let high=0,want=0;const fy0=Math.round(b.my*r+(b.uy>0?p.lo:-p.hi)),fy1=Math.round(b.my*r+(b.uy>0?p.hi:-p.lo));
+    for(let fy=fy0;fy<=fy1;fy++)for(let fx=fe-2*hw+1;fx<=fe;fx++){const hh=Math.max(0,p.DL-Math.round(t.liftAt(fx/r,fy/r)*r));if(fx===fe)high=Math.max(high,hh);want=Math.max(want,fx-fe+SHD+Math.round(BGS.cast[0]*hh)+(hh>2?1:0))}
+    return [high,far,want]};
+  for(const b of BR){for(const sg of [-1,0,1]){const x=b.mx+sg*b.ux*(b.L/2+t.WORLD_WAYS.bridge.reach+8),y=b.my+sg*b.uy*(b.L/2+t.WORLD_WAYS.bridge.reach+8);WA.chunk(Math.max(0,Math.min(WA.cols-1,Math.floor(x/C))),Math.max(0,Math.min(WA.rows-1,Math.floor(y/C))))}b.pic=t.bridgePic(b,r);b.picR=r;if(Math.abs(b.uy)>.99)shades.push(shadowOf(b));stairsOf(b);const p=b.pr;for(const [sg,tip,h] of [[-1,p.lo,t.bridgeH(p,0)],[1,p.hi,t.bridgeH(p,p.hi-p.lo)]]){const meet=d=>{const x=b.mx+b.ux*(tip/r+sg*d),y=b.my+b.uy*(tip/r+sg*d);return !t.drawnWet(x,y)&&Math.abs(h/r-t.liftAt(x,y))<=1.5};
     if(meet(-.5)||meet(1))continue;const et=b.c?(sg<0?b.c.i:b.c.j):-1;if(et>=0&&t.drawnWet(((et%W)+.5)*TL,(((et/W)|0)+.5)*TL)){drowned.push(((et%W)+.5)*TL+','+(((et/W)|0)+.5)*TL);continue}// (its end's own tile painted as water)
     gap.push(((b.mx+b.ux*tip/r)|0)+','+((b.my+b.uy*tip/r)|0))}}
   if(drowned.length)info('a bridge end whose own road tile is painted as water (the lake drawn over it, no land to meet): '+drowned.join(' '));
   ok(!gap.length,'every bridge ('+BR.length+') meets the land at both its ends, its deck level with the dry ground at its tip or just past it'+(gap.length?': not '+gap.slice(0,6).join(' '):''));
+  {const k=r/2;ok(t.bridgeFall(0,k)===0&&t.bridgeFall(1,k)===RISE&&t.bridgeFall(TREAD,k)===RISE&&t.bridgeFall(TREAD+1,k)===2*RISE&&t.bridgeFall(10*TREAD,k)===10*RISE,'a bridge\'s stairs: a step of '+ST.rise+' down every '+ST.tread+' px, the first at its deck\'s end');
+   const most=flights.reduce((a,f)=>f[0]>a[0]?f:a,[0,0]);info(flights.length+' flights of stairs on '+BR.length+' bridges; the longest '+most[0]+' steps down '+most[1]+' fine px');
+   ok(flights.length>0&&!wrong.length,'each end comes down to its bank by as many steps as the height ('+flights.length+' flights of two steps or more; an end level with its bank has none)'+(wrong.length?': not '+wrong.slice(0,5).join('; '):''));
+   ok(!offIt.length,'one half-way down a bridge\'s stairs is on it, drawn at his step\'s height, not on the ground under them'+(offIt.length?': not '+offIt.slice(0,5).join('; '):''))}
+  if(!shades.length)info('no bridge running north and south on this world');else{const rows=shades.sort((a,b)=>a[0]-b[0]),lo=rows[0],hi=rows[rows.length-1];
+   info(rows.length+' bridges north to south: the lowest '+lo[0]+' fine px over what is under it, its shadow '+lo[1]+' px off it; the highest '+hi[0]+', '+hi[1]);
+   ok(rows.every(([h,f,w])=>Math.abs(f-w)<=2),'each one\'s shadow lies off its deck by its height over what is under it (cast '+BGS.cast[0]+' x; its east side\'s height > px found / px due: '+rows.map(([h,f,w])=>h+'>'+f+'/'+w).join(' ')+')');
+   ok(hi[1]>=SHD+4&&hi[1]>lo[1]-1&&rows.every(([h,f])=>f>=SHD+Math.floor(BGS.cast[0]*h)-2),'a deck over water lies well off its shadow, the higher the farther')}
   // (its deck walked only inside its rails: a spot by its edge is off the lane and put back inside it; a walker's step there kept in)
   const hw=(t.WORLD_WAYS.road.hw[1]-1)*t.WAY_LP,half=hw-t.WORLD_WAYS.bridge.walk,B=m.crossings.filter(c=>c.kind==='bridge'),off=[];
   for(const c of B){const ex=((c.i%W)+.5)*TL,ey=(((c.i/W)|0)+.5)*TL,fx=((c.j%W)+.5)*TL,fy=(((c.j/W)|0)+.5)*TL,l=Math.hypot(fx-ex,fy-ey),ax=(fx-ex)/l,ay=(fy-ey)/l,i=c.tiles[c.tiles.length>>1],mx=((i%W)+.5)*TL,my=(((i/W)|0)+.5)*TL;

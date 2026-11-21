@@ -30,6 +30,15 @@ const TRACKS={on:true,head:true,// (head: laid at a marched army's foremost man,
   read:[2,5,8],train:2,
   // the prints: px between them along a trail by their style; the most drawn a frame; how dark at their clearest
   step:{foot:6,hoof:7,paw:6,rut:3,drag:3},max:700,alpha:.8,
+  // a band's prints across its way (the owner, 2026-11-21: "Tracks are not follow the characters, can you make it more realistic follow
+  // the characters and amount of steps"; gfx/tracks.js trackPic): every step each of its men leaves one, so as many a step as it
+  // has men, dense the most; strewn across as wide as its men walked (world/tracks.js trackHead: half that width, to the next of
+  // wide; a trail from a save, by its number: spread px a man's root), a lone walker's left and right pair px off his line;
+  // vary pictures of each strewing, so no stretch repeats; ease: how fast a trail's width follows its band's as it is laid
+  dense:[1,2,3,4,5,6,8,12,16,24],wide:[1,3,5,8,12,16,24,32,44,60],spread:2.2,pair:1,vary:4,ease:.3,
+  // a stretch laid while its men's own prints were drawn (worldterrain.js stepPrint, each man's every step) waits wait of their fade
+  // before its strewn prints show
+  wait:.75,
   // the prints (gfx/tracks.js trackPic): lanes px apart across a band's way, steps stagger px apart along it; their details
   // (tread, nails, a hoof's frog) lighter (detail)
   lane:3,stagger:2,detail:'rgba(255,246,222,.3)',

@@ -123,7 +123,7 @@ let WM=null,tiles=null,climate=null;
 function useWorld(map){WM=map;MW=map.w;MH=map.h;tiles=map.kind;climate=map.clim;if(map.elev&&!map.slope&&typeof landClasses==='function')map.slope=landClasses(map);for(const fn of WORLD_HOOKS)fn(map);return map}
 // a generated world put in (worldgen.js genWorld's result r): its holdings and camps (holdings.js setHoldings, setCamps), its
 // lords, its deposits, then the map (useWorld)
-function installWorld(r){setHoldings(r.holdings);setCamps(r.camps);r.map.lords=r.lords||null;genDeposits(r.map,TOWNS);return useWorld(r.map)}
+function installWorld(r){setHoldings(r.holdings);setCamps(r.camps,r.map);r.map.lords=r.lords||null;genDeposits(r.map,TOWNS);return useWorld(r.map)}
 // the classic world (the Classic preset: Normal, seed CLASSIC, doc/WORLD_DESIGN.md §8.15), made and put in at once
 function installClassic(){return installWorld(genWorld(classicSettings()))}
 // the world as it first stands (main.js keeps it at load, once initWorld has laid it out): every new game on the map starts from

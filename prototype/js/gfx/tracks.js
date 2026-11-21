@@ -15,14 +15,22 @@ const TRACK_ACROSS=[[-1,1],[-3,-1,1,3],[-5,-3,-1,1,3,5],[-7,-5,-3,-1,1,3,5,7]];
    (TRACKS.detail); no light on it (the owner: "make them the same, no light"). Its size: TRACKS.art.px (the print's length in
    game px); a wagon's ruts and a beast's drag, a band along the way its step long. Each made once (TRACK_PICS) and kept: its
    corner ox, oy from the print's place, whole game px */
-const TRACK_PICS=new Map();
+const TRACK_PICS=new Map(),TRACK_KEPT=1500;// (the pictures kept at most: all let go past it)
 const trackLine=id=>id==='ruts'||id==='drag';
 const trackRound=v=>Math.sign(v)*Math.round(Math.abs(v));
-function trackPic(id,cls,a,alt,ci){
-  const way=((Math.round(a/(Math.PI/4))%8)+8)%8,line=trackLine(id),key=id+'|'+cls+'|'+way+'|'+(alt?1:0)+'|'+ci;let S=TRACK_PICS.get(key);if(S)return S;
-  const T=TRACKS,g=TRACK_PX[id][way*2+(alt&&!line?1:0)],lanes=line?[0]:TRACK_ACROSS[cls],ang=way*Math.PI/4+Math.PI/2,c=Math.cos(ang),s=Math.sin(ang),on=new Map();
-  lanes.forEach((l,j)=>{const x=line?0:l*T.lane/2+(alt?1:-1),y=line?0:-((j*5+(alt?3:0))%4)*T.stagger,dx=trackRound(Math.round((x*c-y*s)*1e6)/1e6)+g.o[0],dy=trackRound(Math.round((x*s+y*c)*1e6)/1e6)+g.o[1];
-    g.r.forEach((r,j2)=>{for(let i=0;i<r.length;i++)if(r[i]!=='.')on.set((dx+i)+','+(dy+j2),r[i])})});
+// (v to the first of the rising list L that holds it, its last past them all)
+const trackNear=(L,v)=>{for(const q of L)if(v<=q)return q;return L[L.length-1]};
+/* (strewn, the owner, 2026-11-21: "Tracks are not follow the characters, can you make it more realistic follow the characters and amount
+   of steps": cnt prints, one for each man of its band that step (data/tracks.js dense), strewn across wb px either side of its
+   middle (its men's own width: wide) and along its step, each a left or a right foot of its own, v which of TRACKS.vary strewings;
+   one walker's (cnt 1) a left then a right, pair px off his line. No cnt: its size class's lanes, as before) */
+function trackPic(id,cls,a,alt,ci,cnt,wb,v){
+  const way=((Math.round(a/(Math.PI/4))%8)+8)%8,line=trackLine(id),strewn=cnt>0&&!line,key=id+'|'+cls+'|'+way+'|'+(alt?1:0)+'|'+ci+(strewn?'|'+cnt+'|'+wb+'|'+v:'');let S=TRACK_PICS.get(key);if(S)return S;
+  if(TRACK_PICS.size>TRACK_KEPT)TRACK_PICS.clear();
+  const T=TRACKS,G0=TRACK_PX[id],g=G0[way*2+(alt&&!line?1:0)],lanes=line?[0]:TRACK_ACROSS[cls],ang=way*Math.PI/4+Math.PI/2,c=Math.cos(ang),s=Math.sin(ang),on=new Map();
+  const put=(g,x,y)=>{const dx=trackRound(Math.round((x*c-y*s)*1e6)/1e6)+g.o[0],dy=trackRound(Math.round((x*s+y*c)*1e6)/1e6)+g.o[1];g.r.forEach((r,j2)=>{for(let i=0;i<r.length;i++)if(r[i]!=='.')on.set((dx+i)+','+(dy+j2),r[i])})};
+  if(strewn){if(cnt===1)put(g,(alt?1:-1)*T.pair,0);else for(let j=0;j<cnt;j++){const H=q=>PX.hash(v*31+j+(alt?57:0),q,977);put(G0[way*2+(H(3)<.5?1:0)],Math.round((H(1)*2-1)*wb),-Math.round(H(2)*(T.step.foot-1)))}}
+  else lanes.forEach((l,j)=>put(g,line?0:l*T.lane/2+(alt?1:-1),line?0:-((j*5+(alt?3:0))%4)*T.stagger));
   const px=[...on.keys()].map(k=>k.split(',').map(Number)),ox=Math.min(...px.map(p=>p[0])),oy=Math.min(...px.map(p=>p[1]));
   S=mkc(Math.max(...px.map(p=>p[0]))-ox+1,Math.max(...px.map(p=>p[1]))-oy+1,G=>{G.fillStyle=Object.values(T.col)[ci];for(const [x,y] of px)G.fillRect(x-ox,y-oy,1,1);G.fillStyle=T.detail;for(const [x,y] of px)if(on.get(x+','+y)==='+')G.fillRect(x-ox,y-oy,1,1)});
   S.ox=ox;S.oy=oy;TRACK_PICS.set(key,S);return S}
@@ -31,20 +39,25 @@ function trackPic(id,cls,a,alt,ci){
 // trail growing, never moves one); a trail still being walked shows up to its last point (Tracks.step keeps one every sample px),
 // none on to its walker (that stretch's heading would follow the walker and turn the prints as it turns: the owner, 2026-10-23)
 function drawTracks(cam){if(!TRACKS.on||!W.tracks||!W.tracks.length)return 0;
-  const V=Tracks.view(),x0=cam.x-12,y0=cam.y-12,x1=cam.x+VW+12,y1=cam.y+VH+12,m=TRACKS.sample,CR=Object.keys(TRACKS.col).indexOf('road');let left=TRACKS.max;
+  const V=Tracks.view(),x0=cam.x-12,y0=cam.y-12,x1=cam.x+VW+12,y1=cam.y+VH+12,m=TRACKS.sample+TRACKS.wide[TRACKS.wide.length-1],CR=Object.keys(TRACKS.col).indexOf('road'),nowMs=performance.now(),fresh=WORLD_TERRAIN.prints.fade*TRACKS.wait*1000;let left=TRACKS.max;
   ctx.save();
   try{all:for(const tr of W.tracks){const b=tr.box;if(b[2]+m<x0||b[0]-m>x1||b[3]+m<y0||b[1]-m>y1)continue;
-    const p=tr.p,st=tr.style,art=tr.art,cls=trackLine(art)?0:trackClass(tr.n),gold=tr.q&&Tracks.known.has(tr.q),step=TRACKS.step[st];
+    const p=tr.p,st=tr.style,art=tr.art,line=trackLine(art),cls=line?0:trackClass(tr.n),gold=tr.q&&Tracks.known.has(tr.q),step=TRACKS.step[st],rt=tr.rt;
+    // (as many prints a step as it has men, across as wide as they walked, its middle c to the side of its line: world/tracks.js)
+    const cnt=line?0:trackNear(TRACKS.dense,tr.n),wb=line?0:trackNear(TRACKS.wide,tr.wide),off=line?0:tr.c||0;
     for(let i=0;i+3<p.length;i+=3){const ax=p[i],ay=p[i+1],bx=p[i+3],by=p[i+4];
-      if((ax<x0&&bx<x0)||(ax>x1&&bx>x1)||(ay<y0&&by<y0)||(ay>y1&&by>y1))continue;
+      if((ax<x0-wb&&bx<x0-wb)||(ax>x1+wb&&bx>x1+wb)||(ay<y0-wb&&by<y0-wb)||(ay>y1+wb&&by>y1+wb))continue;
+      // (a stretch laid while its men's own prints were being drawn (stepPrint: each man's every step, under his feet) is theirs
+      //  while they last: its strewn prints only once they have faded)
+      if(rt&&rt[i/3+1]&&nowMs-rt[i/3+1]<fresh)continue;
       const age=Tracks.sight(tr,i/3,V);if(age===null)continue;
       const dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy);if(!len)continue;
       const ux=dx/len,uy=dy/len,dir=Math.atan2(dy,dx);
-      for(let s=0,k=0;s<len;s+=step,k++){const x=ax+ux*s,y=ay+uy*s;
+      for(let s=0,k=0;s<len;s+=step,k++){const x=ax+ux*s-uy*off,y=ay+uy*s+ux*off;
         if(!Tracks.sees(tr,x,y,V))continue;// (out of your sight now: every man's, world/tracks.js)
         const a=Tracks.clear(x,y,age);if(!a)continue;// (its ground keeps none (a bridge's deck crossed between two points), or faded there)
         const o=TRACK_SPOT,ci=gold?4:o.road?CR:CLIM[o.c];ctx.globalAlpha=gold?Math.min(1,a*1.5):a;
-        const S=trackPic(art,cls,dir,k&1,ci);ctx.drawImage(S,Math.round(x-cam.x)+S.ox,Math.round(y-cam.y)+S.oy);
+        const S=trackPic(art,cls,dir,k&1,ci,cnt,wb,(k*7+i)%TRACKS.vary);ctx.drawImage(S,Math.round(x-cam.x)+S.ox,Math.round(y-cam.y)+S.oy);
         if(--left<=0)break all}}}}
   finally{ctx.restore()}
   return TRACKS.max-left}

@@ -1509,15 +1509,17 @@ function lordJobHtml(l){
    wuiEscorts); the tracked one's the strongest: brackets round its goal, its mark brighter, an arrow at the screen's edge
    while it is off it (QUEST_MARK: its colours, the arrow's inset, the minimap dots' sizes) */
 const QUEST_MARK={col:'#ffe040',on:'#fff6c0',ring:'#ffd040',edge:14,mini:2,miniOn:4};
+// (its "!" and "?" the map's own marks (worldui.js wuiArrow), as an encounter's and a rumour's: drawn after the labels' pass, txt
+//  wrote them in the 8 px font enlarged; a lead's circle a fine px wide, as the rings are)
 function drawQuestMarks(cam){
   const t=performance.now()/300,M=QUEST_MARK,bob=Math.round(Math.sin(t)*2);
   for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round((typeof liftY==='function'?liftY(g.x,g.y):g.y)-cam.y);// (over its goal as drawn, up by its ground's lift)
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10){if(on)questEdgeMark(sx,sy,t);continue}
     // (a lead: its circle, dashed, a ? at its middle: where to look, Q4)
-    if(g.r){ctx.save();ctx.strokeStyle=on?M.on:M.col;ctx.globalAlpha=on?.8:.5;ctx.setLineDash([4,3]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(sx,sy,g.r*TILE,0,6.283);ctx.stroke();ctx.restore();txt('?',sx,sy-4+bob,on?M.on:M.col,'center');continue}
+    if(g.r){ctx.save();ctx.strokeStyle=on?M.on:M.col;ctx.globalAlpha=on?.8:.5;ctx.setLineDash([4,3]);ctx.lineWidth=1/wuiZ();ctx.beginPath();ctx.arc(sx,sy,g.r*TILE,0,6.283);ctx.stroke();ctx.restore();const c=wuiArrow('ask',on?M.on:M.col);wuiPut(c,sx,sy+2+bob,c.cx,c.tip);continue}
     if(on)questBrackets(sx,sy,t);
     if(Q.homeMark())continue;
-    txt(q.done||questReady(q)?'?':'!',sx,sy-24+bob,on?M.on:M.col,'center')}
+    const c=wuiArrow(q.done||questReady(q)?'ask':'bang',on?M.on:M.col);wuiPut(c,sx,sy-22+bob,c.cx,c.tip)}
 }
 // (brackets round the tracked goal, breathing)
 function questBrackets(x,y,t){
@@ -1528,7 +1530,7 @@ function questBrackets(x,y,t){
 function questEdgeMark(sx,sy,t){
   const M=QUEST_MARK,cx=VW/2,cy=VH/2,dx=sx-cx,dy=sy-cy,k=Math.min((cx-M.edge)/Math.max(1e-6,Math.abs(dx)),(cy-M.edge)/Math.max(1e-6,Math.abs(dy)));
   ctx.save();
-  ctx.translate(Math.round(cx+dx*k),Math.round(cy+dy*k));
+  ctx.translate(...wuiOffMini(Math.round(cx+dx*k),Math.round(cy+dy*k)));// (clear of the minimap: worldui.js)
   ctx.rotate(Math.atan2(dy,dx));
   ctx.globalAlpha=.75+.25*Math.sin(t*1.5);
   ctx.fillStyle=M.ring;

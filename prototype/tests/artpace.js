@@ -33,6 +33,13 @@ Kit.suite(({ok,info})=>{
    if(!ring.length)info('no chunk round the view');else{const near=ring[0];WA.idleAt=-1e9;WA.chunk(near%WA.cols,(near/WA.cols)|0);const cN=WA.chunks.get(near);
     try{AP.most=1e9;WA.idleAt=performance.now();WA.vel=20;WA.chunks.delete(near);WA.draw(t.ctx,c);const nNear=WA.need;WA.chunks.set(near,cN);WA.vel=20;WA.draw(t.ctx,c);const nNone=WA.need;
      ok(nNear>nNone,'a chunk round the view not painted asks more of a frame ('+nNear.toFixed(1)+' ms, '+far(near)+' px off) than with it painted ('+nNone.toFixed(1)+')')}finally{AP.most=most}}}
+  // ---- walking aslant, a px across one frame and a px down the next (the owner's phone, 2026-11-19): the heading eased over the
+  //  frames (ART_PACE turn, lean) takes both ways at once, so the chunk past the view's far corner, ahead only when both are, is queued;
+  //  by each frame's own step the way flipped between across and down each frame, the ring ahead and its jobs with it, none finished
+  {const c=cam(),vc=[...WA.view].map(k=>[k%WA.cols,(k/WA.cols)|0]),kx=Math.max(...vc.map(q=>q[0]))+2,ky=Math.max(...vc.map(q=>q[1]))+2,K=ky*WA.cols+kx;
+   if(kx>=WA.cols||ky>=WA.rows)info('the view by the map\'s edge: aslant not checked');else{const ck=WA.chunks.get(K);if(ck){WA.chunks.delete(K);WA.recycle(ck.cv)}WA.last=null;WA.hx=WA.hy=0;let seen=0;
+    for(let i=0;i<24;i++){if(i&1)c.y++;else c.x++;WA.idleAt=performance.now();WA.draw(t.ctx,{x:c.x,y:c.y});WA.idle(0);if(WA.queue.some(q=>q[0]===kx&&q[1]===ky)||WA.jobs.has(K))seen++}
+    ok(seen>=12,'walking aslant a px a frame, the chunk past the view\'s far corner is ahead ('+seen+' of 24 frames; heading '+WA.hx.toFixed(2)+', '+WA.hy.toFixed(2)+')')}}
   // ---- the start: the ring round the view painted in play
   {WA.invalidate();WA.liveOk=true;t.runGen(t.paintViewSteps());const x0=Math.round(t.clamp(P.x-t.VW/2,0,t.MW*t.TILE-t.VW)),y0=Math.round(t.clamp(P.y-t.VH/2,0,t.MH*t.TILE-t.VH)),C=t.CHUNK,
      c0=Math.floor(x0/C),r0=Math.floor(y0/C),c1=Math.floor((x0+t.VW-1)/C),r1=Math.floor((y0+t.VH-1)/C),nv=(c1-c0+1)*(r1-r0+1);let ring=0;
