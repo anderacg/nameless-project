@@ -291,25 +291,41 @@ function wayLocal(s,x0,y0,x1,y1,rev){const bw=x1-x0,D=new Float64Array(bw*(y1-y0
       if((!wayOpen(j)||bridgeSide(j))&&!NO.has(j)||dx&&dy&&(!walkTile(y*MW+nx)||!walkTile(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2))||!ledgeOk(rev?j:i,rev?i:j))continue;
       const k=rev?i:j,rd=tiles[k]===T_ROAD,c=d+(dx&&dy?1.414:1)*wayStepAt(k)/(rd||tiles[k]===T_WATER?1:slopeMulAt(k))+climbCost(WM.lv,rev?j:i,rev?i:j,rd),r=(ny-y0)*bw+nx-x0;if(c<D[r]){D[r]=c;H.push(c,r)}}}
   return D}
+/* (a box's steps worked out once (wayLocal's tests and costs, forward: each tile's 8 steps in wayLocal's order, a its pace's part and
+   b its climb's, kept apart so a search adds them as wayLocal does, d+a+b; Infinity, no step; op: wayOpen), and wayLocalE, wayLocal
+   forward over them: the same costs to the last bit, a chunk's table searched from each of its nodes over one box's steps, not each
+   node's search working every step out again (a far party's long trip built 62 tables in a frame, 1.7 s; the owner, 2026-11-21:
+   "I still get lag my phone"). tests/router.js holds every chunk's table to wayLocal's) */
+function wayEdges(x0,y0,x1,y1){const bw=x1-x0,N=bw*(y1-y0),A=new Float64Array(N*8).fill(Infinity),B=new Float64Array(N*8),op=new Uint8Array(N),NO=wayNodes();
+  for(let q=0;q<N;q++){const x=x0+q%bw,y=y0+((q/bw)|0),i=y*MW+x;op[q]=wayOpen(i)?1:0;let e=q*8;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const o=e++,nx=x+dx,ny=y+dy;if(nx<x0||ny<y0||nx>=x1||ny>=y1)continue;const j=ny*MW+nx;
+      if((!wayOpen(j)||bridgeSide(j))&&!NO.has(j)||dx&&dy&&(!walkTile(y*MW+nx)||!walkTile(ny*MW+x)||SHUT&&(SHUT[y*MW+nx]&2||SHUT[ny*MW+x]&2))||!ledgeOk(i,j))continue;
+      const rd=tiles[j]===T_ROAD;A[o]=(dx&&dy?1.414:1)*wayStepAt(j)/(rd||tiles[j]===T_WATER?1:slopeMulAt(j));B[o]=climbCost(WM.lv,i,j,rd)}}
+  return{x0,y0,x1,y1,bw,A,B,op}}
+function wayLocalE(s,E){const {x0,y0,x1,y1,bw,A,B,op}=E,D=new Float64Array(bw*(y1-y0)).fill(Infinity),H=WAYH,sx=s%MW,sy=(s-sx)/MW;H.n=0;
+  if(sx<x0||sy<y0||sx>=x1||sy>=y1)return D;const q0=(sy-y0)*bw+sx-x0;D[q0]=0;H.push(0,q0);
+  while(H.n){const d=H.top,q=H.pop();if(d>D[q])continue;if(q!==q0&&!op[q])continue;const x=q%bw,y=(q/bw)|0;let o=q*8;
+    for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){if(!dx&&!dy)continue;const a=A[o],b=B[o++];if(a===Infinity)continue;const c=d+a+b,r=(y+dy)*bw+x+dx;if(c<D[r]){D[r]=c;H.push(c,r)}}}
+  return D}
 // (a chunk's table: its nodes (ids) and the days between each two inside it (d, k x k), made on demand, kept for this graph's
 // lifetime: at most one per chunk. A fixed LRU thrashes when a large search visits more chunks than it holds.)
 function wayChunk(G,c){let T=G.chunk.get(c);if(T)return T;holdShut();T=G.chunk.get(c);if(T)return T;
   const ids=G.cnode.subarray(G.coff[c],G.coff[c+1]),k=ids.length,d=new Float32Array(k*k),cx=c%G.cols,cy=(c-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs,x1=Math.min(MW,x0+G.cs),y1=Math.min(MH,y0+G.cs),DPT=wayDay();
-  for(let a=0;a<k;a++){const D=wayLocal(G.tile[ids[a]],x0,y0,x1,y1,false);for(let b=0;b<k;b++){const t=G.tile[ids[b]];d[a*k+b]=D[((t/MW|0)-y0)*(x1-x0)+t%MW-x0]*DPT}}
+  const E=wayEdges(x0,y0,x1,y1);for(let a=0;a<k;a++){const D=wayLocalE(G.tile[ids[a]],E);for(let b=0;b<k;b++){const t=G.tile[ids[b]];d[a*k+b]=D[((t/MW|0)-y0)*(x1-x0)+t%MW-x0]*DPT}}
   T={ids,d};G.chunk.set(c,T);return T}
 /* (the chunks' tables worked out ahead round you in a frame's spare time (main.js paintIdle), the nearest first, within WAY_WARM.r
    chunks: a long trip's first search finds them made, no freeze as it is ordered (the owner, 2026-11-17: "There always a lag/freeze
    while loading a new area": 280 ms in one frame for a 160-tile trip). A table built a node at a time (G.warm), the same as wayChunk's,
    dropped if the ways change meanwhile (WAYV)) */
-const WAY_WARM={on:true,r:4};
+const WAY_WARM={on:true,r:99};// (r 99: the whole map, the nearest first: a far party's long trip finds its tables made, as yours do (2026-11-21; was 4))
 function wayWarm(ms){if(!WAY_WARM.on||typeof WM==='undefined'||!WM||!WM.graph||!P)return;const G=WM.graph,t0=performance.now();holdShut();
   if(G.warm&&(G.warm.v!==WAYV||G.chunk.has(G.warm.c)))G.warm=null;
   while(performance.now()-t0<ms){let Q=G.warm;
     if(!Q){const pc=Math.floor(P.x/TILE/G.cs),pr=Math.floor(P.y/TILE/G.cs),R=WAY_WARM.r;let best=-1,bd=1e9;
       for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){const cx=pc+dx,cy=pr+dy;if(cx<0||cy<0||cx>=G.cols||cy*G.cs>=MH)continue;const c=cy*G.cols+cx,d=dx*dx+dy*dy;if(d<bd&&!G.chunk.has(c)){bd=d;best=c}}
       if(best<0)return;const ids=G.cnode.subarray(G.coff[best],G.coff[best+1]),k=ids.length,cx=best%G.cols,cy=(best-cx)/G.cols,x0=cx*G.cs,y0=cy*G.cs;
-      Q=G.warm={c:best,v:WAYV,ids,k,a:0,d:new Float32Array(k*k),x0,y0,x1:Math.min(MW,x0+G.cs),y1:Math.min(MH,y0+G.cs),DPT:wayDay()}}
-    if(Q.a<Q.k){const D=wayLocal(G.tile[Q.ids[Q.a]],Q.x0,Q.y0,Q.x1,Q.y1,false);for(let b=0;b<Q.k;b++){const t=G.tile[Q.ids[b]];Q.d[Q.a*Q.k+b]=D[((t/MW|0)-Q.y0)*(Q.x1-Q.x0)+t%MW-Q.x0]*Q.DPT}Q.a++}
+      Q=G.warm={c:best,v:WAYV,ids,k,a:0,d:new Float32Array(k*k),x0,y0,x1:Math.min(MW,x0+G.cs),y1:Math.min(MH,y0+G.cs),DPT:wayDay()};Q.E=wayEdges(Q.x0,Q.y0,Q.x1,Q.y1)}
+    if(Q.a<Q.k){const D=wayLocalE(G.tile[Q.ids[Q.a]],Q.E);for(let b=0;b<Q.k;b++){const t=G.tile[Q.ids[b]];Q.d[Q.a*Q.k+b]=D[((t/MW|0)-Q.y0)*(Q.x1-Q.x0)+t%MW-Q.x0]*Q.DPT}Q.a++}
     if(Q.a>=Q.k){G.chunk.set(Q.c,{ids:Q.ids,d:Q.d});G.warm=null}}}
 // (the nodes a trip starts from at tile t (rev: those it ends at), with the days to (from) each: t's own node; else a gate beside
 // it (a party leaving or making for a holding, so the pair cache serves it); else every node of t's chunk it can reach in it)

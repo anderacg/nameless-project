@@ -1,7 +1,7 @@
 'use strict';
 // Level of detail (doc/WORLD_DESIGN.md §2.2 R12; §3.5): every mover thinks by its tier, the ring of chunks it stands in round
 // yours (worldobject.js WORLD_LOD): near (every frame), mid (every 4th frame, 4x d) or far (its kind's farStep: beasts and herds
-// hold; else as mid). Tiers off: everything is near, and through 300 frames of the world every mover thinks every frame with
+// hold; else every farEvery-th frame, 12, with 12x d). Tiers off: everything is near, and through 300 frames of the world every mover thinks every frame with
 // the frame's own d, as before the tiers. On: a Normal world has all three, and a far beast or herd stands still; sorted by
 // rings, mid ones think a quarter as often with the same time in all, far ones take farStep. The chunk grid (core/spatial.js
 // ChunkGrid) answers a box as the scan of all does, in the lists' order. Then the hooks that change nothing yet: the router's
@@ -28,7 +28,7 @@ try{
   for(let f=0;f<60;f++){G.encCool=1e9;t.updateWorld(.05);if(G.mode!=='world'){t.hidePanel();G.mode='world';G.modal=false;G.enc=null}}
   ok(fm.x===at[0]&&fm.y===at[1]&&fc.x===at[2]&&fc.y===at[3],'a far beast and a far herd hold where they are (they wander only near you)')}
  Math.random=r0;
- // ---- by rings: sorted; mid every 4th frame with 4x d; far by farStep when the kind has one, else as mid
+ // ---- by rings: sorted; mid every 4th frame with 4x d; far by farStep when the kind has one, else every farEvery-th frame
  {const keep={...L},mons=W.monsters,at=dx=>({x:P.x+dx,y:P.y,id:'wolf'}),n=at(50),m=at(1200),f=at(4000);
   try{L.t=0;W.monsters=[n,m,f];t.lodTick(.01);
    ok(t.tierOf(n)==='near'&&t.tierOf(m)==='mid'&&t.tierOf(f)==='far','sorted by rings of chunks: 50 px near, 1200 mid, 4000 far');
@@ -38,8 +38,8 @@ try{
    const cn=calls.get(n),cm=calls.get(m);
    ok(cn.think===8&&Math.abs(cn.d-.4)<1e-9,'near thinks every frame ('+cn.think+' of 8)');
    ok(cm.think===2&&Math.abs(cm.d-.4)<1e-9,'mid thinks every 4th frame with 4x d: '+cm.think+' of 8, the same time in all ('+cm.d.toFixed(2)+' s)');
-   calls.clear();for(let i=0;i<4;i++){t.lodTick(.01);t.lodEach([f],mind,.05);t.lodEach([f],far,.05)}
-   const cf=calls.get(f);ok(cf.think===1&&cf.far===4,'far takes its kind\'s farStep, or thinks as mid when it has none');
+   const FE=L.farEvery;calls.clear();for(let i=0;i<2*FE;i++){t.lodTick(.01);t.lodEach([f],mind,.05);t.lodEach([f],far,.05)}
+   const cf=calls.get(f);ok(cf.think===2&&cf.far===2*FE&&Math.abs(cf.d-4*FE*.05)<1e-9,'far takes its kind\'s farStep ('+cf.far+' of '+2*FE+'), or with none thinks every farEvery-th frame with that many times d: '+cf.think+' of '+2*FE+', the same time in all');
    ok(t.asMonster(f).tier==='far','a world object tells its tier (WorldObject tier)');
   }finally{Object.assign(L,keep);W.monsters=mons;L.t=0;t.lodTick(1)}}
  // ---- the chunk grid: a box gathers what the scan of all finds in its chunks, in the lists' order, each once

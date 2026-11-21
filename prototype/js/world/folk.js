@@ -90,7 +90,9 @@ const folkSeen=f=>folkOut(f)||f.st==='field';
 const fieldTime=now=>now>=FIELD.from&&now<FIELD.to;
 const fieldOut=f=>folkHash(f.id+'|'+G.day)%1000/1000<FIELD.out;
 // (a bandit band or a beast within r of (x, y): the workers keep clear of both)
-const folkThreat=(x,y,r)=>bandits.some(b=>Math.hypot(b.x-x,b.y-y)<r)||W.monsters.some(m=>Math.hypot(m.x-x,m.y-y)<r);
+// (one r or more off along either way is no nearer than r: never measured, the same answer, most of the world skipped)
+const folkNear=(o,x,y,r)=>{const dx=o.x-x,dy=o.y-y;return dx<r&&dx>-r&&dy<r&&dy>-r&&Math.hypot(dx,dy)<r};
+const folkThreat=(x,y,r)=>bandits.some(b=>folkNear(b,x,y,r))||W.monsters.some(m=>folkNear(m,x,y,r));
 const fieldDanger=(t,f)=>Timed.of(t).has('fear')||besieged(t)||folkThreat(f.x,f.y,WORLD_SCALE.ai.folkBandit);
 // the stretches of an estate's front row (px across its tile) its 1st, 2nd and 3rd man work along (inner: by a town workshop's door)
 const FRONT_AT={mine:[[10,15.5],[4.5,9.5],[.5,4.5]],inner:[[3,7],[9,13],[6,10]],_:[[.5,4.5],[11.5,15.5],[5,11]]};

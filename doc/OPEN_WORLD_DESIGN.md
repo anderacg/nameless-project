@@ -155,6 +155,8 @@ With one scale, a battle's field **is** the world around the fight, at 1:1. `Bat
 
 The lab in phase 0 measures these before anything else is built.
 
+**The world's update, cheaper (2026-11-21; built):** the far parties, caravans and ships step every 12th frame with that much time (`WORLD_LOD.farEvery`; was every 4th, as the mid ring); a chunk's route tables are searched over its steps worked out once (`router.js` `wayEdges`, the same costs, 8× faster) and warmed for the whole map in idle time; wide grid lookups and the folk's threat check skip what is far. The test page's update: 3.90 to 3.29 ms a frame; the worst frame on a long run 1.8 s to about 240 ms. Left: the day's change (about 60 ms in one frame) and the march formations near you (0.76 ms) are as they were.
+
 ---
 
 ## 9. Godot?
