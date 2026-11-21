@@ -390,7 +390,11 @@ function uiIndicator(g,kind,x,y,w,h,col='#d6b052',level=1,mode='stand'){
  g.save();g.translate(x,y);g.scale(w/100,h/100);g.imageSmoothingEnabled=true;
  const metal=g.createLinearGradient(12,5,85,95);metal.addColorStop(0,'#fff0c1');metal.addColorStop(.3,col);metal.addColorStop(.72,col);metal.addColorStop(1,'#53442c');
  g.fillStyle=metal;g.strokeStyle='#51412b';g.lineWidth=5;g.lineJoin=g.lineCap='round';
- if(kind==='eye'){
+ // (shut, no one seeing you: a closed lid, its curve and four lashes, drawn dark under metal so it reads small on any ground; the
+ //  owner, 2026-11-21: a lens 4 deep read as "that weird grey line")
+ if(kind==='eye'&&level<=.05){const lid=()=>{g.beginPath();g.moveTo(10,40);g.quadraticCurveTo(50,74,90,40);for(const [a,b,c,d] of [[24,52,17,68],[40,58,36,78],[60,58,64,78],[76,52,83,68]]){g.moveTo(a,b);g.lineTo(c,d)}};
+  lid();g.strokeStyle='#201d18';g.lineWidth=17;g.stroke();lid();g.strokeStyle=metal;g.lineWidth=8;g.stroke()}
+ else if(kind==='eye'){
   const open=4+Math.max(0,Math.min(1,level))*27;
   g.beginPath();g.moveTo(9,50);g.bezierCurveTo(31,50-open,69,50-open,91,50);g.bezierCurveTo(69,50+open,31,50+open,9,50);g.fillStyle='#29261e';g.fill();g.strokeStyle=metal;g.lineWidth=6;g.stroke();
   if(level>.05){g.save();g.clip();g.beginPath();g.arc(50,50,7+level*10,0,Math.PI*2);g.fillStyle=metal;g.fill();g.beginPath();g.arc(50,50,3+level*6,0,Math.PI*2);g.fillStyle='#201d18';g.fill();g.beginPath();g.arc(46,45,2.5,0,Math.PI*2);g.fillStyle='#fff3d0';g.fill();g.restore()}

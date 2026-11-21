@@ -127,7 +127,9 @@ function drawTravelDetection(cam){
     drawStealthEye(d.exposure,d.sees?d.danger?'#ef8c73':'#dbca91':d.exposure?'#d9ad57':'#8f9e94',x,y,STEALTH_EYE.size);
     const q=!d.sees&&detectSkill().near&&TravelSearch.of(o);if(q&&inSight(q.x,q.y))drawStealthEye(0,'#d9ad57',q.x-cam.x-w/2,liftY(q.x,q.y)-cam.y-h/2,STEALTH_EYE.size);// (searching: an eye shut on where it last saw you)
   }
-  const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player);ctx.restore();
+  // (your own eye only while someone is about who could see you (the owner, 2026-11-21: alone in a wood the shut eye read as "that
+  //  weird grey line"): shut while none of them has, open as they do)
+  if(state.rows.length){const e=heroTagAt(cam);drawStealthEye(state.exposure,travelDetectionColor(state),e.x,e.y,STEALTH_EYE.player)}ctx.restore();
   return state;
 }
 // (what is queued over all: a pack's marker and its count; a party's label (armyTagAt); a banner planted on a pole, fluttering in
