@@ -6,7 +6,7 @@ Kit.suite(({ok})=>{
   let contained=true,shaded=false;
   for(const width of [18,36,54,108])for(const exposure of [0,.25,.5,.75,1]){
    const s=t.stealthEyeSprite(exposure,col,width),g=s.getContext('2d'),pixels=g.getImageData(0,0,s.width,s.height).data;
-   ok(s.width===Math.max(72,width)&&s.height===Math.ceil(Math.max(72,width)*2/3)&&t.stealthEyeSprite(exposure,col,width)===s,'eye '+exposure+' at '+width+' pixels has native dimensions and reuses its cache');
+   ok(s.width===Math.round(width)&&s.height===Math.round(width*2/3)&&t.stealthEyeSprite(exposure,col,width)===s,'eye '+exposure+' at '+width+' pixels is painted at that size (its device px: render.js devPic) and reuses its cache');
    for(let y=0;y<s.height;y++)for(let x=0;x<s.width;x++){const a=pixels[(y*s.width+x)*4+3],b=pixels[((s.height-1-y)*s.width+x)*4+3];if((y===0||y===s.height-1)&&a)contained=false;if(a!==0&&a!==255)shaded=true}
   }
   ok(shaded,'painted eyelids have antialiased curved edges rather than solid pixel blocks');
@@ -21,7 +21,7 @@ Kit.suite(({ok})=>{
    Object.defineProperty(window,'devicePixelRatio',{configurable:true,value:density});window.eval('VS='+zoom);
    for(const size of [t.STEALTH_EYE.size,t.STEALTH_EYE.player]){
     t.drawStealthEye(.5,col,10.37,20.63,size);const [s,x,y,w,h]=calls.pop();
-    ok(Math.abs(x*zoom-Math.round(x*zoom))<1e-8&&Math.abs(y*zoom-Math.round(y*zoom))<1e-8&&Math.abs(w*zoom-size*t.dprOf())<1e-8&&Math.abs(h/w-2/3)<1e-8&&s.width>=w*zoom,'eye '+size+' at density '+density+' (drawn at '+t.dprOf()+': the Resolution setting\'s cap) and zoom '+zoom+' preserves screen size and uses artwork at display density or above');
+    ok(Math.abs(x*zoom-Math.round(x*zoom))<1e-8&&Math.abs(y*zoom-Math.round(y*zoom))<1e-8&&Math.abs(w*zoom-s.width)<1e-8&&Math.abs(h*zoom-s.height)<1e-8&&Math.abs(s.width-size*t.dprOf())<=.5&&Math.abs(s.height-size*t.dprOf()*2/3)<=.5,'eye '+size+' at density '+density+' (drawn at '+t.dprOf()+': the Resolution setting\'s cap) and zoom '+zoom+' keeps its screen size, a px of its own to each device px, at whole device px');
    }
   }
   // (your own eye drawn only while someone is about who could see you: alone, none)
