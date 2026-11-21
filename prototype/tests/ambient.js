@@ -3,7 +3,8 @@
 // elsewhere (no butterflies at night or in the snow, fireflies only at night and in a wood only near you, gulls by water, crows
 // by a fight, a trace or ruins); none in the fog; birds on the ground scatter and a hare bolts from anyone who comes near;
 // drawing them never draws Math.random and writes nothing the save keeps; a battle's birds burst from its trees as it begins and
-// crows circle once it is over; the cost of a frame full of them stays small.
+// crows circle once it is over; the cost of a frame full of them stays small; each creature at its real size, one look a species in
+// every state.
 window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),ev=x=>(0,eval)(x),pn=performance.now;let now=1e7;
 try{
  const t=T,G=t.G,P=t.P,W=t.W,TILE=t.TILE,MW=t.MW,MH=t.MH,A=t.AMBIENT,AV=t.AMBV;try{localStorage.clear()}catch(e){}
@@ -130,6 +131,39 @@ try{
  {const A0=t.TOWNS[0],wild=(()=>{for(let ty=8;ty<MH-8;ty++)for(let tx=8;tx<MW-8;tx++){const x=(tx+.5)*TILE,y=(ty+.5)*TILE;if(t.tAt(tx,ty)===t.T_OPEN&&!t.landHold(x,y)&&!t.nearTile(tx,ty,t.T_ROAD,1))return[x,y]}})();
   A.tame=0;const onLand=t.ambWild(A0.x+30,A0.y+30),inWild=wild&&t.ambWild(wild[0],wild[1]);A.tame=1;const kept=t.ambWild(A0.x+30,A0.y+30);A.tame=T0;
   A.hours=H0;ok(!onLand&&inWild&&kept,'life keeps to the wilds: a spot on a holding’s land kept only '+T0+' of the time, in the wilds always')}
+ // ---- true to size, one look a species (the owner, 2026-11-21: "Can you make it more realistic and scale correctly? ... sometime i
+ //      see white bird turns into brown"): each picture at its AMB_LOOK size, its real size against a man (0.11 m a px, none under 4 px
+ //      on its longest side); every picture of a species in its own palette alone; and one bird the same species in every state ----
+ {const S=t.ambSpr(),L=t.AMB_LOOK,M=.11,px=v=>{const g=v.getContext('2d',{willReadFrequently:true}).getImageData(0,0,v.width,v.height).data,c=new Set();
+     for(let i=0;i<g.length;i+=4)if(g[i+3]>200)c.add((g[i]<<16|g[i+1]<<8|g[i+2]).toString(16).padStart(6,'0'));return c},
+   pal=sp=>{const P=t.ambLetters(L.pal[sp]),c=new Set();for(const k in P){const v=P[k];if(/^#[0-9a-f]{6}$/i.test(v))c.add(v.slice(1).toLowerCase())}return c},
+   flat=v=>v.getContext?[v]:Array.isArray(v)?v.flatMap(flat):Object.values(v).flatMap(flat),bad=[],off=[];
+  for(const sp in L.air){const fr=S.air[sp],o=L.air[sp],want=Math.max(4,o.real[1]/M);
+   if(!fr.every(f=>f.width===o.span&&f.height===fr[0].height))bad.push(sp+' in the air: '+fr.map(f=>f.width+'x'+f.height).join(' '));
+   if(Math.abs(o.span-want)>1.5)off.push(sp+' span '+o.span+' px against '+want.toFixed(1));
+   const P=pal(sp);for(const f of fr)for(const c of px(f))if(!P.has(c)){bad.push(sp+' flying has #'+c+', not its own');break}}
+  for(const sp in L.ground){const o=L.ground[sp],pics=flat(sp==='hare'?S.hare[0]:S[sp]).concat(sp==='hare'?flat(S.hare[1]):[]),want=Math.max(4,o.real[0]/M);
+   for(const f of pics)if(f.width!==o.w||f.height>o.h)bad.push(sp+' on the ground '+f.width+'x'+f.height+' against '+o.w+'x'+o.h);
+   if(Math.abs(Math.max(o.w,o.h)-want)>1.5)off.push(sp+' '+Math.max(o.w,o.h)+' px against '+want.toFixed(1));
+   const P=sp==='hare'?new Set([...pal('hare'),...pal('snowhare')]):pal(sp);for(const f of pics)for(const c of px(f))if(!P.has(c)){bad.push(sp+' on the ground has #'+c+', not its own');break}}
+  const all=[...Object.values(S.air).flat(),...['sparrow','pigeon','raven','heron','lizard','squirrel','duck','hare'].flatMap(k=>flat(S[k]))];
+  ok(!bad.length,'every picture at its size (AMB_LOOK: '+Object.keys(L.air).length+' flyers, '+Object.keys(L.ground).length+' on the ground), one size in every frame, in its own species\' colours'+(bad.length?': '+bad.slice(0,4).join('; '):''));
+  ok(!off.length&&all.every(f=>Math.max(f.width,f.height)>=4),'each at its real size against a man ('+(16*M).toFixed(2)+' m: 16 px): a vulture '+L.air.vulture.span+' px across, a heron '+L.ground.heron.h+' px tall, a sparrow 4; none under 4 px'+(off.length?': '+off.join('; '):''));
+  {const own=sp=>new Set(Object.values(L.pal[sp]).map(v=>v.slice(1).toLowerCase()));ok([...own('pigeon')].every(c=>!own('sparrow').has(c))&&[...own('gull')].every(c=>!own('sparrow').has(c)),'a pigeon\'s and a gull\'s colours are none of a sparrow\'s (the eye\'s dark aside)')}
+  // (one bird in every state: the pictures each state draws, all its species' own)
+  const ctx=t.ctx,di=ctx.drawImage,seen=[],spy=fn=>{seen.length=0;ctx.drawImage=function(...a){seen.push(a[0]);return di.apply(this,a)};try{fn()}finally{ctx.drawImage=di}return seen.slice()},
+   cam={x:P.x-100,y:P.y-100},mine=(pics,set)=>pics.length>0&&pics.every(p=>set.includes(p)),wrong=[];
+  for(const sp of ['sparrow','pigeon','raven']){const e=t.ambSpawn('peck',P.x,P.y);e.t=1;e.species=sp;e.life=99;
+   const g=spy(()=>t.ambGround(e,cam));t.ambScatter(e,P.x-20,P.y);e.t=2;const air=[];t.ambBirds(e,(x,y,alt,s)=>air.push(s));
+   if(!mine(g,flat(S[sp])))wrong.push(sp+' pecking');if(!mine(air,S.air[sp]))wrong.push(sp+' flown up');
+   const fl=t.ambSpawn('flock',P.x,P.y);fl.t=1;fl.species=sp;const fa=[];t.ambBirds(fl,(x,y,alt,s)=>fa.push(s));if(!mine(fa,S.air[sp]))wrong.push(sp+' in a flock')}
+  for(const sp of ['crow','raven','vulture']){const c=t.ambSpawn('crow',P.x,P.y);c.t=1;c.species=sp;const a=[];t.ambBirds(c,(x,y,alt,s)=>a.push(s));if(!mine(a,S.air[sp]))wrong.push(sp+' circling')}
+  {const d=t.ambSpawn('duck',P.x,P.y);d.t=1;d.st='fly';d.ft=1;d.alt=10;const a=[];t.ambBirds(d,(x,y,alt,s)=>a.push(s));if(!mine(a,S.air.duck))wrong.push('a duck flying')}
+  {const h=t.ambSpawn('heron',P.x,P.y);h.t=1;h.st='flee';h.ft=1;h.alt=10;const a=[];t.ambBirds(h,(x,y,alt,s)=>a.push(s));if(!mine(a,S.air.heron))wrong.push('a heron flying')}
+  ok(!wrong.length,'one bird, one species in every state: a sparrow, a pigeon, a raven pecking, flown up and in a flock; crows, ravens, vultures circling; ducks and herons in flight, each its own pictures'+(wrong.length?': '+wrong.join(', '):''));
+  // (the wingbeats: a vulture mostly soars, a duck never stops beating, a sparrow bounds (wings folded part of the time))
+  const share=(sp,f)=>{let n=0;for(let i=0;i<400;i++)if(t.ambBeat(L.air[sp],i*.037,false)===f)n++;return n/400};
+  ok(share('vulture',1)>.8&&share('duck',1)===0&&share('sparrow',3)>.25&&share('crow',0)+share('crow',2)>.3,'each flies its own way: a vulture soars ('+Math.round(share('vulture',1)*100)+'% of the time), a duck beats all the time, a sparrow bounds ('+Math.round(share('sparrow',3)*100)+'% folded), a crow flaps ('+Math.round((share('crow',0)+share('crow',2))*100)+'% of the time up or down)')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
 performance.now=pn;
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
