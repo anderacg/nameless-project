@@ -353,9 +353,9 @@ function drawWorld(){
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
   drawSafe(fogMem,low,cam,V);
-  // the weather where you are (gfx/weather.js; in a battle on the map, over the field instead: drawBattle), under the fog: seen
+  // The geographic sky in native screen pixels (not the low-resolution overlay); in world combat, drawn over actors instead. Seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
-  if(!B?.world)drawSafe(()=>WeatherArt.draw(ambWeather(),VW+1,VH+1,Weather.strength(P.x,P.y)));
+  if(!B?.world){const target=ctx;try{ctx=scr;drawSafe(()=>WeatherArt.drawMap())}finally{ctx=target}}
   drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
   if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
@@ -706,7 +706,7 @@ function drawBattle(){
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(V.w/VW,V.h/VH);
-  if(B.world)WeatherArt.draw(B.env&&B.env.w,VW,VH);// (a battle on the map: its weather over the field, under the HUD)
+  if(B.world)WeatherArt.drawMap();// (a battle on the map: its weather over the field, under the HUD)
   drawHeroHud();if(!B.world)drawMiniField();// (the small map of the field, top right: camera.js)
   if(B.over){txt(B.stalemate?'DISENGAGED':B.hunt?'HUNT OVER':B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
   ctx.restore();

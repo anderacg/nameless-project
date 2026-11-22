@@ -748,16 +748,17 @@ function liftFront(x,y,L){const cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)
   for(let px=x0;px<=x1;px++){let a=-1;for(let py=top;py<=bot+1;py++){const hid=depAt(px,py)>lim;if(hid&&a<0)a=py;if((!hid||py===bot+1)&&a>=0){const e=hid?py+1:py,c=WA.chunks.get(Math.floor(a/CHUNK)*WA.cols+Math.floor(px/CHUNK));
         if(c&&c.fcv){const X=Math.floor(px/CHUNK)*CHUNK,Y=Math.floor(a/CHUNK)*CHUNK,r=c.fr||1,h=Math.min(e,Y+CHUNK)-a;if(h>0)ctx.drawImage(c.fcv,(px-X)*r,(a-Y)*r,r,h*r,px-cam.x,a-cam.y,1,h)}a=-1}}}}
 
-/* the climate's own air, the world lab's (engine/worldlab.js snowfall, mist): over the land where you are, after the weather: in the frost
+/* The climate's own air (engine/worldlab.js): regional weather owns snowfall while enabled; legacy frost flakes remain when off.
+   Swamp mist is selected at each visible patch, independent of the player. In the frost
    flakes always falling, swaying with the wind (CLIMATE_AIR.flakes for a screen of 640 x 360 lab px); in the swamp banks of mist drifting
    over its low land (one a cell of cell game px where its hash passes mist, drifting drift px a second) */
 const CLIMATE_AIR={flakes:50,cell:150,mist:.45,drift:5},CAIR={fl:[],t:0};
-function climateAir(cam){if(typeof P==='undefined'||!P||B?.world)return;const cl=climAt(P.x,P.y),r=sceneRes(),now=performance.now(),dt=Math.min(.1,(now-(CAIR.t||now))/1000);CAIR.t=now;const C=CLIMATE_AIR;
+function climateAir(cam){if(typeof P==='undefined'||!P||B?.world)return;const cl=WEATHER.on?null:climAt(P.x,P.y),r=sceneRes(),now=performance.now(),dt=Math.min(.1,(now-(CAIR.t||now))/1000);CAIR.t=now;const C=CLIMATE_AIR;
   if(cl==='frost'){const n=Math.round(C.flakes*VW*VH/(320*180));while(CAIR.fl.length<n)CAIR.fl.push({x:Math.random()*VW,y:Math.random()*VH,z:Math.random()});CAIR.fl.length=n;
     ctx.save();ctx.fillStyle='rgba(248,250,255,.85)';for(const f of CAIR.fl){f.y+=(5+f.z*11)*dt;f.x+=(3+Math.sin(now/900+f.z*9)*2)*dt;if(f.y>VH+1){f.y=-1;f.x=Math.random()*VW}if(f.x>VW+1)f.x=-1;
       const s=(f.z>.6?2:1)/r;ctx.fillRect(Math.round(f.x*r)/r,Math.round(f.y*r)/r,s,s)}ctx.restore()}
   else CAIR.fl.length=0;
-  if(cl==='swamp'&&PX.flora&&PX.flora.mistPic){const pic=PX.flora.mistPic(),t=now/1000,c0=Math.floor((cam.x-200)/C.cell),c1=Math.floor((cam.x+VW+60)/C.cell),r0=Math.floor((cam.y-60)/C.cell),r1=Math.floor((cam.y+VH+60)/C.cell);ctx.save();
+  if((WEATHER.on||cl==='swamp')&&PX.flora&&PX.flora.mistPic){const pic=PX.flora.mistPic(),t=now/1000,c0=Math.floor((cam.x-200)/C.cell),c1=Math.floor((cam.x+VW+60)/C.cell),r0=Math.floor((cam.y-60)/C.cell),r1=Math.floor((cam.y+VH+60)/C.cell);ctx.save();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++){const h=hs(cx,cy,590);if(h>C.mist)continue;const x=cx*C.cell+hs(cx,cy,591)*C.cell+((t*C.drift*(.6+h))%C.cell),y=cy*C.cell+hs(cx,cy,592)*C.cell;
       if(climAt(x,y)!=='swamp'||terrAt(x,y)===T_HILL||terrAt(x,y)===T_MOUNT)continue;const s=(.7+hs(cx,cy,593)*.8)/r;ctx.globalAlpha=.55;ctx.drawImage(pic,Math.round(x-cam.x-pic.width*s/2),Math.round(y-cam.y-liftAt(x,y)-pic.height*s/2),pic.width*s,pic.height*s)}
     ctx.restore()}}
