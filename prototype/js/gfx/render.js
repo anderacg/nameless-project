@@ -551,9 +551,9 @@ function drawUnitAt(u){
   stateAir(u,x,y-z,h);// (stars, sweat, a router's dust: vfx.js)
   drawMorale(u,x,y-h-z-3);// (running or wavering: ui/moraleicons.js)
   // its health: over every fighter with health bars on (Settings, or HP bars in battle; off at first), your hero, companions and
-  // leaders too; else none (each group's health stands by its icon: battlehud.js drawGroupHealth)
+  // leaders too; a beast always, its own (battlehud.js ownHpBar); else none (each group's health stands by its icon: battlehud.js drawGroupHealth)
   if(u.leader)txt(u.leader.name+' Lv'+u.leader.lv,x,y-h-8-z,sideCol(u,'say'),'center');// a leader: his name over him
-  if(HPBARS.on){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
+  if(HPBARS.on||ownHpBar(u)){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
     ctx.fillStyle=u.hero||u.comp?'#e8b94a':sideCol(u);ctx.fillRect(bx,by,Math.round(bw*f),2)}// (by side: battle.js SIDE)
   if(B.world)ctx.restore();
 }
