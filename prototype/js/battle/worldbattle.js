@@ -21,7 +21,7 @@ const JOIN_RULES={every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near
 // (walk: a fight's walking share of a man's pace, the field's own (battle.js MARCH.base; was .75, near the map's march, when a fight on
 //  the map ran on the map's clock); blocked: battle seconds without a blow before a stalled fight is looked at, 5 (was 30 on that
 //  clock, some 16 s on screen at 1x: as many now on the fight's own, battle.js battleStep))
-const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
+const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
 /* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
    same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
    much wider than the ring was, its edge twice your sight and more past where it began, that no one sees (a foe past it has got
@@ -111,7 +111,12 @@ class WorldBattleArea{
     // (ring: the field as the ring had it, who hears of the fight measured from it as ever (knows: the owner, 2026-11-14, "the join range
     // should be not that far, reduce to the original range"); r: the field, OPEN_FIGHT.reach as wide in the open)
     // (core: the ground the fighting sides stand on, both armies' bodies: where they reach one another, who takes part counted by it)
-    this.core=this.r;this.ring=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);this.r=this.ring*(OPEN_FIGHT.on?OPEN_FIGHT.reach:1);
+    // (the field in the open by the armies' size (the owner, 2026-11-22: "Fix battle area to be smaller based on army size"): their bodies
+    //  (core), room px past them (a bow's reach on the map: 400 field px a 6) and perMan px a man's root, never more than it was, ring x
+    //  OPEN_FIGHT.reach (2.2): that was 290 px across for a pack of wolves, 350 for 40 a side, its edge past your sight whatever the
+    //  fight; now 120 and 190. Its edge may lie in your sight: a foe past it has got away as before)
+    this.core=this.r;this.ring=Math.max(this.r,this.sightRadius*WORLD_BATTLE.sightBase+Math.sqrt(this.fighters)*WORLD_BATTLE.perFighter);
+    this.fit=this.core+WORLD_BATTLE.room+Math.sqrt(this.fighters)*WORLD_BATTLE.perMan;this.r=OPEN_FIGHT.on?Math.min(this.fit,this.ring*OPEN_FIGHT.reach):this.ring;
     this.span=Math.ceil(2*(this.r+WORLD_BATTLE.apron));this.x0=this.x-this.span/2;this.y0=this.y-this.span/2;this.cx=this.cy=this.span*this.scale/2;this.radius=this.r*this.scale;
     this.joinedFight=!!this.fight;this.made=made;this.held=other;this.starts=[a,{x:b.x,y:b.y,facing:other instanceof Party?marchFacing(other):Math.atan2(a.y-b.y,a.x-b.x)}];this.participants=new Set([...this.initial,other,this.fight,...(e.kind==='villagers'?other?.ws||[]:[])]);this.pending=[];this.turned=new Set();this.arrivals=[];this.serial=0;this.marchClamp=p=>this.world(this.constrain(this.field(p),18));this.marchInside=p=>this.inside(this.field(p),6);
   }
