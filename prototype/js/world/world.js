@@ -75,12 +75,12 @@ function pickAt(wx,wy){
   const tol=G.mouse.type==='touch'?MARCH_PICK.tap*VW/(cv.clientWidth||VW):0;let mine;
   const yours=()=>{if(mine===undefined){const h=marchPicked(P)?.hit(wx,wy,tol);mine=h?(h.kind==='figure'?0:h.d):null}return mine};
   const army=o=>{const a=marchPicked(o);if(!a)return false;if(!o.inView(V))return true;const h=a.hit(wx,wy,tol);
-    if(h&&(h.kind==='figure'||yours()==null||h.d<mine))c.push([h.kind==='figure'?10+2*Math.min(1,h.d):13+Math.min(h.d,999)/1000,o]);return !!(MARCH_RING.on&&a.ring)};
+    if(h&&(h.kind==='figure'||yours()==null||h.d<mine)){const target=h.kind==='figure'&&h.unit&&wuiKind(o)==='foe'?WorldCombat.figure(o,h.unit):o;c.push([h.kind==='figure'?Math.min(1,h.d):13+Math.min(h.d,999)/1000,target])}return !!(MARCH_RING.on&&a.ring)};
   // every world object says where a click answers on it (WorldObject pick), with these, in worldObjects' order (a tie keeps it)
   // (a lot of holding t answers only on its building's own pixels as drawn (lotPicHit), not its whole square: a cluster's free ground
   //  between its houses is walked on (the owner, 2026-11-16: "I always misclick at free space area belong to the cluster building"))
   const lot=(o,t,l,dy)=>{if(lotPicHit(t,l,wx,wy)&&S.sees(o.x,o.y,1.2))c.push([Math.min(12,Math.hypot(o.x-wx,o.y-(dy||0)-wy))+Math.hypot(o.x-wx,o.y-wy)/1000,o])};
-  const at={x:wx,y:wy,V,add,box,fig,camp,army,lot};for(const o of worldObjects())o.pick(at);
+  const at={x:wx,y:wy,V,add,box,fig,camp,army,lot};for(const o of worldObjects())if(!B?.world?.hides(o))o.pick(at);
   c.sort((a,b)=>a[0]-b[0]);return c.length?c[0][1]:null;
 }
 // what a thing on the map is (its mapKind), while it is still on the map (here); null for anything else
@@ -102,7 +102,7 @@ function clickAt(wx,wy){
 }
 // (what you clicked on, or picked Approach for on its ring (ui/input.js worldApproach): met if you are touching it, else chased;
 // townsfolk greet you where they are, you staying put (the owner, 2026-11-15: "should not bring up the city menu"))
-function approach(o){if(o.mapKind==='townsfolk'){o.meet();return false}if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;{const q=marchMeetAt(o);P.tx=q.x;P.ty=q.y}P.stuck=0;return false}
+function approach(o){if(o instanceof WorldFigure){if(!o.here())return false;if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;P.tx=o.x;P.ty=o.y;P.stuck=0;return false}if(o.mapKind==='townsfolk'){o.meet();return false}if(o.mapKind==='critter'&&o.wild&&o.inView(vis()))return hunt(o);if(Math.hypot(o.x-P.x,o.y-P.y)<=worldBattleReach(o))return interact(o);G.chase=o;{const q=marchMeetAt(o);P.tx=q.x;P.ty=q.y}P.stuck=0;return false}
 /* ---------- Follow (the owner, 2026-10-23: "add new Action called 'Follow' which can be used when you click at the other unit in
    the world map"): your band shadows a party, keeping after it at a distance, never closing in to meet or fight it (a chase,
    G.chase, does). G.follow: {o: the party, crumbs: where it has walked, a point each FOLLOW.crumb px, the oldest FOLLOW.trail tiles
@@ -305,7 +305,13 @@ function updateWorld(dt){
   if(G.paused)return;
   fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
   const d=dt*G.speed*WORLD_PACE;lodTick(dt);
-  Clock.advance(dt*G.speed*DAY/DAY_SECONDS);// (a new day: dayTick; a new hour: Systems.hour; core/clock.js)
+  if(Clock.advance(dt*G.speed*DAY/DAY_SECONDS,true)){
+    // Finish this simulation step after the daily transaction releases input; an encounter may start its own loading job.
+    LOADING.task.then(()=>{try{worldMoment(d,dt)}catch(e){if(typeof loopError==='function')loopError(e);else setTimeout(()=>{throw e})}},()=>{});return;
+  }
+  worldMoment(d,dt);
+}
+function worldMoment(d,dt){
   if(G.dead){if(G.mode!=='dead')showDeath();return}// (your hero died on the road in that time: the game is over, ui.js)
   G.encCool=Math.max(0,G.encCool-d/WORLD_SCALE.ai.grace);regenVitals(d/DAY);
   // then every system's step in its order (core/systems.js; Systems.names('frame') lists them: a stay first, a holding you reach

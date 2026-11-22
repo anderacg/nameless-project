@@ -143,7 +143,7 @@ window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))r
   if(e.button===2&&B&&B.rdrag){const d=B.rdrag;B.rdrag=null;
   if(Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1,{amove:d.am});
   else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl,amove:d.am})}return}
-  if(e.button===0&&B&&B.box){const b=B.box;B.box=null;rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
+  if(e.button===0&&B&&B.box){const b=B.box;B.box=null;if(!(Math.hypot(b.x1-b.x0,b.y1-b.y0)<5&&!b.add&&(WorldCombat.click(b.x1,b.y1)||WorldCombat.move(b.x1,b.y1))))rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
 cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=toCanvas(e);
   {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.amArm||B.sel!=='all'&&selGroups().length&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
@@ -161,7 +161,7 @@ function worldGo(wx,wy){
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){followStop();Talk.clear();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
+function worldMove(wx,wy){companyRules.cancel();followStop();Talk.clear();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
@@ -176,7 +176,7 @@ function partyRing(o,wx,wy){if(!o||!(FOLLOW.kinds.includes(objKind(o))||SEAMLESS
 function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
   const wx=G.cam.x+p.x,wy=liftGround(G.cam.x+p.x,G.cam.y+p.y).y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
 // its ring's Approach (or the double click): today's chase of o, or met at once beside it (world.js approach)
-function worldApproach(o){followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
+function worldApproach(o){companyRules.cancel();followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a
@@ -228,6 +228,7 @@ function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return
   if(B!==l.B||G.mode!=='battle')return true;const q=l.q;
   if(l.armed){const d=B.rdrag;B.rdrag=null;if(d&&Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);else rtsOrder(q.x,q.y);return true}
   if(l.box){const b=B.box;B.box=null;if(b)rtsSelect(b.x0,b.y0,b.x1,b.y1,false);return true}
+  if(WorldCombat.click(q.x,q.y)||WorldCombat.move(q.x,q.y))return true;
   if(B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y);else rtsSelect(q.x,q.y,q.x,q.y,false);return true}// (a tap: as it always was)
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='touch')touchMove(e,toCanvas(e))});
 window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true);else if(RING.press?.id===e.pointerId)ringDrop()});
@@ -368,7 +369,7 @@ class MobileWorldHud{
     this.mapChoices=document.createElement('div');this.mapChoices.id='worldMapChoices';this.mapChoices.className='mwh-map';this.mapChoices.hidden=true;this.mapChoices.setAttribute('role','group');this.mapChoices.setAttribute('aria-label','Map view and zoom');this.mapChoices.innerHTML='<strong>Map view</strong><div class="mwh-map-actions"><div data-place="mapOut"></div><div data-place="mapIn"></div><div data-place="mapFull"></div></div>';this.root.appendChild(this.mapChoices);this.mapChoices.addEventListener('click',e=>{if(e.target.closest('[data-act="hunt-area"]')){WildHunt.toggle();this.close()}});
     this.mapButton=document.createElement('button');this.mapButton.type='button';this.mapButton.id='mapToggle';this.mapButton.className='dbtn';this.mapButton.setAttribute('aria-controls','worldMapChoices');this.mapButton.setAttribute('aria-expanded','false');this.mapButton.innerHTML=icon('map',18)+'<span class="dl">Map ▴</span>';this.root.querySelector('[data-place="map"]').appendChild(this.mapButton);
     this.mapButton.addEventListener('click',()=>{const open=this.mapChoices.hidden;this.close();this.mapChoices.hidden=!open;this.mapButton.setAttribute('aria-expanded',String(open))});
-    const node=(selector,place)=>{const el=$(selector),home=document.createComment('mobile control home');el.before(home);return{el,home,to:this.root.querySelector('[data-place="'+place+'"]')||this.choices}};
+    const node=(selector,place)=>{return HudControls.bind($(selector),this.root.querySelector('[data-place="'+place+'"]')||this.choices,()=>this.enabled,20)};
     this.nodes=[node('#pause','pause'),node('#mapBtn','mapFull'),node('#zoomOut','mapOut'),node('#zoomIn','mapIn'),node('#charBtn','army'),node('#menuBtn','menu'),node('#wday','day'),node('.wtime','speed')];
     this.speedButton.addEventListener('click',()=>{const open=this.choices.hidden;this.close();this.choices.hidden=!open;this.speedButton.setAttribute('aria-expanded',String(open));this.speed()});
     this.partyButton.addEventListener('click',()=>{const open=this.partyButton.getAttribute('aria-expanded')!=='true';this.close();this.partyButton.setAttribute('aria-expanded',String(open));this.screen.classList.toggle('party-open',open)});
@@ -383,7 +384,7 @@ class MobileWorldHud{
     const mobile=this.media.matches;if(this.mobile!==mobile){this.mobile=mobile;this.screen.classList.toggle('mobile-controls',mobile)}
     const enabled=mobile&&G.mode==='world'&&!G.modal;if(enabled===this.enabled)return;
     this.close();this.enabled=enabled;this.screen.classList.toggle('mobile-world',enabled);this.root.hidden=!enabled;
-    for(const n of this.nodes)if(enabled)n.to.appendChild(n.el);else n.home.after(n.el);
+    HudControls.sync();
     $('#mapBtn .dl').textContent=enabled?'Full map':'Map';
     this.measure();
   }

@@ -16,19 +16,36 @@ function loopWhere(e){const L=String(e&&e.stack||'').split('\n').find(l=>/\.js:\
 function loopError(e){const k=String(e&&e.message||e),t=performance.now();
   if(!LOOP_SEEN.some(x=>x.k===k)){const w=loopWhere(e);LOOP_SEEN.push({k,w,day:typeof G!=='undefined'?G.day:0,mode:typeof G!=='undefined'?G.mode:''});if(LOOP_SEEN.length>LOOP_KEEP)LOOP_SEEN.shift();try{toast('Something went wrong: '+k+(w?' ('+w+')':''),'bad')}catch(_){}}
   if(t-(LOOP_ERR.get(k)||-1e9)<1000)return;LOOP_ERR.set(k,t);setTimeout(()=>{throw e})}
-// (the map's chunks ahead painted in what is left of the frame's time once it is drawn: gfx/worldart.js idle)
-function paintIdle(now){if(G.mode==='world'&&WM)try{const left=()=>1000/RENDER.fps-(performance.now()-now)-2;marchWarm(Math.max(1,left()));WorldArt.idle(left());frameSpare(now,left());wayWarm(Math.max(1,left()))}catch(e){loopError(e)}}// (and the ways' chunks round you, your army's pictures, the buildings of the holdings ahead and Auto's first frames: router.js wayWarm, march.js marchWarm, gfx/quality.js frameSpare)
+// Terrain stays alive whenever the world is the visible scene, including combat and its pause menu.
+function worldPaintActive(){return !!(WM&&(G.mode==='world'||G.mode==='battle'&&B?.world||G.mode==='esc'&&(G.esc?.mode==='world'||G.esc?.mode==='battle'&&B?.world)))}
+// Missing terrain gets first use of a new frame's budget; expensive drawing cannot starve it indefinitely.
+function paintPriority(start){if(!worldPaintActive())return;WorldArt.keepLive();
+  FrameBudget.run(start,RENDER.fps,[['missing terrain',ms=>WorldArt.prepare(ms)]])}
+// Refinements and other speculative warming share the deadline after the visible frame.
+function paintIdle(now){if(worldPaintActive())try{
+  WorldArt.keepLive();Quality.watch(now);
+  FrameBudget.run(now,RENDER.fps,[['terrain paint',ms=>WorldArt.idle(ms)],['march sprites',ms=>marchWarm(ms)],['buildings',ms=>lotWarm(ms)],['route warmup',ms=>wayWarm(ms)]]);
+}catch(e){loopError(e)}}
+
+function stepSimulation(dt){
+  const mode=G.mode;
+  if(G.mode==='battle'&&B){updateBattle(heroBeat(dt)*BATTLE_TEMPO);openFightWorld(dt*WORLD_TEMPO)}
+  else openFightOver();
+  if(G.mode==='scene')updateScene(dt);
+  else if(G.mode==='world')updateWorld(dt*WORLD_TEMPO);
+  return G.mode===mode;
+}
+// A hidden tab resumes from now, without replaying time spent in the background.
+addEventListener('visibilitychange',()=>{last=performance.now();FrameTime.reset()});
+
 function loop(now){
   if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
-  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const dt=Math.min(FRAME_TIME.catchup,Math.max(0,(now-last)/1000));last=now;
+  const frameStart=performance.now();FrameBudget.begin(frameStart,RENDER.fps);
   fastWatch();// (Travel fast: back to 1x when anything calls for you: world.js)
   const t0=FRAMEPROF.on?performance.now():0;// (the frame timings: ui/frameprof.js)
-  if(!DevConsole.opened)try{
-    if(G.mode==='battle'&&B){updateBattle(heroBeat(dt)*BATTLE_TEMPO);openFightWorld(dt*WORLD_TEMPO)}// (a crit's or a kill's beat of slow motion: gfx/herofx.js; the world on round a fight on the map: worldbattle.js)
-    else openFightOver();// (the fight over: your band's days and hours kept through it, worldbattle.js)
-    if(G.mode==='scene')updateScene(dt);
-    else if(G.mode==='world')updateWorld(dt*WORLD_TEMPO);// (the map's tempo: core.js WORLD_TEMPO)
-  }catch(e){loopError(e)}
+  try{paintPriority(frameStart)}catch(e){loopError(e)}
+  if(!DevConsole.opened)try{FrameTime.advance(dt,stepSimulation)}catch(e){FrameTime.reset();loopError(e)}else FrameTime.reset();
   // (the HUD on its own clock, in real time, never the simulation's: in a battle the ability buttons every tick, the orders, unit
   // cards, details and top bar every other one (setOrderUI redraws the abilities too: battlehud.js bhudTop))
   // (one HUD that throws never stops the game: the loop goes on, the error still raised a moment later for the tests and the console;
@@ -38,8 +55,10 @@ function loop(now){
   G.hudT+=dt;if(G.hudT>.25&&WM&&G.mode!=='loading'){G.hudT=0;try{updateHUD();if(G.mode==='battle'){updateSkillBar();if(B&&(hudCards=!hudCards))setOrderUI();else bhudAbilities()}}catch(e){setTimeout(()=>{throw e})}}
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
-  const t1=FRAMEPROF.on?performance.now():0;try{MainMenu.frame(now);if(G.mode!=='title')frame()}catch(e){loopError(e);ctx.setTransform(1,0,0,1,0,0)}if(FRAMEPROF.on)FrameProf.frame(t1-t0,performance.now()-t1);
-  paintIdle(now);requestAnimationFrame(loop);
+  const t1=FRAMEPROF.on?performance.now():0;try{MainMenu.frame(now);if(G.mode!=='title')frame()}catch(e){loopError(e);ctx.setTransform(1,0,0,1,0,0)}
+  const t2=FRAMEPROF.on?performance.now():0;paintIdle(frameStart);
+  if(FRAMEPROF.on)FrameProf.frame(t1-t0,t2-t1,performance.now()-t2);
+  FrameBudget.end();requestAnimationFrame(loop);
 }
 // the page opens on the main menu (ui/mainmenu.js) with no world: a new campaign or a load makes one (session.js begin, save.js
 // loadGame). The tests and the wiki make the classic world at load (worldmap.js): laid out here as it first stands (session.js worldFirst)

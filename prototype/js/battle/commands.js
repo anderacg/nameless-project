@@ -18,7 +18,7 @@ function playerOrder(gs,fn,{counts=true,late=false}={}){if(B?.muster?.active)ret
 // woods or behind a rise: terrain.js seenBy) is no one to click. pick: a select's click, where icons overlap clicked again on the
 // same spot, the next one under (moraleicons.js iconPick)
 function rtsUnitAt(x,y,team,pick){
-  const ic=pick?iconPick(x,y,team):iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g||!seenBy(0,u))continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
+  const ic=B.world?null:pick?iconPick(x,y,team):iconAt(x,y,team);if(ic){let best=null,bd=1e9;for(const u of B.units){if(u.hp<=0||u.grp!==ic.g||!seenBy(0,u))continue;const d=Math.hypot(u.x-ic.cx,u.y-ic.cy);if(d<bd){bd=d;best=u}}if(best)return best}
   // (each by his body as drawn: up by his ground's lift in a fight on the map, vfx.js fieldLift)
   let best=null,bd=RTS_PICK*(B.world?WORLD_BATTLE.sprite:1);for(const u of B.units){if(u.hp<=0||(team===1?!battleEnemy(0,u):u.team!==team)||!seenBy(0,u))continue;const d=Math.hypot(u.x-x,u.y-(u.z||0)-6*(B.world?WORLD_BATTLE.sprite:1)-fieldLift(u.x,u.y)-y);if(d<bd){bd=d;best=u}}return best}
 // select: a click picks the group of the unit under it (nothing of yours under it: none, as in Total War; the All card, Ctrl+A or
@@ -37,6 +37,8 @@ function rtsSelect(x0,y0,x1,y1,add){
 // Keep formation on (two or more groups): sent as one block, turned to face the way it goes (formations.js GroupBlock)
 function rtsOrder(x,y,opt){
   if(B?.muster?.active)return;
+  if(WorldCombat.live()&&!B.world.inside({x,y},16))return WorldCombat.move(x,y);
+  if(WorldCombat.live()&&WorldCombat.click(x,y,true))return;
   opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;const am=amTake(opt),keep=gs.length>1&&keepFormOn();playerOrder(gs,()=>{
   if(B.deploy){const p=inZone(x,y);x=p.x;y=p.y;opt={}}// (deploying: a spot in your zone, no enemy to set them on)
   const e=B.deploy?null:rtsUnitAt(x,y,1);
@@ -51,7 +53,7 @@ function rtsOrder(x,y,opt){
       for(const p of K.placeAt(x,y,K.faceTo(x,y))){const gr=B.groups[p.g],n=gr.queue.length;gr.queueTo(p.ax,p.ay,am);if(gr.queue.length>n)gr.queue[n].face=p.face}}
     else gs.forEach(g=>{const l=last(g),gr=B.groups[g];if(am)gr.queueTo(x+l.x-cx,y+l.y-cy,true);else gr.queueTo(x+l.x-cx,y+l.y-cy)});B.mark={x,y,t:.7,foe:false};if(am){B.mark.am=true;amSay()}return}
   gs.forEach(g=>B.groups[g].amEnd());
-  if(e){gs.forEach(g=>B.groups[g].attack(e,{run:!!opt.run}));toast(htmlText(selLabel())+': attack the '+htmlText(e.grp&&B.groups[e.grp]?groupName(e.grp):e.leader?e.leader.name:ST[e.type]?ST[e.type].n.toLowerCase():'enemy')+'.')}
+  if(e){gs.forEach(g=>B.groups[g].attack(e,WorldCombat.live()?{run:!!opt.run,individual:true}:{run:!!opt.run}));toast(htmlText(selLabel())+': attack the '+htmlText(e.grp&&B.groups[e.grp]?groupName(e.grp):e.leader?e.leader.name:ST[e.type]?ST[e.type].n.toLowerCase():'enemy')+'.')}
   else if(keep){const K=GroupBlock.of(gs);for(const p of K.placeAt(x,y,K.faceTo(x,y)))B.groups[p.g][am?'attackMove':'moveTo'](p.ax,p.ay,{run:!!opt.run,face:p.face});if(am)amSay()}
   else{gs.forEach(regroup);const cx=gs.reduce((a,g)=>a+B.groups[g].ax,0)/gs.length,cy=gs.reduce((a,g)=>a+B.groups[g].ay,0)/gs.length;
     gs.forEach(g=>{const gr=B.groups[g];gr[am?'attackMove':'moveTo'](x+gr.ax-cx,y+gr.ay-cy,{run:!!opt.run})});if(am)amSay()}

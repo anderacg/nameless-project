@@ -6,6 +6,14 @@
    Kit.suite(body): window.RUN with the report made: body({ok, info, o}) runs in a try (an exception reads EXC), then the
    report, with the page's errors (ERR), goes into <pre id="OUT"> for the runner to read. */
 const Kit={
+  // Progress uses the wall clock: visual fingerprint tests deliberately freeze performance.now.
+  progress(stage,detail={}){console.info('TEST_PROGRESS '+JSON.stringify({stage,...detail,at:Date.now()}))},
+  paintProgress(){
+    const paint=window.paintSteps;let n=0;
+    window.paintSteps=function*(...args){const id=++n,at=Date.now();Kit.progress('painting chunk',{id,x:args[1],y:args[2],fine:args[8]?.fine||1});
+      const value=yield* paint.apply(this,args);Kit.progress('painted chunk',{id,ms:Date.now()-at});return value};
+    return()=>{window.paintSteps=paint};
+  },
   // ---- the report
   report(){
     const o=[];

@@ -13,7 +13,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
   ally.inside=null;ally.dead=false;ally.lv=3;ally.xp=0;ally.renown=24;ally.sk=Object.fromEntries(t.LORD_SK.map(k=>[k,{lv:1,xp:0}]));ally.troops=['hum_spear','hum_spear','hum_bow','hum_bow'];
   const enemies=['militia','militia','militia','militia','militia','militia','archer','archer','archer','archer','horse','horse'];G.mode='world';G.modal=false;t.hidePanel();
   G.enc={kind:'party',ref:{x:P.x,y:P.y,cool:0},list:enemies,allies:[ally],foes:[]};t.startBattle({enemies,tournament:false});t.beginFight();return t.B};// (Start Battle: a battle opens ready since f8cfe32)
- const run=(B,s)=>{while(B.t<s&&!B.over)t.updateBattle(1/30)};
+ const run=(B,s)=>{Kit.progress('AI simulation',{until:s,units:B.units.length});let next=B.t+10;while(B.t<s&&!B.over){t.updateBattle(1/30);if(B.t>=next){Kit.progress('AI simulation step',{time:B.t});next=B.t+10}}};
  const print=B=>hash({u:B.units.map(u=>[u.id,u.x,u.y,u.hp,!!u.rout,u.tgt&&u.tgt.id]),g:Object.entries(B.groups).map(([id,g])=>[id,g.order,g.ax,g.ay,g.form,g.run,g.targetGroupId]),c:Object.entries(B.captains||{}).map(([k,c])=>[k,c.post,c.commit])});
  const key=k=>window.dispatchEvent(new KeyboardEvent('keydown',{key:k,code:'Key'+k.toUpperCase(),bubbles:true}));
  const role=(B,r)=>t.playerGroups().find(id=>B.groups[id].role===r);

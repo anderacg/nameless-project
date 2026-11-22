@@ -15,26 +15,39 @@ class Herd extends WorldObject{
   meet(){this.cool=4;if(this.wild)hunt(this)}
   // its holding's pasture fields, where it lives (livestock only; none: no pasture, or none worked)
   pasture(){return !this.wild&&this.home&&fieldsOf(townBy(this.home),'pasture')||null}
-  inView(V){return this.wild&&spotted(this,V)}
-  pick(at){if(this.wild)at.add(this,9,4)}
-  // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
-  // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
-  // (each of its animals on its own, a loose unit round its point (herdFlock), each its own figure in the scene: its own lift, before or
-  // behind what stands by it; the herd's ring and marker at its point)
-  draw(ents,cam,V){if(!this.inView(V)||B?.world?.hides(this))return;const c=this;if(WORLD_BATTLE.on)marchCircle(ents,c,cam,Math.max(WORLD_BATTLE.outer,WORLD_BATTLE.inner+Math.sqrt(c.n||1)*2),'#b4c985');
+  // The herd is a movement coordinator; each member has its own sight/cover and interaction identity.
+  memberVisible(m,V){return this.wild&&!m.dead&&manSpotted(yourSight(V),m)}
+  members(V,advance=false){
+    if(!this.wild||!(this.n>0))return null;
+    const L=WILD_LIFE.flock,A=critterArt(this.id,0,0),F=HERD_FLOCK.get(this),n=Math.max(1,this.n||1);
+    let reach=Math.max(4,A.w)*L.gap*(n+L.split.far+L.flee+1)+TILE;
+    for(const m of this.m||[])reach=Math.max(reach,Math.hypot(m.dx,m.dy)+TILE);
+    for(const m of F?.m||[])reach=Math.max(reach,Math.hypot(m.x-this.x,m.y-this.y)+TILE);
+    if(!yourSight(V).sees(this.x,this.y,1,reach))return null;
+    if(!advance&&F)return F;const coat=this.coat??(this.coat=Math.floor((this.hx||0)+(this.hy||0)));
+    return herdFlock(this,critterArt(this.id,0,coat),performance.now());
+  }
+  inView(V){return !!this.members(V)?.m.some(m=>this.memberVisible(m,V))}
+  pick(at){if(!this.wild||B?.world?.hides(this))return;
+    const F=this.members(at.V);if(!F)return;const tol=G.mouse.type==='touch'?MARCH_PICK.tap*VW/(cv.clientWidth||VW):0;
+    for(let i=0;i<F.m.length;i++){const m=F.m[i];if(!this.memberVisible(m,at.V))continue;const a=critterArt(this.id,0,(this.coat||0)+i),f=WorldCombat.figure(this,m,i),w=a.w/2+tol,h=a.h+tol;
+      if(at.x>=m.x-w&&at.x<=m.x+w&&at.y>=m.y-h&&at.y<=m.y+tol)at.add(f,Math.hypot(w,h)+1,a.h/2)}
+  }
+  // Each animal has its own figure, ground lift and visibility; the shared controller has no marker or pick ring.
+  draw(ents,cam,V){if(!this.wild||B?.world?.hides(this))return;const c=this,F=this.members(V,true);if(!F)return;
     // (each animal its battle figure, as it is in a hunt, at the marchers' scale (gfx/sprites.js critterArt), its own coat: the herd's
     // coat picked once (coat), not from its home (hx, hy), which a fleeing herd moves every frame: its coats flashed, the owner
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color"); its legs by its own steps (d), its pose by its own time
-    const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),N=PX.MAP_STEPS,stride=Math.max(4,A.w)/N,F=herdFlock(c,A,performance.now());
+    const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),N=PX.MAP_STEPS,stride=Math.max(4,A.w)/N;
     // (what it shows held steady (flockHold): the herd's doing as drawn, each animal's legs walking or still: never flickering frame to frame)
     const now=performance.now(),st=flockSt(F,c.st,now);
-    F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);grassFoot(m.x,m.y,go,true,m);if(typeof stepPrint==='function'&&!CRITTERS[c.id].live)stepPrint(m,true,c);ents.push({x:m.x,y:m.y,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
+    F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);if(!c.memberVisible(m,V))return;grassFoot(m.x,m.y,go,true,m);if(typeof stepPrint==='function'&&!CRITTERS[c.id].live)stepPrint(m,true,c);ents.push({x:m.x,y:m.y,id:m,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
       // (in the drawn water it wades, as a marcher does (herdWade): under it from its feet up, no shadow, no leap; else on its shadow)
       const cut=herdWade(m,a),sx=m.f<0?-a.k:a.k,bx=-(a.s.width>>1),by=-a.s.height+(a.k<1?2:1);
       if(!cut){ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),y-1,w,2)}
       ctx.save();ctx.translate(x,y-(cut?0:q.up));ctx.scale(sx,a.k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,a.s.width+16,a.s.height+8-cut);ctx.clip()}ctx.drawImage(a.s,bx,by);ctx.restore();
       if(cut)drawWading(a.s,x,y,sx,a.k,bx,by,cut,v0+i,go,cam);
-      if(i)return;if(WORLD_BATTLE.on)BANNERQ.push({o:c,marker:{h:A.h,col:'#b4c985'}});else if(c.n>1&&DEV.on&&c.fromYou()<90)txt(String(c.n),Math.round(c.x-cam.x),Math.round(c.y-cam.y)-A.h-4,'#c8e0a0','center')}})})}
+    }})})}
   tip(){const D=CRITTERS[this.id];return this.wild?'<b>'+D.n+(this.n>1?' ×'+this.n:'')+'</b><small>Wild game</small><span class="act">Click: hunt</span>':''}// (livestock: never hovered)
 }
 const asHerd=asClass(Herd);
@@ -58,7 +71,7 @@ function herdPose(c,i,go,fr,st=c.st,m){const L=WILD_LIFE,now=performance.now()/1
    first, the rest follow and fan out); none nearer another than keep x its width; facing its way as it walks, else turning on its own
    time, watching who it is wary of; its legs by its own steps (d). Kept beside the herd, never in its record or a save (HERD_FLOCK) */
 const HERD_FLOCK=new WeakMap();
-function herdFlock(c,A,now){const L=WILD_LIFE.flock,n=Math.min(L.most,Math.max(1,c.n||1)),gap=Math.max(4,A.w)*L.gap,v0=c.coat||0;let F=HERD_FLOCK.get(c);
+function herdFlock(c,A,now){const L=WILD_LIFE.flock,n=CRITTERS[c.id].live?Math.min(L.most,Math.max(1,c.n||1)):Math.max(1,c.n||1),gap=Math.max(4,A.w)*L.gap,v0=c.coat||0;let F=HERD_FLOCK.get(c);
   if(!F||F.m.length!==n){const old=F&&F.m;F=F?{...F,m:[]}:{t:now,px:c.x,py:c.y,hd:c.dir<0?Math.PI:0,sp:0,m:[]};HERD_FLOCK.set(c,F);// (one more or fewer: the rest kept, and where it last stood, so a leap since is still seen)
     for(let i=0;i<n;i++){if(old&&old[i]){F.m.push(old[i]);continue}const q=flockSpot(c,F,i,n,gap,now,false);F.m.push({x:c.x+q[0],y:c.y+q[1],f:c.dir<0?-1:1,ft:now,d:0,go:false,h:PX.hash(v0,i,41)})}}
   const dt=Math.min(.1,Math.max(0,(now-F.t)/1000)),mx=c.x-F.px,my=c.y-F.py,mv=Math.hypot(mx,my);F.t=now;F.px=c.x;F.py=c.y;
@@ -312,11 +325,11 @@ const HERD_MIND={think(c,d,hide){
 function updateCritters(d){WildlifeThreats.rebuild();return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
 // One collected animal pays the existing meat, materials and experience rewards.
 function hunt(c){return WildHunt.prepare(asHerd(c))}
-function huntRewards(c,kills){
+function huntRewards(c,kills,paidXp=0){
   const D=CRITTERS[c.id];
   const meat=invAdd('good','meat',kills*D.meat),got=[meat+' meat'];if(meat)worldEmit('meat:hunted',{n:meat});// (a meat job counts it: world/quests.js HuntQuest)
   if(D.mat){let m=0;for(let i=0;i<kills;i++)if(critRng().chance(D.mat[1]*(1+.05*skill('hunt'))))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
-  gainXp(kills*D.xp,'hunt');train('hunt',kills*3);
+  gainXp(Math.max(0,kills*D.xp-paidXp),'hunt');train('hunt',kills*3);
   log('You bring down '+(kills>1?kills+' '+D.n.toLowerCase():an(D.one))+': '+got.join(', ')+'.'+(meat<kills*D.meat?' Your bag is full, so you leave some meat.':''),'good');
   updateHUD(true);
 }

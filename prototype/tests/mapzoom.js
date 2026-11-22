@@ -63,7 +63,7 @@ try{
  // ---- through the zoom: a click travels to the map's point under it; a party under the pointer is picked; the minimap's size
  const c=t.ctx,calls=[],unmarch=Kit.watchMarch(true);let rec=false;const di0=c.drawImage;c.drawImage=function(img,...a){if(rec&&!Kit.marching)calls.push([img,a,this.getTransform()]);return di0.apply(this,[img,...a])};/* (the marching armies, drawn smaller on purpose, left out: the map's own pixels; Kit.watchMarch) */
  const frame=()=>{calls.length=0;rec=true;try{t.frame()}finally{rec=false}};const isInt=v=>Math.abs(v-Math.round(v))<1e-4,EPS=1e-4;
- const miniW=()=>{if(t.MINIMAP.on){const m=t.MINI_FACE,q=calls.find(([img])=>img===m);return q?[q[1][2]*q[2].a,q[2].e+q[2].a*q[1][0]]:null}// (the minimap a piece of the full map, on its own canvas at the screen's pixels: render.js drawMiniMap)
+ const miniW=()=>{if(t.MINIMAP.on){const m=t.MINI_FACE,q=calls.find(([img])=>img===m);if(m?.isConnected){const r=m.getBoundingClientRect(),c=t.cv.getBoundingClientRect();if(r.width)return[r.width*t.dprOf(),(r.left-c.left)*t.dprOf()]}return q?[q[1][2]*q[2].a,q[2].e+q[2].a*q[1][0]]:null}// (the minimap a piece of the full map, on its own canvas at the screen's pixels: render.js drawMiniMap)
   const m=t.WorldArt.mini(Math.max(1,Math.round(t.MW/256)))._at,q=calls.find(([img])=>img===m);return q?[m.width*t.VS,q[2].e+q[2].a*q[1][0]]:null};
  try{
   const minis=[];
@@ -78,7 +78,7 @@ try{
      // (the awareness eyes: sized on the screen, not the map, so a whole number of device pixels to a pixel of
      // theirs (1 for the eyes), still at whole device pixels: render.js drawStealthEye)
      const k=a.length===4&&a[2]*S/img.width;if(k>=1&&isInt(k)&&Math.abs(a[3]*S/img.height-k)<EPS)return Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*a[0])||!isInt(m.f+m.d*a[1]);return !sz||Math.abs(Math.abs(m.a)-S)>EPS||Math.abs(m.d-S)>EPS||m.b||m.c||!isInt(m.e+m.a*(a.length===8?a[4]:a[0]))||!isInt(m.f+m.d*(a.length===8?a[5]:a[1]))});
-    ok(S===s&&view()&&blocks>1000&&!badB&&calls.length>5&&!bad.length,// (enough pictures to judge: more than 5, the floating banners over the armies gone, the owner, 2026-11-01: render.js drawBanners)
+    ok(S===s&&view()&&blocks>1000&&!badB&&calls.length>0&&!bad.length,// (world pictures only: the minimap and its frame now live in the GUI layer)
      'at '+S+' ('+t.VW+' x '+t.VH+' game px) the map lies in whole '+q+' x '+q+' blocks, a fine px each ('+blocks+(badB?', '+badB+' not':'')+') and no picture of '+calls.length+' is resampled'+(bad.length?': '+bad.slice(0,2).map(([img,a,m])=>img.width+'x'+img.height+' @'+[m.a,m.e].map(v=>+v.toFixed(3))).join('; '):''))}
    // (the ground drawn under the pointer: the land lifted by its height (worldterrain.js liftGround: the start's ground lifted since the bay, 2026-11-17))
    {const wx=P.x+37.3,sy=P.y-21.6,wy=t.liftGround(wx,sy).y,e=cl(wx,sy),p=t.toCanvas(e);t.cv.dispatchEvent(new PointerEvent('pointerdown',{...e,pointerType:'mouse',button:0,bubbles:true}));t.cv.dispatchEvent(new PointerEvent('pointerup',{...e,pointerType:'mouse',button:0,bubbles:true}));

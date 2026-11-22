@@ -63,7 +63,7 @@ class ArmyReport{
 class BattleResolution{
   constructor(battle=null){this.battle=battle}
   finish(){
-    const b=this.battle;if(b.world)b.world.finish(b);
+    const b=this.battle;if(b.world)b.world.finish(b);if(b.wild)b.wild.finishHerds(b);
     this.primaryLossesApplied=!!b.primaryLossesApplied;
     const groupLosses=[];
     // Preserve the original settlement/medicine traversal; sort only the finished report for presentation.
@@ -97,10 +97,10 @@ class BattleResolution{
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
       lootShow(html,null,0,'back-town');return;
     }
-    if(b.sides?.active)b.sides.settle(b,lost,groupLosses);
+    if(b.sides?.active){WorldCombat.wildlifeRewards(b);b.sides.settle(b,lost,groupLosses)}
     else if(b.hunt)b.hunt.settle(b,lost,groupLosses);
-    else this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},groupLosses);
-    armies?.present();Carcass.lay(fell);
+    else{WorldCombat.wildlifeRewards(b);this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},groupLosses)}
+    armies?.present();Carcass.lay(fell);WorldCombat.complete(b);
   }
   conclude(win,lost,kills,auto,slain,retreat,groupLosses){
     if(auto)BATTLE_MOOD=null;
@@ -112,7 +112,7 @@ class BattleResolution{
       if(F){res.gold=Math.max(0,res.gold-F.gold);if(e)e.field=F}// (what the field gave already, off the spoils: battle/drops.js)
       const furs=invAdd('good','furs',Math.floor(slain.filter(k=>k==='wolf').length/2));if(furs>0)bounty+=' You skin '+furs+' furs from the wolves.';
       if(big)res.gold+=25;if(auto)res.gold=Math.floor(res.gold*.8);res.gold=Math.round(res.gold*(1+tm('loot')));
-      P.renown+=Math.ceil(kills*(big?1.5:1)*reinfRenown(e));const moodLine=battleMood(4,'victory');gainXp(kills*8+(big?30:0));
+      P.renown+=Math.ceil(kills*(big?1.5:1)*reinfRenown(e));const moodLine=battleMood(4,'victory');gainXp(WorldCombat.remaining(this.battle,kills*8)+(big?30:0));
       if(troopCount()>0)train('lead',3+kills*.5);train('tact',auto?6:2);
       const down=noneTake(this.battle,e),taken=down?0:takePrisoners(slain),drop=O.drop&&!(F&&F.gear)&&O.drop();res.down=down;if(down&&slain.some(k=>!ST[k].beast))bounty+=NONE_TAKEN;
       if(drop&&!invAdd('gear',drop,1))log(BAG_FULL+'. You leave a '+ITEMS[drop].n+' behind.','bad');
@@ -131,7 +131,7 @@ class BattleResolution{
       const o=e.ref;slain=slain||[];if(!this.primaryLossesApplied&&o&&(e.kind==='lord'||e.kind==='patrol'||e.kind==='party'))for(const k of slain)if(formsFit(o))o.remove(k,1);
       if(e.kind==='siege'||e.kind==='raid')siegeFallen(e.ref,this.wallsFell);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
-      mood('flee');if(kills)gainXp(kills*BATTLE_SPOILS.lostXp);
+      mood('flee');if(kills)gainXp(WorldCombat.remaining(this.battle,kills*BATTLE_SPOILS.lostXp));
       const od=retreat.blocked?{leave:true,ch:1}:fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
       // (a retreat costs, as in Total War: the band's morale and your renown; run down, more)
       const moodLine=battleMood(retreat.blocked?0:-MOOD.retreat-(away?0:MOOD.runDown),retreat.blocked?'disengaged':away?'a retreat':'run down in the retreat');P.renown=Math.max(0,P.renown-(retreat.blocked?0:MOOD.renown));
@@ -147,7 +147,7 @@ class BattleResolution{
         '<div class="lab">The battle</div><div class="loot-stats">'+[['Enemies slain',kills,'good'],['Your fallen',retreat.fallen||0,retreat.fallen?'bad':''],['Got away',retreat.got||0,''],['Enemies still standing',retreat.standing||0,'']].map(([k,v,c])=>'<span><b>'+k+'</b><span class="'+c+'">'+v+'</span></span>').join('')+'</div>'+moodLine+'<p class="bad">Renown −'+MOOD.renown+' for the retreat.</p>';
       if(retreat.blocked)html='<h2>Disengaged</h2><p>Impassable ground blocks every route through the battle area. Both armies break contact; neither side claims victory.</p>'+moodLine;
     }else{
-      const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}if(kills)gainXp(kills*BATTLE_SPOILS.lostXp);// (beaten: only the experience earned, sides.js BATTLE_SPOILS)
+      const moodLine=battleMood(-15,'defeat');if(auto){vitals();P.hp=Math.max(1,Math.round(P.hp*.5))}if(kills)gainXp(WorldCombat.remaining(this.battle,kills*BATTLE_SPOILS.lostXp));// (beaten: only the experience earned, sides.js BATTLE_SPOILS)
       if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}
       captivesEscape();
       if(e.kind==='siege'||e.kind==='raid'){P.siege=null;G.capWith=null;siegeFallen(e.ref,auto?Math.round((e.list||[]).length*(e.fell??.25)):this.wallsFell??0)}// (those slain: siege.js)
@@ -176,7 +176,7 @@ class BattleResolution{
   }
 }
 // Existing callers (simulation, auto-resolve, encounters and tests) keep the same entry points.
-function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();if(B&&DROPS.on)BattleDrops.of(B).end(B);return new BattleResolution(B).finish()}// (won: the field's drops gathered, battle/drops.js)
+function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();if(B&&DROPS.on)BattleDrops.of(B).end(B);const live=WorldCombat.live();G.worldSettlement=live;try{return new BattleResolution(B).finish()}finally{G.worldSettlement=false}}// (won: the field's drops gathered, battle/drops.js)
 function concludeEncounter(win,lost,kills,auto,slain,retreat){return new BattleResolution().conclude(win,lost,kills,auto,slain,retreat)}
 // each of your troop groups that fought: its men's average experience (attacks.js u.xp), and TROOP_XP.fight and, won, .win;
 // Leadership 5% more a level. Its ranks gained (core/ranks.js), for the report

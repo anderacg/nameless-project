@@ -7,7 +7,9 @@
 // a chunk painted a step at a time is the one painted at once, pixel for pixel; the start paints the ring round the view in play.
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,WA=t.WorldArt,AP=t.ART_PACE;Kit.begin('soldier',1);Kit.world();G.mode='world';G.modal=false;t.drawWorld();
- const cam=()=>({x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),inView=()=>[...WA.view],live0=WA.liveOk,idle0=WA.idleAt;
+ const cam=()=>({x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)}),inView=()=>[...WA.view],live0=WA.liveOk,idle0=WA.idleAt,workers0=t.ART_WORKERS.on;
+ // This suite measures the page painter; worker boot and parallel world generation belong to paintworker.
+ t.ART_WORKERS.on=false;
  const H=d=>{let h=2166136261;for(let i=0;i<d.length;i+=4)h=Math.imul(h^(d[i]|d[i+1]<<8|d[i+2]<<16),16777619)>>>0;return h.toString(16)};
  const pic=c=>{const v=c.fcv&&c.fr>1?c.fcv:c.cv;return H(v.getContext('2d').getImageData(0,0,v.width,v.height).data)};
  try{
@@ -25,7 +27,14 @@ Kit.suite(({ok,info})=>{
    let frames=0,long=0;while(!WA.chunks.has(k)&&frames<3000){WA.idleAt=performance.now();const a=performance.now();WA.draw(t.ctx,cam());WA.idle(0);long=Math.max(long,performance.now()-a);frames++}
    const c1=WA.chunks.get(k);ok(c1&&frames>1,'painted a step at a time over '+frames+' frames, the longest '+long.toFixed(0)+' ms (its work '+(WA.est|0)+' ms a chunk)');
    ok(c1&&pic(c1)===want,'the chunk painted a step at a time is the one painted at once ('+(c1?pic(c1):'none')+' and '+want+')');
-   const n=stood;WA.draw(t.ctx,cam());ok(stood===n,'painted, no stand-in drawn for it again')}
+   const n=stood;WA.draw(t.ctx,cam());ok(stood===n,'painted, no stand-in drawn for it again');
+   // A turn can suspend one chunk midway through a blur and advance another. Their scratch must belong to each job.
+   const other=[...WA.chunks.values()].find(c=>c!==c1&&(c.fine||1)===(c1.fine||1));
+   if(other){const expected=pic(other),a=WA.paintJob(cx,cy,c1.fine),b=WA.paintJob(other.cx,other.cy,other.fine);let ad=false,bd=false;
+    while(!ad||!bd){for(let n=0;n<7&&!ad;n++)ad=a.gen.next().done;for(let n=0;n<11&&!bd;n++)bd=b.gen.next().done}
+    ok(pic(a.rec)===want&&pic(b.rec)===expected,'interleaved chunks preserve their isolated pixels, including suspended blur passes')}
+   else info('no second chunk at the same resolution for interleaving');
+  }
   finally{WA.standIn=si}
   // ---- the deadlines: nearer a chunk not painted, more a frame
   {const c=cam(),far=k2=>{const [X,Y]=WA.rect(k2%WA.cols,(k2/WA.cols)|0);return Math.max(0,X-c.x-t.VW,c.x-X-t.CHUNK,Y-c.y-t.VH,c.y-Y-t.CHUNK)},most=AP.most;
@@ -45,5 +54,5 @@ Kit.suite(({ok,info})=>{
      c0=Math.floor(x0/C),r0=Math.floor(y0/C),c1=Math.floor((x0+t.VW-1)/C),r1=Math.floor((y0+t.VH-1)/C),nv=(c1-c0+1)*(r1-r0+1);let ring=0;
    for(let y=r0-1;y<=r1+1;y++)for(let x=c0-1;x<=c1+1;x++)if(x>=0&&y>=0&&x<WA.cols&&y<WA.rows&&!(x>=c0&&x<=c1&&y>=r0&&y<=r1)&&WA.chunks.has(y*WA.cols+x))ring++;
    ok(WA.chunks.size===nv+ring&&ring===Math.min(t.START_WARM.ring,Math.max(0,WA.capNow-nv)),'the start paints the view and the ring round it in play: '+nv+' in view, '+ring+' round it (ring '+t.START_WARM.ring+')')}
- }finally{WA.liveOk=live0;WA.idleAt=idle0}
+ }finally{WA.liveOk=live0;WA.idleAt=idle0;t.ART_WORKERS.on=workers0}
 });

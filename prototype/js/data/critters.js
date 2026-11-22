@@ -23,7 +23,7 @@ const WILD_ART={on:true};
    bound, px the leaps of its bounders reach as they flee, hop its hoppers' (leap: px of ground one leap covers, so they leap as they run,
    never on the clock while barely moving) */
 /* (flock: a herd's animals each on its own, a loose unit round the herd's point (critters.js herdFlock; the owner, 2026-11-18: "dont make
-   them moving the same, make them move in formation like army but more spread like one unit"): most drawn of it; gap its width × between
+   them moving the same, make them move in formation like army but more spread like one unit"): most drawn of livestock (wild game keeps every member); gap its width × between
    its ranks and files, jit that × of jitter; flee its spots that × wider as it bolts; pace an animal's speed against the herd's (+ its own
    share of pace[1]), amble px a s at least, catch × when gap × behind; start px from its spot before it sets off (its own share of the
    range: the first goes first, the rest follow); keep its width × apart at least; wander × gap each drifts about its spot at rest, over

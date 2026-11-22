@@ -9,8 +9,8 @@ class CampaignHud{
     this.companyHeader=document.createElement('header');this.companyHeader.className='campaign-company-header';this.company.appendChild(this.companyHeader);
     const tools=document.querySelector('.dockrow.sys');tools.prepend(document.getElementById('menuBtn'));
     this.mapZoom=document.createElement('div');this.mapZoom.className='campaign-map-zoom';this.mapZoom.setAttribute('role','group');this.mapZoom.setAttribute('aria-label','Map zoom');this.slot.parentNode.appendChild(this.mapZoom);
-    this.moves=[['.campaign-brand',this.companyHeader],['#stats',this.company],['.dockrow.sys',this.root.querySelector('.campaign-rail')],['#zoomOut',this.mapZoom],['#zoomIn',this.mapZoom],['.campaign-details',document.getElementById('stats')]].map(([selector,to])=>{const el=document.querySelector(selector),home=document.createComment('campaign control home');el.before(home);return{el,home,to}});
-    this.help=document.getElementById('helpBtn');this.helpHome=document.createComment('campaign help home');this.help.before(this.helpHome);
+    this.moves=[['.campaign-brand',this.companyHeader],['#stats',this.company],['.dockrow.sys',this.root.querySelector('.campaign-rail')],['#zoomOut',this.mapZoom],['#zoomIn',this.mapZoom],['.campaign-details',document.getElementById('stats')]].map(([selector,to])=>{return HudControls.bind(document.querySelector(selector),to,()=>this.desktop,10)});
+    this.help=document.getElementById('helpBtn');this.helpHome=HudControls.bind(this.help,document.querySelector('.dockrow.sys'),()=>this.desktop,10).home;
     this.brand.addEventListener('click',()=>act('nm-open'));
     this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
     this.commandArt=[['campBtn','fire'],['mapBtn','map'],['mapToggle','map'],['charBtn','troops'],['skillBtn','skills'],['invBtn','bag'],['journalBtn','book']];
@@ -29,14 +29,13 @@ class CampaignHud{
   get desktop(){return G.mode==='world'&&!G.modal&&!window.mobileWorldHud?.media.matches}
   sync(){
     this.mobileMini.hidden=!this.phone;
-    for(const n of this.moves){if(this.desktop){if(n.el.parentNode!==n.to)n.to.appendChild(n.el)}else if(n.el.parentNode===n.to)n.home.after(n.el)}
+    HudControls.sync();
     const resourceHome=this.desktop?this.company:this.root.querySelector('.campaign-rail');if(this.resources.parentNode!==resourceHome)resourceHome.prepend(this.resources);
     // (each command's art laid into its button once; a button not on the page yet is passed by and tried again, never the end of the
     //  frame: a game's first HUD update on a phone stopped here on a button it did not find, the owner's stack, 2026-11-21)
     if(!this.iconsReady){let all=true;for(const [id,box] of this.commandArt){const el=document.getElementById(id);if(!el){all=false;continue}
         if(!el.querySelector('.campaign-command-art'))el.insertAdjacentHTML('afterbegin',this.art(box,'campaign-command-art'))}this.iconsReady=all}
     this.screen.classList.toggle('campaign-world',G.mode==='world'&&!G.modal);
-    const home=this.desktop?document.querySelector('.dockrow.sys'):this.helpHome.parentNode;if(this.help.parentNode!==home){if(this.desktop)home.appendChild(this.help);else this.helpHome.after(this.help)}
   }
   update(S,cnt){
     this.sync();
@@ -61,6 +60,7 @@ class CampaignHud{
       target.style.setProperty('--phone-map-rim',rim+'px');target.style.left=c.left-host.left+r.x*k-rim+'px';target.style.top=c.top-host.top+r.y*k-rim+'px';target.style.width=r.w*k+2*rim+'px';target.style.height=r.h*k+2*rim+'px';
     }
     if(target&&face.parentNode!==target){face.setAttribute('aria-hidden','true');target.replaceChildren(face)}
+    return !!target;
   }
   miniRect(){
     if(!this.desktop)return null;const r=this.slot.getBoundingClientRect(),c=cv.getBoundingClientRect();if(!r.width||!c.width)return null;

@@ -8,7 +8,7 @@
    h) a front put there (the tests). With WEATHER.on off: the old way (the frost's snow, clear elsewhere), nothing kept or saved.
    As the weather where you are changes, its line (a toast) and 'weather:changed' on the bus.
    The seasons (season: by the day of the year) weigh each climate's kinds (weights); a front builds to its full strength over
-   WEATHER.build hours (strength: drawn only; s, each region's front's start, kept in memory, not saved: a loaded front is whole). */
+   WEATHER.build hours (strength: drawn only; s, each region's front's start, saved alongside the previous kind and the dry break before more precipitation). */
 const Weather={
   grid:null,
   was:null,
@@ -18,7 +18,7 @@ const Weather={
   },
   // (the regions: their climate, the most of their tiles'; fronts not drawn yet)
   make(){
-    const C=WEATHER.cell,w=Math.ceil(MW/C),h=Math.ceil(MH/C),g={w,h,k:new Uint8Array(w*h),u:new Int32Array(w*h),c:new Uint8Array(w*h),s:new Float64Array(w*h).fill(-1e9)},n=new Int32Array(CLIMS.length);
+    const C=WEATHER.cell,w=Math.ceil(MW/C),h=Math.ceil(MH/C),g={w,h,k:new Uint8Array(w*h),u:new Int32Array(w*h),c:new Uint8Array(w*h),s:new Float64Array(w*h).fill(-1e9),p:new Uint8Array(w*h),r:new Int32Array(w*h)},n=new Int32Array(CLIMS.length);
     for(let cy=0;cy<h;cy++)for(let cx=0;cx<w;cx++){
       n.fill(0);
       for(let ty=cy*C;ty<Math.min(MH,cy*C+C);ty++)for(let tx=cx*C;tx<Math.min(MW,cx*C+C);tx++)n[climate[ty*MW+tx]]++;
@@ -36,7 +36,7 @@ const Weather={
     g.game=Rng.game;
     for(let i=0;i<g.k.length;i++){
       const k=R.weighted(this.weights(g.c[i]))||'clear',H=WEATHER.kinds[k].hours;
-      g.k[i]=WEATHER_KINDS.indexOf(k);
+      g.p[i]=g.k[i]=WEATHER_KINDS.indexOf(k);
       g.u[i]=now+R.int(1,H[1]);
     }
     return g;
@@ -56,6 +56,19 @@ const Weather={
     if(!WEATHER.on)return 1;
     const g=this.cells();return clamp((Clock.hours()-g.s[this.cellAt(x,y)])/WEATHER.build,0,1);
   },
+  // A continuous sky at a world position: neighbouring fronts blend at their edges, never around the player.
+  // Each front retains its previous kind while it builds; saved starts prevent a load from changing the sky.
+  sample(x,y,out=new Float64Array(WEATHER_KINDS.length)){
+    out.fill(0);
+    if(!WEATHER.on){out[WEATHER_KINDS.indexOf(this.at(x,y))]=1;return out}
+    const g=this.cells(),C=WEATHER.cell*TILE,px=clamp(x/C-.5,0,g.w-1),py=clamp(y/C-.5,0,g.h-1),cx=Math.floor(px),cy=Math.floor(py),sm=v=>v*v*(3-2*v),fx=sm(px-cx),fy=sm(py-cy),now=Clock.hours();
+    for(let dy=0;dy<2;dy++)for(let dx=0;dx<2;dx++){
+      const i=Math.min(g.h-1,cy+dy)*g.w+Math.min(g.w-1,cx+dx),w=(dx?fx:1-fx)*(dy?fy:1-fy),a=sm(clamp((now-g.s[i])/WEATHER.build,0,1));
+      out[g.k[i]]+=w*a;out[g.p[i]]+=w*(1-a);
+    }
+    return out;
+  },
+  wet(k){return ['rain','storm','snow','blizzard','sandstorm'].includes(k)},
   // (the region at (x, y))
   cellAt(x,y){
     const g=this.cells(),C=WEATHER.cell*TILE;
@@ -101,24 +114,26 @@ const Weather={
     return L.length?this.name(k)+': '+L.join(', ')+'.':'';
   },
   // the next front in region i: a neighbour's now and then (if it can come here), else one by the climate's weights
-  next(i){
-    const g=this.grid,R=rngOf('weather'),W=this.weights(g.c[i]),x=i%g.w,y=Math.floor(i/g.w);
+  next(i,fronts=this.grid.k){
+    const g=this.grid,R=rngOf('weather'),W=this.weights(g.c[i]),x=i%g.w,y=Math.floor(i/g.w),old=WEATHER_KINDS[g.k[i]],now=Clock.hourCount();
+    if(this.wet(old))g.r[i]=now+WEATHER.rest;
+    if(g.r[i]>now)for(const k in W)if(this.wet(k))W[k]=0;
     let k=null;
     if(R.chance(WEATHER.spread)){
-      const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(([a,b])=>a>=0&&b>=0&&a<g.w&&b<g.h),[a,b]=R.pick(nb)||[x,y],o=WEATHER_KINDS[g.k[b*g.w+a]];
+      const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(([a,b])=>a>=0&&b>=0&&a<g.w&&b<g.h),[a,b]=R.pick(nb)||[x,y],o=WEATHER_KINDS[fronts[b*g.w+a]];
       if(W[o]>0)k=o;
     }
     k=k||R.weighted(W)||'clear';
     const H=WEATHER.kinds[k].hours;
-    if(g.k[i]!==WEATHER_KINDS.indexOf(k))g.s[i]=Clock.hours();// (a new kind builds; the same again goes on as it was)
+    if(g.k[i]!==WEATHER_KINDS.indexOf(k)){g.p[i]=g.k[i];g.s[i]=Clock.hours()}// (a new kind builds; the same again goes on as it was)
     g.k[i]=WEATHER_KINDS.indexOf(k);
     g.u[i]=Clock.hourCount()+R.int(H[0],H[1]);
   },
   // each hour: the fronts that have ended give way; the weather where you are told as it changes
   hour(){
     if(!WEATHER.on)return;
-    const g=this.cells(),now=Clock.hourCount();
-    for(let i=0;i<g.k.length;i++)if(g.u[i]<=now)this.next(i);
+    const g=this.cells(),now=Clock.hourCount(),fronts=g.k.slice();
+    for(let i=0;i<g.k.length;i++)if(g.u[i]<=now)this.next(i,fronts);
     this.tell();
   },
   tell(){
@@ -131,7 +146,8 @@ const Weather={
   // a front of kind k put at (x, y)'s region for h hours (the tests; a story that brings a storm)
   set(x,y,k,h=6){
     const g=this.cells(),i=this.cellAt(x,y);
-    g.k[i]=WEATHER_KINDS.indexOf(k);
+    g.p[i]=g.k[i]=WEATHER_KINDS.indexOf(k);
+    g.r[i]=0;
     g.u[i]=Clock.hourCount()+h;
     g.s[i]=-1e9;
   },
@@ -142,11 +158,11 @@ const Weather={
     const H=WEATHER.kinds[k].hours;
     this.set(x,y,k,rngOf('weather').int(H[0],H[1]));
   },
-  // (in a save: the regions' kinds and ends; none while it is off or nothing was made yet)
+  // (saved fronts, transitions and dry breaks; none while off or before the grid is made)
   save(){
     const g=this.grid;
     if(!WEATHER.on||!g)return;
-    return {w:g.w,h:g.h,k:Array.from(g.k),u:Array.from(g.u)};
+    return {w:g.w,h:g.h,k:Array.from(g.k),u:Array.from(g.u),p:Array.from(g.p),s:Array.from(g.s),r:Array.from(g.r)};
   },
   load(v){
     this.reset();
@@ -155,6 +171,9 @@ const Weather={
     if(g.w!==v.w||g.h!==v.h||v.k.length!==g.k.length)return;// (another size of world: made afresh on first need)
     g.k.set(v.k.map(i=>i<WEATHER_KINDS.length?i:0));
     g.u.set(v.u);
+    g.p.set(v.p&&v.p.length===g.k.length?v.p.map(i=>i>=0&&i<WEATHER_KINDS.length?i:0):g.k);
+    if(v.s&&v.s.length===g.k.length)g.s.set(v.s.map(n=>Number.isFinite(n)?n:-1e9));
+    if(v.r&&v.r.length===g.k.length)g.r.set(v.r);
     g.game=-1;
     this.grid=g;
   },

@@ -4,27 +4,8 @@
    rings under the soldiers you have selected, a softer one under the group you point at, and lines from each selected group to
    where it is going (or whom it is set on). ---------- */
 // Glyph identities resolve to shared illustrated commands; unknown rows keep their compact fallback.
-const ORDER_ICON={
-  shieldWall:['.aaaaaaa.','.a..a..a.','.a..a..a.','.aaaaaaa.','.a..a..a.','.a..a..a.','..aaaaa..','...aaa...','....a....'],
-  hold:['...a.a...','.a.a.a.a.','.a.a.a.a.','.a.a.a.a.','.aaaaaaa.','.aaaaaaa.','..aaaaa..','..aaaaa..','...aaa...'],
-  follow:['.........','......bb.','.....bbbb','..a...bb.','.aaa..bb.','aaaaa.b.b','..a......','..a......','.........'],
-  charge:['......aa.','......aa.','b..aaaaa.','bb.a.aa.a','b....aa..','....a.aa.','...a....a','..a......','.........'],
-  advance:['....aa...','....aa...','...aaaa..','..a.aa.a.','....aa...','....a.a..','...a..a..','...a...a.','..aa...aa'],
-  halt:['.........','.aa...aa.','.aa...aa.','.aa...aa.','.aa...aa.','.aa...aa.','.aa...aa.','.aa...aa.','.........'],
-  withdraw:['.baaaaa..','.baaaaaa.','.baaaaa..','.baaaa...','.b.......','.b.......','.b.......','.b.......','bbb......'],
-  walk:['.........','.aa......','.aa......','.aa......','.....aa..','.....aa..','.....aa..','.........','.........'],
-  firm:['.aaaaaaa.','.abbbbba.','.abbbbba.','.abbbbba.','..abbba..','..abbba..','...aba...','....a....','.........'],
-  // (cease fire: an arrow, struck through)
-  cease:['a....bbbb','.a.....bb','..a...b.b','...a.b...','....a....','...b.a...','b.b...a..','.b.....a.','b.b.....a'],
-  // (blades: a short sword, point up)
-  melee:['.......a.','......a.a','.....a.a.','....a.a..','.b.a.a...','..b.a....','..bb.....','.b..b....','b........'],
-  skirmish:['.........','..a...b..','.aa...bb.','aaaaa.bbb','.aa...bb.','..a...b..','.........','.........','.........'],
-  // (attack-move: an arrow on, crossed blades where it ends)
-  amove:['.....a..a','......aa.','......aa.','.b...a..a','bbb......','.b.......','.b.......','.b.......','.b.......'],
-  // (keep formation: a front rank and a rear rank, bracketed together)
-  keep:['aa.....aa','a.......a','..aaaaa..','.........','.........','..bbbbb..','.........','a.......a','aa.....aa']
-};
-function pixelSVG(rows,size,cls){const key=Object.keys(ORDER_ICON).find(k=>ORDER_ICON[k]===rows)||Object.keys(ABIL_ICON).find(k=>ABIL_ICON[k]===rows);return key?uiOrderIcon(key,size,cls):''}
+const ORDER_ICON={shieldWall:'shieldWall',hold:'hold',follow:'follow',charge:'charge',advance:'advance',halt:'halt',withdraw:'withdraw',walk:'walk',firm:'firm',cease:'cease',melee:'melee',skirmish:'skirmish',amove:'amove',keep:'keep'};
+function pixelSVG(name,size,cls){return name?uiOrderIcon(name,size,cls):''}
 /* the order bar (doc/UNIT_KITS_DESIGN.md §2, §3, §5, §7b), built from the tables (data/kits.js; its keys KIT_KEYS, by KITS.keys2): the
    orders (ORDERS: Hold, Charge (keys2: a true order, bCharge), the Attack-move; Withdraw last, on the right), the stances (STANCES:
    Pace, its Run and Walk; Discipline; keys2, the three stance slots, Q W E, each the selected units' own stance in it (bhudStances);
@@ -207,7 +188,8 @@ function bhudTop(){
   for(const u of B.units){if(u.hp<=0)continue;if(battleFriend(0,u)){nm++;if(!u.rout)me+=w(u)}else if(battleEnemy(0,u)){nf++;if(!u.rout)foe+=w(u)}}
   const $id=id=>document.getElementById(id);if(!$id('bMine'))return;$id('bMine').textContent=nm;$id('bFoe').textContent=nf;$id('bPowMe').style.width=pct(me/Math.max(.01,me+foe));
   const huntEnd=$id('huntEnd');if(huntEnd)huntEnd.hidden=!B.hunt;const foeLabel=$id('bFoeLabel');if(foeLabel)foeLabel.textContent=B.hunt?'Wildlife':B.sides?.active?'Hostile':'Enemy';
-  $id('bField').textContent=B.env.name+(B.env.w&&WEATHER.kinds[B.env.w]?', '+Weather.name(B.env.w):'')+(B.opts.tournament?', tournament':'')+(B.sides?', '+B.sides.records.filter(r=>r.joined).length+'/'+BATTLE_JOIN.armies+' armies':'');
+  const at=B.world?.world(B.hero||{x:B.world.cx,y:B.world.cy}),sky=at&&WEATHER.on?Weather.at(at.x,at.y):B.env.w;
+  $id('bField').textContent=B.env.name+(sky&&WEATHER.kinds[sky]?', '+Weather.name(sky):'')+(B.opts.tournament?', tournament':'')+(B.sides?', '+B.sides.records.filter(r=>r.joined).length+'/'+BATTLE_JOIN.armies+' armies':'');
   $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.muster?.active?(B.paused?'Preparation paused, Space to continue':'Forming up, '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready, Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone, Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused, give your orders, Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
@@ -264,24 +246,7 @@ function bhudArmies(){if(!window.battleArmyHud)window.battleArmyHud=new BattleAr
    and the seconds; dimmed, with the reason in its tooltip, when none of them can use it now (locked: its rank not reached). A
    press (or its key) uses it for every selected group that can (commands.js groupSlot). data-slot (and data-abil, the skill in
    it), never data-order/flag/form: those lists are the orders' own */
-const ABIL_ICON={
-  lunge:['........a','.......a.','......a..','.....a...','....a....','...a.....','..a......','.bb......','bb.......'],
-  volley:['a.a.a.a..','.a.a.a.a.','..a.a.a.a','.........','bbbbbbbbb','.........','a.a.a.a..','.a.a.a.a.','..a.a.a.a'],
-  pikePush:['a...a...a','a...a...a','a...a...a','aa..aa..a','.a...a...','.a...a...','bbbbbbbbb','.........','.........'],
-  counter:['a.......a','.a.....a.','..a...a..','...a.a...','....a....','...a.a...','..a...a..','.b.....b.','b.......b'],
-  storm:['.a..a..a.','a..a..a..','.a..a..a.','.........','....a....','...a.a...','..a...a..','.bbbbbbb.','.........'],
-  parthian:['.........','a....aaa.','.a..a....','aaaa.....','.a..a....','a....aaa.','.........','.bb..bb..','.........'],
-  ward:['...aaa...','..a...a..','.a.bbb.a.','.a.b.b.a.','.a.bbb.a.','..a...a..','...a.a...','....a....','.........'],
-  pavise:['.aaaaaaa.','.abbbbba.','.ab...ba.','.ab...ba.','.ab...ba.','.abbbbba.','.aaaaaaa.','..a...a..','.a.....a.'],
-  rapid:['.........','.a...a...','..a...a..','...a...a.','aaaaaaaaa','...a...a.','..a...a..','.a...a...','.........'],
-  brace:['....a....','...aaa...','....a....','....a....','....a....','...ba....','..b.a....','.b..a....','aaaaaaaaa'],
-  fire:['....a....','...aa....','...aab...','..aabba..','.aabbba..','.abbbbaa.','.abbbbba.','..abbba..','...aaa...'],
-  spur:['.........','a...a....','.a...a...','..a...a..','...a...a.','..a...a..','.a...a...','a...a....','.........'],
-  rally:['a........','aaaaaa...','abbbbba..','abbbba...','aaaaaaa..','a........','a........','a........','aa.......'],
-  scout:['.........','..aaaaa..','.a.....a.','a..bbb..a','a.bbabb.a','a..bbb..a','.a.....a.','..aaaaa..','.........'],
-  dismount:['....a....','....a....','....a....','..a.a.a..','...aaa...','....a....','.........','aaaaaaaaa','.b.....b.'],
-  mount:['....a....','...aaa...','..a.a.a..','....a....','....a....','....a....','.........','aaaaaaaaa','.b.....b.']
-};
+const ABIL_ICON={lunge:'lunge',volley:'volley',pikePush:'pikePush',counter:'counter',storm:'storm',parthian:'parthian',ward:'ward',pavise:'pavise',rapid:'rapid',brace:'brace',fire:'fire',spur:'spur',rally:'rally',scout:'scout',dismount:'dismount',mount:'mount'};
 // (a skill's tooltip: what it does, how long, its cooldown)
 const skillTip=(A,key)=>A.n+(key?' ('+key+')':'')+': '+A.d+(A.note?A.note():'')+(A.dur?' Lasts '+A.dur+' s.':'')+' Cooldown '+A.cd+' s.';
 // (a button's state from the statuses of those who have its skill: lit while on, the shade and seconds of the soonest back; its words)

@@ -6,12 +6,14 @@
 // world (or uses the one in again, when its settings are the same); without, the world in (the New game screen's
 // choice, at first the classic seed); its monsters and bandits scale the bands and beasts at the start. Sizes of a save, plain and gzipped, at
 // Normal, Large and Huge are reported (INFO).
-window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W,LD=t.LOADING,r0=Math.random,t0=performance.now();
+window.RUN=async()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(text);Kit.progress('assertion',{text})},info=m=>{o.push('INFO '+m);Kit.progress('info',{text:m})},t=T,G=t.G,P=t.P,W=t.W,LD=t.LOADING,r0=Math.random,t0=performance.now();
+const restorePaint=Kit.paintProgress();let freshN=0,loadN=0;Kit.progress('worldsave start');
 const J=x=>JSON.stringify(x),strip=s=>{const v=JSON.parse(s);delete v.at;return JSON.stringify(v)},raw=s=>localStorage.getItem(t.slotKey(s));
 const diff=(a,b)=>{a=strip(a);b=strip(b);if(a===b)return '';let i=0;while(a[i]===b[i])i++;return '; differ at '+i+': '+a.slice(Math.max(0,i-120),i+40)+' | '+b.slice(Math.max(0,i-120),i+40)};
 const save=s=>{G.mode='world';t.saveGame(true,s);return raw(s)},kb=n=>(n/1024).toFixed(0)+' KB';
-const fresh=st=>{Math.random=t.seeded(9001);t.begin('soldier',st);Math.random=r0;G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel()};
-const play=n=>{Math.random=t.seeded(77);t.setSpeed(3);for(let f=0;f<n;f++)t.updateWorld(.05);Math.random=r0;G.mode='world';G.modal=false;t.hidePanel()};
+const fresh=st=>{const id=++freshN,at=Date.now();Kit.progress('starting game',{id,settings:st||'classic'});Math.random=t.seeded(9001);t.begin('soldier',st);Math.random=r0;G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();Kit.progress('started game',{id,ms:Date.now()-at})};
+const play=n=>{Math.random=t.seeded(77);t.setSpeed(3);for(let f=0;f<n;f++){if(!(f%100))Kit.progress('save simulation',{frame:f,of:n});t.updateWorld(.05)}Math.random=r0;G.mode='world';G.modal=false;t.hidePanel()};
+const load=slot=>{const id=++loadN,at=Date.now();Kit.progress('loading slot',{id,slot});const result=t.loadGame(slot);Kit.progress('load returned',{id,ms:Date.now()-at});return result};
 const refused=f=>{try{f();return null}catch(e){return e}};
 try{
  try{localStorage.clear()}catch(e){}
@@ -30,33 +32,33 @@ try{
   'a save is v'+t.SAVE_V+': world.map is the world\'s gen, settings and checksum ('+d0.world.map.gen+', '+d0.world.map.sum+'), edits empty; plain JSON under LOADING.sync');
  ok(!('kind' in d0.world.map)&&s0.length<400000,'the map itself is never saved ('+kb(s0.length)+')');
  // (compared after a load: a load drops what play kept for itself, as a party's power: pw)
- t.loadGame('quick');const s1=save('quick');t.loadGame('quick');
+ load('quick');const s1=save('quick');load('quick');
  ok(strip(save('quick'))===strip(s1),'a load and a save again give the same save, and again'+diff(save('quick'),s1));
  // ---- refused: another checksum, another gen, v2 (the game untouched)
  {const snap=()=>J([t.TOWNS.map(z=>z.saveRec()),P.gold,G.day]),before=snap(),put=(k,f)=>{const d=JSON.parse(s0);f(d);localStorage.setItem(t.slotKey(k),J(d))};
   put('3',d=>{d.world.map.sum=(d.world.map.sum+1)>>>0});put('4',d=>{d.world.map.gen='ashmark-9'});
-  const e3=refused(()=>t.loadGame('3')),e4=refused(()=>t.loadGame('4'));
+  const e3=refused(()=>load('3')),e4=refused(()=>load('4'));
   ok(e3&&e3.message===t.OTHER_WORLD&&e4&&e4.message===t.OTHER_WORLD&&snap()===before&&t.worldKey(t.WM)===home,'a save whose checksum or gen is not this world\'s is refused, the game untouched ("'+(e3&&e3.message)+'")');
-  put('5',d=>{d.v=2;d.world.v=2;delete d.world.map;delete d.world.edits});G.mode='world';t.loadGame('5');
+  put('5',d=>{d.v=2;d.world.v=2;delete d.world.map;delete d.world.edits});G.mode='world';load('5');
   ok(!t.readSlot('5')&&t.oldSlot('5')&&G.mode==='title'&&snap()===before,'a v2 save is refused: not listed as a save, not loaded')}
  // ---- a generated world: made by a new game with settings, saved, made again by a load
  {const S={preset:'normal',seed:'redwater'};fresh(S);const m=t.WM;
   ok(m.gen==='ashmark-1'&&m.settings.seed==='redwater'&&m.settings.preset==='normal'&&m.w===448&&m.h===320&&!!m.first&&t.TOWNS.length>0,'a new game with settings makes that world ('+m.gen+', '+m.w+'x'+m.h+', '+t.TOWNS.length+' holdings, sum '+m.sum+')');
   fresh(S);ok(t.WM===m,'a new game with the same settings uses it again (as it first stood)');
-  play(200);save('1');t.loadGame('1');const g0=save('1'),sum=t.WM.sum;
+  play(200);save('1');load('1');const g0=save('1'),sum=t.WM.sum;
   const L1=t.saveLine(t.readSlot('1')),L0=t.saveLine(JSON.parse(s0));
   ok(/^Redwater, Normal, seed redwater, Day \d+, /.test(L1)&&/^Ashmark, Classic, Day/.test(L0),'the save line names the world, its preset and seed (Phase 2b): "'+L1.split(', ').slice(0,4).join(', ')+'"; the default world: "'+L0.split(', ').slice(0,3).join(', ')+'"');
   // a new game without settings: the New game screen's choice (Classic at first)
   fresh();ok(t.worldKey(t.WM)===home,'a new game without settings: the New game screen\'s choice, the classic seed ('+t.WM.gen+')');
   // the default world back by a load (made again first); a game in it starts as one in the page's own does (the
   // second new game uses the world the first found: its randoms from the seed, not after the laying out's)
-  t.loadGame('quick');ok(t.worldKey(t.WM)===home&&strip(save('quick'))===strip(s1),'a save of the default world loaded in another puts that world and its game back');
+  load('quick');ok(t.worldKey(t.WM)===home&&strip(save('quick'))===strip(s1),'a save of the default world loaded in another puts that world and its game back');
   fresh();fresh();ok(strip(save('5'))===b0,'and a game in the world made again starts as one in the page\'s own does'+diff(save('5'),b0));
-  t.loadGame('1');ok(t.WM!==m&&t.WM.gen==='ashmark-1'&&t.WM.sum===sum&&strip(save('1'))===strip(g0),'a load in another world makes its world again first (the same checksum) and puts the game back as saved'+diff(save('1'),g0));
+  load('1');ok(t.WM!==m&&t.WM.gen==='ashmark-1'&&t.WM.sum===sum&&strip(save('1'))===strip(g0),'a load in another world makes its world again first (the same checksum) and puts the game back as saved'+diff(save('1'),g0));
   // (a save of the old hand-made map (gen classic-0, no settings: doc/WORLD_DESIGN.md D49): another world version, refused,
   // the game untouched)
   {const d=JSON.parse(s0);d.world.map={gen:'classic-0',settings:null,sum:1};localStorage.setItem(t.slotKey('2'),J(d));
-   const snap=()=>J([t.worldKey(t.WM),t.TOWNS.map(z=>z.saveRec()),P.gold,G.day]),before=snap(),e=refused(()=>t.loadGame('2'));
+   const snap=()=>J([t.worldKey(t.WM),t.TOWNS.map(z=>z.saveRec()),P.gold,G.day]),before=snap(),e=refused(()=>load('2'));
    ok(e&&e.message===t.OTHER_WORLD&&snap()===before&&!!t.readSlot('2'),'a save of the old hand-made map is refused ("'+(e&&e.message)+'"), the game untouched')}}
  // ---- monsters and bandits: the start's bands and beasts
  {const n={b:0,m:0},sb=window.spawnBandit,sm=window.spawnMonster;window.spawnBandit=(...a)=>{n.b++;return sb(...a)};window.spawnMonster=(...a)=>{n.m++;return sm(...a)};
@@ -65,7 +67,7 @@ try{
   window.spawnBandit=sb;window.spawnMonster=sm;const r=Math.round,as=(x,b,m)=>x.got===r(x.B*b)+'/'+r(x.M*m);
   ok(as(c[0],1,1)&&as(c[1],1,1)&&c[1].M>t.MONSTER_START&&as(c[2],1.5,.6)&&as(c[3],.6,1.5),'bands and beasts at the start: the world\'s (more on a bigger one), then x1.5 and x0.6 by the world\'s settings (bands/beasts '+c.map(x=>x.got).join(', ')+')')}
  // ---- gzipped, a plain header beside it; read back, waiting
- fresh();play(200);save('2');t.loadGame('2');let plain='';
+ fresh();play(200);save('2');load('2');let plain='';
  LD.sync=false;try{
   ok(await t.gunzip64(await t.gzip64('Ashmark, ×'))==='Ashmark, ×','gzip and gunzip, base64, round trip');
   // (the game as it stands now, saved plain and gzipped at once: the page's frames go on between awaits)
@@ -74,16 +76,16 @@ try{
   ok(t.SAVE_ZIP&&h.v===t.SAVE_V&&h.z&&h.P.level===P.level&&h.P.gold===P.gold&&!h.P.army&&J(h.world.map)===J(JSON.parse(plain).world.map)&&!h.world.own&&J(t.readSlot('2'))===J(h),
    'the slot: a plain header (v, at, the save line\'s fields, world.map) beside the gzipped body; listed at once ('+kb(raw('2').length)+' against '+kb(plain.length)+' plain)');
   ok(t.saveLine({...h,at:0})===t.saveLine({...JSON.parse(plain),at:0}),'its save line is the plain save\'s: '+t.saveLine(h));
-  P.gold=-7;t.loadGame('2');await LD.task;
+  P.gold=-7;load('2');await LD.task;
  }finally{LD.sync=true}
- {const gz=save('4');t.loadGame('3');const pl=save('4');
+ {const gz=save('4');load('3');const pl=save('4');
   ok(P.gold!==-7&&strip(gz)===strip(pl),'a gzipped save loads (gunzipped in a step that waits) and puts back the game the plain one does'+diff(gz,pl))}
- {const before=strip(save('3'));localStorage.setItem(t.slotKey('4'),raw('2'));const e=refused(()=>t.loadGame('4'));
+ {const before=strip(save('3'));localStorage.setItem(t.slotKey('4'),raw('2'));const e=refused(()=>load('4'));
   ok(e&&/cannot be read at once/.test(e.message)&&strip(save('3'))===before,'under LOADING.sync a gzipped save cannot be read: it says so, the game untouched')}
  // ---- sizes, plain and gzipped, at Normal, Large and Huge (the stub worlds of Phase 2 wave 0, after 200 frames of play and a ride of 2900 px)
- for(const z of ['normal','large','huge']){const a=performance.now();fresh({preset:z,seed:'redwater'});const b=performance.now();play(200);for(let i=0;i<60;i++){P.x+=48;P.y+=i%2?40:-30;t.reveal()}const s=save('5');
+ for(const z of ['normal','large','huge']){Kit.progress('save size matrix',{world:z});const a=performance.now();fresh({preset:z,seed:'redwater'});const b=performance.now();play(200);for(let i=0;i<60;i++){P.x+=48;P.y+=i%2?40:-30;t.reveal()}const s=save('5');
   const gz=(await t.gzip64(s)).length;info(z+' ('+t.MW+'x'+t.MH+', '+t.TOWNS.length+' holdings, '+W.sites.length+' sites): a save is '+kb(s.length)+' plain, '+kb(gz)+' gzipped (base64); the fog '+JSON.parse(s).world.seen.length+' chars; made in '+((b-a)/1000).toFixed(1)+' s')}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
-finally{Math.random=r0;LD.sync=true}
+finally{Math.random=r0;LD.sync=true;restorePaint()}
 info('took '+((performance.now()-t0)/1000).toFixed(1)+' s');
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};

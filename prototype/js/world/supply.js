@@ -48,7 +48,7 @@
    or bandits' camp; ring: tiles round a holding's centre and houses; site: px round a site's picture; pole: your banner's pole's
    foot, px from the camp's fire (bandCampEnt: planted beside the tents). hint: the first-run hint once stamina falls under this. hurt: causes kept for the card */
 const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,heat:1.25,cold:.5,mounted:.7,skill:.03,skillCap:.5,guide:.9,
-  rest:{stop:4,camp:16,stay:20},dryRest:.5,
+  rest:{stop:5,camp:20,stay:25},dryRest:.5,
   tired:20,exhausted:5,pace:{tired:.85,exhausted:.6},tiredMorale:{every:3,n:1},worn:{every:8},
   eat:{rest:1,march:1.5},frostEat:.5,hunger:{morale:1,every:2,rest:.5,recover:4,starving:72,starveDrain:1.25,starveMorale:1,desert:96,sick:168,die:240,toll:12,hero:{every:6,hp:.05,mp:.05}},
   drink:{perDay:1,rest:.5,once:true,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
@@ -404,7 +404,7 @@ function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};CampSite.strike('you
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
 function breakCamp(why){if(!P.camp)return false;P.camp=null;CampSite.strike('you');toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
-function toggleCamp(){return P.camp?breakCamp():makeCamp()}
+function toggleCamp(){companyRules.cancel();return P.camp?breakCamp():makeCamp()}
 // each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
 // yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
 function campStep(){
@@ -414,7 +414,7 @@ function campStep(){
 // (Hurry, a forced march on key R and the action ring, is gone: the owner, 2026-10-31, "remove hurry features": an army marches at
 // its men's pace, its ring never outrunning them, world/march.js)
 // a battle that finds you in camp (battle/setup.js, before morale): caught unready, morale lower; the camp is struck either way
-function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad','band')}
+function campCaught(opts){companyRules.cancel();if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad','band')}
 /* your camp in your place: two tents and the fire, with your band's banner planted beside them; your figure and host are not
    drawn while you camp (the owner, 2026-10-23: render.js drawWorld pushes this instead), and stand there again when it breaks. In
    the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none
@@ -465,9 +465,9 @@ function mapRingItems(wx,wy,o,cx,cy){
 
 // a click on another party (ui/input.js partyRing): Approach (today's chase: Attack one hostile, its crossed swords as the marker
 // over it while you go: icons.js ICONS.attack, else Meet), Follow (or Stop following, lit), and the map ring's Look on it
-function partyRingItems(o,cx,cy){const foe=wuiKind(o)==='foe'||objKind(o)==='monster',beast=objKind(o)==='monster';
+function partyRingItems(o,cx,cy){const target=o;o=o instanceof WorldFigure?o.owner:o;const foe=wuiKind(o)==='foe'||objKind(o)==='monster',beast=objKind(o)==='monster';
   // (a foe: Attack, the fight at once; Talk (a beast: Choose), its window when you meet, its talk and choices: SEAMLESS, Talk)
-  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>{Talk.clear();worldApproach(o)}},foe&&SEAMLESS.on&&{icon:beast?'eye':'people',label:beast?'Choose':'Talk',run:()=>{Talk.set(o);worldApproach(o)}},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
+  return[{icon:foe?'attack':'people',label:foe?'Attack':'Meet',run:()=>{Talk.clear();worldApproach(target)}},foe&&SEAMLESS.on&&{icon:beast?'eye':'people',label:beast?'Choose':'Talk',run:()=>{Talk.set(o);worldApproach(o)}},followItem(o),...mapRingItems(o.x,o.y,o,cx,cy).filter(it=>it.icon==='eye')].filter(Boolean)}
 
 /* ---------- the tavern's tapster (ui/town.js Tavern): liquor for the road and empty waterskins, at their base prices, and the
    well's water into your empty skins, free ---------- */

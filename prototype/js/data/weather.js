@@ -21,7 +21,9 @@ const WEATHER={on:true,
   // seconds (real) the drawing eases from one weather to the next, the old fading out as the new fades in; the share of the particles
   // drawn with reducedMotion, and their pace; the size (px) of a haze band's soft cloud, drawn up over the view (gfx/weather.js band);
   // game hours a new front takes to build to its full strength (drawn: a shower before the rain, a haze before the fog)
-  ease:5,calm:.35,slow:.3,band:[64,32],build:1.5,
+  // At least eight dry game hours after precipitation; screen-space effect budget and sizes.
+  ease:5,calm:.35,slow:.3,band:[64,32],build:1,rest:8,
+  visual:{area:230400,max:420,spacing:28,haze:80,alpha:.38,width:.7},
   // the sky a new game opens under where you stand, for its kind's hours (the owner, 2026-11-08: "why always start with raining?": the
   // first fronts are drawn by chance alone, so in spring on the grass a third of games began in rain or a storm and two in three under
   // a grey sky); then the weather turns as ever. null: as drawn
@@ -43,23 +45,23 @@ const WEATHER={on:true,
     fireball:{mul:{rain:.7,storm:.6,snow:.85,blizzard:.7,heat:1.15}},
     nova:{mul:{snow:1.2,blizzard:1.3,heat:.75}}},
   // each climate's weights (a kind missing never comes there: no sandstorm in the frost, no blizzard in the desert); rain and storms
-  // halved, clear skies longer and showers shorter (the owner, 2026-11-16: "reduce the weather happen on the world, i still find raining is
+  // uncommon, clear skies longer and showers shorter (the owner, 2026-11-16: "reduce the weather happen on the world, i still find raining is
   // too much on spring")
   climates:{
-    grass:{clear:5,cloudy:3,rain:1.3,storm:.4,fog:1.2},
-    frost:{clear:2.5,cloudy:3,fog:1,snow:3.5,blizzard:1.3},
-    desert:{clear:6,cloudy:1,heat:2,sandstorm:1.3,storm:.2},
-    swamp:{clear:2.5,cloudy:3,rain:1.8,storm:.5,fog:2.5}},
+    grass:{clear:7,cloudy:3,rain:.65,storm:.12,fog:.8},
+    frost:{clear:4,cloudy:3,fog:1,snow:2.5,blizzard:.45},
+    desert:{clear:6,cloudy:1,heat:2,sandstorm:.45,storm:.08},
+    swamp:{clear:4,cloudy:3,rain:1,storm:.2,fog:1.8}},
   kinds:{
-    clear:{n:'Clear',day:'Sunny',like:'clear',hours:[8,18],say:'The sky clears.',speed:1,sight:1},
-    cloudy:{n:'Overcast',like:'clear',hours:[4,10],say:'Clouds roll in.',speed:1,sight:.95,
+    clear:{n:'Clear',day:'Sunny',like:'clear',hours:[12,30],say:'The sky clears.',speed:1,sight:1},
+    cloudy:{n:'Overcast',like:'clear',hours:[8,16],say:'Clouds roll in.',speed:1,sight:.95,
       art:{dim:[40,46,60,.12]}},
-    rain:{n:'Rain',like:'rain',hours:[2,6],say:'Rain begins to fall.',speed:.85,sight:.8,
+    rain:{n:'Rain',like:'rain',hours:[2,3],say:'Rain begins to fall.',speed:.85,sight:.8,
       battle:{spd:.95,range:.9,spread:2,aim:.04,sight:.85},
-      art:{dim:[30,38,56,.18],fall:{n:110,vx:-40,vy:300,len:6,col:'#aebfda'}}},
-    storm:{n:'Storm',like:'storm',hours:[2,5],say:'A storm breaks over you.',speed:.7,sight:.65,
+      art:{dim:[30,38,56,.18],fall:{n:48,vx:-28,vy:210,len:6,col:'#aebfda'}}},
+    storm:{n:'Storm',like:'storm',hours:[1,2],say:'A storm breaks over you.',speed:.7,sight:.65,
       battle:{spd:.9,range:.8,spread:3,aim:.08,sight:.7},
-      art:{dim:[16,20,36,.34],fall:{n:190,vx:-110,vy:380,len:8,col:'#b8c6e0'},flash:{every:7,len:.14}}},
+      art:{dim:[16,20,36,.34],fall:{n:85,vx:-65,vy:280,len:9,col:'#b8c6e0'},flash:{every:43,len:.12}}},
     fog:{n:'Fog',like:'clear',hours:[3,7],say:'A thick fog rises.',speed:.9,sight:.5,
       battle:{sight:.5},
       art:{veil:[206,210,216,.34],bands:5}},
@@ -68,10 +70,10 @@ const WEATHER={on:true,
       art:{dim:[60,68,84,.08],fall:{n:90,vx:8,vy:22,len:0,sway:6,col:'#ffffff'}}},
     blizzard:{n:'Blizzard',like:'snow',hours:[2,6],say:'A blizzard howls in.',speed:.55,sight:.4,
       battle:{spd:.8,range:.75,spread:2.5,aim:.06,sight:.45},
-      art:{veil:[232,238,246,.3],bands:3,fall:{n:240,vx:-120,vy:70,len:0,sway:10,col:'#ffffff'}}},
+      art:{veil:[232,238,246,.3],bands:3,fall:{n:120,vx:-120,vy:70,len:0,sway:10,col:'#ffffff'}}},
     sandstorm:{n:'Sandstorm',like:'storm',hours:[2,6],say:'A sandstorm sweeps in.',speed:.55,sight:.4,
       battle:{spd:.85,range:.8,spread:2.5,aim:.06,sight:.45},
-      art:{veil:[196,158,96,.36],bands:4,fall:{n:170,vx:220,vy:24,len:3,col:'#dcbc80'}}},
+      art:{veil:[196,158,96,.36],bands:4,fall:{n:90,vx:220,vy:24,len:3,col:'#dcbc80'}}},
     heat:{n:'Heat wave',like:'clear',hours:[6,12],say:'The heat grows fierce.',speed:.9,sight:1,
       battle:{spd:.95},
       art:{dim:[255,196,110,.07]}}},

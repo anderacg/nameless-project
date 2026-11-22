@@ -41,6 +41,8 @@ function charAct(a,arg){
   else if(a==='army-move'){const [id,step]=String(arg).split(':');partyRoster(P).move(id,Number(step))}
   else if(a==='army-merge-picked'){const to=G.armyMergeTarget;G.armyMergeTarget=null;if(partyRoster(P).merge(arg,to)){G.armyEdit=null;G.armyNotice='Groups merged; the destination keeps its name and wounded ownership.'}}
   else if(a==='army-merge'){const [from,to]=arg.split(':');partyRoster(P).merge(from,to)}
+  else if(a==='army-rule')companyRules.toggle(arg);
+  else if(a==='army-duty'){const [id,d]=String(arg).split(':');companyRules.setDuty(id,d)}
   else if(a==='army-auto-reinforce'){const r=partyRoster(P);if(r.groups.some(g=>g.id===arg)){const flags=P.army.autoReinforce||(P.army.autoReinforce={});flags[arg]=!flags[arg];recruitment.autoWait=0}}
   else if(a==='role'){const [id,r]=arg.split(':');const c=P.comps[id];if(c){if(c.role===r)c.role='';else{const o=roleOf(r);if(o)P.comps[o].role='';c.role=r}}}
   else if(a==='dismiss'){if(P.comps[arg]){delete P.comps[arg];partyView().open=false;log(COMPS[arg].n+' leaves your band.'+(compTown(arg)?' You may find them in '+compTown(arg).name+' again.':''))}}

@@ -76,9 +76,9 @@ class Carcass extends WorldObject{
   pick(at){at.add(this,CARCASS.pick,2)}
   get meetsAnyTime(){return true}
   get beast(){return !!(this.wild||this.mon||this.bst)}
-  name(){return this.wild?CRITTERS[this.wild]?.n||'Beast':this.mon?MONSTERS[this.mon]?.n||'Beast':ST[this.type]?.n||'Foe'}
-  label(){return (this.beast?'A '+this.name().toLowerCase()+'’s carcass':'A fallen '+this.name().toLowerCase())}
-  what(){const n=this.items.reduce((a,s)=>a+s.n,0);return n?n+' thing'+(n>1?'s':'')+' on '+(this.beast?'it':'him'):'picked clean'+(this.robbed?' by '+this.robbed:'')}
+  name(){if(this.cache)return 'Spoils';return this.wild?CRITTERS[this.wild]?.n||'Beast':this.mon?MONSTERS[this.mon]?.n||'Beast':ST[this.type]?.n||'Foe'}
+  label(){if(this.cache)return 'A pile of spoils';return (this.beast?'A '+this.name().toLowerCase()+'’s carcass':'A fallen '+this.name().toLowerCase())}
+  what(){const n=this.items.reduce((a,s)=>a+s.n,0);return n?n+' thing'+(n>1?'s':'')+(this.cache?' here':' on '+(this.beast?'it':'him')):'picked clean'+(this.robbed?' by '+this.robbed:'')}
   ago(){const d=Math.floor(G.day+Clock.frac-this.day);return d<1?'fell today':d===1?'fell yesterday':'fell '+d+' days ago'}
   tip(){return '<b>'+htmlText(this.label())+'</b><small>'+htmlText(cap1(this.ago()))+', '+this.what()+'</small>'+(this.empty()?'':'<span class="act">Click: go there and look</span>')}
   // (all with anything on them within CARCASS.near of it: what one click opens)
@@ -86,10 +86,11 @@ class Carcass extends WorldObject{
   // met: the window of what lies on the fallen here, beside your bag (ui/loot.js), the rest left on this one
   meet(){const here=this.near();if(!here.length){toast(cap1(this.label())+': '+this.what()+'.');return}
     lootEnd();G.mode='dialog';G.loot={from:lootSnap(),pile:[],capture:false};for(const c of here)for(const s of c.items)lootPile(s.k,s.id,s.n);
+    const meatBefore=goodN('meat'),hunted=here.reduce((n,c)=>{const meat=c.items.filter(s=>s.k==='good'&&s.id==='meat').reduce((a,s)=>a+s.n,0);return n+Math.min(meat,c.huntLeft??(c.wild?meat:0))},0);
     const kinds=[...new Set(here.map(c=>c.name().toLowerCase()))],n=here.length,beasts=here.every(c=>c.beast),self=this;
-    G.lootView={head:'<div class="top"><h2>'+(n>1?'The fallen':beasts?'A carcass':'The fallen')+'</h2><span class="muted">'+htmlText(n>1?n+' here: '+kinds.join(', '):cap1(this.name().toLowerCase()))+', '+this.ago()+'</span></div>'+
+    G.lootView={head:'<div class="top"><h2>'+(n>1?'The fallen':this.cache?'Spoils':beasts?'A carcass':'The fallen')+'</h2><span class="muted">'+htmlText(n>1?n+' here: '+kinds.join(', '):cap1(this.name().toLowerCase()))+', '+this.ago()+'</span></div>'+
       '<p>'+(beasts?'Meat to cut and trophies to take':'What they carried')+'. Look each over and take what you want; the rest stays on them till they are bones and gone ('+BODY_ROT.gone+' days).</p>',next:'carc-done',
-      keep:pile=>{for(const c of here)c.items=[];for(const s of pile)if(s.n>0)self.items.push({k:s.k,id:s.id,n:s.n})}};
+      keep:pile=>{const n=Math.min(hunted,Math.max(0,goodN('meat')-meatBefore));if(n)worldEmit('meat:hunted',{n});for(const c of here){c.items=[];c.huntLeft=0}self.huntLeft=Math.min(hunted-n,pile.filter(s=>s.k==='good'&&s.id==='meat').reduce((a,s)=>a+s.n,0));for(const s of pile)if(s.n>0)self.items.push({k:s.k,id:s.id,n:s.n})}};
     renderLoot()}
   // (the window closed: what is left back on the fallen, and on to the map)
   static done(){const V=G.lootView;if(V?.keep)V.keep(G.loot?.pile||[]);lootEnd();hidePanel();toWorld()}
@@ -152,10 +153,10 @@ const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.ty
     this.diggers=this.diggers.filter(f=>!f.gone)}
   // drawn where it lies, as it has rotted (BodyRot): its fall as the fight drew it (vfx.js drawBody, at the map's scale), else its
   // kind lying; a glow while anything is on it
-  paint(g){const c=this,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;// (in a fight on the map drawBody makes it the fight's size itself)
+  paint(g){if(this.cache){const a=itemArtCanvas(ITEMS[gearId('pack',0)],48);if(a)g.drawImage(a,-8,-16,16,16);else{g.fillStyle='#725035';g.beginPath();g.ellipse(0,-6,6,5,0,0,6.283);g.fill();g.fillStyle='#c29a5e';g.fillRect(-3,-13,6,3)}return}const c=this,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;// (in a fight on the map drawBody makes it the fight's size itself)
     if(c.corpse?.sp){g.scale(k,k);g.translate(-c.corpse.x,-c.corpse.y);drawBody(g,c.corpse,1,1)}else BodyRot.plain(g,{type:c.wild?wildTroop(c.wild):c.type,team:c.ours?0:1,v:Math.abs(Math.round(c.x+c.y))%6})}
   draw(ents,cam,V){if(!this.inView(V))return;const c=this;
-    ents.push({x:c.x,y:c.y,nf:1,loot:!c.empty(),f:()=>{const x=c.x-cam.x,y=c.y-cam.y;BodyRot.draw(c,x,y,c.day,g=>c.paint(g),c.beast,c.face);
+    ents.push({x:c.x,y:c.y,nf:1,loot:!c.empty(),f:()=>{const x=c.x-cam.x,y=c.y-cam.y;BodyRot.draw(c,x,y,c.cache?G.day+Clock.frac:c.day,g=>c.paint(g),c.beast,c.face);
       if(!c.empty())lootGlow(x,y-2,LOOT_GLOW.r*(B?.world?WORLD_BATTLE.sprite/2:1),performance.now()/1000,c.x*.13+c.y*.07,WORLD_VIEW.build)}})}// (something on it: its glow, battle/drops.js)
   static drawAll(ents,cam,V){for(const c of this.list)c.draw(ents,cam,V);
     // (the clearers: their holding's folk (folk.js workerAppearance), walking, or at the fallen swinging their tools)

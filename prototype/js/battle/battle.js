@@ -136,7 +136,7 @@ function battleStep(rt,world){
     //  the map"), but marching with them in his group's formation, his place in it, on their clock ("for the marching in army he need to be at
     //  the position": actors.js u.ranks, last step's)
     const hp=B.hero&&B.hero.ranks?dt:rt*HERO_PACE;if(MANUAL_HERO)updateHero(hp);else if(B.hero)CharacterMind.of(B.hero).auto(hp);
-    for(const id in B.groups)B.groups[id].step(dt);command(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
+    for(const id in B.groups)B.groups[id].step(dt);command(dt);companyRules.battle(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
     for(const u of B.units){if(u.hp<=0)continue;if(u.kx||u.ky){u.x+=u.kx*dt;u.y+=u.ky*dt;if(Math.abs(u.kx)+Math.abs(u.ky)>60&&Math.random()<.4)vfx({k:'dust',x:u.x,y:u.y-1,vx:-u.kx*.1,vy:-u.ky*.05,r:2,grow:8,life:.4,col:'196,180,140'});const k=Math.pow(.004,dt);u.kx*=k;u.ky*=k;if(Math.abs(u.kx)+Math.abs(u.ky)<2)u.kx=u.ky=0}if(u.buffT>0)u.buffT-=dt;if(u.wardT>0)u.wardT-=dt}
     for(const u of B.units){if(u.hp<=0)continue;if(u.slow>0)u.slow-=dt;if(u.hero&&gm('regen'))u.hp=Math.min(u.max,u.hp+gm('regen')*dt)}
     updateNonHeroActors(dt);if(B.horses?.length)Horse.step(dt);// (mounts loose of a thrown rider: bolting, or a warg biting: battle/dismount.js)
@@ -149,6 +149,7 @@ function battleStep(rt,world){
     moraleTick(dt*BATTLE_RHYTHM.morale);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
     checkBattleOver();
   }
+  WorldCombat.step(rt);if(B.over&&WorldCombat.live())B.endT=0;
   if(B.over){B.endT-=rt;if(B.endT<=0){finishBattle();return}}
   for(const p of B.parts){p.life-=rt;if(p.stuck)continue;p.x+=p.vx*rt;p.y+=p.vy*rt;p.vy+=90*rt}B.parts=B.parts.filter(p=>p.life>0);
   if(DROPS.on)BattleDrops.of(B).step(rt);// (what falls, flies and is picked up: battle/drops.js)

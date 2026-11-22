@@ -24,7 +24,7 @@ Kit.suite(({ok})=>{
   ok(bs.reduce((a,b)=>r(b).top>r(a).top+2||Math.abs(r(b).top-r(a).top)<=2&&r(b).left>r(a).left?b:a)===orders.querySelector('[data-order="withdraw"]'),'Withdraw last, the way out')}
  const hold=orders.querySelector('[data-order="hold"]');hold.click();ok(orders.hidden,'issuing an order closes the drawer so the field is usable');
  click('battleSpeedToggle');const speeds=document.getElementById('battleSpeedChoices');ok([...speeds.querySelectorAll('[data-bspeed]')].map(b=>b.textContent).join()===t.BATTLE_SPEEDS.map(v=>v+'×').join(),'world-battle speed choices retain their correct values');
- const g0=G.speed;speeds.querySelector('[data-bspeed="2"]').click();ok(t.B.speed===2&&G.speed===g0&&speeds.hidden&&document.getElementById('battleSpeedToggle').textContent.includes('2×'),'the fight\'s speed changes (the world\'s kept) and the picker collapses');
+ const g0=G.speed;speeds.querySelector('[data-bspeed="2"]').click();ok(t.B.speed===2&&G.speed===2&&speeds.hidden&&document.getElementById('battleSpeedToggle').textContent.includes('2×'),'world combat and travel share the chosen speed and the picker collapses');
  click('bPause');ok(!t.B.paused,'Play uses the existing battle pause control');click('bPause');
  click('battleMoreToggle');const more=document.getElementById('battleMoreChoices'),hp=t.HPBARS.on;click('hpBtn');ok(t.HPBARS.on!==hp&&!more.hidden,'display settings remain functional in More');
  ok(root.querySelector('[data-bview="in"]')&&more.contains(document.getElementById('bInfo')),'view controls and selected-unit details are available in More');

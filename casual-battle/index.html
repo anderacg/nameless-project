@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#31412c">
+  <title>Ashmark — The Wagon Road</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="battle" aria-label="Ashmark battlefield">
+    <canvas id="field" aria-label="Battlefield. Select a company below, then tap ground to move or an enemy to attack." tabindex="0"></canvas>
+    <header class="topbar">
+      <button id="mission" class="plaque objective" title="Battle objective and controls"><span class="objective-icon">♜</span><span><small>THE WAGON ROAD</small><strong id="objective">Capture the wagon</strong><i class="capture-track"><i id="capture"></i></i></span></button>
+      <div class="plaque balance" aria-live="polite"><b class="blue" id="allies">24</b><span>⚔</span><b class="red" id="enemies">12</b></div>
+      <div class="time-controls"><button class="plaque" id="speed" aria-label="Battle speed">1×</button><button class="plaque" id="pause" aria-label="Pause battle">Ⅱ</button></div>
+    </header>
+    <div id="notice" role="status"></div>
+    <div id="paused" hidden>PAUSED <small>Give orders, then resume</small></div>
+    <footer class="bottom">
+      <div class="hero-tools">
+        <button id="hero-button" class="hero-portrait" aria-label="Select hero"><canvas id="portrait" width="100" height="100"></canvas><span id="hero-health"></span></button>
+        <button class="ability" id="ability-q"><span class="ability-icon">⚔</span><span class="ability-label">Challenge</span><kbd>Q</kbd><b class="cooldown"></b></button>
+        <button class="ability" id="ability-e"><span class="ability-icon">⚑</span><span class="ability-label">Second wind</span><kbd>E</kbd><b class="cooldown"></b></button>
+      </div>
+      <div class="command-deck">
+        <div class="squads" role="group" aria-label="Select squad">
+          <button data-squad="shields"><canvas width="48" height="48"></canvas><span>Shields</span><b>8</b><kbd>1</kbd><i></i></button>
+          <button data-squad="pikes"><canvas width="48" height="48"></canvas><span>Pikes</span><b>6</b><kbd>2</kbd><i></i></button>
+          <button data-squad="archers"><canvas width="48" height="48"></canvas><span>Archers</span><b>6</b><kbd>3</kbd><i></i></button>
+          <button data-squad="cavalry"><canvas width="48" height="48"></canvas><span>Riders</span><b>3</b><kbd>4</kbd><i></i></button>
+        </div>
+        <div class="orders" role="group" aria-label="Squad orders"><button data-order="follow">⚑ <span>Follow</span></button><button data-order="hold">◈ <span>Hold</span></button><button data-order="attack">⚔ <span>Attack</span></button><button id="all" aria-label="Select all squads" title="Select all squads (F)">All</button></div>
+      </div>
+    </footer>
+    <div id="selection-hint">Shields selected · tap the ground to move</div>
+    <section id="menu" class="veil">
+      <div class="menu-card">
+        <p class="eyebrow">ASHMARK</p><h1>The Wagon Road</h1><p class="intro">A stolen supply wagon. A small company.<br>One captain to bring them home.</p>
+        <div id="hero-choices" class="hero-choices"></div>
+        <p id="hero-description"></p>
+        <button id="begin" class="primary">Lead your company <span>→</span></button>
+        <p class="instructions">Tap a banner to select. Tap ground to move or enemies to attack.<br>Follow · Hold · Attack. Pause whenever you need.</p>
+      </div>
+    </section>
+    <section id="result" class="veil" hidden><div class="menu-card result-card"><p class="eyebrow" id="result-eyebrow"></p><h1 id="result-title"></h1><p id="result-description"></p><div id="result-stats"></div><button id="again" class="primary">Another attempt ↻</button><button id="change-hero" class="secondary">Choose another hero</button></div></section>
+    <dialog id="help"><h2>Bring the supplies home</h2><p>Move your hero or a squad into the golden circle beside the wagon. Keep enemies out for 8 seconds to secure it.</p><p>Your squads fight automatically. Select one with its banner, a soldier or its card. Tap clear ground to move, or tap an enemy to focus it.</p><p>Follow stays near your hero. Hold defends a position. Attack advances toward the nearest enemy, then the wagon.</p><p>Desktop · 1–4 select squads, H selects hero, F selects the company, WASD moves your hero, Q/E use abilities, Space pauses. Escape closes this help.</p><button id="close-help" class="primary">Back to battle</button></dialog>
+  </main>
+  <script src="art.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

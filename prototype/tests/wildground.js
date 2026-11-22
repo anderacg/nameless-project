@@ -32,9 +32,9 @@ Kit.suite(({ok,info})=>{
    if(!t.drawnWet(x,y)){if(!dry&&t.terrAt(x,y)===t.T_OPEN)dry={x,y};continue}const b=t.depthBand(t.drawnDepth(x,y));if(b>=3&&!deep)deep={x,y};else if(b<=1&&!wet)wet={x,y}}
   if(!wet||!deep||!dry)info('no shallow and deep drawn water near you');else{
    const calls=[],old=window.drawWading;window.drawWading=(...a)=>{calls.push(a)};
-   try{const put=p=>{const c=t.asHerd({crit:true,id:'deer',n:1,x:p.x,y:p.y,hx:p.x,hy:p.y,dir:1,t:5,a:0,cool:0,idle:true,st:'bed'});c.inView=()=>true;calls.length=0;const ents=[];
+   try{const put=p=>{const c=t.asHerd({crit:true,id:'deer',n:1,x:p.x,y:p.y,hx:p.x,hy:p.y,dir:1,t:5,a:0,cool:0,idle:true,st:'bed'});c.memberVisible=()=>true;calls.length=0;const ents=[];
       {const m=t.herdFlock(c,t.critterArt('deer',0,0),performance.now()).m[0];m.x=p.x;m.y=p.y}// (the animal itself there, bedded: it does not walk off to its spot)
-      c.draw(ents,{x:p.x-100,y:p.y-80},null);
+      c.draw(ents,{x:p.x-100,y:p.y-80},10000);
       for(const e of ents)if(e.f){t.ctx.save();e.f();t.ctx.restore()}return calls.length?calls[calls.length-1][7]:0};
     const A=t.critterArt('deer',0,0),cs=put(wet),cd=put(deep),c0=put(dry);
     ok(c0===0,'on dry ground a deer is drawn whole, on its shadow');

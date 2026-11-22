@@ -316,10 +316,11 @@
      middle, '.' none (row and step whole parts of a tile's 16 x fine px, so a field's plots meet seamlessly); and its tones by
      stage (CROP_TONES: a letter a colour). The frost's snow lies in the troughs, the swamp's water
      now and then; the desert's irrigated plot its channel along a row */
-  const WH={y:['.a.a.a.','abababa','bcbcbcb','cbcbcbc','.s.s.s.','sSsSsSs','.S.S.S.'],
+  const WH={y:['...a...','..aba..','..bcb..','a..c..a','ab.s.ba','bc.s.cb','.c.s.c.','.slsl.s','.s.sls.','..sss..','..SSS..','...S...'],
     yg:['l...l','.l.l.','l.m.l','.mdm.','..d..'],st:['s.s.s','SsSsS']};
   PX.CROP_PLANTS={
-    wheat:{row:8,step:4,young:WH.yg,ripe:WH.y,stubble:WH.st},
+    wheat:{row:16,step:4,young:WH.yg,ripe:WH.y,stubble:WH.st},
+    hay:{row:8,step:8,young:WH.yg,full:['s.....l','.l.l.l.','l.m.l.m','.lmdml.','..mdm..','.mddd..','..ddd..'],stubble:WH.st},
     barley:{row:8,step:4,young:WH.yg,ripe:['a..a..a','.a..a..','abababa','bcbcbcb','.s.s.s.','sSsSsSs','.S.S.S.'],stubble:WH.st},
     rye:{row:8,step:4,young:['.l.','l.l','.m.','.m.','.m.','.d.','.d.'],ripe:['.a.','aba','bcb','.c.','.s.','s.s','.s.','.s.','.S.','.S.','.S.'],stubble:WH.st},
     veg:{row:8,step:8,young:[['.l.l.','lmlml','.ddd.'],['l.l','.m.','.d.'],['l.l','.m.','.d.']],
@@ -335,6 +336,7 @@
   const CROP_TONES={
     grain:{l:'#b8d870',m:'#86b048',d:'#5a8a36',s:'#d8b860',S:'#9a7a3a'},
     wheat:{a:'#fbe48a',b:'#e0b44e',c:'#a67a30'},barley:{a:'#f6ecc0',b:'#d8c486',c:'#a89458',s:'#d2c08a',S:'#968450'},
+    hay:{l:'#b4cc74',m:'#8aaa54',d:'#587e3c',s:'#c1ad65',S:'#8a7744'},
     rye:{a:'#e6dcb0',b:'#b8a87a',c:'#86784e',s:'#b4ac84',S:'#7c7458',l:'#a8c094',m:'#7e9a74',d:'#56705a'},
     row:{l:'#c4e08a',m:'#86b450',d:'#4e7c34',w:'#e6f2c4',W:'#b8cc94',o:'#ec8a30',p:'#a85a9a',s:'#7aa050',S:'#4e7434'},
     turnips:{w:'#ece4ea'},potato:{w:'#f6f2e0',l:'#9ec060',m:'#6a9a42',d:'#42682e'},
@@ -347,14 +349,14 @@
   const cropTones=(kind,st)=>{const T=CROP_TONES,g=['wheat','barley','rye'].includes(kind)?'grain':['veg','turnips','potato'].includes(kind)?'row':kind,o={};
     Object.assign(o,T.grain,T.row,T[g]||{},T[kind]||{});if(kind==='vines'&&st!=='fruit')Object.assign(o,T.vinesGreen);
     if(st==='young'&&g==='grain'){o.s=o.m;o.S=o.d}const q={};for(const k in o)q[k]=hx(o[k]);return q};
-  PX.worldCropFine=(kind,clim,v,o)=>{clim=PX.WORLD_SOIL[clim]?clim:'grass';v=((v|0)%4+4)%4;const q=x=>Math.round(Math.max(0,Math.min(1,x))*10)/10,st=o.stage||'ripe',snow=q(o.snow||0),wet=q(o.wet||0),ter=o.terrace?1:0,f=o.fine;
-    const key='cf'+kind+clim+v+st+snow+wet+ter+'x'+f;if(CACHE[key])return CACHE[key];
-    const P=PX.CROP_PLANTS[kind],N=16*f,R=P.row,a=new Uint8Array(N*N).fill(1),rgb=new Uint8Array(N*N*3),tr=new Uint8Array(N*N),s=v*37+kind.length*11+clim.length,H=(x,y,k)=>PX.hash(x,y,s+k);
+  PX.worldCropFine=(kind,clim,v,o)=>{clim=PX.WORLD_SOIL[clim]?clim:'grass';v=((v|0)%4+4)%4;const q=x=>Math.round(Math.max(0,Math.min(1,x))*10)/10,st=o.stage||'ripe',snow=q(o.snow||0),wet=q(o.wet||0),ter=o.terrace?1:0,f=o.fine,lean=Math.max(-2,Math.min(2,Math.round(o.lean||0))),soilOnly=!!o.soilOnly,plantsOnly=!!o.plantsOnly;
+    const key='cf'+kind+clim+v+st+snow+wet+ter+'x'+f+'b'+lean+(soilOnly?'soil':'')+(plantsOnly?'plants':'');if(CACHE[key])return CACHE[key];
+    const P=PX.CROP_PLANTS[kind],N=16*f,R=P.row,a=new Uint8Array(N*N).fill(plantsOnly?0:1),rgb=new Uint8Array(N*N*3),tr=new Uint8Array(N*N),s=v*37+kind.length*11+clim.length,H=(x,y,k)=>PX.hash(x,y,s+k);
     const soil=hx(PX.WORLD_SOIL[clim]),dark=mixA(soil,[30,24,20],.38),lite=mixA(soil,[236,214,170],.2),shade=mixA(soil,[24,18,14],.5),X=CROP_X,off=(v>>1)*3,ch=6+(v>>1)*2;
     // (the furrows: a row's ridge lit under its plants, the trough between rows dark)
     for(let y=0;y<N;y++){const d=((y-off)%R+R)%R;for(let x=0;x<N;x++){const i=y*N+x,n=H(x,y,1);let c=d===R-1||d===0?lite:d===(R>>1)-1||d===R>>1?dark:soil;if(n<.12)c=mixA(c,dark,.4);else if(n>.92)c=mixA(c,lite,.5);
       rgb.set(c.map(Math.round),i*3);tr[i]=1}}
-    const set=(x,y,c)=>{x=((x%N)+N)%N;if(y<0||y>=N)return;const i=y*N+x;rgb[i*3]=c[0];rgb[i*3+1]=c[1];rgb[i*3+2]=c[2];tr[i]=0};
+    const set=(x,y,c)=>{x=((x%N)+N)%N;if(y<0||y>=N)return;const i=y*N+x;rgb[i*3]=c[0];rgb[i*3+1]=c[1];rgb[i*3+2]=c[2];a[i]=1;tr[i]=0};
     // (the desert's irrigated plot: its channel along one row, its banks dark, no plants on it)
     const chan=kind==='irrigated'?((Math.floor(ch*f/R)*R+off)%N):-99;
     if(kind==='irrigated')for(let x=0;x<N;x++)for(let y=chan-3;y<=chan+1;y++){const yy=((y%N)+N)%N,i=yy*N+x;const c=y===chan-3||y===chan+1?mixA(dark,[20,30,40],.25):hx(X.water[y===chan-2?0:1]);rgb.set(c.map(Math.round),i*3);tr[i]=0}
@@ -363,12 +365,13 @@
       for(let r=0;r<rows;r++){const fy=r*R+off+R-1,pat=Array.isArray(PL[0])?PL[(r+v)%PL.length]:PL,ph=pat.length,pw=pat[0].length,stg=(r*Math.max(1,P.step>>1)+v*3)%P.step,fyy=fy%N;
         if(kind==='irrigated'&&Math.abs(fyy-chan)<4)continue;
         for(let x0=stg;x0<N;x0+=P.step){if(H(x0,r,6)<CROP_GAP)continue;const jx=x0+(H(x0,r,7)<.25?1:0)-(pw>>1),flip=H(x0,r,8)<.5,cut=H(x0,r,9)<.25?1:0;
-          if(fyy+1<N){const i=(fyy+1)*N+((jx+(pw>>1)+1)%N);if(tr[i]){const c=mixA([rgb[i*3],rgb[i*3+1],rgb[i*3+2]],shade,.5);rgb.set(c.map(Math.round),i*3)}}// (its contact shadow)
+          if(!plantsOnly&&fyy+1<N){const i=(fyy+1)*N+((jx+(pw>>1)+1)%N);if(tr[i]){const c=mixA([rgb[i*3],rgb[i*3+1],rgb[i*3+2]],shade,.5);rgb.set(c.map(Math.round),i*3)}}// (its contact shadow)
+          if(soilOnly)continue;
           for(let j=cut;j<ph;j++)for(let k=0;k<pw;k++){const L=pat[j][flip?pw-1-k:k];if(L==='.')continue;const c=T[L];if(!c)continue;const y=fyy-(ph-1-j);
-            if(y<0)late.push([jx+k,y+N,c]);else set(jx+k,y,c)}}}
+            const bend=L==='k'||L==='K'||L==='q'?0:Math.round(lean*(1-j/Math.max(1,ph-1))**2*(.7+.3*H(x0,r,11)));if(y<0)late.push([jx+k+bend,y+N,c]);else set(jx+k+bend,y,c)}}}
       for(const [x,y,c] of late)set(x,y,c)}
     // (the Karn's terraces: a stone lip every fifth row of the coarse picture's)
-    if(ter)for(let y=0;y<N;y++){const ut=Math.floor(y/f);if((ut+(v>>1))%5===4)for(let x=0;x<N;x++){const i=y*N+x,c=hx(X.stone[H(x,y,10)<.6?0:1]);rgb.set(c,i*3);tr[i]=0}}
+    if(ter&&!plantsOnly)for(let y=0;y<N;y++){const ut=Math.floor(y/f);if((ut+(v>>1))%5===4)for(let x=0;x<N;x++){const i=y*N+x,c=hx(X.stone[H(x,y,10)<.6?0:1]);rgb.set(c,i*3);tr[i]=0}}
     // (snow in the troughs, a little on the plants; the swamp's water in some)
     for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;let c=null;if(tr[i]&&snow&&H(x,y,2)<snow*.85)c=hx(X.snow);else if(!tr[i]&&snow&&H(x,y,3)<snow*.12)c=hx(X.frost);else if(tr[i]&&wet&&H(x,y,4)<wet*.3)c=X.wet;if(c)rgb.set(c,i*3)}
     const sp=finish(N,a,rgb,8*f,16*f-1,true);sp.tr=tr;sp.ch=kind==='irrigated'?Math.floor(chan/f):-1;sp.kind=kind;sp.stage=st;return CACHE[key]=sp};

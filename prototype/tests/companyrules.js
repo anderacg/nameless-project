@@ -1,0 +1,81 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G,C=t.companyRules,S=t.COMPANY_RULES;
+ Kit.begin('soldier',88);Kit.clear();Kit.world();
+ const old={dangerInSight:window.dangerInSight,campSpot:window.campSpot,supplyLand:window.supplyLand};
+ try{
+  ok(!C.save()&&!C.rest&&!C.resupply,'company automation defaults off and adds nothing to untouched saves');
+  window.dangerInSight=()=>'';P.camp=null;P.stay=null;P.tx=P.ty=null;G.chase=G.follow=G.pitch=null;G.speed=2;P.bsta=30;
+  C.frame(2);ok(G.speed===2&&!C.pace,'ordinary idle time is not automatically accelerated');
+  P.camp={at:0};C.frame(2);ok(G.speed===4,'manual camping accelerates time to 4x, even with journey automation off');
+  const restingSave=t.Saves.saveOf('companyRules').companyRules;C.reset();t.Saves.loadOf('companyRules',restingSave);P.camp=null;C.frame(2);
+  ok(G.speed===2&&!C.pace,'save/load preserves the previous speed and restores it when rest ends');
+  P.camp={at:0};C.frame(2);t.setSpeed(2);C.frame(2);ok(G.speed===2,'manual speed changes override accelerated rest');
+  P.camp=null;C.frame(2);ok(G.speed===2,'ending rest preserves a manually selected speed');
+  G.speed=8;P.camp={at:0};C.frame(2);ok(G.speed===8,'rest does not slow a player already using 8x time');P.camp=null;C.frame(2);
+  G.speed=2;P.camp={at:0};C.frame(2);window.dangerInSight=()=> 'bandits';C.frame(2);
+  ok(G.speed===1,'nearby danger drops accelerated rest to 1x');window.dangerInSight=()=>'';C.frame(2);ok(G.speed===1,'time does not silently accelerate again after danger');P.camp=null;C.frame(2);
+  G.speed=2;P.camp={at:0};C.frame(2);P.bsta=100;C.frame(2);ok(G.speed===2,'full stamina ends accelerated manual rest');P.camp=null;C.frame(2);
+  P.bsta=30;P.stay={town:t.TOWNS[0].name};C.frame(2);ok(G.speed===4,'staying in a holding also accelerates rest');P.stay=null;C.frame(2);ok(G.speed===2,'leaving a holding restores the previous speed');
+  // Real hourly recovery, with normal supply consumption still in force.
+  window.supplyLand=()=>({desert:false,frost:false,well:true,water:false,rough:false});t.playerInventory.add('good','grain',60);t.WALKED.set(P,0);
+  P.camp={at:0};P.bsta=30;t.supplyHour();ok(Math.abs(P.bsta-50)<1e-8,'a supplied camp restores 20 stamina per game hour (25% faster)');
+  P.camp=null;P.stay={town:t.TOWNS[0].name};P.bsta=30;t.supplyHour();ok(Math.abs(P.bsta-55)<1e-8,'a supplied holding restores 25 stamina per game hour');
+  P.stay=null;P.bsta=30;t.supplyHour();ok(Math.abs(P.bsta-35)<1e-8,'a stopped company restores 5 stamina per game hour');window.supplyLand=old.supplyLand;C.reset();G.speed=1;
+  P.sk.lead.lv=10*PROF.per;P.add('hum_foot',5);P.add('hum_bow',3);const rows=t.partyRoster(P).groups,foot=rows.find(g=>g.type==='hum_foot'),bow=rows.find(g=>g.type==='hum_bow');
+  ok(C.setDuty(foot.id,'protect')&&C.setDuty(bow.id,'skirmish')&&!C.setDuty('missing','line')&&!C.setDuty(foot.id,'invalid'),'duties validate real group identities and known choices');
+  C.rest=true;C.resupply=true;const saved=t.Saves.saveOf('companyRules').companyRules;C.reset();t.Saves.loadOf('companyRules',saved);
+  ok(C.rest&&C.resupply&&C.duty(foot.id)==='protect'&&C.duty(bow.id)==='skirmish','settings and distinct group duties survive save/load');
+  t.Saves.loadOf('companyRules');ok(!C.rest&&C.duty(foot.id)==='manual','missing saved rules receive defaults');
+  // Real stock, prices, pack operations and gates; no free inventory or unbounded spending.
+  const town=t.TOWNS.find(h=>!t.foeAt(h)&&!t.closedNow(h)&&t.Gates.admits(h).ok&&!h.ruined());
+  ok(!!town,'an accessible market exists');P.x=town.x;P.y=town.y;G.town={ref:town};G.mode='town';
+  for(const g of [...t.FOODS,'water','skin_empty','ale','liquor'])t.goodTake(g,1e6);
+  t.ensureEcon(town);for(const g of t.FOODS)town.stock[g]=1000;P.gold=1000;
+  const gold=P.gold;C.visit(town);ok(P.gold===gold&&t.foodN()===0,'disabled resupply leaves market and pack untouched');
+  C.resupply=true;const startStock=t.FOODS.reduce((n,g)=>n+town.stock[g],0);const spent=C.visit(town),food=t.foodN();
+  ok(spent>0&&P.gold===gold-spent&&P.gold>=C.reserve()&&food>0,'enabled visit buys actual supplies and preserves the gold reserve');
+  ok(startStock-t.FOODS.reduce((n,g)=>n+town.stock[g],0)===food,'food in the pack comes out of market stock');
+  const held=P.gold;C.visit(town);ok(P.gold===held,'a second visit while supplied makes no additional purchase');
+  for(const g of t.FOODS)t.goodTake(g,1e6);P.gold=C.reserve();C.visit(town);ok(P.gold===C.reserve()&&!t.foodN(),'reserve money cannot be spent');
+  P.gold=1000;G.mode='world';C.visit(town);ok(P.gold===1000&&!t.foodN(),'passing near a holding cannot trigger purchases');
+  G.mode='town';const inv=P.inv;P.inv=Array.from({length:t.playerInventory.size},()=>({k:'good',id:'timber',n:1}));const fullGold=P.gold;C.visit(town);
+  ok(P.gold===fullGold&&!t.playerInventory.over&&!t.foodN(),'automatic resupply does not overload a full pack');P.inv=inv;
+  // Resting retains the destination, never a chase; manual input cancels continuation.
+  Kit.world();G.town=null;P.camp=null;P.stay=null;P.siege=null;P.raid=null;G.pitch=null;G.chase=null;G.follow=null;G.modal=false;
+  window.dangerInSight=()=>'';window.campSpot=()=>null;C.reset({rest:true});P.tx=P.x+200;P.ty=P.y+60;P.bsta=20;const goal={x:P.tx,y:P.ty};
+  C.frame(2);ok(C.journey?.x===goal.x&&P.tx==null,'a tired journey stops and keeps its destination when no camp site exists');
+  P.bsta=70;C.frame(2);ok(P.tx==null&&!!C.journey,'the band rests until the recovery threshold');
+  P.bsta=85;C.frame(2);ok(P.tx===goal.x&&P.ty===goal.y&&!C.journey&&G.speed===1,'a recovered band resumes the original route at the previous speed');
+  P.bsta=20;C.frame(2);const restSave=C.save();C.reset(restSave);ok(C.journey?.x===goal.x,'resting destination survives save/load');
+  P.tx=P.x+30;P.ty=P.y+30;C.frame(2);ok(!C.journey&&P.tx===P.x+30,'a new travel order overrides the saved continuation');
+  P.bsta=20;C.frame(2);window.dangerInSight=()=> 'bandits';C.frame(2);P.bsta=100;C.frame(2);ok(!C.journey&&P.tx==null,'danger cancels continuation instead of silently resuming into it');
+  window.dangerInSight=()=>'';G.chase=town;P.tx=town.x;P.ty=town.y;C.frame(2);ok(!C.journey,'automatic rest never interrupts a chase');G.chase=null;P.tx=null;
+  window.campSpot=()=>({x:P.x,y:P.y,across:false});P.tx=goal.x;P.ty=goal.y;P.bsta=20;C.frame(2);
+  ok(!!P.camp&&C.journey?.camp,'a legal nearby site pitches the existing company camp');P.bsta=85;C.frame(2);
+  ok(!P.camp&&!C.journey&&P.tx===goal.x,'recovery strikes the camp and resumes travel');
+  P.bsta=20;C.frame(2);t.toggleCamp();P.bsta=100;C.frame(2);ok(!C.journey&&!P.camp&&P.tx==null,'manual camp controls cancel automatic continuation');
+  t.Saves.loadOf('companyRules',{rest:true,journey:{x:goal.x,y:goal.y,camp:true}});P.bsta=85;C.frame(2);
+  ok(!C.journey&&P.tx===goal.x,'loading during a campsite approach retains the original destination without replaying an unfinished approach');
+  C.reset({rest:true});P.bsta=20;for(const g of ['water','ale','liquor'])t.goodTake(g,1e6);window.supplyLand=()=>({...old.supplyLand(),desert:true,well:false,water:false});
+  C.frame(2);ok(!C.journey&&P.tx===goal.x,'a dry desert cannot trap the band in an automatic rest that cannot restore stamina');window.supplyLand=old.supplyLand;
+  // Existing BattleControl orders and manual-override protocol.
+  C.reset();C.setDuty(foot.id,'protect');C.setDuty(bow.id,'skirmish');
+  t.partyRoster(P).add('hum_foot',2,'new');t.partyRoster(P).add('hum_bow',2,'new');
+  const line=t.partyRoster(P).groups.find(g=>g!==foot&&g.type==='hum_foot'),support=t.partyRoster(P).groups.find(g=>g!==bow&&g.type==='hum_bow');
+  C.setDuty(line.id,'line');C.setDuty(support.id,'support');
+  t.startBattle({enemies:Array(6).fill('hum_foot'),deploy:false});const b=t.B;C.battle(1);
+  const fg=b.groups['p_'+foot.id],bg=b.groups['p_'+bow.id];
+  ok(!!fg.amove&&!!bg.amove&&bg.skirmish,'saved troop duties issue real group orders, including ranged skirmishing');
+  const heroGroup=b.groups[b.hero.grp];ok(!heroGroup.amove,'duties do not commandeer the hero');
+  const lg=b.groups['p_'+line.id],sg=b.groups['p_'+support.id],home={x:lg.ax,y:lg.ay};
+  ok(!lg.amove&&!!sg.amove&&Math.hypot(sg.ax-fg.ax,sg.ay-fg.ay)>10,'Hold line stays anchored; Support takes a distinct position');
+  t.selectGroup(fg.id);t.setOrder('hold');const ax=fg.ax,ay=fg.ay;b.hero.x+=100;C.battle(1);
+  ok(fg.orderSeq>0&&!fg.amove&&fg.ax===ax&&fg.ay===ay,'a direct Hold order overrides the duty for the encounter');
+  ok(lg.ax===home.x&&lg.ay===home.y,'Hold line does not follow the moving hero');
+  t.setGroupsAuto([bg.id],true,true);const am=bg.amove;C.battle(1);ok(bg.amove===am,'full AI ownership takes priority over standing duties');
+  Kit.world();t.startBattle({enemies:Array(6).fill('hum_foot'),deploy:false});C.battle(1);
+  ok(!!t.B.groups['p_'+foot.id].amove,'the next battle restores the saved duty after a manual override');
+  Kit.world();G.char='condition';t.openChar();ok(t.panel.querySelector('[data-act="army-rule"][aria-pressed]'),'company rules are available in Army condition with state feedback');
+ }finally{Object.assign(window,old);C.reset();Kit.done()}
+});
