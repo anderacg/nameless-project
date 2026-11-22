@@ -73,8 +73,9 @@ function drawMiniField(){
   drawMapFrame(r);
   // (a field with terrain: its painted ground, a pixel a cell, terraces' edges dark (engine/ground.js), dimmed under the dots)
   const gm=B.world?null:B.terrain&&B.ground&&(B.groundMini||(B.groundMini=PX.battleGroundMini({...B.terrain,climate:B.env.c},B.ground)));
-  if(gm){ctx.globalAlpha=.8;ctx.drawImage(gm,r.x,r.y,r.w,r.h);ctx.globalAlpha=1}else{ctx.fillStyle='rgba(90,120,70,.55)';ctx.fillRect(r.x,r.y,r.w,r.h)}
-  fogMiniField(r);// (the ground out of your side's sight shaded: battlefog.js)
+  ctx.save();ctx.globalAlpha=MINIMAP.opacity;
+  if(gm)ctx.drawImage(gm,r.x,r.y,r.w,r.h);else{ctx.fillStyle='#5a7846';ctx.fillRect(r.x,r.y,r.w,r.h)}
+  fogMiniField(r);ctx.restore();// (the ground out of your side's sight shaded: battlefog.js)
   for(const u of B.units){if(u.hp<=0||!seenBy(0,u))continue;ctx.fillStyle=u.hero?'#e8b94a':sideCol(u,u.rout?'rout':'ui');ctx.fillRect(Math.round(r.x+u.x*kx),Math.round(r.y+u.y*ky),1,1)}
   ctx.strokeStyle=MAP_FRAME.view;ctx.lineWidth=1;ctx.strokeRect(Math.round(r.x+c.x*kx)+.5,Math.round(r.y+c.y*ky)+.5,Math.round(V.w/c.z*kx),Math.round(V.h/c.z*ky));
   // (zoomed in: by how much; drawn sharp, how many device px a field px)

@@ -116,7 +116,19 @@ function flagFine(b,f){const k='flf'+b.k+b.col+b.dev+f;if(spr[k])return spr[k];c
     for(const [p,c] of A){if(B.get(p)===c)continue;const [i,y]=p.split(',').map(Number),r=y-wv(i,cw,Q.fly,1);
       for(let dx=0;dx<z;dx++)for(let dy=0;dy<z;dy++){const j=i*z+dx;pset(g,x0+j,top+r*z+dy+wv(j,cw*z,o.fly,z),c)}}}
   g.edge=true;poutline(g);const c=pcanvas(g);c.ax=1;c.ay=h+1;c.z=z;return spr[k]=c}
-const drawFlag=(b,x,y,seed)=>{const s=flagFine(b,Math.floor(performance.now()/400+(seed||0))%2);ctx.drawImage(s,Math.round(x)-s.ax,Math.round(y)-s.ay,s.width/s.z,s.height/s.z)};
+// Structural flags stay in the remembered scene and are replayed over visible characters, before the GUI.
+const WorldFlags={
+  list:[],collect:false,cam:null,
+  begin(cam){this.list=[];this.cam=cam;this.collect=true},
+  add(s,x,y,w,h){
+    if(!this.collect||WDEPTH.ghosting)return;const m=ctx.getTransform();
+    this.list.push({s,x:this.cam.x+x+m.e/m.a,y:this.cam.y+y+m.f/m.d,w,h,a:ctx.globalAlpha});
+  },
+  draw(cam){
+    ctx.save();try{for(const q of this.list){if(!CHEAT.noFog&&!inSight(q.x+q.w/2,q.y+q.h))continue;ctx.globalAlpha=q.a;ctx.drawImage(q.s,q.x-cam.x,q.y-cam.y,q.w,q.h)}}finally{ctx.restore()}
+  }
+};
+const drawFlag=(b,x,y,seed)=>{const s=flagFine(b,Math.floor(performance.now()/400+(seed||0))%2);const X=Math.round(x)-s.ax,Y=Math.round(y)-s.ay,w=s.width/s.z,h=s.height/s.z;ctx.drawImage(s,X,Y,w,h);WorldFlags.add(s,X,Y,w,h)};
 // (a holding's flag: its realm's banner and device, yours with the crown, none held a grey one)
 const holdingFlag=(t,col)=>({k:'banner',col,dev:t.owner==='player'?'crown':t.owner||null});
 // a camp's fire, its foot at (x, y): as it burns (fire.js fireCamp); FLAMES off, its flame through the engine's four frames

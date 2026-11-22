@@ -181,7 +181,7 @@ function bannerFine(b,f,r){f=f?1:0;const key='bnf'+b.k+b.col+b.dev+f+r;if(spr[ke
 // (a banner planted on a pole, its foot at (x, y) in game px, waving on the clock: bannerFine where the scene has fine px, else the
 // map's flag (structures.js drawFlag))
 function drawPoleBanner(b,x,y,seed){const r=sceneRes();if(r<=1){drawFlag(b,x,y,seed);return}const s=bannerFine(b,Math.floor(performance.now()/400+(seed||0))%2,r);
-  ctx.drawImage(s,Math.round(x)-s.px/r,Math.round(y)+1-s.py/r,s.width/r,s.height/r)}
+  const X=Math.round(x)-s.px/r,Y=Math.round(y)+1-s.py/r;ctx.drawImage(s,X,Y,s.width/r,s.height/r);WorldFlags.add(s,X,Y,s.width/r,s.height/r)}
 // (an animal's step on the map, ms a frame)
 const D_STEP=150;
 // the tile grid over the view: a line along every tile edge from (x0, y0) for w by h world pixels, drawn offset by (ox, oy),
@@ -254,7 +254,7 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
    at most each refresh ms, what you have seen in it does. Its face drawn afresh at most each world ms on the map (battle ms in a fight),
    the last one put up between (the owner, 2026-11-16: "The game performance lags on mobile"). on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,opacity:.5,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+const MINIMAP={on:true,opacity:.4,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -298,6 +298,7 @@ function drawWorld(){
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
+  WorldFlags.begin(cam);
   try{
   viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
@@ -339,12 +340,13 @@ function drawWorld(){
   TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
   drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
   drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
-  nPlace=TXTQ.length}finally{ctx=scr;if(hi){VW--;VH--}}
+  nPlace=TXTQ.length}finally{WorldFlags.collect=false;ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
   ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  if(!B?.world)drawSafe(()=>WorldFlags.draw(cam));
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   // (the clouds' shadows, smoke, snow and fireflies at the scene's fine px, before the fog: so only where you see (the owner,
@@ -703,11 +705,12 @@ function drawBattle(){
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1,fy=f.y-fieldLift(f.x,f.y);if(k===1){txt(f.t,Math.round(f.x),Math.round(fy),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(fy));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
+  if(B.world)WorldFlags.draw(G.cam);
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(V.w/VW,V.h/VH);
   if(B.world)WeatherArt.drawMap();// (a battle on the map: its weather over the field, under the HUD)
-  drawHeroHud();if(!B.world)drawMiniField();// (the small map of the field, top right: camera.js)
+  drawHeroHud();// (the minimap follows in the final GUI pass)
   if(B.over){txt(B.stalemate?'DISENGAGED':B.hunt?'HUNT OVER':B.retreat?'WITHDRAWN':B.win?'VICTORY':'DEFEAT',VW/2,VH/2,B.win?'#e8b94a':B.retreat?'#6fa8e0':'#e0605a','center')}
   ctx.restore();
   calloutFrame();// (the banners for the big moments, over the field: battlehud.js)
@@ -731,7 +734,7 @@ function frame(){
   else drawWorld();
   ctx.restore();if(bat)heroFlashDraw();
   if(map)WorldCombat.drawAfterglow();
-  if(bat&&B?.world){ctx.save();if(CVS!==1)ctx.scale(CVS,CVS);drawWorldMini(vis());ctx.restore()}
+  if(bat){ctx.save();if(CVS!==1)ctx.scale(CVS,CVS);if(B.world)drawWorldMini(vis());else{const V=bview();ctx.scale(V.w/VW,V.h/VH);drawMiniField()}ctx.restore()}
   if(typeof drawTouchHold==='function')drawTouchHold();
   if(typeof drawMapHold==='function')drawMapHold();// (the map's click-and-hold progress, in screen pixels: ring.js)
 }
