@@ -2,7 +2,7 @@
 
 The owner, 2026-11-14: "Can you remove the battle area for hunting? The hunting is just using the same world speed and battle sprites and hunt drops, trophy required player to click at carcass to loot them. This is also the same as monsters etc." Asked to choose, the owner picked: the world keeps running, every fight on the map, and the loot in a window where you decide what to take and look it over.
 
-Status: **built 2026-11-14** (phases 1–3 below). Switches: `OPEN_FIGHT` (`battle/worldbattle.js`) and `CARCASS` (`data/drops.js`). Tests: `tests/openfights.js`, `tests/carcasses.js` and `tests/fallenlife.js` (yours too, looters, clearers).
+Status: **built 2026-11-14**, extended for continuous encounters on 2026-11-22 (section 5 supersedes the older meeting, exclusion-zone and results-window rules below). Switches: `OPEN_FIGHT` (`battle/worldbattle.js`) and `CARCASS` (`data/drops.js`). Tests: `tests/openfights.js`, `tests/carcasses.js` and `tests/fallenlife.js` (yours too, looters, clearers).
 
 ## 1. No ring
 
@@ -61,7 +61,50 @@ The owner, 2026-11-14: "The hunting should not warp the wildlife back to the gro
   - The spots are not saved: after a load the herd is gathered.
 - `HERD_SCATTER.on` false: the herd as before. Tests: `tests/herdscatter.js`.
 
+## 5. Continuous encounters — 2026-11-22
+
+The owner: normal world combat stays interactive on the world map, for wildlife, monsters, bandits and armies alike. Each visible animal or hostile soldier is a target. Only dungeons and deliberately separate battle maps retain a results screen.
+
+- `battle/worldcombat.js` owns the transient interaction and reward coordination. `WorldFigure` holds the actual marcher or flock member under the pointer; its coordinates follow that individual while approaching. Herds and armies remain the owners of their members and their existing AI.
+- Body hits take priority over army outlines. An individual animal is clickable anywhere on its own body, including far from the herd marker. Mouse clicks and phone taps attack individual enemies during combat; right-click attacks retain that same identity. Dragging still selects formations, and clicking friendly soldiers selects their group.
+- Combat begins at the existing world positions with the existing camera. Travel and combat return to 1x on contact. No battle introduction, preparation screen or victory overlay interrupts a seamless world encounter. Ground clicks move the selection; without a selection they move the hero. A destination beyond the active combat window orders physical withdrawal and resumes travel after disengagement; it does not teleport the army.
+- Visible wildlife and hostile armies can be brought into an ongoing encounter by clicking their individuals. They enter through the existing side, reinforcement and fighter-limit systems. A mixed hunt can include armed enemies; End hunt orders withdrawal while an armed threat remains, rather than declaring victory over it.
+- Uninvolved travelers, workers and wildlife keep their normal world movement. The former automatic evacuation and waiting zone does not apply to continuous encounters.
+- Your army's credited kills award real hero/companion XP immediately: species XP for wildlife, 8 XP for armed/monster kills. Existing proficiency practice also displays immediately. Repeated gains combine into native-resolution Arial floating labels, and a two-second combined line appears in the activity log. These are actual awards, replacing the earlier cosmetic XP dots on the world map. Arena effects remain unchanged.
+- A per-encounter ledger deducts already-paid combat XP from settlement. Wildlife rewards stay separate from war spoils in mixed fights. Earned kill XP remains yours after withdrawal or defeat; it is not reduced from 8 to the old 4 XP defeat payout. Species loot, medicine, survivors, diplomacy, prisoners, ranks, gold and other campaign outcomes still use their existing settlement rules.
+- World settlement opens no report, loot summary or Continue prompt. Corpses and their items remain on the map, and unplaced spoils are retained in a ground pack, without inventing a casualty. Bound quest items go directly into the inventory. A brief message reports contact ending and its gold/renown changes. Explicit carcass inspection still opens its existing loot window.
+- Death, captivity and a required holding-capture decision keep their own consequence UI. Dungeons, siege works, tournaments, sandbox arenas and separate battle maps retain their existing reports.
+- No save migration or new saved combat session is introduced. The active combat units and target handles are transient; existing roster, character and carcass save paths retain the resulting campaign state.
+
+Validation: 584 assertions passed across the 15 focused suites below; one existing attack fingerprint mismatch remains. No JavaScript errors were reported. Two browser pages at most ran concurrently; no full sweep was run.
+
+| Suite | Passed | Failed |
+|---|---:|---:|
+| worldcombat | 28 | 0 |
+| seamless | 14 | 0 |
+| wildhunt | 25 | 0 |
+| carcasses | 19 | 0 |
+| openfights | 20 | 0 |
+| worldbattleplay | 5 | 0 |
+| proficiency | 33 | 0 |
+| actorrules | 69 | 0 |
+| attackrules | 77 | 1 existing fingerprint |
+| battlecommands | 59 | 0 |
+| battleresolution | 82 | 0 |
+| battlesetup | 68 | 0 |
+| aishare | 23 | 0 |
+| mobilebattlehud | 26 | 0 |
+| structure | 36 | 0 |
+
+`attackrules` produces `web_hit = 37b66365` on both the changed code and untouched `2bb0545`, served from an immutable source overlay. Both have the same 77 passes and one mismatch. The baseline comparison also passes all 59 command and 82 settlement assertions. No canonical fingerprints were re-recorded. A command-argument difference caught during implementation was fixed before the final command run.
+
+The historical settlement fixture explicitly disables live coordination while comparing campaign accounting and its historical presentation snapshots. The new worldcombat suite exercises the production live path, including actual mouse/touch input, mixed encounters, immediate XP, withdrawal, full-bag bound quest items and ground packs. Longer setup and AI suites now emit progress; their earlier 180-second no-progress timeouts were rerun to completion (setup 228 seconds, AI 227 seconds). The settlement matrix completed in 424 seconds.
+
+Phone verification uses Chromium touch emulation, not a physical phone or Safari. Raw reports are in `/tmp/ashmark-progress-97oCtR/`, `/tmp/ashmark-progress-MvyBhX/` and `/tmp/ashmark-progress-Y1DQvk/`; baseline comparison reports are in `/tmp/ashmark-progress-DYWf8R/`. The source overlay, final responsive-view check and desktop/phone screenshots are under `/workspace/artifacts/continuous-world/`.
+
+ `tests/worldcombat.js` covers pointer identity, actual mouse/touch input, live XP/proficiency, mixed interactions and non-blocking settlement. Updated older hunt, carcass, passing-caravan and world-victory expectations describe the requested behavior; canonical fingerprints are not re-recorded.
+
 ## Left
 
-- The field is still a fixed window, though now 2.2 times as wide. Moving it with the chase would mean moving every position the fight keeps (its men's ways and goals, groups, missiles, corpses, the blood layer, fog, the terrain grid, the tracks, the captains' memory), so a chase past its edge still ends there: the foe has got away.
+- The field is still a fixed window, though now 2.2 times as wide. Moving it with the chase would mean moving every position the fight keeps (its men's ways and goals, groups, missiles, corpses, the blood layer, fog, the terrain grid, the tracks, the captains' memory), so a foe past its edge has got away. A player destination beyond it now orders physical disengagement and continues travel, rather than silently clamping that destination. A rolling combat terrain window remains a separate architectural change.
 - An ally riding in walks straight at the fight, and ground it cannot cross can stop it (`tests/worldbattle.js` and `tests/worldbattleplay.js` check an ally walking in at the old width).

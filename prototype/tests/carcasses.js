@@ -12,8 +12,7 @@ Kit.suite(({ok,info})=>{
  ok(C.list.length===2&&C.list.every((c,i)=>Math.hypot(c.x-at[i].x,c.y-at[i].y)<.2&&c.wild==='deer'),'each deer killed lies where it fell ('+C.list.length+' carcasses)');
  const on=C.list.reduce((n,c)=>n+c.items.reduce((m,s)=>m+(s.id==='meat'?s.n:0),0),0);
  ok(on===2*t.CRITTERS.deer.meat&&t.goodN('meat')===meat0,'their meat lies on them ('+on+'), none in your bag till you take it');
- ok(G.loot&&!G.loot.pile.length&&/lie on the fallen/.test(Kit.text()),'the hunt\'s window has nothing to take: it says the things lie on the fallen');
- t.act('cont');
+ ok(G.mode==='world'&&!G.loot&&!G.lootView&&t.ov.hidden,'the hunt returns to the world without a summary; the fallen hold their loot');
  // (walked to, met: the window of all near)
  const c=C.list[0];ok(c.inView(t.vis())&&t.pickAt(c.x,c.y-1)===c,'a carcass on the map is clicked like anything else');
  t.interact(c);ok(G.mode==='dialog'&&G.lootView?.keep&&G.loot.pile.some(s=>s.id==='meat'&&s.n===on),'met: the window holds what lies on all the fallen near ('+G.loot.pile.map(s=>s.n+' '+s.id).join(', ')+'), beside your bag');

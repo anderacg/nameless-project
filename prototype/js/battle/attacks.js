@@ -50,7 +50,7 @@ class Fighter{
       else this.fell();
       if(t.lord&&!t.leader){if(t.sourceArmy===t.lord&&t.sourceGroupId)partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);else t.lord.remove(t.type,1)}
       else if(t.team!==0&&t.sourceArmy&&t.sourceGroupId&&!t.leader){partyRoster(t.sourceArmy).remove(t.type,1,t.sourceGroupId);B.primaryLossesApplied=true}
-      battleEvent('down',{u:t});// (the cards and the selection: battlehud.js)
+      if(wasHp>0)WorldCombat.killed(t,source);battleEvent('down',{u:t});// (the cards and the selection: battlehud.js)
       shakeIt(2);
     }
   }

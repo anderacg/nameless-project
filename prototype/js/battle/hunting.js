@@ -60,7 +60,7 @@ class HuntBattleArea extends WorldBattleArea{
   //  a ford or a marsh, in a wood, but at home on its own ground (wildHome: a deer in its wood, a goat on its hill)
   turn(u,dt){
     if(!(dt>0)){u.spdNow=0;return}if(!this.inside(u,-2))return this.depart(u);if(u.stun>0){u.stun-=dt;u.spdNow=0;return}if(PHYSICS.on&&physDown(u,dt))return;
-    const hunters=B.units.filter(v=>v.team===0&&v.hp>0&&!v.left&&!v.rout),near=Spatial.nearest(hunters,u.x,u.y),previous=u.huntThreat,dist=v=>v?Math.hypot(u.x-v.x,u.y-v.y):Infinity,threat=previous&&hunters.includes(previous)&&dist(previous)<=dist(near)/WILDLIFE_AWARE.switch?previous:near,D=CRITTERS[u.wildlife],seconds=dt/(WORLD_PACE*WORLD_SCALE.move*this.scale),distance=dist(threat),point=threat&&this.world(threat),hidden=point&&hiddenAt(point.x,point.y);u.huntThreat=threat;
+    const hunters=B.units.filter(v=>!v.wildlife&&battleEnemy(v,u)&&v.hp>0&&!v.left&&!v.rout),near=Spatial.nearest(hunters,u.x,u.y),previous=u.huntThreat,dist=v=>v?Math.hypot(u.x-v.x,u.y-v.y):Infinity,threat=previous&&hunters.includes(previous)&&dist(previous)<=dist(near)/WILDLIFE_AWARE.switch?previous:near,D=CRITTERS[u.wildlife],seconds=dt/(WORLD_PACE*WORLD_SCALE.move*this.scale),distance=dist(threat),point=threat&&this.world(threat),hidden=point&&hiddenAt(point.x,point.y);u.huntThreat=threat;
     if(u.hp<u.max||distance<D.shy*this.scale*(hidden?WILDLIFE_AWARE.cover:1))u.alert=Math.min(1,u.alert+seconds/(hidden?HUNT_AREA.alertCover:HUNT_AREA.alertOpen));
     if(distance<WORLD_BATTLE.interaction*this.scale||u.hp<u.max)u.alert=1;
     // (out of sight of all of yours OPEN_FIGHT.lost s: got away, the field open round it)
@@ -77,9 +77,11 @@ class HuntBattleArea extends WorldBattleArea{
       if(!target){const to=this.tracks.search(C,hunters,live);if(to&&canReach(C,to,groupWho(m))){g.standAt(to.x,to.y);g.setRun(true)}else if(g.hasTarget&&!targetStands(g))g.hold();continue}if(g.targetGroupId!==target.grp)g.attack(target,{run:true});g.faceTo(Math.atan2(target.y-C.y,target.x-C.x));
     }return groups;
   }
-  end(){if(B?.hunt!==this||B.over)return;B.retreat=false;B.over=true;B.win=true;B.endT=0;finishBattle()}
+  end(){if(B?.hunt!==this||B.over)return;if(B.units.some(u=>!u.wildlife&&battleEnemy(0,u)&&fighting(u))){for(const id of playerGroups())B.groups[id].withdraw();return}B.retreat=false;B.over=true;B.win=true;B.endT=0;finishBattle()}
   finish(b){
-    super.finish(b);const end=document.getElementById('huntEnd');if(end)end.hidden=true;
+    super.finish(b);this.finishHerds(b);
+  }
+  finishHerds(b){const end=document.getElementById('huntEnd');if(end)end.hidden=true;
     for(const c of this.herds){const survivors=this.animals.filter(u=>u.herd===c&&(u.hp>0||u.left));c.n=survivors.length;if(!c.n){c.gone=true;W.critters=W.critters.filter(o=>o!==c);continue}
       const points=survivors.map(u=>this.world(u));c.x=c.hx=points.reduce((n,p)=>n+p.x,0)/points.length;c.y=c.hy=points.reduce((n,p)=>n+p.y,0)/points.length;c.escapeSta=Math.min(...survivors.map(u=>u.escapeSta));c.cool=1;c.idle=false;
       // (each animal left where it stands, facing its way, its own wind (HERD_SCATTER: the map draws it there and walks it back); those
@@ -91,7 +93,7 @@ class HuntBattleArea extends WorldBattleArea{
   settle(b,lost,groupLosses){
     BATTLE_MOOD=null;const saved=heal(lost,groupLosses);for(const g of groupLosses)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
     const dead=this.animals.filter(u=>u.hp<=0&&!u.left),escaped=this.animals.filter(u=>u.left).length;
-    for(const c of this.herds){const n=dead.filter(u=>u.herd===c).length;if(n)huntRewards(c,n)}
+    WorldCombat.wildlifeRewards(b);
     const e=G.enc;G.enc=null;G.encCool=3;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.retreat?'withdrawn':'won'});
     const report={groups:groupLosses.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
     lootShow('<h2>Hunt complete</h2><p>'+dead.length+' animal'+(dead.length===1?'':'s')+' killed, '+escaped+' escaped, '+(this.animals.length-dead.length-escaped)+' still alive. Only kills provide meat and species trophies.</p>',lost,saved,'cont',report);updateHUD(true);
@@ -103,7 +105,7 @@ class HuntBattleSetup extends WorldBattleSetup{
     super.createUnits();const a=this.area;
     for(const [index,c] of a.herds.entries()){
       const key=wildTroop(c.id);
-      for(let i=0;i<c.n;i++){const m=c.m?.[i],u=this.spawn(troopOf(key),1,0,0);Object.assign(u,a.field(herdSpotNow(c,i)),{grp:'wild_'+index,wildlife:c.id,herd:c,alert:c.run>0?1:0,escapeCap:EscapeStamina.capacity(c),escapeSta:m?.sta??c.escapeSta??EscapeStamina.capacity(c)});this.units.push(u);a.animals.push(u)}
+      for(let i=0;i<c.n;i++){const m=c.m?.[i],u=this.spawn(troopOf(key),1,0,0);Object.assign(u,a.field(herdSpotNow(c,i)),{grp:'wild_'+index,wildlife:c.id,herd:c,herdIndex:i,alert:c.run>0?1:0,escapeCap:EscapeStamina.capacity(c),escapeSta:m?.sta??c.escapeSta??EscapeStamina.capacity(c)});this.units.push(u);a.animals.push(u)}
     }
   }
   createState(){const b=super.createState();b.hunt=this.area;return b}
@@ -114,6 +116,6 @@ class HuntBattleSetup extends WorldBattleSetup{
     for(const [id,g] of Object.entries(B.groups))if(!g.player){const m=B.units.filter(u=>u.grp===id);for(const u of m){const c=u.herd;if(!c)continue;const index=a.animals.filter(v=>v.herd===c).indexOf(u),at=herdSpotNow(c,index);Object.assign(u,a.field(at));const f=at.f||c.m?.[index]?.f;if(f){u.face=f;u.dir=f<0?Math.PI:0}u.sta=u.escapeSta/u.escapeCap*FATIGUE.max;delete u.rout;delete u.left;u.hp=u.max;u.sx=u.sy=0;a.tracks.sight(u)}if(m.length){const p=centroid(m);g.ax=p.x;g.ay=p.y;g.order='hold'}}
     B.sight=null;sightStep(true);
   }
-  survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Auto Hunt is on for your whole army. Give orders or use AI to take command. '+(OPEN_FIGHT.on?'Game that runs out of reach gets away; what you kill lies where it fell: click it to take its meat and trophies.':'Wildlife can escape beyond the circle; kills provide meat and trophies.')}
+  survey(){super.survey();this.env.name='Wildlife hunt';this.env.text='Click an individual to hunt it. Give orders directly, or enable AI to hunt automatically. '+(OPEN_FIGHT.on?'Game that runs out of reach gets away; what you kill lies where it fell: click it to take its meat and trophies.':'Wildlife can escape beyond the circle; kills provide meat and trophies.')}
   present(){super.present();let end=document.getElementById('huntEnd');if(!end){end=document.createElement('button');end.id='huntEnd';end.type='button';end.className='btn sm';end.textContent='End hunt';end.addEventListener('click',()=>B?.hunt?.end());bbar.querySelector('.btime').appendChild(end)}end.hidden=false;window.mobileBattleHud?.sync();autoUI()}
 }

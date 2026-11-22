@@ -96,7 +96,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
     window.__setupMeasure=original.measure;(0,eval)('measureField=()=>({top:40,bot:560})');
     // (tournament_off: the tournament with the arena off, on the tournament's own seeds: today's open field, as recorded before it)
     const cases=['field','reinforced','chief_reuse','siege','beasts','tournament','deployment_off','narrow','wide','tournament_off'];
-    for(const [at,name] of cases.entries()){const index=name==='tournament_off'?cases.indexOf('tournament'):at;t.TOURNEY_ARENA.on=name!=='tournament_off';
+    for(const [at,name] of cases.entries()){Kit.progress('battle setup case',{name});const index=name==='tournament_off'?cases.indexOf('tournament'):at;t.TOURNEY_ARENA.on=name!=='tournament_off';
       Math.random=t.seeded(100+index);t.act('begin','soldier');G.quietEvents=true;t.GUIDE.on=false;
       // (the snapshots hold your army's point on the map and the ground under it, fixed here: where a new game left you on the old hand-made map,
       // on the ground there, the road by Ashford's gate)

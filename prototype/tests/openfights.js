@@ -42,8 +42,8 @@ Kit.suite(({ok,info})=>{
  {const cv=W.caravans.find(c=>!c.gone);if(!cv){ok(false,'a caravan to stand by');return}
   const d0=a.r+4;cv.x=a.x+d0;cv.y=a.y;for(let i=0;i<60&&t.B===b;i++)t.updateBattle(.05);
   const held=a.bystanders?.entries.has(cv),d=Math.hypot(cv.x-a.x,cv.y-a.y),p=[cv.x,cv.y];for(let i=0;i<60;i++)t.openFightWorld(.05);
-  ok(held&&t.fightHolds(cv)&&!a.participants.has(cv)&&d>d0,'a caravan by the fight steps aside out of its way ('+Math.round(d0)+' → '+Math.round(d)+' px from its middle)');
-  ok(cv.x===p[0]&&cv.y===p[1],'and waits there: the world running on leaves it be till the fight is over')}
+  ok(!held&&!t.fightHolds(cv)&&!a.participants.has(cv)&&!a.bystanders?.eligible(cv),'a passing caravan is not held or evacuated by an artificial combat exclusion zone');
+  ok(!a.bystanders?.entries.has(cv),'normal world systems remain responsible for the passing caravan')}
  // (a party that would meet you, turned away, never stops the rest of the world's moment: Systems.frame through)
  {const S=t.Systems,L=S.list,pa=L.find(s=>s.name==='parties'),pm=L.find(s=>s.name==='patrol moves'),f0=pa.frame,f1=pm.frame;let n=0;b.paused=false;
   pa.frame=()=>true;pm.frame=()=>{n++};try{for(let k=0;k<(O.every|0||1);k++)t.openFightWorld(.05)}finally{pa.frame=f0;pm.frame=f1}ok(n===1,'a party that would meet you (and is turned away) does not stop the systems after it in a fight')}

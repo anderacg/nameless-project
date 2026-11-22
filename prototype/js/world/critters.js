@@ -16,7 +16,11 @@ class Herd extends WorldObject{
   // its holding's pasture fields, where it lives (livestock only; none: no pasture, or none worked)
   pasture(){return !this.wild&&this.home&&fieldsOf(townBy(this.home),'pasture')||null}
   inView(V){return this.wild&&spotted(this,V)}
-  pick(at){if(this.wild)at.add(this,9,4)}
+  pick(at){if(!this.wild||!this.inView(at.V)||B?.world?.hides(this))return;
+    const F=HERD_FLOCK.get(this)||herdFlock(this,critterArt(this.id,0,this.coat||0),performance.now()),tol=G.mouse.type==='touch'?MARCH_PICK.tap*VW/(cv.clientWidth||VW):0;
+    for(let i=0;i<F.m.length;i++){const m=F.m[i],a=critterArt(this.id,0,(this.coat||0)+i),f=WorldCombat.figure(this,m,i),w=a.w/2+tol,h=a.h+tol;
+      if(at.x>=m.x-w&&at.x<=m.x+w&&at.y>=m.y-h&&at.y<=m.y+tol)at.add(f,Math.hypot(w,h)+1,a.h/2)}
+  }
   // up to three of its animals, behind and beside the first, a walk of PX.MAP_STEPS frames to a body length walked (critterSprite;
   // render.js stepOf), its count near you; each at its own place to the screen's pixel (render.js subT)
   // (each of its animals on its own, a loose unit round its point (herdFlock), each its own figure in the scene: its own lift, before or
@@ -312,11 +316,11 @@ const HERD_MIND={think(c,d,hide){
 function updateCritters(d){WildlifeThreats.rebuild();return lodEach(W.critters,HERD_MIND,d,P.stay?0:hiddenAt(P.x,P.y)?.6:1)}
 // One collected animal pays the existing meat, materials and experience rewards.
 function hunt(c){return WildHunt.prepare(asHerd(c))}
-function huntRewards(c,kills){
+function huntRewards(c,kills,paidXp=0){
   const D=CRITTERS[c.id];
   const meat=invAdd('good','meat',kills*D.meat),got=[meat+' meat'];if(meat)worldEmit('meat:hunted',{n:meat});// (a meat job counts it: world/quests.js HuntQuest)
   if(D.mat){let m=0;for(let i=0;i<kills;i++)if(critRng().chance(D.mat[1]*(1+.05*skill('hunt'))))m++;if(m){const k=invAdd('mat',D.mat[0],m);if(k)got.push(k+' '+MATS[D.mat[0]].n.toLowerCase()+(k>1?'s':''))}}
-  gainXp(kills*D.xp,'hunt');train('hunt',kills*3);
+  gainXp(Math.max(0,kills*D.xp-paidXp),'hunt');train('hunt',kills*3);
   log('You bring down '+(kills>1?kills+' '+D.n.toLowerCase():an(D.one))+': '+got.join(', ')+'.'+(meat<kills*D.meat?' Your bag is full, so you leave some meat.':''),'good');
   updateHUD(true);
 }

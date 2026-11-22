@@ -106,7 +106,7 @@ class BattleControl{
       if(gr&&!gr.cost[routeIx(gr,x,y)]){const C=centroid(m),p=routePath(gr,C.x,C.y,x,y);if(p.length){x=p[p.length-1][0];y=p[p.length-1][1]}}}this.order='hold';this.tgt=null;this.ax=clamp(x,8,BW-8);this.ay=clamp(y,fieldTop(),fieldBot());
     if(ends||this.lax==null||Math.hypot(this.ax-this.lax,this.ay-this.lay)>CAPT.move){if(ends||this.lax!=null)moveOrder(this.id);this.lax=this.ax;this.lay=this.ay}}
   // Set on an enemy formation, accepting its control or any member. Lone ungrouped foes remain valid targets.
-  attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};breakWall(this.id);breakRing(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
+  attack(e,o){if(this.resolve?.routed||!e||!battleEnemy(this.team,e))return;const prior=[this.targetGroupId,this.targetUnitId];this.tgt=e;if(!this.tgt){[this.targetGroupId,this.targetUnitId]=prior;return}o=o||{};if(o.individual&&!(e instanceof BattleControl)){this.targetGroupId=null;this.targetUnitId=e.id}breakWall(this.id);breakRing(this.id);this.queue=[];this.order='charge';if(o.run!=null)this.run=!!o.run}
   // at them all: each man at the foe nearest him
   charge(o){if(this.resolve?.routed)return;o=o||{};breakWall(this.id);breakRing(this.id);this.queue=[];this.tgt=null;this.order='charge';if(o.run!=null)this.run=!!o.run}
   // walk on at the foe, in its ranks (step)

@@ -260,7 +260,7 @@ function flee(){
 }
 // experience: yours (leaders.js), and your companions share what you learn
 // (experience as practice for your hero and your companions by the deed's kind: characters.js gainXp, REWARD_TRAIN)
-function gainXp(n,kind){leaderOf(P).gainXp(n,kind);for(const id of compsInBand())compXp(id,n,kind)}
+function gainXp(n,kind){leaderOf(P).gainXp(n,kind);WorldCombat.notice('XP',n);for(const id of compsInBand())compXp(id,n,kind)}
 function applyLosses(lost){return partyRoster(P).lose(lost)}
 function lossText(lost){const k=Object.keys(lost).filter(x=>lost[x]>0);return k.length?k.map(x=>lost[x]+' '+ST[x].n.toLowerCase()).join(', '):'none'}
 /* what winning brings: every fight pays gold per foe, renown, XP and morale; then each kind of encounter has its own outcome.

@@ -149,6 +149,7 @@ function battleStep(rt,world){
     moraleTick(dt*BATTLE_RHYTHM.morale);if(B.opts.sandbox&&BattleLab.active)BattleLab.sampleMorale();// (morale.js)
     checkBattleOver();
   }
+  WorldCombat.step(rt);if(B.over&&WorldCombat.live())B.endT=0;
   if(B.over){B.endT-=rt;if(B.endT<=0){finishBattle();return}}
   for(const p of B.parts){p.life-=rt;if(p.stuck)continue;p.x+=p.vx*rt;p.y+=p.vy*rt;p.vy+=90*rt}B.parts=B.parts.filter(p=>p.life>0);
   if(DROPS.on)BattleDrops.of(B).step(rt);// (what falls, flies and is picked up: battle/drops.js)

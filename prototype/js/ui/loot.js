@@ -68,7 +68,7 @@ function battleArmiesHtml(report){
     (A[0].stance==='Your army'&&!A[0].standing&&A.some(a=>a.standing&&a!==A[0])?'<p class="muted">Still on the field when your army left: '+A.filter(a=>a.standing&&a!==A[0]).map(a=>htmlText(a.name)+' ('+a.standing+')').join(', ')+'. The fight goes on without you.</p>':'')+
     (A.some(a=>a.score!=null)?'<p class="muted">Score: the harm each army did its foes.'+(A.some(a=>a.share!=null)?' The winners share the gold, renown and experience by it.':'')+'</p>':'')+
     (R?'<p class="battle-rewards"><b>Your army earned:</b> '+(got.join(', ')||'<span class="muted">nothing</span>')+'</p>':'')}
-function renderLoot(){
+function renderLoot(){if(G.worldSettlement)return;
   const V=G.lootView,L=G.loot;if(!V||!L)return;const n=L.pile.reduce((a,s)=>a+s.n,0),any=L.pile.some(lootRoom);
   showPanel(V.head+battleReportHtml(V.report)+lootHtml(V.lost,V.saved)+(L.pile.length?'<div class="btns"><button class="btn primary" type="button" data-act="lt-all"'+(any?'':' disabled title="'+BAG_FULL+'"')+'>Take all you can carry</button></div>'+nav(null,['lt-leave',null,V.keep?'Leave '+n+' here':'Continue, leave '+n+' behind',null,true])
     :nav(null,[V.next,null,V.next==='back-town'?'Back to town':'Continue'])));

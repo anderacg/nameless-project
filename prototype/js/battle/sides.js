@@ -4,6 +4,7 @@ const armySource=o=>o?.src||o;
 function armyRelation(a,b){
  a=armySource(a);b=armySource(b);if(a===b)return 1;if(!a||!b)return 0;
  const ak=a.mapKind||a.kind,bk=b.mapKind||b.kind,player=o=>o===P||o.mapKind==='cparty'||forceRealm(o)==='player';
+ if(ak==='critter'||bk==='critter')return ak===bk?1:-1;
  if(ak==='monster'||bk==='monster')return ak===bk&&a.id===b.id?1:-1;
  if(ak==='band'||bk==='band')return ak===bk&&(a.kind||'bandits')===(b.kind||'bandits')?1:-1;
  if(player(a)&&player(b))return 1;const fa=forceRealm(a),fb=forceRealm(b);
@@ -37,7 +38,7 @@ const teamPowers=b=>[0,1].map(t=>b.units.filter(u=>u.team===t&&fighting(u)).redu
 // (settled by what is left, f for you and e against: the stronger has the field; now, by chance as they stand)
 function settleBy(b,f,e,now){b.over=true;b.endT=END_WAIT;b.win=now?Math.random()<f/Math.max(1e-9,f+e):f>e}
 class BattleSides{
- static eligible(e){return ['party','lord','patrol','caravan','monster','field'].includes(e?.kind)}
+ static eligible(e){return ['hunt','party','lord','patrol','caravan','monster','field'].includes(e?.kind)}
  static limit(e,enemies=e?.list?.length||0){if(!e)return;const slots=BATTLE_JOIN.armies-(enemies?2:1),keepFoes=!enemies&&e.foes?.length?1:0;e.allies=(e.allies||[]).slice(0,Math.max(0,slots-keepFoes));e.foes=(e.foes||[]).slice(0,slots-e.allies.length)}
  constructor(b,e){
   this.b=b;this.enc=e;this.records=[];this.byOwner=new Map();this.byForce=new Map();this.active=false;
@@ -143,10 +144,10 @@ class BattleSides{
  thanks(){for(const r of this.records){if(r.owner===P||!r.joined||this.relation(0,r.team)<=0)continue;const o=r.owner;
    if(o.mapKind==='lord'&&!o.dead)changeRel(o,RELATION.fightBeside,'you fought beside them');if(o.fac&&FACS[o.fac]&&o.fac!=='player')addHonor(o.fac,REINF.honor.beside,true);if(o.mapKind==='patrol'&&o.home)addRep(o.home,REINF.rep,true)}}
  settle(b,lost,groups){
-  const e=this.enc,credit=this.records.find(r=>r.owner===P),kills=credit?.kills||[],saved=heal(lost,groups);for(const g of groups)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
+  const e=this.enc,credit=this.records.find(r=>r.owner===P),kills=(credit?.kills||[]).filter(k=>!ST[k]?.wildlife),saved=heal(lost,groups);for(const g of groups)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
   // (the owner, 2026-10-30: won, "the split shared based on army performance"; lost or withdrawn, "no reward beside exp": only the
   // experience your army earned, its kills', BATTLE_SPOILS.lostXp of them)
-  const down=noneTake(b,e),sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills):[];gainXp(kills.length*(b.win?8:BATTLE_SPOILS.lostXp));
+  const down=noneTake(b,e),sh=b.win?this.shares():null,mine=sh?.get(credit)||0,spoils=sh?[...sh.keys()].flatMap(r=>r.kills).filter(k=>!ST[k]?.wildlife):[];gainXp(WorldCombat.remaining(b,kills.length*(b.win?8:BATTLE_SPOILS.lostXp)));
   const F=DROPS.on&&DROPS.loot?BattleDrops.of(b).tally:null;if(F&&e)e.field=F;// (what the field gave already, off the spoils as resolution.js conclude takes it: drops.js)
   if(b.win){let gold=0;for(const k of spoils)if(!ST[k].beast)gold+=rint(2,6);gold=Math.round(gold*mine*(1+tm('loot')));if(F)gold=Math.max(0,gold-F.gold);P.gold+=gold;P.renown+=Math.round(spoils.length*mine);if(!down)takePrisoners(spoils.slice(0,Math.round(spoils.length*mine)));
    for(const r of this.records)if(r.owner.mapKind==='monster'&&r.playerKills.length)monsterLoot(r.owner,r.playerKills)}

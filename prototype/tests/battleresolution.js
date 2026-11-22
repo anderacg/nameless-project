@@ -1,8 +1,10 @@
 'use strict';
+// Keep the historical campaign-accounting fingerprints independent of live world presentation.
+// worldcombat exercises current live rewards, pointer input and completion without a report.
 // Snapshot baseline reviewed for schema v2: persistent IDs, homogeneous formations, new deployment lanes and source-army links.
 // Behavioral assertions below are retained; old category-bucket fingerprints no longer describe this architecture.
 // Outcome fingerprints captured before extraction. No battle frames are simulated: each fixture supplies an explicit field result.
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,originalRandom=Math.random,measure0=t.measureField,view0=[t.BVW,t.BVH];
+window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t.P,W=t.W,originalRandom=Math.random,live0=t.WorldCombat.live,measure0=t.measureField,view0=[t.BVW,t.BVH];
   // (monster_win re-recorded 2026-10-21 S4: story and content systems on named streams, seeded per world and per game (owner accepted once); the estates' sort keys drawn before sorting: a beast's loot is rolled on the 'monsters' stream (world/monsters.js
   // monsterLoot), not Math.random; with the streams switched back to Math.random it is c95d35c7 as before, and every other case is
   // unchanged)
@@ -145,6 +147,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  band.strip false both are those again, and every other case holds either way. The two went unrecorded at ca9d60c: this suite was not run then)
   const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'?Object.fromEntries(Object.keys(x).sort().map(k=>[k,stable(x[k])])):x;
   const hash=x=>{let h=2166136261;for(const c of JSON.stringify(stable(x)))h=Math.imul(h^c.charCodeAt(0),16777619)>>>0;return h.toString(16).padStart(8,'0')};
+  t.WorldCombat.live=()=>false;
   const cases=['field_win','field_loss','retreat_away','retreat_caught','carried_retreat','tournament_win','tournament_loss','siege_win','siege_loss','lord_win','lord_loss','monster_win','auto_win','auto_loss','auto_resolve'];
   try{
     for(const [index,name] of cases.entries()){
@@ -211,6 +214,6 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
         ok(Math.abs(P.sp-want*spMax/100)<1e-9&&P.mp===3&&P.hp>=1,name+': hero condition carried back to campaign, the band’s stamina its side’s ('+(P.sp/spMax*100).toFixed(2)+' of '+side.length+' standing)')}
       if(tournament)ok(P.sp===12&&P.mp===3,name+': your hero comes out of the lists as she fought them');
     }
-  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{Math.random=originalRandom;if(window.__brMeasure){(0,eval)('measureField=window.__brMeasure');delete window.__brMeasure}(0,eval)('BVW='+view0[0]+';BVH='+view0[1])}
+  }catch(e){o.push('EXC '+e.message+' '+e.stack)}finally{t.WorldCombat.live=live0;Math.random=originalRandom;if(window.__brMeasure){(0,eval)('measureField=window.__brMeasure');delete window.__brMeasure}(0,eval)('BVW='+view0[0]+';BVH='+view0[1])}
   const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d);
 };

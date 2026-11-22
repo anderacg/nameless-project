@@ -121,7 +121,7 @@ const VOLUMES=[['volmaster','Volume'],['volmusic','Music'],['volsfx','Effects']]
 // the battle's speed: the clock runs at this rate (and stands still while paused, though you can still give orders: a
 // tactical pause); B.speed is this battle's, BSPEED.v the one each battle starts at (save: set that too, as Settings does)
 const battleSpeeds=()=>BATTLE_SPEEDS;
-function setBattleSpeed(v,save){if(!battleSpeeds().includes(v))return;if(B)B.speed=v;if(save)prefSet('bspeed',v);battleSpeedUI()}
+function setBattleSpeed(v,save){if(!battleSpeeds().includes(v))return;if(B){B.speed=v;if(B.world)setSpeed(v)}if(save)prefSet('bspeed',v);battleSpeedUI()}
 function battleSpeedStep(d){const list=battleSpeeds(),i=list.indexOf(B?B.speed:BSPEED.v);setBattleSpeed(list[clamp(i+d,0,list.length-1)])}
 function battlePause(on){if(!B)return;if(B.muster?.active){B.paused=on==null?!B.paused:!!on;battleSpeedUI();return}if(B.deploy||B.ready){if(on!==true)beginFight();return}B.paused=on==null?!B.paused:!!on;battleSpeedUI()}
 function battleSpeedUI(){if(typeof document==='undefined')return;const sp=B?B.speed:BSPEED.v,list=battleSpeeds();

@@ -59,6 +59,7 @@ const seamless=e=>!!(SEAMLESS.on&&WORLD_BATTLE.on&&e&&SEAMLESS.kinds.includes(e.
 class BattleBystanders{
   constructor(area){this.area=area;this.time=0;this.next=0;this.entries=new Map();this.navs=new Map()}
   eligible(o){
+    if(WorldCombat.live())return false;
     if(o===P||this.area.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!Number.isFinite(o.x)||!Number.isFinite(o.y))return false;
     if(o.mapKind==='worker')return folkSeen(o);if(o.mapKind==='critter')return o.wild;
     if(o.mapKind==='road')return !o.trace&&!o.done&&(['approach','flee','walk','leave','bolt','graze'].includes(o.beh)||o.beh==='stay'&&o.D?.scene?.(o)?.every(([k])=>['walk','stand','soldier','rider','graze'].includes(k)));
@@ -396,7 +397,7 @@ class WorldBattleSetup extends BattleSetup{
   spawn(unit,team,x,y){const u=super.spawn(unit,team,x,y);if(WORLD_BATTLE.melee&&u.s.reach)u.s={...u.s,reach:u.s.reach*WORLD_BATTLE.sprite};return u}
   constructor(opts){super(opts);if(BattleSides.eligible(G.enc))BattleSides.limit(G.enc,opts.enemies?.length||0);this.area=new WorldBattleArea(G.enc)}
   survey(){
-    const a=this.area,primary=G.enc.ref?.src||G.enc.ref;for(const owner of new Set([P,primary,...(G.enc.allies||[]).map(o=>o.src||o),...(G.enc.foes||[]).map(o=>o.src||o)]))if(owner instanceof Party)MarchArmy.of(owner).sync();BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Fight on the world map. The gold circle is fixed; routed soldiers can regroup beyond it and return.';
+    const a=this.area,primary=G.enc.ref?.src||G.enc.ref;for(const owner of new Set([P,primary,...(G.enc.allies||[]).map(o=>o.src||o),...(G.enc.foes||[]).map(o=>o.src||o)]))if(owner instanceof Party)MarchArmy.of(owner).sync();BFIELD=null;BW=BH=a.span*a.scale;this.site=this.battleSite();this.env=battleEnv(false,this.site);a.env=this.env;this.env.text='Click an enemy to attack it. Rewards appear as they are earned; loot stays on the fallen.';
     this.field={top:8,bot:BH-8};this.createUnits();this.createGroups();
   }
   createGroups(){OutpostTower.man(this.units);super.createGroups();for(const k of ['e0_tower','a0_tower'])if(this.groups[k])this.groups[k].name='Archers on the tower';for(const u of this.units)if(u.leader&&W.lords.includes(u.leader.ref))this.groups[u.grp].name=lordName(u.leader.ref)}
@@ -414,7 +415,7 @@ class WorldBattleSetup extends BattleSetup{
     OutpostTower.post(B,a);// (an outpost's archers on its tower: world/outposts.js)
     if(this.surprise||a.joinedFight||seamless(e)){B.ready=false;B.paused=false}else{B.muster=new BattleMuster(B);B.ready=false;B.paused=false}B.speed=BSPEED.v;B.deploy=false;exitInit(B.units);a.clamp();B.sight=null;for(const u of B.units){delete u.ls;u.hid=0}if(BattleSides.eligible(e))this.area.sides=B.sides=new BattleSides(B,e);Surprise.begin(B,e);if(e&&e.btype&&e.btype.kind==='ambush')e.btype=false;sightStep(true);warmBattle(B.units);
   }
-  present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera();if(B.muster?.active)toast('Armies are moving to their starting formations. Combat begins only after Start Battle.')}
+  present(){super.present();B.deploy=false;bbar.hidden=false;this.area.syncCamera();WorldCombat.begin(B);if(B.muster?.active)toast('Armies are moving to their starting formations. Combat begins only after Start Battle.')}
   start(after){this.survey();this.terrain();this.muster();this.open();if(after)after();return Promise.resolve()}
 }
 // (the encounters fought on the map, in the world battle: engage.js inFightReach reads it too)

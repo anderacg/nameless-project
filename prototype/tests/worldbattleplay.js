@@ -18,11 +18,11 @@ Kit.suite(({ok,info})=>{
  for(;frames<16000&&t.B===b;frames++){
    t.updateBattle(1/30);if(t.B!==b)break;
    bounds&&=b.units.filter(u=>u.hp>0&&!u.rout&&!t.withdrawing(u)).every(u=>a.inside(u,0));finite&&=b.units.every(u=>Number.isFinite(u.x)&&Number.isFinite(u.y));
-   if(frames%60===0)t.frame();
+   if(frames%60===0)t.frame();if(frames%300===0)Kit.progress('world combat frame',{frames});
  }
  ok(bounds&&finite,'normal AI, hero, physics and projectiles keep actors finite and fighting units inside the world boundary');
  ok(pending.every(u=>!u.waiting)&&b.units.length===start,'a waiting army activates its original troops and character without spawning duplicates');
- ok(t.B===null&&G.mode==='dialog'&&Kit.text().includes('Victory'),'the world battle reaches campaign victory and its normal report');
+ ok(t.B===null&&G.mode==='world'&&!G.lootView,'the world battle settles victory without interrupting the world with a report');
  ok(!t.bandits.includes(enemy)&&P.troopCount()<=10&&P.troopCount()>0,'campaign settlement removes the defeated party and retains surviving player troops');
  info('World battle completed after '+frames+' normal frames; '+b.kills+' enemies slain.');t.OPEN_FIGHT.reach=reach;
 });

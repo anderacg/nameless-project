@@ -65,7 +65,7 @@ const marchInteractRadius=(o,r=marchOuter(o))=>r+WORLD_BATTLE.interaction;
 // (the owner, 2026-11-01: meetings measure to the shape) both marched man by man (marchLive), when their outlines touch: the
 // nearest two of their men (marchGap); the reach given back is the distance between their middles less that gap, so a caller's
 // dist <= reach holds just when they touch
-const worldBattleReach=o=>{if(!WORLD_BATTLE.on||!o||o===P)return REACH;const b=marchLive(o),g=b&&marchGap(o,b);
+const worldBattleReach=o=>{if(o instanceof WorldFigure)return WORLD_BATTLE.interaction+marchInteractRadius(P);if(!WORLD_BATTLE.on||!o||o===P)return REACH;const b=marchLive(o),g=b&&marchGap(o,b);
   return g!=null?Math.hypot(o.x-P.x,o.y-P.y)-g:o instanceof Party?marchInteractRadius(P)+marchInteractRadius(o):ringReach(o)};
 // (the owner, 2026-11-01: "my hero have to be near camp or building to interact"; as for the lords: "big army, bigger interaction
 // touchpoint") a place (a camp, a site, a holding, an estate) is reached when your interaction ring touches its footprint: your ring
@@ -931,10 +931,10 @@ class MarchArmy{
   hit(x,y,tol=0){const o=this.owner,b=this.box(),M=MARCH_PICK,R=this.hr||(this.hr={kind:'',d:0});let f=Infinity;
     if(x>=b[0]-M.side-tol&&x<=b[2]+M.side+tol&&y>=b[1]-M.up-tol&&y<=b[3]+tol)for(const u of this.units){if(u.dead)continue;const F=this.figure(u),fl=Math.cos(u.dir??this.face)<0,
       x0=u.x+(fl?-F[2]:F[0])-tol,x1=u.x+(fl?-F[0]:F[2])+tol,y0=u.y+F[1]-tol,y1=u.y+F[3]+tol;
-      if(x>=x0&&x<x1&&y>=y0&&y<y1){const v=Math.max(Math.abs(2*x-x0-x1)/(x1-x0),Math.abs(2*y-y0-y1)/(y1-y0));if(v<f)f=v}}
+      if(x>=x0&&x<x1&&y>=y0&&y<y1){const v=Math.max(Math.abs(2*x-x0-x1)/(x1-x0),Math.abs(2*y-y0-y1)/(y1-y0));if(v<f){f=v;R.unit=u}}}
     if(f<Infinity){R.kind='figure';R.d=f;return R}
     const L=MARCH_RING.on&&this.ring,dx=x-o.x,dy=y-o.y;if(!L||!(L.inside(dx,dy)||tol>0&&this.nearOutline(L,dx,dy,tol)))return null;
-    R.kind='outline';R.d=this.near(x,y);return R}
+    R.kind='outline';R.unit=null;R.d=this.near(x,y);return R}
   // (inside outline L within tol px of dx, dy about the middle: tried half and all the way out, eight ways)
   nearOutline(L,dx,dy,tol){for(let k=0;k<16;k++){const r=k<8?tol/2:tol,a=k*Math.PI/4;if(L.inside(dx+r*Math.cos(a),dy+r*Math.sin(a)))return true}return false}
   // (a man's figure as drawn (drawMarcher), standing, facing east: its drawn pixels' box about his feet, world px x0, y0, x1, y1;
