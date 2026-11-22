@@ -725,6 +725,14 @@ const WorldArt={
   // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; then a piece of a painted
   //  chunk handed to the keeper, one a frame (a strip of its pixels: artkeep.js pump): main.js loop)
   keepLive(){this.idleAt=performance.now();this.idled=true},
+  // Missing land is required drawing work, not speculative warming. Run a bounded slice before simulation/rendering
+  // can exhaust the frame, using the previous view's queue; detail upgrades still use spare time only.
+  prepare(ms){
+    if(!this.liveOk||!(ms>0))return 0;
+    this.keepLive();
+    if(!this.queue.some(([cx,cy])=>!this.chunks.has(cy*this.cols+cx)))return 0;
+    return this.step(ms);
+  },
   idle(ms){this.keepLive();if(this.queue.length&&ms>0)this.step(ms);ArtKeep.pump();this.drawSpent=0},
   step(ms){if(!(ms>0))return 0;let Q=this.queue;if(ArtWorkers.feed(this)){const now=performance.now();Q=[...this.miss].filter(([k,t])=>now-t>ART_WORKERS.help).map(([k])=>[k%this.cols,(k/this.cols)|0]);if(!Q.length)return 0}
     const t0=performance.now();while(Q.length&&performance.now()-t0<ms){const [cx,cy]=Q[0],c0=this.chunks.get(cy*this.cols+cx);if(c0&&(c0.fine||1)>=(typeof paintRes==='function'?paintRes():1)){Q.shift();continue}const j=this.start(cx,cy),a=performance.now();let end=false;

@@ -754,3 +754,11 @@ That is a separate decision, best made after this world exists.
 - **Building models at a 2× cell** should gain real detail, but fine details (planks, tiles, windows) may need retuning per culture.
 - **Empty land at M or L** unless more is placed between holdings.
 - **Height picking and y-sorting** (what's in front on a slope) is the trickiest rendering work; the battle's cliff faces are the starting point.
+
+## Visible terrain progress — 2026-11-22
+
+Implemented: missing chunks receive a cooperative slice, capped by `FRAME_TIME.task` and the shared frame deadline, before simulation and rendering. Previously a slow phone could spend its entire deadline drawing and never advance the painter, leaving the smoothed minimap stand-in on screen indefinitely. `WorldArt.prepare(ms)` promotes missing queued chunks; completed chunks and resolution refinements do not force priority painting. Optional warming still stops at the deadline. Terrain warming precedes sprite warming after rendering.
+
+The frame budget starts at the actual callback entry, while simulation keeps the animation clock. `worldPaintActive()` keeps terrain streaming alive during travel, world battles and their pause menus; separate battlefields/scenes do not warm the world. No terrain artwork, generator randomness or save format changes. A temporary placeholder remains possible while first-visit terrain is being painted; it no longer depends entirely on spare frame time to finish.
+
+Validation: `artstream` reproduces an exhausted frame, checks priority progress and pixel-equivalent completion while every post-render budget is exhausted, and checks world-battle/pause liveness. `frametime` retains its exhausted-budget and bounded-time checks. Phone previews force a missing visible chunk and verify recovery at device scale 2.
