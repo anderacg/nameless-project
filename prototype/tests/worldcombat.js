@@ -19,13 +19,23 @@ Kit.suite(({ok,info})=>{const t=T,P=t.P,G=t.G,W=t.W;window.requestAnimationFrame
  ok(t.WorldCombat.attack(other)&&t.selGroups().every(id=>b.groups[id].targetUnitId===other.id),'an individual target can be changed during combat');
  const xp=t.xpTotal(),source=b.hero;t.Actor.of(victim).wound(10000,1,'slash',source,false);
  ok(t.xpTotal()>=xp+t.CRITTERS.deer.xp&&b.worldXp===t.CRITTERS.deer.xp,'a kill awards real experience immediately');
- ok(b.floats.some(f=>f.key==='gain:XP')&&b.floats.some(f=>/proficiency/.test(f.key||'')),'actual XP and proficiency gains have visible, combined feedback');
+ ok(b.worldRewards?.some(f=>f.kind==='xp'&&f.to===b.hero)&&b.worldRewards.some(f=>f.kind==='proficiency'&&f.to===b.hero),'actual XP and proficiency gains create motes targeting their recipient');
+ ok(!b.floats.some(f=>f.key?.startsWith('gain:')),'rewards do not create floating text');
+ {const rewards=b.worldRewards.length,earned=t.xpTotal(),msgs=G.msgs.length,log=document.getElementById('log').innerHTML;t.WorldCombat.notice('One-Handed proficiency',1,b.hero.unit);t.WorldCombat.notice('Athletics proficiency',1,b.hero.unit);
+  ok(b.worldRewards.length===rewards,'rapid proficiency gains combine per unit instead of stacking skill labels');
+  const reward=b.worldRewards.find(f=>f.kind==='xp'),end=t.WorldCombat.rewardPoint(reward,1),oldX=b.hero.x;b.hero.x+=18;const moved=t.WorldCombat.rewardPoint(reward,1);b.hero.x=oldX;
+  ok(end.x===oldX&&moved.x===oldX+18,'reward particles follow the recipient as it moves');
+  t.WorldCombat.drawRewards();t.WorldCombat.step(2);
+  ok(!b.worldRewards.length&&t.xpTotal()===earned,'effects expire without awarding extra experience');
+  ok(G.msgs.length===msgs&&document.getElementById('log').innerHTML===log,'reward effects produce no recurring toast or reward log popups');
+ }
  const paid=b.worldXp;t.WorldCombat.killed(victim,source);ok(b.worldXp===paid,'a death is credited once');
  const rabbit=t.asHerd({crit:true,id:'rabbit',n:2,x:P.x+18,y:P.y+18,hx:P.x+18,hy:P.y+18,dir:1,t:5,a:0,cool:0,idle:true});W.critters.push(rabbit);t.drawWorld();
  const q=b.world.field(t.HERD_FLOCK.get(rabbit).m[0]);q.y-=t.fieldLift(q.x,q.y);
  ok(t.WorldCombat.click(q.x,q.y-t.critterArt('rabbit',0).h/2*b.world.scale)&&b.hunt.herds.includes(rabbit)&&b.sides.active,'another individual animal can be engaged during an ongoing hunt');
  ok(!b.world.bystanders?.eligible(rabbit),'world encounters do not evacuate nearby wildlife or civilians into an artificial exclusion zone');
- b.hunt.end();
+ t.WorldCombat.notice('XP',1);b.hunt.end();
+ ok(t.WorldCombat.afterglow.some(f=>f.kind==='xp'&&f.to===P),'the last kill effect survives settlement and follows the hero on the world map');t.WorldCombat.drawAfterglow();
  ok(!t.B&&G.mode==='world'&&!G.loot&&!G.lootView&&t.ov.hidden,'world combat ends without a results screen or Continue button');
  ok(c.n===2&&t.Carcass.list.some(c=>c.items.some(s=>s.id==='meat')),'survivors remain and loot stays on a carcass');
  ok(!G.worldSettlement,'the temporary settlement presentation guard is released');

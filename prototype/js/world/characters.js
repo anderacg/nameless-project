@@ -81,7 +81,7 @@ class Character extends Unit{
     if(!(n>0))return 0;
     this.kit();const lv=this.lv;
     if(!this.aiOwned){const w=this.weaponProf();for(const [k,f] of REWARD_TRAIN[kind]||REWARD_TRAIN.battle){const q=k==='weapon'?w:k;if(this.sk[q])this.train(q,n*PROF.reward*f,true)}}
-    this.addXp(n);
+    this.addXp(n);if(!this.aiOwned)WorldCombat.notice('XP',n,this);
     return this.lv-lv}
   // (experience added: each level its need (xpNeed), levelled. Your hero's earned in this life is kept apart, xpEarned: what a grave
   // will give half of, doc/DEATH_DESIGN.md §6.2; a grave's own gift (gift) never counts, nor anything your start gave; kept with the rule on,
@@ -107,7 +107,7 @@ class Character extends Unit{
     if(!s||s.lv>=SK_MAX||!(n>0))return;
     if(!whole&&!this.aiOwned){const h=typeof Clock!=='undefined'?Math.floor(Clock.hours()):0,B=this.o.burst||(this.o.burst={}),b=B[k]&&B[k][0]===h?B[k]:(B[k]=[h,0]);b[1]++;
       if(b[1]>2*PROF.burst)n*=PROF.damp[1];else if(b[1]>PROF.burst)n*=PROF.damp[0]}
-    const learned=n*this.learn(k);s.xp+=learned;if(this.role==='hero')WorldCombat.notice(SKILLS[k].n+' proficiency',learned,'#a9c7e3');
+    const learned=n*this.learn(k);s.xp+=learned;if(!this.aiOwned)WorldCombat.notice(SKILLS[k].n+' proficiency',learned,this);
     const lv0=s.lv;
     let gain=0;while(s.lv<SK_MAX&&s.xp>=SK_XP(s.lv)){s.xp-=SK_XP(s.lv);s.lv++;gain+=s.lv;if(s.lv%PROF.rose===0||s.lv===SK_MAX)this.rose(k,s.lv)}
     if(s.lv>=SK_MAX)s.xp=0;

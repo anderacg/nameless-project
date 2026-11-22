@@ -698,10 +698,10 @@ function drawBattle(){
   fxEach(B.rings,r=>{const p=1-r.life/r.max;ctx.strokeStyle='rgba('+r.col+','+(r.life/r.max).toFixed(2)+')';ctx.lineWidth=3*worldEffectScale();ctx.beginPath();ctx.arc(r.x,r.y,r.r*(.5+.5*p),0,6.283);ctx.stroke()})
   for(const p of B.parts){ctx.save();effectTransform(p.x,p.y);if(p.stuck){const x=Math.round(p.x),y=Math.round(p.y);ctx.globalAlpha=Math.min(1,p.life*2);ctx.fillStyle='#c9b48a';ctx.fillRect(x-p.stuck,y-3,1,2);ctx.fillRect(x-2*p.stuck,y-5,1,2);ctx.fillStyle='#e8e4d0';ctx.fillRect(x-3*p.stuck,y-6,1,1);ctx.globalAlpha=1;ctx.restore();continue}
     ctx.fillStyle=p.c;ctx.fillRect(Math.round(p.x),Math.round(p.y),2,2);ctx.restore()}
-  vfxAir();stateFxAir();heroFxAir();// (sparks, glows, embers, flying blood: vfx.js)
+  vfxAir();stateFxAir();heroFxAir();WorldCombat.drawRewards();// (sparks, glows, embers, flying blood: vfx.js)
   if(DROPS.on)BattleDrops.of(B).draw();// (what falls: its dots and the icons on the ground, battle/drops.js)
   // (a number pops up big and settles)
-  for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1,fy=f.y-fieldLift(f.x,f.y);if(f.key?.startsWith('gain:')){const top=bcam().y+(16+(3-(f.slot||0))*16)*dprOf()/camPx();mapTxt(f.t,Math.round(f.x),Math.round(Math.max(fy,top)),f.c,'center',{px:12,font:MAP_TEXT.font,weight:600});continue}if(k===1){txt(f.t,Math.round(f.x),Math.round(fy),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(fy));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
+  for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1,fy=f.y-fieldLift(f.x,f.y);if(k===1){txt(f.t,Math.round(f.x),Math.round(fy),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(fy));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
@@ -730,6 +730,7 @@ function frame(){
   else if(G.mode==='title'){ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);drawWorld()}
   else drawWorld();
   ctx.restore();if(bat)heroFlashDraw();
+  if(map)WorldCombat.drawAfterglow();
   if(bat&&B?.world){ctx.save();if(CVS!==1)ctx.scale(CVS,CVS);drawWorldMini(vis());ctx.restore()}
   if(typeof drawTouchHold==='function')drawTouchHold();
   if(typeof drawMapHold==='function')drawMapHold();// (the map's click-and-hold progress, in screen pixels: ring.js)
