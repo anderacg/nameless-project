@@ -11,7 +11,10 @@ Kit.suite(({ok,info})=>{
  ok(O.on&&O.ring&&O.reach>1&&O.world,'the real combat boundary is visible while the wider world keeps running');
  G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};
  const was=O.on;O.on=false;const old=new t.WorldBattleArea(G.enc);O.on=was;const now=new t.WorldBattleArea(G.enc);
- ok(Math.abs(now.r-old.r*O.reach)<1e-6,'the field '+O.reach+' times as wide as the ring was ('+Math.round(old.r)+' → '+Math.round(now.r)+' px), its edge past your sight');
+ // (sized by its armies, 2026-11-22, the owner: "Fix battle area to be smaller based on army size": their bodies, a bow's reach and a
+ //  little a man, never wider than OPEN_FIGHT.reach times the ring as it was)
+ {const WB=t.WORLD_BATTLE,fit=now.core+WB.room+Math.sqrt(now.fighters)*WB.perMan;
+  ok(Math.abs(now.r-Math.min(fit,old.r*O.reach))<1e-6&&now.r<old.r*O.reach&&now.r>=now.core+WB.room,'the field sized by its armies: their ground '+Math.round(now.core)+' px and '+WB.room+' more and '+WB.perMan+' a man\'s root ('+Math.round(now.r)+' px; at most '+O.reach+' times the ring, '+Math.round(old.r*O.reach)+')')}
  t.startBattle({enemies:G.enc.list,tournament:false,deploy:false});const b=t.B,a=b?.world;if(!a){ok(false,'a fight on the map begins');info(JSON.stringify(G.msgs.slice(-3)));return}
  {const draw=a.drawBoundary;let calls=0;a.drawBoundary=()=>{calls++};try{a.draw();ok(calls===1,'the real boundary effect is drawn by default');O.ring=false;a.draw();ok(calls===1,'the boundary visibility switch disables the effect')}finally{a.drawBoundary=draw;O.ring=true}}
  // (who hears of it: from the ring's edge as ever, not the open field's)
