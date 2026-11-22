@@ -429,7 +429,7 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
     if(!ic){dot(o.x,o.y,d[0],d[1]);return}const k=town?(FULLMAP.kinds[o.kind]?o.kind:'village'):'site',w=Math.max(M.iconMin,FULLMAP.icon[k]*M.icon*u),h=w*ic.h/ic.w,cx=X(o.x),cy=Y(o.y);
     if(town){g.fillStyle=o._memCol||facCol(o);g.globalAlpha=.8;g.beginPath();g.ellipse(cx,cy+h/2-u,w*.36,1.5*u,0,0,Math.PI*2);g.fill();g.globalAlpha=1}
     g.drawImage(ic.cv,cx-w/2,cy-h/2,w,h)});
-  drawQuestDots(dot);// (the quests' goals, the tracked one the strongest: world/quests.js)
+  drawQuestDots(dot,(x,y,on)=>questMiniMark(g,X(x),Y(y),u,on,M.ink));// (the quests' goals, the tracked one the strongest: world/quests.js)
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   if(B?.world){for(const un of B.units)if(un.hp>0&&seenBy(0,un)){const p=B.world.world(un);dot(p.x,p.y,un.hero?'#fff':sideCol(un,'ui'),un.hero?3:1)}}
   else{const r=2.4*u;g.beginPath();g.arc(X(P.x),Y(P.y),r,0,Math.PI*2);g.fillStyle=M.you;g.fill();g.lineWidth=u;g.strokeStyle=M.ring;g.stroke();g.beginPath();g.arc(X(P.x),Y(P.y),r+u,0,Math.PI*2);g.lineWidth=.6*u;g.strokeStyle=M.ink;g.stroke()}
