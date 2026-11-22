@@ -404,7 +404,7 @@ function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};CampSite.strike('you
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
 function breakCamp(why){if(!P.camp)return false;P.camp=null;CampSite.strike('you');toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
-function toggleCamp(){return P.camp?breakCamp():makeCamp()}
+function toggleCamp(){companyRules.cancel();return P.camp?breakCamp():makeCamp()}
 // each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
 // yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
 function campStep(){
@@ -414,7 +414,7 @@ function campStep(){
 // (Hurry, a forced march on key R and the action ring, is gone: the owner, 2026-10-31, "remove hurry features": an army marches at
 // its men's pace, its ring never outrunning them, world/march.js)
 // a battle that finds you in camp (battle/setup.js, before morale): caught unready, morale lower; the camp is struck either way
-function campCaught(opts){if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad','band')}
+function campCaught(opts){companyRules.cancel();if(!P.camp||opts.tournament||opts.sandbox)return;P.camp=null;P.morale=Math.max(0,P.morale-SUPPLY.camp.caught);log('They catch your band in camp, unready.','bad','band')}
 /* your camp in your place: two tents and the fire, with your band's banner planted beside them; your figure and host are not
    drawn while you camp (the owner, 2026-10-23: render.js drawWorld pushes this instead), and stand there again when it breaks. In
    the depth order by its feet as everyone is (depth.js worldOverdraw: the trees in front of it drawn over it, whole: nf, none

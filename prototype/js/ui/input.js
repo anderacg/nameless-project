@@ -161,7 +161,7 @@ function worldGo(wx,wy){
 }
 // travel to a point, or meet what is there (Follow ends: world.js followStop)
 // (a new trip: by road, if that mode is on, asks again whether a road is near: world.js byRoadTo)
-function worldMove(wx,wy){followStop();Talk.clear();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
+function worldMove(wx,wy){companyRules.cancel();followStop();Talk.clear();G.pitch=null;G.byRoad=null;if(!(clickAt(wx,wy)||G.chase)){const s=Router.open(clamp(wx,8,MW*TILE-8),clamp(wy,8,MH*TILE-8),P);P.tx=s.x;P.ty=s.y;P.stuck=0;Provinces.warn(P.tx,P.ty)}wuiClick(wx,wy)}// (a deadly province ahead: its warning, world/provinces.js)// (the click's ripple: worldui.js)
 /* a click or a tap on another party (the owner, 2026-10-23: Follow "can be used when you click at the other unit in the world
    map"): its ring at it (ActionRing; supply.js partyRingItems: Approach, today's chase, Follow, Look), nothing done yet; Esc or a
    press elsewhere closes it (ring.js). A second press on it within PARTY_CLICK.dbl ms (a double click or tap) approaches it at
@@ -176,7 +176,7 @@ function partyRing(o,wx,wy){if(!o||!(FOLLOW.kinds.includes(objKind(o))||SEAMLESS
 function partyAgain(p){const q=PARTY_CLICK.last;PARTY_CLICK.last=null;if(!q||ActionRing.now!==q.R||performance.now()-q.t>PARTY_CLICK.dbl||G.mode!=='world'||G.modal||!objKind(q.o))return null;
   const wx=G.cam.x+p.x,wy=liftGround(G.cam.x+p.x,G.cam.y+p.y).y;return pickAt(wx,wy)===q.o||Math.hypot(wx-q.o.x,wy-q.o.y)<PARTY_CLICK.r?q.o:null}
 // its ring's Approach (or the double click): today's chase of o, or met at once beside it (world.js approach)
-function worldApproach(o){followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
+function worldApproach(o){companyRules.cancel();followStop();G.pitch=null;G.byRoad=null;approach(o);wuiClick(o.x,o.y)}
 /* ---------- touch (a phone on its side): Pointer Events with pointerType 'touch' only; the mouse, pen and keys above are as they were.
    Battle: a tap selects and a tap again sends, as before (now when the finger lifts); a long press (TOUCH.hold ms, the finger
    within TOUCH.slop CSS px) sends the selection there, or onto the enemy under it; a long press then a drag lays the line, as a

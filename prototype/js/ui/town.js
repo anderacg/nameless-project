@@ -568,4 +568,4 @@ function renderTown(){
 }
 // (a quest to report here: straight to the Notices, Back to the overview; else the overview; the crier's proclamations that
 // have reached it: news.js proclaimAt)
-function enterTown(t){G.lastTown=t;P.tx=null;G.town={ref:t,tab:P.quests.some(q=>canReportAt(q,t)&&questReady(q))?'jobs':null};G.mode='town';log('You enter '+t.name+'.');proclaimAt(t);questArrive(t);renderTown()}
+function enterTown(t){companyRules.cancel();G.lastTown=t;P.tx=null;G.town={ref:t,tab:P.quests.some(q=>canReportAt(q,t)&&questReady(q))?'jobs':null};G.mode='town';companyRules.visit(t);log('You enter '+t.name+'.');proclaimAt(t);questArrive(t);renderTown()}
