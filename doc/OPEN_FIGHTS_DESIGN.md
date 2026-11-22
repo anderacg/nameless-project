@@ -108,3 +108,11 @@ Phone verification uses Chromium touch emulation, not a physical phone or Safari
 
 - The field is still a fixed window, though now 2.2 times as wide. Moving it with the chase would mean moving every position the fight keeps (its men's ways and goals, groups, missiles, corpses, the blood layer, fog, the terrain grid, the tracks, the captains' memory), so a foe past its edge has got away. A player destination beyond it now orders physical disengagement and continues travel, rather than silently clamping that destination. A rolling combat terrain window remains a separate architectural change.
 - An ally riding in walks straight at the fight, and ground it cannot cross can stop it (`tests/worldbattle.js` and `tests/worldbattleplay.js` check an ally walking in at the old width).
+
+## Visible boundary — 2026-11-22
+
+The actual active combat edge is now visible by default (`OPEN_FIGHT.ring`). A narrow amber line follows the ground, with a soft glow, moving highlights, small sigils and rising sparks. It warms toward orange within 24 world pixels of the hero. Effects use battle time, freeze when paused and remain steady with reduced motion enabled. Drawing consumes no random stream and changes no combat bounds or collision rules. Visible segments alone sample terrain lift; an amber dashed circle also marks the active area on the minimap.
+
+Checks: `battleboundary` verifies visible pixels, animation, reduced motion, proximity feedback, preserved canvas state and unchanged area/health; `openfights` checks the default visibility switch and existing world behavior.
+
+Validation: battleboundary 11 and openfights 20 passed, with no JavaScript errors. The boundary checks also pass at the actual responsive viewport; desktop and phone previews are in `/workspace/artifacts/battle-boundary/`.

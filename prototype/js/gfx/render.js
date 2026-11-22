@@ -412,6 +412,7 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   const pat=g.createPattern(fmGrain(),'repeat');pat.setTransform(new DOMMatrix([zk,0,0,zk,mx-v.ox*MS,my-v.oy*MS]));g.fillStyle=pat;g.fillRect(mx,my,mw,mh);g.drawImage(miniEdge(mw,mh),mx,my);
   // (the holdings' walls and fences you have seen: each ring's outline, world/townwalls.js)
   g.lineWidth=.6*u;for(const t of TOWNS){const r=TownWall.of(t);if(!r||!r.parts.some(q=>seenTile(q.x,q.y)))continue;g.strokeStyle=TownWall.mapCol(t);g.beginPath();TownWall.outline(r).forEach(([x,y],k)=>{const px=mx+(x+.5-v.ox)*MS,py=my+(y+.5-v.oy)*MS;if(k)g.lineTo(px,py);else g.moveTo(px,py)});g.closePath();g.stroke()}
+  if(B?.world&&OPEN_FIGHT.ring){const a=B.world;g.save();g.strokeStyle='#bd873c';g.lineWidth=Math.max(.7*u,1/K);g.setLineDash([3*u,2*u]);g.beginPath();g.arc(X(a.x),Y(a.y),a.r/TILE*MS,0,Math.PI*2);g.stroke();g.restore()}
   // (the screen's own view, inked)
   if(!B?.world){g.strokeStyle=M.view;g.lineWidth=.6*u;g.strokeRect(X(G.cam.x),Y(G.cam.y),VW/TILE*MS,VH/TILE*MS)}
   // each its own mark (WorldObject mapDot), layer by layer (MAP_LAYER): a holding or a place its sprite (the full map's, a holding on

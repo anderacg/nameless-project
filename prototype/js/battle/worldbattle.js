@@ -30,7 +30,7 @@ const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interac
    a holding or the road reached, your camp's), the days and hours of held's (your band's: its wages, its wounded, its food) kept
    till the fight is over, then run (Systems.hold); every: frames of the fight to one of the world's (their time run at once). on
    false: as before (the ring, the world still) */
-const OPEN_FIGHT={on:true,ring:false,reach:2.2,lost:20,world:true,every:3,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
+const OPEN_FIGHT={on:true,ring:true,reach:2.2,lost:20,world:true,every:3,still:['march','arrival','road','stay','capture','march guides','supply','raids','auto reinforce','travel awareness'],held:['band','wounded','companions','supply']};
 // (in the fight on the map now: you, or a party, a beast or a herd in it or riding to it; the world's own moments leave it be:
 // worldobject.js lodThink, march.js)
 const inMapFight=o=>!!B?.world&&!!o&&(o===P||B.world.participants?.has(o));
@@ -184,11 +184,27 @@ class WorldBattleArea{
   visible(p,team=0){const q=this.world(p);return this.seesWorld(q.x,q.y,team)}
   clipSight(){ctx.beginPath();for(const p of this.sight()){const q=this.field(p),r=p.r*this.scale;ctx.moveTo(q.x+r,q.y);ctx.arc(q.x,q.y,r,0,Math.PI*2)}ctx.clip()}
   draw(){
-    if(!OPEN_FIGHT.on||OPEN_FIGHT.ring){ctx.save();ctx.strokeStyle='#d1b464';ctx.lineWidth=this.scale;ctx.setLineDash([3*this.scale,4*this.scale]);ctx.beginPath();ctx.arc(this.cx,this.cy,this.radius,0,Math.PI*2);ctx.stroke();ctx.restore()}// (the ring: none in the open, OPEN_FIGHT)
+    if(!OPEN_FIGHT.on||OPEN_FIGHT.ring)this.drawBoundary()// (the visible simulation edge, OPEN_FIGHT)
     OutpostTower.draw(this);// (an outpost tower's ladder: world/outposts.js)
     this.drawArrivals();
     for(const a of this.arrivals){const p=this.field(a.mini);if(a.u.team&&!this.visible(p))continue;const s=marchSprite(a.mini,a.army.owner),k=WORLD_BATTLE.sprite;ctx.save();ctx.translate(p.x,p.y);ctx.scale(Math.cos(a.mini.dir??a.army.face)<0?-k:k,k);ctx.drawImage(s,-Math.floor(s.width/2),-s.height+2);ctx.restore()}
     for(const u of B.units)if(u.regroup&&(!u.team||this.visible(u))){ctx.fillStyle=sideCol(u,'ui');ctx.fillRect(u.x-2*WORLD_BATTLE.sprite,u.y-6*WORLD_BATTLE.sprite,4*WORLD_BATTLE.sprite,6*WORLD_BATTLE.sprite)}
+  }
+  // The actual simulation edge, laid on the ground; no randomness or simulation state is consumed by its effects.
+  drawBoundary(){
+    const k=this.scale,R=this.radius,V=camView(),pad=96*k,rm=reducedMotion(),t=rm?0:B.t,
+      near=B.hero?clamp(1-(R-this.distance(B.hero))/(24*k),0,1):0,pulse=rm?.5:.5+.5*Math.sin(t*1.8),col=near>.5?'#f0a05c':'#e7c576',N=clamp(Math.ceil(2*Math.PI*R/(6*k)),128,512),points=[];
+    for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,x=this.cx+Math.cos(a)*R,y=this.cy+Math.sin(a)*R;
+      points.push(x>=V.x-pad&&x<=V.x+V.w+pad&&y>=V.y-pad&&y<=V.y+V.h+pad?{x,y:y-fieldLift(x,y)}:null)}
+    ctx.save();try{
+      const path=()=>{ctx.beginPath();let last=false;for(const p of points){if(!p){last=false;continue}if(last)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);last=true}};
+      ctx.lineJoin='round';ctx.lineCap='round';ctx.strokeStyle=col;ctx.setLineDash([]);
+      for(const [w,a] of [[8,.055],[3,.16],[.65,.55]]){ctx.lineWidth=w*k;ctx.globalAlpha=a+near*a*.4+pulse*a*.25;path();ctx.stroke()}
+      ctx.lineWidth=1.1*k;ctx.globalAlpha=.65;ctx.setLineDash([2*k,12*k]);ctx.lineDashOffset=-t*5*k;path();ctx.stroke();ctx.setLineDash([]);
+      for(let i=0;i<N;i+=8){const p=points[i];if(!p)continue;const phase=(t*.35+i*.618)%1,up=(rm?0:phase*10)*k;
+        ctx.globalAlpha=rm?.45:(1-phase)*.65;ctx.fillStyle='#fff0bf';ctx.beginPath();ctx.arc(p.x+Math.sin(i+t)*k,p.y-up,.55*k,0,Math.PI*2);ctx.fill();
+        if(i%24===0){ctx.globalAlpha=.55;ctx.lineWidth=.55*k;ctx.beginPath();ctx.moveTo(p.x,p.y-2.5*k);ctx.lineTo(p.x+1.7*k,p.y);ctx.lineTo(p.x,p.y+2.5*k);ctx.lineTo(p.x-1.7*k,p.y);ctx.closePath();ctx.stroke()}}
+    }finally{ctx.restore()}
   }
   /* where each army joining comes in (the owner, 2026-10-30: "an icon at the edge of the ring where that unit is coming in"): a
      marker on the ring toward it, while it closes in (pending) and while its men walk in (arrivals), in its colour by where it

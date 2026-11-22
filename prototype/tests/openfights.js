@@ -8,13 +8,12 @@ Kit.suite(({ok,info})=>{
  let tile=0;for(let i=0;i<t.WM.kind.length;i++)if(t.WM.kind[i]===t.T_OPEN&&i%t.MW>20&&i%t.MW<t.MW-20&&Math.floor(i/t.MW)>20){tile=i;break}
  Kit.goTo((tile%t.MW+.5)*t.TILE,(Math.floor(tile/t.MW)+.5)*t.TILE);P.troops={hum_foot:5,hum_bow:3};
  const enemy=t.asParty({kind:'bandits',troops:['militia','militia','archer'],x:P.x+70,y:P.y,cool:0});W.parties.push(enemy);
- ok(O.on&&!O.ring&&O.reach>1&&O.world,'fights on the map are open: no ring, a wider field, the world running on');
+ ok(O.on&&O.ring&&O.reach>1&&O.world,'the real combat boundary is visible while the wider world keeps running');
  G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};
  const was=O.on;O.on=false;const old=new t.WorldBattleArea(G.enc);O.on=was;const now=new t.WorldBattleArea(G.enc);
  ok(Math.abs(now.r-old.r*O.reach)<1e-6,'the field '+O.reach+' times as wide as the ring was ('+Math.round(old.r)+' → '+Math.round(now.r)+' px), its edge past your sight');
  t.startBattle({enemies:G.enc.list,tournament:false,deploy:false});const b=t.B,a=b?.world;if(!a){ok(false,'a fight on the map begins');info(JSON.stringify(G.msgs.slice(-3)));return}
- {const arc=t.ctx.arc,rs=[];t.ctx.arc=function(x,y,r,...z){rs.push(r);return arc.call(this,x,y,r,...z)};try{a.draw()}finally{t.ctx.arc=arc}ok(!rs.some(r=>Math.abs(r-a.radius)<.5),'no ring drawn round the fight')
-  O.ring=true;rs.length=0;t.ctx.arc=function(x,y,r,...z){rs.push(r);return arc.call(this,x,y,r,...z)};try{a.draw()}finally{t.ctx.arc=arc;O.ring=false}ok(rs.some(r=>Math.abs(r-a.radius)<.5),'with ring on, as before')}
+ {const draw=a.drawBoundary;let calls=0;a.drawBoundary=()=>{calls++};try{a.draw();ok(calls===1,'the real boundary effect is drawn by default');O.ring=false;a.draw();ok(calls===1,'the boundary visibility switch disables the effect')}finally{a.drawBoundary=draw;O.ring=true}}
  // (who hears of it: from the ring's edge as ever, not the open field's)
  {const J=t.WORLD_BATTLE.join,at=d=>({mapKind:'cparty',x:a.x+d,y:a.y});ok(a.ring<a.r&&a.knows(at(a.ring+J-5),0)&&!a.knows(at(a.ring+J+5),0),'armies hear of it and join from the ring\'s edge as before ('+Math.round(a.ring+J)+' px from its middle, not '+Math.round(a.r+J)+')')}
  // (the world's moment beside the fight's)
