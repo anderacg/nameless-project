@@ -235,8 +235,8 @@ function drawMapFrame(r){ctx.save();const a=MAP_FRAME.art;
     putDev(devPic('mapframe',W,H,(g,cw,ch)=>{const s=176,w=a.naturalWidth,h=a.naturalHeight,b=2*k,
       sx=[0,s,w-s],sy=[0,s,h-s],sw=[s,w-2*s,s],sh=[s,h-2*s,s],dx=[0,b,cw-b],dy=[0,b,ch-b],dw=[b,cw-2*b,b],dh=[b,ch-2*b,b];
       for(let j=0;j<3;j++)for(let i=0;i<3;i++)if(i!==1||j!==1)g.drawImage(a,sx[i],sy[j],sw[i],sh[j],dx[i],dy[j],dw[i],dh[j])}),r.x-2,r.y-2);
-  }else{ctx.fillStyle=MAP_FRAME.edge;ctx.fillRect(r.x-2,r.y-2,r.w+4,r.h+4);
-    ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1);ctx.fillStyle=MAP_FRAME.bg;ctx.fillRect(r.x-1,r.y-1,r.w+2,r.h+2)}ctx.restore()}
+  }else{ctx.strokeStyle=MAP_FRAME.edge;ctx.lineWidth=2;ctx.strokeRect(r.x-1,r.y-1,r.w+2,r.h+2);
+    ctx.fillStyle=MAP_FRAME.light;ctx.fillRect(r.x-2,r.y-2,r.w+4,1)}ctx.restore()}
 // The campaign's desktop slot, in game pixels; its drawing and full-map tap share this rectangle.
 // With no visible slot (mobile or before the HUD's first frame), use the original top-right map.
 // s: pixels a tile; the fallback keeps the same screen size at every map zoom (zk, core.js MAPZOOM).
@@ -254,7 +254,7 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
    at most each refresh ms, what you have seen in it does. Its face drawn afresh at most each world ms on the map (battle ms in a fight),
    the last one put up between (the owner, 2026-11-16: "The game performance lags on mobile"). on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+const MINIMAP={on:true,opacity:.5,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -385,9 +385,13 @@ function drawWorld(){
   ctx.restore();
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
   // screen: worldMiniRect)
+  if(!B?.world)drawWorldMini(V);
+}
+// Canvas GUI pass: world battles call this after units, effects and world labels.
+function drawWorldMini(V){
   if(MINIMAP.on){drawMiniMap(V);return}
   const zk=MAPZOOM.k(),{x:mx,y:my,w:mw,h:mh,s:MS}=worldMiniRect(),mk=Math.ceil(MW/256),dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(ctx,col,mx+Math.floor(x/TILE*MS)-(s>>1),my+Math.floor(y/TILE*MS)-(s>>1),s,s)};
-  drawMapFrame({x:mx,y:my,w:mw,h:mh});ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);
+  drawMapFrame({x:mx,y:my,w:mw,h:mh});ctx.globalAlpha=MINIMAP.opacity;ctx.drawImage(atSize(WorldArt.mini(mk),mw,mh),mx,my);ctx.globalAlpha=.4;ctx.drawImage(atSize(landMiniCv(),mw,mh),mx,my);ctx.globalAlpha=MINIMAP.opacity;ctx.drawImage(atSize(fogMiniCv(),mw,mh),mx,my);ctx.globalAlpha=1;
   // each its own dot (WorldObject mapDot), layer by layer (MAP_LAYER; in a layer, as worldObjects lists them): the holdings and
   // sites you know of, then the beasts, parties and caravans in sight over them
   // (the holdings' walls and fences you have seen: each ring's outline, world/townwalls.js)
@@ -403,13 +407,14 @@ function drawWorld(){
 // for every fighter each frame cost a battle's frame 2 ms (the owner, 2026-11-15: "fix the battle performance"))
 let MINI_FACE=null,MINI_AT=-1e9;
 function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y:my,w:mw,h:mh,s:MS}=v,u=mw/112,pic=miniPic(v),T=ctx.getTransform(),K=Math.abs(T.a)||1,fw=Math.max(1,Math.round(mw*K)),fh=Math.max(1,Math.round(mh*K));
-  {const now=performance.now();if(MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<(B?M.battle:M.world)){drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);return}MINI_AT=now}
+  {const now=performance.now();if(MINI_FACE&&MINI_FACE.width===fw&&MINI_FACE.height===fh&&now-MINI_AT<(B?M.battle:M.world)){presentWorldMini(v,MINI_FACE);return}MINI_AT=now}
   if(!MINI_FACE||MINI_FACE.width!==fw||MINI_FACE.height!==fh)MINI_FACE=mkc(fw,fh,()=>{});const g=MINI_FACE.getContext('2d'),X=x=>mx+(x/TILE-v.ox)*MS,Y=y=>my+(y/TILE-v.oy)*MS,
     dot=(x,y,col,s)=>{s=Math.max(1,Math.round(s*zk));rect(g,col,Math.floor(X(x))-(s>>1),Math.floor(Y(y))-(s>>1),s,s)};
   g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,fw,fh);g.setTransform(fw/mw,0,0,fh/mh,-mx*fw/mw,-my*fh/mh);g.imageSmoothingEnabled=false;
   g.drawImage(pic.cv,v.ox-pic.x,v.oy-pic.y,v.tw,v.th,mx,my,mw,mh);
   // (the paper's grain, fixed to the land as it scrolls, and its darkened edge)
   const pat=g.createPattern(fmGrain(),'repeat');pat.setTransform(new DOMMatrix([zk,0,0,zk,mx-v.ox*MS,my-v.oy*MS]));g.fillStyle=pat;g.fillRect(mx,my,mw,mh);g.drawImage(miniEdge(mw,mh),mx,my);
+  g.save();g.globalCompositeOperation='destination-in';g.globalAlpha=M.opacity;g.fillStyle='#000';g.fillRect(mx,my,mw,mh);g.restore();
   // (the holdings' walls and fences you have seen: each ring's outline, world/townwalls.js)
   g.lineWidth=.6*u;for(const t of TOWNS){const r=TownWall.of(t);if(!r||!r.parts.some(q=>seenTile(q.x,q.y)))continue;g.strokeStyle=TownWall.mapCol(t);g.beginPath();TownWall.outline(r).forEach(([x,y],k)=>{const px=mx+(x+.5-v.ox)*MS,py=my+(y+.5-v.oy)*MS;if(k)g.lineTo(px,py);else g.moveTo(px,py)});g.closePath();g.stroke()}
   if(B?.world&&OPEN_FIGHT.ring){const a=B.world;g.save();g.strokeStyle='#bd873c';g.lineWidth=Math.max(.7*u,1/K);g.setLineDash([3*u,2*u]);g.beginPath();g.arc(X(a.x),Y(a.y),a.r/TILE*MS,0,Math.PI*2);g.stroke();g.restore()}
@@ -426,7 +431,8 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   for(const m of rumourMarks())if(rumourFade(m)>0)dot(m.x,m.y,RUMOUR_COL,2);
   if(B?.world){for(const un of B.units)if(un.hp>0&&seenBy(0,un)){const p=B.world.world(un);dot(p.x,p.y,un.hero?'#fff':sideCol(un,'ui'),un.hero?3:1)}}
   else{const r=2.4*u;g.beginPath();g.arc(X(P.x),Y(P.y),r,0,Math.PI*2);g.fillStyle=M.you;g.fill();g.lineWidth=u;g.strokeStyle=M.ring;g.stroke();g.beginPath();g.arc(X(P.x),Y(P.y),r+u,0,Math.PI*2);g.lineWidth=.6*u;g.strokeStyle=M.ink;g.stroke()}
-  drawMapFrame(v);ctx.drawImage(MINI_FACE,mx,my,mw,mh);window.campaignHud?.presentMini(MINI_FACE)}
+  presentWorldMini(v,MINI_FACE)}
+function presentWorldMini(v,face){if(window.campaignHud?.presentMini(face))return;drawMapFrame(v);ctx.drawImage(face,v.x,v.y,v.w,v.h)}
 // how long a unit holds its attack pose after it strikes
 const ATK_ANIM=.36;
 // the body's small life (drawUnit): a flinch for flinch s after a blow; standing (the owner, 2026-10-31: "idle animation for
@@ -724,6 +730,7 @@ function frame(){
   else if(G.mode==='title'){ctx.fillStyle='#0b0d14';ctx.fillRect(0,0,VW,VH);drawWorld()}
   else drawWorld();
   ctx.restore();if(bat)heroFlashDraw();
+  if(bat&&B?.world){ctx.save();if(CVS!==1)ctx.scale(CVS,CVS);drawWorldMini(vis());ctx.restore()}
   if(typeof drawTouchHold==='function')drawTouchHold();
   if(typeof drawMapHold==='function')drawMapHold();// (the map's click-and-hold progress, in screen pixels: ring.js)
 }
