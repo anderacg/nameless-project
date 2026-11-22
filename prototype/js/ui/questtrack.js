@@ -5,7 +5,7 @@
    the quests you track (world/quests.js QuestTrack.list), each its title, what to do now and which way; a click opens it in your
    Quests; the one marked on the map in gold. Each quest you take shows its note below it for QTRACK.show s, its bar running down (several taken at once: their notes stacked, at most QTRACK.stack, the oldest first; the owner, 2026-10-30): Track adds it
    to the tracker and marks it, its × (in its top corner) lets it go, as the time does. ---------- */
-const QTRACK={show:10,fade:.3,gap:8,stack:3};
+const QTRACK={show:10,fade:.3,gap:8,mapControls:24,stack:3};
 const QT={el:null,pops:[]};
 // (a tracked one's lines: its title, what to do, the way to it)
 function qtLines(k){
@@ -15,9 +15,10 @@ function qtLines(k){
 }
 // (where it stands: under the band card while it shows (all of it, its lines past its box too), else at the top left)
 function qtPlace(el){
-  if(window.campaignHud?.desktop){el.style.top='76px';el.style.left='auto';el.style.right='var(--e-r)';return}el.style.right='';
+  if(window.campaignHud?.desktop){const map=worldMiniRect(),k=cv.clientWidth/VW;el.style.top=((map.y+map.h+UW_FRAME)*k+QTRACK.gap+QTRACK.mapControls)+'px';el.style.left='auto';el.style.right='var(--e-r)';return}el.style.right='';
   const s=document.getElementById('stats'),phone=document.getElementById('screen')?.classList.contains('mobile-world'),up=!phone&&s&&s.offsetParent&&!s.hidden&&getComputedStyle(s).display!=='none';// (a phone: the card a sheet over the bottom bar, the tracker at the top)
   el.style.top=up?s.offsetTop+Math.max(s.offsetHeight,s.scrollHeight)+QTRACK.gap+'px':'';el.style.left=up?s.offsetLeft+'px':'';
+  if(phone&&typeof worldMiniRect==='function'){const m=worldMiniRect(),k=cv.clientWidth/VW;el.style.setProperty('--qt-phone-width',Math.max(140,Math.min(270,(m.x-UW_FRAME)*k-el.offsetLeft-8))+'px')}
 }
 // each HUD tick (render.js updateHUD): drawn afresh only when what it shows has changed
 function questTrackHUD(){
@@ -25,12 +26,12 @@ function questTrackHUD(){
   if(!el){el=QT.el=document.createElement('aside');el.id='qtrack';el.className='qtrack';el.setAttribute('aria-label','Tracked quests');host.appendChild(el);
     el.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){e.stopPropagation();act(b.dataset.act,b.dataset.arg)}})}
   const scr=document.getElementById('screen'),now=performance.now()/1000;QT.pops=QT.pops.filter(p=>now<p.until);const ps=QT.pops.slice(-QTRACK.stack);
-  const ks=QuestTrack.list(),on=G.mode==='world'&&!G.modal&&!scr?.classList.contains('party-open')&&(ks.length||ps.length);
+  const survival=typeof survivalGuide!=='undefined'?survivalGuide.popup():'',ks=QuestTrack.list(),on=G.mode==='world'&&!G.modal&&!scr?.classList.contains('party-open')&&(ks.length||ps.length||survival);
   el.hidden=!on;if(!on){if(el.dataset.sig){el.innerHTML='';el.dataset.sig=''}return}qtPlace(el);
   const rows=ks.map(k=>{const L=qtLines(k);return '<button type="button" class="qt-row'+(k===P.track?' on':'')+'" data-act="qt-open" data-arg="'+k+'" title="Open it in your Quests"><b>'+htmlText(L.title)+'</b><small>'+htmlText(L.todo)+'</small>'+(L.way?'<em>'+htmlText(L.way)+'</em>':'')+'</button>'}).join('');
   const going=p=>now>p.until-QTRACK.fade;
   const pop=p=>'<div class="qt-pop'+(going(p)?' going':'')+'" role="status" data-k="'+p.k+'"><button type="button" class="qt-x" data-act="qt-hide" data-arg="'+p.k+'" aria-label="Close" title="Close">×</button><span class="qt-new">New quest</span><b>'+htmlText(p.title)+'</b><div class="qt-btns"><button type="button" class="btn sm primary" data-act="qt-track" data-arg="'+p.k+'">Track</button></div><div class="qt-bar"><i style="animation-duration:'+QTRACK.show+'s"></i></div></div>';
-  const html=(rows?'<div class="qt-list"><div class="qt-head">Quests</div>'+rows+'</div>':'')+(ps.length?'<div class="qt-pops">'+ps.map(pop).join('')+'</div>':''),sig=html.replace(/ going/g,'')+ps.map(p=>going(p)?'g':'').join('');
+  const html=(rows?'<div class="qt-list"><div class="qt-head">Quests</div>'+rows+'</div>':'')+(ps.length?'<div class="qt-pops">'+ps.map(pop).join('')+'</div>':'')+survival,sig=html.replace(/ going/g,'')+ps.map(p=>going(p)?'g':'').join('');
   if(el.dataset.sig===sig)return;
   // (each note's bar keeps running as the rest is drawn afresh: a note already shown is kept as it was)
   const old=new Map([...el.querySelectorAll('.qt-pop')].map(d=>[d.dataset.k,d]));el.innerHTML=html;el.dataset.sig=sig;

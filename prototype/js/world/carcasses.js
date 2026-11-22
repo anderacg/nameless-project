@@ -86,10 +86,11 @@ class Carcass extends WorldObject{
   // met: the window of what lies on the fallen here, beside your bag (ui/loot.js), the rest left on this one
   meet(){const here=this.near();if(!here.length){toast(cap1(this.label())+': '+this.what()+'.');return}
     lootEnd();G.mode='dialog';G.loot={from:lootSnap(),pile:[],capture:false};for(const c of here)for(const s of c.items)lootPile(s.k,s.id,s.n);
+    const meatBefore=goodN('meat'),hunted=here.reduce((n,c)=>{const meat=c.items.filter(s=>s.k==='good'&&s.id==='meat').reduce((a,s)=>a+s.n,0);return n+Math.min(meat,c.huntLeft??(c.wild?meat:0))},0);
     const kinds=[...new Set(here.map(c=>c.name().toLowerCase()))],n=here.length,beasts=here.every(c=>c.beast),self=this;
     G.lootView={head:'<div class="top"><h2>'+(n>1?'The fallen':this.cache?'Spoils':beasts?'A carcass':'The fallen')+'</h2><span class="muted">'+htmlText(n>1?n+' here: '+kinds.join(', '):cap1(this.name().toLowerCase()))+', '+this.ago()+'</span></div>'+
       '<p>'+(beasts?'Meat to cut and trophies to take':'What they carried')+'. Look each over and take what you want; the rest stays on them till they are bones and gone ('+BODY_ROT.gone+' days).</p>',next:'carc-done',
-      keep:pile=>{for(const c of here)c.items=[];for(const s of pile)if(s.n>0)self.items.push({k:s.k,id:s.id,n:s.n})}};
+      keep:pile=>{const n=Math.min(hunted,Math.max(0,goodN('meat')-meatBefore));if(n)worldEmit('meat:hunted',{n});for(const c of here){c.items=[];c.huntLeft=0}self.huntLeft=Math.min(hunted-n,pile.filter(s=>s.k==='good'&&s.id==='meat').reduce((a,s)=>a+s.n,0));for(const s of pile)if(s.n>0)self.items.push({k:s.k,id:s.id,n:s.n})}};
     renderLoot()}
   // (the window closed: what is left back on the fallen, and on to the map)
   static done(){const V=G.lootView;if(V?.keep)V.keep(G.loot?.pile||[]);lootEnd();hidePanel();toWorld()}
