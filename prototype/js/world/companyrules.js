@@ -1,11 +1,11 @@
 'use strict';
 /* Optional standing orders. Markets, camps and BattleControl still own the actual transactions and orders. */
-const COMPANY_RULES={days:2,reserve:100,wages:2,restAt:25,resumeAt:85,every:1,think:.5,gap:45,moved:22};
+const COMPANY_RULES={days:2,reserve:100,wages:2,restAt:25,resumeAt:85,restSpeed:4,every:1,think:.5,gap:45,moved:22};
 const COMPANY_DUTIES={manual:['Manual','Wait for your orders.'],protect:['Protect me','Stay close to your hero and fight nearby enemies.'],line:['Hold line','Hold the starting position and fight enemies that approach.'],support:['Support','Follow behind your hero and engage nearby enemies.'],skirmish:['Skirmish','Ranged troops keep their distance; melee troops protect your hero.']};
 class CompanyRules{
   constructor(){this.reset()}
-  reset(v={}){this.resupply=v.resupply===true;this.rest=v.rest===true;this.duties={};for(const [id,d] of Object.entries(v.duties||{}))if(COMPANY_DUTIES[d]&&d!=='manual')this.duties[id]=d;this.journey=v.journey&&Number.isFinite(v.journey.x)&&Number.isFinite(v.journey.y)?{...v.journey}:null;this.wait=0;this.battles=new WeakMap()}
-  save(){if(!this.resupply&&!this.rest&&!Object.keys(this.duties).length&&!this.journey)return;return {resupply:this.resupply,rest:this.rest,duties:{...this.duties},journey:this.journey&&{...this.journey}}}
+  reset(v={}){this.resupply=v.resupply===true;this.rest=v.rest===true;this.duties={};for(const [id,d] of Object.entries(v.duties||{}))if(COMPANY_DUTIES[d]&&d!=='manual')this.duties[id]=d;this.journey=v.journey&&Number.isFinite(v.journey.x)&&Number.isFinite(v.journey.y)?{...v.journey}:null;this.pace=v.pace&&[...SPEEDS,TRAVEL_FAST].includes(v.pace.before)?{...v.pace,boost:Math.max(COMPANY_RULES.restSpeed,v.pace.before)}:null;this.wait=0;this.battles=new WeakMap()}
+  save(){if(!this.resupply&&!this.rest&&!Object.keys(this.duties).length&&!this.journey&&!this.pace)return;return {resupply:this.resupply,rest:this.rest,duties:{...this.duties},journey:this.journey&&{...this.journey},...(this.pace?{pace:{...this.pace}}:{})}}
   duty(id){return this.duties[id]||'manual'}
   setDuty(id,d){if(!COMPANY_DUTIES[d]||!partyRoster(P).groups.some(g=>g.id===id))return false;if(d==='manual')delete this.duties[id];else this.duties[id]=d;return true}
   toggle(k){if(k!=='rest'&&k!=='resupply')return;this[k]=!this[k];if(k==='rest'&&!this.rest)this.cancel()}
@@ -24,9 +24,21 @@ class CompanyRules{
     if(n>0)skinsBuy(n);fillNow(true);
     const spent=before-P.gold;if(spent){log('Company supplies replenished at '+t.name+' for '+spent+' gold.','gold','band');updateHUD(true)}return spent;
   }
-  cancel(){const j=this.journey;if(j?.camp&&G.pitch&&P.tx===G.pitch.x&&P.ty===G.pitch.y){P.tx=P.ty=null;G.pitch=null}this.journey=null}
+  speedChanged(){if(this.pace)this.pace.manual=true}
+  endPace(){const p=this.pace;this.pace=null;if(p&&!p.manual&&G.speed===p.boost)setSpeed(p.before,undefined,true)}
+  paceStep(){
+    if(G.mode!=='world'||G.modal){if(G.mode==='battle')this.endPace();return}
+    const resting=P.tx==null&&!G.chase&&!G.follow&&!G.pitch&&(P.camp||P.stay||this.journey);
+    if(!resting){this.endPace();return}
+    if(!this.pace)this.pace={before:G.speed,boost:Math.max(COMPANY_RULES.restSpeed,G.speed),manual:false};
+    const p=this.pace,danger=dangerInSight();
+    if(danger){if(G.speed>1)setSpeed(1,undefined,true);p.manual=true;return}
+    if(P.bsta>=100){if(!p.manual&&G.speed===p.boost)setSpeed(p.before,undefined,true);p.manual=true;return}
+    if(!p.manual&&G.speed!==p.boost)setSpeed(p.boost,undefined,true);
+  }
+  cancel(){this.endPace();const j=this.journey;if(j?.camp&&G.pitch&&P.tx===G.pitch.x&&P.ty===G.pitch.y){P.tx=P.ty=null;G.pitch=null}this.journey=null}
   frame(dt){
-    if(!this.rest){this.cancel();return}if((this.wait-=dt)>0)return;this.wait=COMPANY_RULES.every;
+    this.paceStep();if(!this.rest){if(this.journey)this.cancel();return}if((this.wait-=dt)>0)return;this.wait=COMPANY_RULES.every;
     if(G.mode!=='world'||G.modal)return;
     const j=this.journey;
     if(j){
@@ -42,6 +54,7 @@ class CompanyRules{
     // A legal site uses the existing camp search and approach. No site: recover where you stopped.
     if(campSpot()&&makeCamp())this.journey.camp=true;
     else toast('Your band rests here before continuing its journey.','gold','band');
+    this.paceStep();
   }
   battle(dt){
     if(!B||B.over||B.deploy||B.muster?.active||B.opts?.tournament||B.surprise?.holds(0))return;

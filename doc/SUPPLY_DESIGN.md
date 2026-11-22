@@ -1,6 +1,6 @@
 # Travel supplies: stamina, food, drink and furs: design
 
-Campaign recovery tuning (2026-10-24): stamina recovers at 4/hour stopped, 16/hour in camp and 20/hour lodging; food and drink penalties still apply. Wounded companions show gradual recovery across their two-day injury timer. Hourly Medicine, camp and lodging bonuses shorten it; expired injuries clear and return the companion to duty.
+Campaign recovery tuning (2026-11-22): stamina recovers at 5/hour stopped, 20/hour in camp and 25/hour lodging (25% faster); food and drink penalties still apply. Wounded companions show gradual recovery across their two-day injury timer. Hourly Medicine, camp and lodging bonuses shorten it; expired injuries clear and return the companion to duty.
 
 Status: **built 2026-10-21**, all four phases (`world/supply.js` with every number in `SUPPLY`, `ui/ring.js`; tests `tests/supply.js`, `tests/camp.js`, `tests/ring.js`; prototype/README.md "Supplies"). As built, where it differs from the plan below:
 
@@ -32,7 +32,7 @@ Today travel is free: food is eaten once a day whether you march or sit, stamina
 | Drains | Each hour you move on the map: `SUPPLY.march` 2 (owner, 2026-10-21: 3 drained too fast; about 40 marched hours from full to Tired on easy ground). |
 | Faster | Rough ground (hills, forest, swamp, snow, sand) ×1.5; night ×1.3; Forced March ×1.5; no drink ×1.5; desert without water ×2; frost without furs ×1.5. |
 | Slower | A mostly mounted band ×0.7; Athletics (on foot) or Riding (mounted) −3% a level; a Guide −10%. |
-| Recovers | **Stopped** on the map: +2 an hour. **Make camp**: +8 an hour. **Staying in a holding**: +10 an hour. |
+| Recovers | **Stopped** on the map: +5 an hour. **Make camp**: +20 an hour. **Staying in a holding**: +25 an hour. |
 | No recovery | With no food left. With no water in the desert. |
 | Shown | The **Stamina** bar on the party card, with an arrow for which way it is going (▼ marching, ▲ resting). |
 

@@ -5,6 +5,23 @@ Kit.suite(({ok})=>{
  const old={dangerInSight:window.dangerInSight,campSpot:window.campSpot,supplyLand:window.supplyLand};
  try{
   ok(!C.save()&&!C.rest&&!C.resupply,'company automation defaults off and adds nothing to untouched saves');
+  window.dangerInSight=()=>'';P.camp=null;P.stay=null;P.tx=P.ty=null;G.chase=G.follow=G.pitch=null;G.speed=2;P.bsta=30;
+  C.frame(2);ok(G.speed===2&&!C.pace,'ordinary idle time is not automatically accelerated');
+  P.camp={at:0};C.frame(2);ok(G.speed===4,'manual camping accelerates time to 4x, even with journey automation off');
+  const restingSave=t.Saves.saveOf('companyRules').companyRules;C.reset();t.Saves.loadOf('companyRules',restingSave);P.camp=null;C.frame(2);
+  ok(G.speed===2&&!C.pace,'save/load preserves the previous speed and restores it when rest ends');
+  P.camp={at:0};C.frame(2);t.setSpeed(2);C.frame(2);ok(G.speed===2,'manual speed changes override accelerated rest');
+  P.camp=null;C.frame(2);ok(G.speed===2,'ending rest preserves a manually selected speed');
+  G.speed=8;P.camp={at:0};C.frame(2);ok(G.speed===8,'rest does not slow a player already using 8x time');P.camp=null;C.frame(2);
+  G.speed=2;P.camp={at:0};C.frame(2);window.dangerInSight=()=> 'bandits';C.frame(2);
+  ok(G.speed===1,'nearby danger drops accelerated rest to 1x');window.dangerInSight=()=>'';C.frame(2);ok(G.speed===1,'time does not silently accelerate again after danger');P.camp=null;C.frame(2);
+  G.speed=2;P.camp={at:0};C.frame(2);P.bsta=100;C.frame(2);ok(G.speed===2,'full stamina ends accelerated manual rest');P.camp=null;C.frame(2);
+  P.bsta=30;P.stay={town:t.TOWNS[0].name};C.frame(2);ok(G.speed===4,'staying in a holding also accelerates rest');P.stay=null;C.frame(2);ok(G.speed===2,'leaving a holding restores the previous speed');
+  // Real hourly recovery, with normal supply consumption still in force.
+  window.supplyLand=()=>({desert:false,frost:false,well:true,water:false,rough:false});t.playerInventory.add('good','grain',60);t.WALKED.set(P,0);
+  P.camp={at:0};P.bsta=30;t.supplyHour();ok(Math.abs(P.bsta-50)<1e-8,'a supplied camp restores 20 stamina per game hour (25% faster)');
+  P.camp=null;P.stay={town:t.TOWNS[0].name};P.bsta=30;t.supplyHour();ok(Math.abs(P.bsta-55)<1e-8,'a supplied holding restores 25 stamina per game hour');
+  P.stay=null;P.bsta=30;t.supplyHour();ok(Math.abs(P.bsta-35)<1e-8,'a stopped company restores 5 stamina per game hour');window.supplyLand=old.supplyLand;C.reset();G.speed=1;
   P.sk.lead.lv=10*PROF.per;P.add('hum_foot',5);P.add('hum_bow',3);const rows=t.partyRoster(P).groups,foot=rows.find(g=>g.type==='hum_foot'),bow=rows.find(g=>g.type==='hum_bow');
   ok(C.setDuty(foot.id,'protect')&&C.setDuty(bow.id,'skirmish')&&!C.setDuty('missing','line')&&!C.setDuty(foot.id,'invalid'),'duties validate real group identities and known choices');
   C.rest=true;C.resupply=true;const saved=t.Saves.saveOf('companyRules').companyRules;C.reset();t.Saves.loadOf('companyRules',saved);
@@ -29,7 +46,7 @@ Kit.suite(({ok})=>{
   window.dangerInSight=()=>'';window.campSpot=()=>null;C.reset({rest:true});P.tx=P.x+200;P.ty=P.y+60;P.bsta=20;const goal={x:P.tx,y:P.ty};
   C.frame(2);ok(C.journey?.x===goal.x&&P.tx==null,'a tired journey stops and keeps its destination when no camp site exists');
   P.bsta=70;C.frame(2);ok(P.tx==null&&!!C.journey,'the band rests until the recovery threshold');
-  P.bsta=85;C.frame(2);ok(P.tx===goal.x&&P.ty===goal.y&&!C.journey,'a recovered band resumes the original route');
+  P.bsta=85;C.frame(2);ok(P.tx===goal.x&&P.ty===goal.y&&!C.journey&&G.speed===1,'a recovered band resumes the original route at the previous speed');
   P.bsta=20;C.frame(2);const restSave=C.save();C.reset(restSave);ok(C.journey?.x===goal.x,'resting destination survives save/load');
   P.tx=P.x+30;P.ty=P.y+30;C.frame(2);ok(!C.journey&&P.tx===P.x+30,'a new travel order overrides the saved continuation');
   P.bsta=20;C.frame(2);window.dangerInSight=()=> 'bandits';C.frame(2);P.bsta=100;C.frame(2);ok(!C.journey&&P.tx==null,'danger cancels continuation instead of silently resuming into it');

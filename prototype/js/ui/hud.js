@@ -96,7 +96,8 @@ function setOrderUI(){
 }
 // the world's speed (SPEEDS, TRAVEL_FAST: core.js), lit on its button; why: Travel fast ends (world.js fastWatch), said in the log.
 // Travel fast will not start with danger in sight
-function setSpeed(n,why){
+function setSpeed(n,why,rest=false){
+  if(!rest&&typeof companyRules!=='undefined')companyRules.speedChanged();
   if(why&&G.speed===TRAVEL_FAST&&n!==TRAVEL_FAST)log('Travel fast ends: '+why+'.','bad');
   G.speed=n;window.mobileWorldHud?.speed();document.querySelectorAll('[data-speed]').forEach(b=>{const on=+b.dataset.speed===n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
 function pauseUI(){const b=$('#pause');if(!b)return;b.innerHTML=icon(G.paused?'play':'pause',14);b.setAttribute('aria-label',G.paused?'Play':'Pause');b.classList.toggle('on',!!G.paused)}
