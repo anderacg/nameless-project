@@ -513,7 +513,7 @@ class BanditCamp extends Lair{
   get scoutable(){return false}
   get size0(){return 8}
   // its own raiders and chieftain, as campFight makes them (the bands sheltering join at the fight: world.js campFight)
-  foes(){return makeEnemies(rint(7,9)+Math.floor(G.day/15),true)}
+  foes(){return SiteLife.roster(this)}
   attack(own){campFight(this,this.keep(own||this.foes()))}
   pickable(){return this.known()&&!this.cleared}
   tip(){return '<b>Bandit camp</b>'+(this.cleared?'':chiefTip(this))+'<small>'+(this.cleared?'Cleared':'Its bands shelter here by night')+'</small>'+(this.cleared?'':'<span class="act">Click: ride up to it</span>')}

@@ -126,12 +126,12 @@ function joinWhy(f,s){const other=fightOpponents(f,s),mine=sideParties(f,s);if(P
 // the parties of a side as battle forces: lords as they are; the rest wrapped with their fighters, name and realm
 function forceOf(o){const k=o.mapKind;if(k==='lord')return o;partyRoster(o).groups;return{kind:k,src:o,name:o.label(),fac:o.faction,troops:o.troops.slice(),army:o.army?structuredClone(o.army):undefined}}
 // after your battle: write the forces' fighters back to their parties
-function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(f.kind==='garrison')o.gar=f.troops.length;else o.troops=f.troops;if(f.army)o.army=structuredClone(f.army)}}
+function syncForces(list){for(const f of list||[]){if(!f.src)continue;const o=f.src;if(o.residentSite)continue;if(f.kind==='garrison')o.gar=f.troops.length;else o.troops=f.troops;if(f.army)o.army=structuredClone(f.army)}}
 // a holding's garrison as a battle force: it sallies beside whoever fights its besiegers, or beside the army come to relieve it
 const garrisonForce=t=>({kind:'garrison',src:t,name:'the garrison of '+t.name,fac:t.owner,troops:garList(t)});
 // a force you beat (or that fought beside you and was ground down); one you beat is heard on the bus as yours (a bounty's band,
 // a lord to kill: quests)
-function routForce(f,mine){if(!f.src){if(mine)worldEmit('lord:beaten',{lord:f});defeatLord(f,mine);return ''}if(f.kind==='garrison')return '';const o=f.src;if(f.kind==='caravan'&&mine){const t=o.loot();o.gone=true;return t}
+function routForce(f,mine){if(!f.src){if(mine)worldEmit('lord:beaten',{lord:f});defeatLord(f,mine);return ''}if(f.kind==='garrison'||f.src.residentSite)return '';const o=f.src;if(f.kind==='caravan'&&mine){const t=o.loot();o.gone=true;return t}
   if(mine&&f.kind==='band')worldEmit('band:beaten',{band:o});worldPart(()=>routParty(o,[]));return ''}
 function fightAct(a,arg){
   const f=G.fg;if(!f||!W.fights.includes(f)){closeDialog();return}

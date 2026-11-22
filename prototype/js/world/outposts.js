@@ -33,7 +33,8 @@ class Outpost extends Site{
   // (its tower standing to fight from (phase 5): its level, 0 for a flag post alone or a tower lying broken, its top gone)
   get towerLv(){return this.lv>=2&&!this.broken?this.lv:0}
   // its guards, as its realm's soldiers
-  guardList(){const f=this.realm,b=this.band,t=this.supplier();if(this.guards<=0)return [];if(b)return b==='goblins'?goblinList(this.guards,true):makeEnemies(this.guards,true,b);
+  guardList(){return SiteLife.roster(this)}
+  guardDraw(){const f=this.realm,b=this.band,t=this.supplier();if(this.guards<=0)return [];if(b)return b==='goblins'?goblinList(this.guards,true):makeEnemies(this.guards,true,b);
     return f==='player'?(t?garList({...t,gar:this.guards}):[]):f?armyOf(f,this.guards):[]}
   // (beaten off or withdrawn from: those of its guards you slew stay dead: engage.js ON_WIN.outpost lost)
   held(slain){const n=(slain||[]).filter(k=>ST[k]&&!ST[k].beast&&k!=='chief').length;this.guards=Math.max(0,this.guards-n)}
@@ -86,7 +87,7 @@ class Outpost extends Site{
   // (on the map: it, and its sentries walking their beat round it in your sight (OutpostWatch), each as the map's men are drawn,
   // the battle's figure with his weapon in hand (march.js drawMarcher); not while a battle is fought on the map: its guards are in
   // it, OutpostTower)
-  draw(ents,cam,V){super.draw(ents,cam,V);const w=OutpostWatch.of.get(this);if(!w||!this.realm||!FACS[this.realm]||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
+  draw(ents,cam,V){super.draw(ents,cam,V);if(this.residents){if(!this.inView(V)||SiteLife.inBattle(this))return;const S=yourSight(V),o=SiteLife.force(this);for(const p of SiteLife.fighters(this))if(p.mode!=='sleep'&&S.sees(p.x,p.y,1.2))ents.push({x:p.x,y:p.y,f:()=>drawMarcher(p,o,cam)});return}const w=OutpostWatch.of.get(this);if(!w||!this.realm||!FACS[this.realm]||B&&B.world||!this.inView(V)||!yourSight(V).sees(this.x,this.y,1))return;
     const o=this.sentryOwner();for(const u of w.men)ents.push({x:u.x,y:u.y,f:()=>drawMarcher(u,o,cam)})}
   // (who the sentries march for, as drawMarcher reads an army: its realm's colours, where it stands)
   sentryOwner(){const f=this.realm,col=FACS[f].col;return{x:this.x,y:this.y,fac:f,faction:f,mapKind:'patrol',look:()=>({col,dir:1}),banner:()=>({k:'banner',col,dev:f})}}
@@ -254,7 +255,7 @@ class OutpostWatch{
     for(const s of W.sites||[]){if(s.type!==OUTPOST_TYPE)continue;const n=Math.min(X.most,s.guards||0);
       if(!n||!s.realm||!FACS[s.realm]||B?.world||Math.hypot(s.x-P.x,s.y-P.y)>X.near){this.of.delete(s);continue}
       let w=this.of.get(s);if(!w){const D=s.door(),R=seeded((s.seed||1)*977+13);w={k:this.stops(s).length-1,x:D.x,y:D.y,way:[],wait:R()*X.rest,h:0,look:0,moving:false,men:[],R};this.of.set(s,w)}
-      this.lead(s,w,d);this.knot(s,w,n,d)}}
+      w.men=SiteLife.fighters(s).slice(0,n);this.lead(s,w,d);this.knot(s,w,n,d)}}
   // (its leader: standing out his stand, else on to the next stop, round its plinth (Outpost around); there, a stand (at its door,
   // the rest), facing out from the flag)
   static lead(s,w,d){const X=OUTPOST.sentries;w.moving=false;if(w.wait>0){w.wait-=d;return}const S=this.stops(s);
@@ -265,10 +266,10 @@ class OutpostWatch{
     w.wait=rest?X.rest:X.stand[0]+w.R()*(X.stand[1]-X.stand[0]);w.look=rest?(s.seed||0)%2?Math.PI:0:w.x<s.x?Math.PI:0}
   // (its men: each to his place in the knot (X.knot, turned the way it goes), walking up at catch × the gait; there, standing,
   // facing as it does)
-  static knot(s,w,n,d){const X=OUTPOST.sentries,type=s.sentryType(),ch=Math.cos(w.h),sh=Math.sin(w.h),cap=footStep(X.gait,d)*X.catch;
+  static knot(s,w,n,d){const X=OUTPOST.sentries,ch=Math.cos(w.h),sh=Math.sin(w.h),cap=footStep(X.gait,d)*X.catch;
     for(let i=0;i<n;i++){const [a,c]=X.knot[i]||[-6*i,0],tx=w.x+ch*a-sh*c,ty=w.y+sh*a+ch*c;let u=w.men[i];
-      if(!u)u=w.men[i]={id:(s.seed||0)*7+i,type,x:tx,y:ty,walk:0,walking:false,dir:w.look};
-      u.type=type;const dx=tx-u.x,dy=ty-u.y,dd=Math.hypot(dx,dy);
+      if(!u)continue;
+      const dx=tx-u.x,dy=ty-u.y,dd=Math.hypot(dx,dy);
       if(dd>.01){const st=Math.min(dd,cap);u.x+=dx/dd*st;u.y+=dy/dd*st;u.walk+=st}
       u.walking=w.moving||dd>.3;u.dir=u.walking?(Math.abs(dx)>.3?(dx<0?Math.PI:0):Math.abs(ch)>.05?(ch<0?Math.PI:0):u.dir):w.look}
     w.men.length=n}

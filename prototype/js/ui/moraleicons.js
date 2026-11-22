@@ -157,7 +157,7 @@ function iconLift(p){if(!B.world||typeof liftAt!=='function')return 0;const w=B.
 function iconLayout(rt){
   const K=unitIconScale(),S=UICON.s,z=B.cam?B.cam.z:1,rm=reducedMotion(),IP=B.iconPos||(B.iconPos={}),dt=Math.max(0,B.t-(B.iconT??B.t)),sel=selGroups(),items=[];B.iconT=B.t;
   // (an enemy group your side does not see has no icon; one partly seen, over those seen: terrain.js seenBy)
-  for(const g in B.groups){const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
+  for(const g in B.groups){if(B.groups[g].resident)continue;const m=B.units.filter(u=>u.grp===g&&u.hp>0&&seenBy(0,u));if(!m.length){delete IP[g];continue}const mo=B.noMorale?null:grpMorale(m);
     const f=m.filter(u=>!u.rout),at=f.length?f:m,cx=at.reduce((a,u)=>a+u.x,0)/at.length,cy=at.reduce((a,u)=>a+u.y,0)/at.length,top=Math.min(...at.map(u=>u.y));
     let p=IP[g];if(!p||rm||B.deploy||B.muster&&(B.muster.active||B.ready)||Math.hypot(p.x-cx,p.y-top)>ICON_FAN.snap)p=IP[g]={x:cx,y:top,dx:p?p.dx:0};else{const k=1-Math.exp(-dt*ICON_FAN.follow);p.x+=(cx-p.x)*k;p.y+=(top-p.y)*k}
     const st=[...(aiHas(B.groups[g])?['ai']:[]),...(mo?statusOf(mo):[])],W=(S+(st.length?Math.ceil(st.length/2)*10+1:0))*K,H=flagH()*K,sp=fromField({x:p.x,y:p.y-iconLift(p)});

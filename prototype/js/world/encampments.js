@@ -186,7 +186,7 @@ function propSmoke(x,y,s){const t=performance.now()/1000,w=1/WORLD_VIEW.fine,f=v
    opens at his place there (ENCAMP_ROLES at), his greeting over it */
 class CampDweller extends WorldObject{
   get mapKind(){return 'dweller'}
-  here(){const C=CampFolk.of.get(this.site);return !!C&&C.ppl.includes(this)}
+  here(){const C=CampFolk.of.get(this.site);return !!C&&C.ppl.includes(this)&&!SiteLife.busy(this)}
   get meetsAnyTime(){return true}
   inView(V){return !this.hid&&yourSight(V).sees(this.x,this.y,1.2)}
   pick(at){if(this.inView(at.V))at.add(this,6,4)}
@@ -206,7 +206,7 @@ class CampFolk{
   static forget(s){this.of.delete(s)}
   // (who lives there: pop people (most at most), their roles filled in the kind's order and shares, each his tent, his seat at the
   // fire, his look, his own stream)
-  static make(s){s.ground();const T=s.TR,F=ENCAMP.folk,n=Math.min(s.pop,F.most),L=s.layout().slice(),R=seeded(s.seed*7919+13),roles=[];
+  static make(s){s.ground();const T=s.TR,F=ENCAMP.folk,n=Math.min(s.residents?.slots||s.pop,F.most),L=s.layout().slice(),R=seeded(s.seed*7919+13),roles=[];
     for(const [r,sh] of T.roles){const k=Math.max(1,Math.round(sh*n));for(let j=0;j<k&&roles.length<n;j++)roles.push(r)}while(roles.length<n)roles.push(T.roles[0][0]);
     const bare=!L.length;if(bare)L.push({x:s.x+10,y:s.y-4});
     const N=FOLK_NAMES[s.folkRace]||FOLK_NAMES.human,ppl=roles.map((role,i)=>{const a=(i+.5)/n*Math.PI*2,q=L[i%L.length];return Object.assign(new CampDweller(),{site:s,name:N[folkHash(s.seed+'|'+i)%N.length],role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*F.seat,y:s.y+3+Math.sin(a)*F.seat*CAMP_SITE.squash},
@@ -215,7 +215,7 @@ class CampFolk{
     const C={s,L,bare,ppl,P:s.props(),beasts:this.herd(s,L,s.props()),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
     // (placed where the hour has them: as if you had watched all along)
     for(const p of ppl){this.aim(C,p,this.mode(C,p),true);p.x=p.tx;p.y=p.ty;p.wait=p.R2()*2;if(p.mode==='sleep')p.hid=true}
-    return C}
+    SiteLife.attachCamp(C);return C}
   // (what he does now: sleep, watch (by the fire), ring (walking it), seat (at the fire), work, hide (in his tent: danger))
   static mode(C,p){const m=this.mode0(C,p);return m==='sleep'&&C.bare?'seat':m}// (no tent stands: they sleep round the fire)
   static mode0(C,p){const f=Clock.frac,D=ENCAMP.day,night=f>=D.dusk,danger=C.danger;
@@ -266,7 +266,7 @@ class CampFolk{
     for(let k=0;k<40&&L.length;k++){const q=L.splice(Math.floor(R()*L.length),1)[0];if(Router.reach({x:s.x,y:s.y},q))return q}
     return{x:s.x+(R()<.5?-1:1)*TILE*2,y:s.y+TILE}}
   // (everyone out of his tent, for a click: world.js worldObjects)
-  static all(){const out=[];for(const C of this.of.values())for(const p of C.ppl)if(!p.hid)out.push(p);return out}
+  static all(){const out=[];for(const C of this.of.values())for(const p of C.ppl)if(!p.hid&&!SiteLife.busy(p))out.push(p);return out}
   // (talked to: his camp's page, at his place in it if it has one (no wares: its fire), his greeting over it)
   static meet(p){const s=p.site,at=p.R.at==='trade'&&!s.TR.goods.length||p.R.at==='hire'&&!s.unit?'fire':p.R.at;s.solo(at);if(G.site!==s)return;
     G.siteMsg=htmlText(p.name)+', '+p.calling+', '+p.R.say+'.';showSite()}
@@ -276,7 +276,7 @@ class CampFolk{
     for(const [s] of this.of)if(!W.sites.includes(s)||s.cleared||Math.hypot(s.x-P.x,s.y-P.y)>F.near+120)this.of.delete(s);
     for(const s of W.sites){if(!(s instanceof Encampment)||s.cleared||!s.known()||Math.hypot(s.x-P.x,s.y-P.y)>F.near)continue;
       const C=this.of.get(s)||this.make(s);C.danger=folkThreat(s.x,s.y,F.danger);for(const b of C.beasts)this.graze(C,b,d);
-      for(const p of C.ppl){const m=this.mode(C,p);if(m!==p.mode){if(p.hid&&m!=='sleep'){p.hid=false;p.x=p.door.x;p.y=p.door.y}this.aim(C,p,m)}
+      for(const p of C.ppl){if(SiteLife.busy(p)){p.moving=false;continue}const m=this.mode(C,p);if(m!==p.mode){if(p.hid&&m!=='sleep'){p.hid=false;p.x=p.door.x;p.y=p.door.y}this.aim(C,p,m)}
         if(p.hid){p.moving=false;continue}
         if(p.wait>0){p.wait-=d;p.moving=false;continue}
         const dx=p.tx-p.x,dy=p.ty-p.y,dd=Math.hypot(dx,dy);
@@ -294,7 +294,7 @@ class CampFolk{
     // (its animals as the herds are drawn (critters.js, gfx/sprites.js critterArt): their battle figure at the marchers' scale)
     for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({x:b.x,y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-(w>>1),sy-1,w,2);ctx.save();ctx.translate(sx,sy);ctx.scale(b.dir<0?-A.k:A.k,A.k);ctx.drawImage(A.s,-(A.s.width>>1),-A.s.height+(A.k<1?2:1));ctx.restore()}})}
-    for(const p of C.ppl){if(p.hid||!S.sees(p.x,p.y,1.2))continue;
+    for(const p of C.ppl){if(p.hid||SiteLife.busy(p)||!S.sees(p.x,p.y,1.2))continue;
       ents.push({x:p.x,y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.v):0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
         k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play)?4:0,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;
         ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,0,0,W2,H-low,-Math.floor(W2/2),-H+2+low,W2,H-low);ctx.restore()})})}}

@@ -77,6 +77,7 @@ class BandBrain extends Brain{
     if(b.wave)return holdWaveStep(b,d,this);// (a wave marching on an outpost you hold: world/quests.js HoldQuest)
     const v=this.look(b);this.cool(b,d);
     const st=stance(b.power()*b.nerve,b),fear=fearOf(b,st),sp=moveStep(partySpeed(b,b.troops),d);
+    if(SiteLife.returnRaid(b,sp,night||!!fear))return false;
     if(!fear&&this.hunt(b,sp)){b.waylay=null;return false}// (a caravan it can take, ridden down before all else but its fear of you: BAND_HUNT)
     if(!fear&&this.feud(b,sp)){b.waylay=null;return false}// (a rival band, goblins against bandits: data/goblins.js BAND_FEUD)
     // (to the fallen it set out for, to search them (world/carcasses.js Carcass.seek), while it neither fears nor sees you)

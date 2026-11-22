@@ -25,8 +25,9 @@ class WorldCombat{
   static figure(owner,unit,index=null){let f=this.figures.get(unit);if(!f||f.owner!==owner||f.index!==index)this.figures.set(unit,f=new WorldFigure(owner,unit,index));return f}
   static live(b=B){return !!(b?.world&&!b.opts.tournament&&!b.opts.sandbox&&!b.inside&&!b.works)}
   static begin(b){
-    if(!this.live(b))return;G.paused=false;pauseUI();setSpeed(1);setBattleSpeed(1);b.worldMark={gold:P.gold,renown:P.renown,xp:xpTotal()};const target=G.worldTarget;G.worldTarget=null;
+    if(!this.live(b))return;G.paused=false;pauseUI();setSpeed(1);setBattleSpeed(1);b.worldMark={gold:P.gold,renown:P.renown,xp:xpTotal()};const target=G.worldTarget,resident=G.residentTarget;G.worldTarget=null;G.residentTarget=null;
     if(!b.sides)b.world.sides=b.sides=new BattleSides(b,G.enc);
+    if(resident){const u=b.units.find(u=>u.residentSite?.i===resident.site&&u.resident?.id===resident.id);if(u){setAuto(false,true);this.attack(u,playerGroups())}return}
     if(!target?.here())return;
     const u=b.units.find(u=>target.index!=null?u.herd===target.owner&&u.herdIndex===target.index:u.marchUnit===target.unit);
     if(u){setAuto(false,true);this.attack(u,playerGroups())}
@@ -41,6 +42,7 @@ class WorldCombat{
   static click(x,y,externalOnly=false){
     if(!this.live()||B.over||B.deploy)return false;const u=externalOnly?null:rtsUnitAt(x,y,1);
     const a=B.world,p=a.world({x,y:fieldGround(x,y)}),f=pickAt(p.x,p.y),o=f instanceof WorldFigure?f.owner:f;
+    if(f instanceof ResidentFigure&&SiteLife.hostile(f.site)&&a.inside(a.field(f),12)){const force=SiteLife.force(f.site);if(!a.participants.has(force))a.join(force,1);const target=B.units.find(u=>u.resident===f.person);if(target)this.attack(target);return true}
     if(!o||!o.here()||!o.inView(vis())||a.participants.has(o)||!a.inside(a.field(f),12))return !!u&&this.attack(u);
     if(o.mapKind==='critter'&&o.wild)this.addHerd(o);
     else if(o instanceof Party&&wuiKind(o)==='foe'){

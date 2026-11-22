@@ -307,7 +307,7 @@ function drawWorld(){
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
   // the road (road.js) and fights
-  for(const s of W.sites)s.draw(ents,cam,V);
+  for(const s of W.sites)s.draw(ents,cam,V);SiteLife.draw(ents,cam,V);
   Remains.drawAll(ents,cam,V);// (the remains of a hero who fell, the graves, your family's plot, the lords' crypts: world/death.js, world/lineage.js)
   Carcass.drawAll(ents,cam,V);// (the fallen of a fight on the map: world/carcasses.js)
   // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
@@ -346,7 +346,7 @@ function drawWorld(){
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
   drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
-  if(!B?.world)drawSafe(()=>WorldFlags.draw(cam));
+  if(!B?.world){drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))}
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
   // (the clouds' shadows, smoke, snow and fireflies at the scene's fine px, before the fog: so only where you see (the owner,
@@ -553,8 +553,6 @@ function drawUnitAt(u){
   // its health: over every fighter with health bars on (Settings, or HP bars in battle; off at first), your hero, companions and
   // leaders too; else none (each group's health stands by its icon: battlehud.js drawGroupHealth)
   if(u.leader)txt(u.leader.name+' Lv'+u.leader.lv,x,y-h-8-z,sideCol(u,'say'),'center');// a leader: his name over him
-  if(HPBARS.on){const bw=u.s.big?28:12,f=Math.max(0,u.hp/u.max),bx=Math.round(x-bw/2),by=y-h-2-z;ctx.fillStyle='#0a0c12';ctx.fillRect(bx-1,by-1,bw+2,4);ctx.fillStyle='#3a2420';ctx.fillRect(bx,by,bw,2);
-    ctx.fillStyle=u.hero||u.comp?'#e8b94a':sideCol(u);ctx.fillRect(bx,by,Math.round(bw*f),2)}// (by side: battle.js SIDE)
   if(B.world)ctx.restore();
 }
 // one knocked down (physics.js physDownPose: q 0 standing to 1 lying): he goes over as the fallen do (vfx.js drawBody), lies, and
@@ -705,7 +703,7 @@ function drawBattle(){
   // (a number pops up big and settles)
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1,fy=f.y-fieldLift(f.x,f.y);if(k===1){txt(f.t,Math.round(f.x),Math.round(fy),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(fy));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
-  if(B.world)WorldFlags.draw(G.cam);
+  IndividualHealth.battle();if(B.world)WorldFlags.draw(G.cam);
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(V.w/VW,V.h/VH);

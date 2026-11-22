@@ -1,5 +1,9 @@
 # Ashmark prototype
 
+**Resident guards and bandit life:** camp guards and outpost sentries defend their actual posts using persistent people, with saved wounds and deaths. Bandit camps have local detection, spreading alarms, sleeping occupants and daily raiding parties drawn from their own residents. Individual health uses one small square per 25 maximum HP; Settings offers Automatic or Always. See `doc/SITE_RESIDENTS_DESIGN.md`; checks: `sitelife`, `outposts`, `encampments`, `worldcombat`, `battlecommands`, `structure`.
+
+**Files:** `world/sitelife.js` owns resident books, site defence, bandit routines and returning raids. `ui/individualhealth.js` draws each visible individual's health above the scene and below the GUI. `CampFolk` and `OutpostWatch` reference those same people rather than separate decorative defenders.
+
 **March formation preview:** the drawing pane fills its available column and stays independent of canvas bitmap size, preventing resize feedback. Desktop and phone landscape keep a stable army-radius preview.
 
 **Campaign recovery and pace:** wounded companions show recovery progress and return to duty when healed; camp, lodging and Medicine accelerate recovery. Stamina restores at 4/hour stopped, 16/hour camped and 20/hour lodging before supply penalties. Campaign movement is twice the base pace; world battle keeps its previous movement scale.

@@ -316,7 +316,7 @@ const ARMY_AI={lock:4,switchGain:45,focus:15,spacing:1.6,threat:85,urgent:30,thr
 class ArmyTactics{
  constructor(commander){this.commander=commander;this.states=new Map()}
  static managed(g){return !!g&&(g.team>0||aiHas(g))}
- static local(u,e){if(!B.sides?.active||!ArmyTactics.managed(B.groups[u.grp])||!e.rout&&!withdrawing(e))return true;const state=Commander.of(u.team).tactics?.states.get(u.grp);if(state?.skipFleeUntil>B.t)return false;return Math.hypot(e.x-u.x,e.y-u.y)<=(u.s.range&&!u.empty?u.s.range:ARMY_AI.contact)}
+ static local(u,e){if(u.resident&&!SiteLife.local(u,e))return false;if(!B.sides?.active||!ArmyTactics.managed(B.groups[u.grp])||!e.rout&&!withdrawing(e))return true;const state=Commander.of(u.team).tactics?.states.get(u.grp);if(state?.skipFleeUntil>B.t)return false;return Math.hypot(e.x-u.x,e.y-u.y)<=(u.s.range&&!u.empty?u.s.range:ARMY_AI.contact)}
  core(groups){const points=groups.map(g=>g.centre()),mid=k=>points.map(p=>p[k]).sort((a,b)=>a-b)[Math.floor((points.length-1)/2)];return {x:mid('x'),y:mid('y')}}
  reachable(a,b,who){return !B.terrain?.blocky||canReach(a,b,who)}
  step(N){

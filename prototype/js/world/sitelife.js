@@ -1,0 +1,154 @@
+'use strict';
+/* A site's residents own their wounds and routine positions. Combat borrows those people, never an extra decorative watch. */
+const SITE_LIFE={near:600,scan:.7,sight:85,night:.65,shout:45,wake:2.5,leash:120,raid:3,raidHours:5,heal:.08};
+class ResidentForce extends Party{
+  constructor(site){super();this.residentSite=site;this.tc={};this.refresh()}
+  refresh(){const s=this.residentSite;this.x=s.x;this.y=s.y;this.kind=s.band||s.bandKind||'bandits';this.fac=s.realm||null;this.name=s.name+' defenders';this.troops=SiteLife.fighters(s).map(p=>p.type);return this}
+  get mapKind(){return this.residentSite instanceof BanditCamp||this.residentSite.band?'band':'campguard'}
+  get faction(){return this.fac}
+  here(){return false}
+  label(){return this.name}
+  banner(){return this.residentSite.flag?.()||null}
+  look(){return{col:this.residentSite.TR?.col||FACS[this.fac]?.col||BAND_FLAG[this.kind]||BAND_FLAG.bandits,dir:1}}
+}
+class ResidentFigure extends WorldObject{
+  constructor(site,person){super();this.site=site;this.person=person}
+  get x(){return this.person.x} get y(){return this.person.y}
+  get mapKind(){return 'resident'}
+  get meetsAnyTime(){return true}
+  here(){return !this.site.cleared&&this.person.hp>0&&!this.person.away&&!SiteLife.inBattle(this.site)}
+  inView(V){return this.here()&&this.person.mode!=='sleep'&&yourSight(V).sees(this.x,this.y,1.2)}
+  pick(at){if(this.inView(at.V))at.add(this,6,4)}
+  meet(){if(!this.here())return false;if(!SiteLife.hostile(this.site))return this.site.meet();G.residentTarget={site:this.site.i,id:this.person.id};const started=SiteLife.engage(this.site);if(!started)G.residentTarget=null;return started}
+  tip(){return '<b>'+htmlText(this.person.name)+'</b><small>'+htmlText(this.site.name)+' · '+htmlText(this.person.mode||'guard')+'</small><span class="act">Click: '+(SiteLife.hostile(this.site)?'attack this individual':'approach')+'</span>'}
+}
+class SiteLife{
+  static active=new Map();
+  static forces=new WeakMap();
+  static timer=0;
+  static managed(s){return s instanceof Encampment||s instanceof Outpost||s instanceof BanditCamp}
+  static hostile(s){return s instanceof BanditCamp||!!s.band||s.realm&&s.realm!=='player'&&hostileTo(s.realm)}
+  static epoch(s){return s instanceof Outpost?s.owner||'none':s instanceof BanditCamp?'bandits:'+s.back:'folk'}
+  static book(s){const owner=this.epoch(s);let b=s.residents;
+    if(!b||b.owner!==owner){const next=b?.next||1;b=s.residents={owner,next,slots:s.pop||0,x:s.x,y:s.y,people:[]};this.active.delete(s);this.forces.delete(s)}
+    const dx=s.x-b.x,dy=s.y-b.y;if(dx||dy){for(const p of b.people){if(!p.away){p.x+=dx;p.y+=dy}p.home.x+=dx;p.home.y+=dy}b.x=s.x;b.y=s.y}
+    return b}
+  static person(s,type,role,x,y,name){const b=this.book(s),id=b.next++,max=ST[type]?.hp||100;
+    const p={id,type,role,name:name||ST[type]?.n||'Resident',hp:max,max,x,y,home:{x,y},mode:'watch',walk:0,dir:0,waiting:0,beat:0};b.people.push(p);return p}
+  static ensure(s){if(!this.managed(s)||s.cleared)return [];
+    const b=this.book(s);
+    if(s instanceof Encampment){if(!b.people.length&&!CampFolk.of.has(s))CampFolk.make(s);return b.people}
+    if(s instanceof Outpost){const alive=b.people.filter(p=>p.hp>0),n=Math.max(0,s.guards||0);
+      if(alive.length>n)for(const p of alive.slice(n)){p.hp=0;p.mode='dead'}
+      if(alive.length<n){const types=s.guardDraw(),posts=s.posts();for(let i=alive.length;i<n;i++){const q=i<OUTPOST.sentries.most?s.door(i,OUTPOST.sentries.most):posts[i%posts.length]||s.door();this.person(s,types[i]||s.sentryType(),i%3===0?'watch':'guard',q.x,q.y)}}
+    }else if(!b.people.length){const R=seeded((s.seed||1)*997+73),n=8+Math.floor(R()*3)+Math.floor(G.day/15);
+      for(let i=0;i<=n;i++){const a=i/(n+1)*Math.PI*2,x=s.x+Math.cos(a)*22,y=s.y+12+Math.sin(a)*10,r=R(),type=i===n?'chief':outlawOf(r<.5?'militia':r<.75?'archer':'spearman',r);this.person(s,type,i<2?'watch':i===n?'chief':i%3===0?'cook':'raider',x,y,i===n?s.ld?.name:null)}this.routines(s,b.people,0)}
+    return b.people}
+  static fighters(s){return this.ensure(s).filter(p=>p.hp>0&&!p.away&&p.fighter!==false)}
+  static roster(s){return this.fighters(s).map(p=>p.type)}
+  static attachCamp(C){const s=C.s,b=this.book(s),now=Clock.hours(),later=b.hour!=null&&Math.abs(now-b.hour)>.1;b.slots=b.slots||C.ppl.length;
+    for(const p of C.ppl){let r=b.people[p.i];if(!r){const type=RACES[s.folkRace][p.R.unit||'melee'];r=this.person(s,type,p.role,p.x,p.y,p.name);r.fighter=!!p.R.unit||!!p.R.watch||p.role==='guard';r.home={...p.seat}}
+      if(later&&r.hp>0){r.x=p.x;r.y=p.y}p.resident=r;p.name=r.name;p.x=r.x;p.y=r.y;if(r.hp<=0)p.hid=true}b.hour=now;
+  }
+  static busy(p){return p.resident&&(p.resident.hp<=0||this.inBattle(p.site))}
+  static syncCamp(C){if(this.inBattle(C.s))return;this.book(C.s).hour=Clock.hours();for(const p of C.ppl){const r=p.resident;if(!r)continue;r.x=p.x;r.y=p.y;r.mode=p.hid?'sleep':p.mode;r.walk=p.walked;r.walking=p.moving;r.dir=p.dir<0?Math.PI:0}}
+  static force(s){let f=this.forces.get(s);if(!f)this.forces.set(s,f=new ResidentForce(s));return f.refresh()}
+  static inBattle(s){return !!B?.world&&B.units.some(u=>u.residentSite===s&&!u.residentRoamer&&!u.waiting)}
+  static engage(s){if(B||G.modal||s.cleared)return false;
+    if(s instanceof BanditCamp){s.attack();return true}
+    if(s instanceof Outpost){if(s.ours)return s.meet();return s.act('site-attack',null,()=>{})}
+    return s.meet()}
+  static frame(d){this.timer-=d;const scan=this.timer<=0;if(scan){this.timer=SITE_LIFE.scan;
+      for(const [s] of this.active)if(!W.sites.includes(s)||s.cleared||Math.hypot(s.x-P.x,s.y-P.y)>SITE_LIFE.near+100)this.active.delete(s);
+      for(const s of W.sites||[])if(this.managed(s)&&!s.cleared&&s.known()&&Math.hypot(s.x-P.x,s.y-P.y)<=SITE_LIFE.near)this.active.set(s,this.ensure(s))}
+    for(const [s,people] of this.active){
+      if(s instanceof Encampment){const C=CampFolk.of.get(s);if(C)this.syncCamp(C)}
+      else if(!this.inBattle(s))this.routines(s,people,d);
+      if(scan&&!this.inBattle(s))this.defend(s);
+    }
+  }
+  static routines(s,people,d){const night=Clock.frac>=ENCAMP.day.dusk||Clock.frac<ENCAMP.day.dawn;
+    const patrol=s instanceof Outpost?OutpostWatch.of.get(s)?.men:[];
+    for(const p of people){if(patrol?.includes(p))continue;p.walking=false;if(p.hp<=0||p.away)continue;
+      const watch=p.role==='watch',mode=watch?'watch':night?'sleep':p.role==='cook'?'cook':p.role==='chief'?'rest':'train';p.mode=mode;
+      if(p.waiting>0){p.waiting-=d;continue}
+      if(!p.goal){p.beat=(p.beat+1)%4;const a=(p.beat+(p.id%8)/8)*Math.PI/2,r=watch?30:mode==='sleep'?4:12;p.goal={x:s.x+Math.cos(a)*r,y:s.y+13+Math.sin(a)*r*.5};
+        if(s instanceof Outpost){const S=[...s.posts(),s.door(p.id%3,3)];p.goal=S[(p.beat+p.id)%S.length];p.route=s.around(p,p.goal)}
+      }
+      const q=p.route?.[0]||p.goal,dx=q.x-p.x,dy=q.y-p.y,dd=Math.hypot(dx,dy),step=Math.min(dd,footStep('walk',d));
+      if(dd>1){const x=p.x,y=p.y;walk(p,dx,dy,step);const moved=Math.hypot(p.x-x,p.y-y);p.walk+=moved;p.walking=moved>.01;if(Math.abs(dx)>.2)p.dir=dx<0?Math.PI:0}
+      else if(p.route?.length)p.route.shift();else{p.goal=null;p.waiting=mode==='watch'?2:5}
+    }
+  }
+  static detects(s,p,o){if(p.hp<=0||p.away||p.mode==='sleep')return false;const r=SITE_LIFE.sight*(Clock.frac>=ENCAMP.day.dusk?SITE_LIFE.night:1)*(hiddenAt(o.x,o.y)?.6:1);
+    return Math.hypot(p.x-o.x,p.y-o.y)<r}
+  static defend(s){if(G.modal||!B&&(G.enc||G.encCool>0))return;
+    const residents=this.fighters(s);if(!residents.length)return;
+    if(!B){const sight=yourSight();if(!residents.some(p=>sight.sees(p.x,p.y,1.2)))return}
+    if(this.hostile(s)){const army=MARCH_ARMIES.get(P),targets=army&&!army.idle?army.units.filter(u=>!u.dead):[P];if(!P.stay&&!P.inside&&residents.some(p=>targets.some(o=>this.detects(s,p,o)))&&!B){this.engage(s);return}}
+    const force=this.force(s),foes=[...bandits,...W.monsters.map(asMonster).filter(m=>MONSTERS[m.id]?.aggro),...W.lords,...W.patrols].filter(o=>!o.gone&&!o.dead&&!o.inside&&!o.fight&&!o.qid&&armyRelation(force,o)<0);
+    const foe=foes.find(o=>Math.hypot(o.x-s.x,o.y-s.y)<SITE_LIFE.leash&&residents.some(p=>this.detects(s,p,o)));if(!foe)return;
+    if(B?.world){if(B.world.inside(B.world.field(s),12)&&B.world.participants.has(foe))B.world.join(force,0);return}
+    startEncounter({kind:['monster','lord','patrol'].includes(foe.mapKind)?foe.mapKind:'party',ref:foe,list:foe.troops.slice(),allies:[forceOf(force)],title:s.name+' under attack'});
+  }
+  static figures(){const out=[];for(const [s,people] of this.active){if(s instanceof Encampment)continue;for(const p of people){const f=new ResidentFigure(s,p);if(f.here())out.push(f)}}return out}
+  static visible(){const out=[],S=yourSight();for(const [s,people] of this.active)if(!this.inBattle(s))for(const p of people)if(p.hp>0&&!p.away&&p.mode!=='sleep'&&S.sees(p.x,p.y,1.2))out.push(p);return out}
+  static draw(ents,cam,V){const S=yourSight(V);for(const [s,people] of this.active){if(s instanceof Encampment||s instanceof Outpost||this.inBattle(s))continue;const owner=this.force(s);
+    for(const p of people)if(p.hp>0&&!p.away&&p.mode!=='sleep'&&S.sees(p.x,p.y,1.2))ents.push({x:p.x,y:p.y,f:()=>drawMarcher(p,owner,cam)})}}
+  static bind(b,area,only=null){const units=only||b.units,used=new Set(b.units.filter(u=>u.resident).map(u=>u.resident)),main=G.enc?.ref;
+    for(const u of units){if(u.resident||u.hero||u.comp||u.waiting)continue;const source=armySource(u.sourceArmy);let s=source?.residentSite;
+      if(!s&&u.team===1&&u.grp.startsWith('e0_')&&this.managed(main))s=main;
+      const raid=source?.residentHome!=null?W.sites.find(s=>s.i===source.residentHome):null;if(!s&&raid)s=raid;
+      if(!s)continue;const people=raid?this.book(s).people.filter(p=>source.residentIds.includes(p.id)&&p.hp>0):this.fighters(s),p=people.find(p=>!used.has(p)&&(p.type===u.type||p.type==='chief'&&u.leader));if(!p)continue;used.add(p);
+      u.resident=p;u.residentSite=s;u.hp=u.max*clamp(p.hp/p.max,0,1);p.max=u.max;p.hp=u.hp;
+      if(raid){u.residentRoamer=true;u.residentAwake=true;continue}
+      const tower=u.grp.endsWith('_tower'),at=area.constrain(area.field(p),16);if(!tower){u.x=at.x;u.y=at.y}
+      const old=b.groups[u.grp],id='resident_'+s.i+'_'+p.id,g=new BattleControl(id,u.team,{player:false,ally:u.team===0,foe:u.team!==0,post:true,resident:true,role:old.role,type:u.type,name:p.name,ax:u.x,ay:u.y});
+      if(tower){old.post=true;u.residentHome={x:u.x,y:u.y}}else{u.grp=id;b.groups[id]=g;u.residentHome=area.field(p.home)}
+      u.residentAwake=p.mode!=='sleep';u.residentHidden=!u.residentAwake;u.residentAlarm=null;
+    }
+    for(const id of Object.keys(b.groups))if(!b.units.some(u=>u.grp===id))delete b.groups[id];
+    if(b.sides)for(const r of b.sides.records){const members=b.units.filter(u=>u.sourceArmy===r.force||armySource(u.sourceArmy)===r.owner||r.owner===P&&b.groups[u.grp]?.player);if(members.length)r.groups=[...new Set(members.map(u=>u.grp))]}
+  }
+  static local(u,e){if(!u.resident||u.residentRoamer)return true;const h=u.residentHome;return u.residentAwake&&u.residentAlarm!=null&&Math.hypot(e.x-h.x,e.y-h.y)<=SITE_LIFE.leash*B.world.scale}
+  static battle(dt){if(!B?.world)return;const people=B.units.filter(u=>u.resident&&!u.residentRoamer&&u.hp>0&&!u.left),scale=B.world.scale;
+    for(const u of people){const p=u.resident,h=u.residentHome,g=B.groups[u.grp];if(u.rout||g.resolve?.routed)continue;
+      const foes=B.units.filter(e=>e.hp>0&&!e.left&&battleEnemy(u,e)),near=foes.find(e=>Math.hypot(e.x-u.x,e.y-u.y)<(u.residentAwake?SITE_LIFE.sight:12)*scale&&seenBy(u.team,e)&&!terrainBlocksView(u,e));
+      if(u.hp<p.hp-.01||near){u.residentAwake=true;u.residentAlarm=B.t}
+      if(u.residentAlarm==null){const shout=people.find(v=>v!==u&&v.team===u.team&&v.residentAlarm!=null&&Math.hypot(v.x-u.x,v.y-u.y)<SITE_LIFE.shout*scale);if(shout&&u.heardAt==null)u.heardAt=B.t+.8;if(u.heardAt!=null&&B.t>=u.heardAt)u.residentAlarm=B.t}
+      if(!u.residentAwake){const shout=people.find(v=>v!==u&&v.team===u.team&&v.residentAlarm!=null&&Math.hypot(v.x-u.x,v.y-u.y)<SITE_LIFE.shout*scale);if(shout&&u.wakeAt==null)u.wakeAt=B.t+SITE_LIFE.wake+(p.id%3)*.3;
+        if(u.wakeAt!=null&&B.t>=u.wakeAt){u.residentAwake=true;u.residentAlarm=B.t}}
+      u.residentHidden=!u.residentAwake;if(!u.residentAwake){u.tgt=null;continue}
+      if(u.residentThink>B.t)continue;u.residentThink=B.t+.5;
+      if(g.id.endsWith('_tower'))continue;
+      const e=foes.filter(e=>seenBy(u.team,e)&&this.local(u,e)&&Math.hypot(e.x-u.x,e.y-u.y)<SITE_LIFE.sight*scale).sort((a,b)=>Math.hypot(a.x-u.x,a.y-u.y)-Math.hypot(b.x-u.x,b.y-u.y))[0];
+      if(e){u.residentAlarm=B.t;if(u.s.range&&Math.hypot(e.x-u.x,e.y-u.y)<=u.s.range){g.hold();u.tgt=e}else g.attack(e,{run:true,individual:true})}
+      else{u.tgt=null;if(g.hasTarget||Math.hypot(u.x-h.x,u.y-h.y)>8*scale)g.moveTo(h.x,h.y);else g.toHold()}
+    }
+  }
+  static finish(b,area){const touched=new Set();for(const u of b.units){if(!u.resident||u.waiting)continue;const p=u.resident,q=area.world(u);p.hp=Math.max(0,u.left?u.hpLeft??u.hp:u.hp);p.max=u.max;p.x=q.x;p.y=q.y;p.mode=p.hp>0?'return':'dead';p.goal=null;p.waiting=0;touched.add(u.residentSite)}
+    for(const s of touched){if(s instanceof Outpost&&G.enc?.ref!==s)s.guards=this.book(s).people.filter(p=>p.hp>0).length;
+      if(s instanceof Encampment){const C=CampFolk.of.get(s);for(const r of this.book(s).people)if(r.hp<=0&&!r.counted){s.pop=Math.max(0,s.pop-1);r.counted=true}if(C)for(const p of C.ppl)if(p.resident){p.x=p.resident.x;p.y=p.resident.y;p.hid=p.resident.hp<=0;p.mode=null}}}
+  }
+  static raid(s){const book=this.book(s);if(!(s instanceof BanditCamp)||s.cleared||book.raidDay===G.day||Clock.frac<ENCAMP.day.dawn||Clock.frac>=ENCAMP.day.work||this.inBattle(s))return;
+    const people=this.fighters(s),party=people.filter(p=>p.role==='raider').slice(0,SITE_LIFE.raid);if(party.length<SITE_LIFE.raid||people.length-party.length<3)return;
+    const b=asParty({kind:'bandits',x:s.x,y:s.y+25,list:party.map(p=>p.type),residentHome:s.i,residentEpoch:book.owner,residentIds:party.map(p=>p.id),returnAt:Clock.hours()+SITE_LIFE.raidHours,t:1,a:0,idle:false,cool:4,ld:null});
+    for(const p of party)p.away=true;book.raidDay=G.day;bandits.push(b);
+  }
+  static returnRaid(b,sp,night){if(b.residentHome==null)return false;const s=W.sites.find(s=>s.i===b.residentHome);
+    if(!s||s.cleared||this.book(s).owner!==b.residentEpoch){delete b.residentHome;return false}
+    if(!night&&Clock.hours()<b.returnAt)return false;b.waylay=null;b.corpse=null;
+    const dd=Math.hypot(b.x-s.x,b.y-s.y);if(dd>12){Router.travel(b,s,sp)||walk(b,s.x-b.x,s.y-b.y,Math.min(dd,sp));return true}
+    this.settleRaid(s,b,true);bandits=bandits.filter(o=>o!==b);return true;
+  }
+  static settleRaid(s,b,returned=false){const counts=countsOf(b&&!b.gone?b.troops:[]),people=this.book(s).people.filter(p=>b.residentIds.includes(p.id));
+    for(const p of people){if(p.hp<=0)continue;if(!(counts[p.type]>0)){p.hp=0;p.away=false;p.mode='dead';continue}counts[p.type]--;
+      if(returned){p.away=false;p.x=s.x+(p.id%3-1)*6;p.y=s.y+18;p.mode='rest';p.goal=null}}
+  }
+  static hour(){for(const s of W.sites||[]){if(!s.residents||this.inBattle(s))continue;
+    const raids=bandits.filter(b=>b.residentHome===s.i);for(const b of raids)this.settleRaid(s,b);
+    for(const p of s.residents.people){if(p.away&&!raids.some(b=>b.residentIds.includes(p.id))){p.hp=0;p.away=false;p.mode='dead'}if(p.hp>0&&!p.away)p.hp=Math.min(p.max,p.hp+p.max*SITE_LIFE.heal)}
+    this.raid(s)}}
+}
+Systems.add({name:'site residents',order:{frame:147.5,hour:45.5},frame:d=>SiteLife.frame(d),hour:()=>SiteLife.hour()});
+onWorld(()=>{SiteLife.active.clear();SiteLife.forces=new WeakMap();SiteLife.timer=0});

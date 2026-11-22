@@ -64,7 +64,7 @@ Kit.suite(({ok,info})=>{
  // gait (data/world.js ON_FOOT, everyone's), a stand at each, a rest by its door after a round; in your sight, each drawn as a marcher
  {const X=S.sentries,OW=t.OutpostWatch,s=all().find(x=>x.guards>=3&&t.FACS[x.realm]&&x.realm!=='player');P.x=s.x;P.y=s.y+30;s.seen=true;OW.of.delete(s);OW.step(.05);
   const w=OW.of.get(s),ents=[],cam={x:P.x-200,y:P.y-150};t.frame();s.draw(ents,cam,200);
-  ok(w&&w.men.length===3&&ents.length===4&&typeof s.sentryType()==='string','in your sight its watch: three of its guards together ('+s.sentryType()+')');
+  ok(w&&w.men.length===3&&ents.length===s.guards+1&&w.men.every(u=>s.residents.people.includes(u))&&typeof s.sentryType()==='string','all real guards drawn, three of those same residents patrol together ('+s.sentryType()+')');
   const pace=t.footStep(X.gait,1),F=s.footing(),on=p=>F.some(f=>p.x>f.x&&p.x<f.x+f.w&&p.y>f.y&&p.y<f.y+f.h),last=OW.stops(s).length-1;
   let fast=0,c={walk:0,stand:0},apart=0,onF=0,far=0,rests=0,was=w.k,steps=0;w.wait=0;
   for(let i=0;i<8000;i++){const x0=w.x,y0=w.y,f0=t.footFrame(w.men[1].walk);OW.step(.05);const v=Math.hypot(w.x-x0,w.y-y0)/.05;fast=Math.max(fast,v);c[w.moving?'walk':'stand']++;
@@ -142,7 +142,7 @@ Kit.suite(({ok,info})=>{
    B.terrain.update();const H=t.HILL.range,u0=m[0];
    ok(m.every(u=>u.z>0&&Math.abs(u.s.range-u.r0*T.rangeMul(t.tIx(T,u.x,u.y)))<1&&u.s.range>=u.r0*(1+H*X.rise[3])-1),'drawn up on it, shooting from its height (range '+(u0&&u0.s.range.toFixed(0))+', '+(u0&&u0.r0)+' on level ground)');
    ok(!B.muster||!B.muster.entries.some(e=>e.g===g),'not marched off it to a formation');
-   {const C=t.Commander.of(1).groups();ok(g&&!Object.values(C).some(ids=>ids.includes(g.id))&&Object.values(C).some(ids=>ids.length),'no captain orders them, the rest of its guards his (commander.js: g.post)')}
+   {const C=t.Commander.of(1).groups();ok(g&&!Object.values(C).some(ids=>ids.includes(g.id))&&B.units.filter(u=>u.residentSite===s).every(u=>B.groups[u.grp].post),'tower archers and resident guards defend their own posts instead of receiving army marching orders')}
    {const f=t.OutpostTower.foot(w,T.cs),d0=m.map(u=>Math.hypot(u.sx+g.ax-f.x,u.sy+g.ay-f.y)),foe=B.units.find(u=>u.team===0&&u.hp>0);let drew=true;try{t.OutpostTower.draw(B.world)}catch(e){drew=false}
     ok(drew&&w.l1-w.l0===X.ladder&&!w.back,'its ladder drawn on the field ('+X.ladder+' cells, from the ground to its top)');
     const fx=foe.x,fy=foe.y;foe.x=m[0].x;foe.y=m[0].y;w.seen=0;t.OutpostTower.step(B);const d1=m.map(u=>Math.hypot(u.sx+g.ax-f.x,u.sy+g.ay-f.y));foe.x=fx;foe.y=fy;

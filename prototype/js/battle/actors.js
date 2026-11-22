@@ -127,7 +127,7 @@ class Actor extends Fighter{
     try{for(let i=0;i<B.units.length;i++){const u=B.units[i];if(u.hp<=0||u.hero)continue;S.hold(i);u.cd-=dt;Actor.of(u).turn(dt);S.release(i)}}finally{spatialClose()}
   }
   // a troop's or a beast's turn: its step, then a monster's ability and a dragon's breath
-  turn(dt){const u=this.u;if(u.wildlife)return (B.hunt||B.wild).turn(u,dt);this.step(dt,null);this.ability(dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){this.breathe(t);u.br=3.5}}}}
+  turn(dt){const u=this.u;if(u.resident&&!u.residentAwake){u.moving=false;return}if(u.wildlife)return (B.hunt||B.wild).turn(u,dt);this.step(dt,null);this.ability(dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){this.breathe(t);u.br=3.5}}}}
   ability(dt){
     const u=this.u,ab=u.s.ability;
     if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);
@@ -280,7 +280,7 @@ class Actor extends Fighter{
 // a character (a lord, a chieftain, a companion): their turn their mind's (charmind.js), sent at a foe by you they go for him;
 // their wounds (a companion's shield; wounded, never killed) and their aim (their skill and weapon), and no XP of a troop's
 class CharActor extends Actor{
-  turn(dt){CharacterMind.of(this.u).auto(dt)}
+  turn(dt){if(this.u.resident&&!this.u.residentRoamer)return super.turn(dt);CharacterMind.of(this.u).auto(dt)}
   turnsOn(g){return !g.player}
   taken(amt){const t=this.u;if(t.wardT>0)amt*=.75;if(t.comp&&t.s.block)amt*=1-t.s.block;if(t.s.dr)amt*=1-t.s.dr;return amt}// (a companion's shield and armour; a character's tree: less damage taken)
   fell(){const t=this.u;if(t.comp){const c=compInit(t.type);if(c)c.hurt=Math.max(c.hurt||0,G.day+Clock.frac+2);log(COMPS[t.type].n+' is wounded and drops out of the fight: out for 2 days.','bad')}else super.fell()}// (never killed)

@@ -1410,7 +1410,7 @@ class BattleSight{
   // (is there sight to keep: terrain or fog)
   static on(){return !!B&&!!(B.terrain||B.fog)}
   // (does side team see u: always for his own side, and while nothing hides him)
-  static seen(team,u){return B?.world?u.team===team||B.world.visible(u,team)&&!(u.hid&1<<team):!(u.hid&1<<team)}
+  static seen(team,u){if(u.residentHidden&&team!==u.team)return false;return B?.world?u.team===team||B.world.visible(u,team)&&!(u.hid&1<<team):!(u.hid&1<<team)}
   seen(team,u){return BattleSight.seen(team,u)}
   /* (the soldiers of the other sides not hidden from side team (u.hid; a world battle's must be in sight too: seen), the fallen among
      them too, in B.units' order: everyone its men could pick, so a reader sifts these as it would sift the whole battle and finds

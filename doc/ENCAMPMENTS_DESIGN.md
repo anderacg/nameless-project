@@ -1,5 +1,7 @@
 # Encampments: camps as places where people live
 
+**2026-11-22: resident defence built.** Camp routine figures now reference saved residents. Guards, hunters and rangers defend their camp in real world combat; casualties persist when the camp leaves view. Civilians hide. Current implementation and bandit daily life: [SITE_RESIDENTS_DESIGN.md](SITE_RESIDENTS_DESIGN.md).
+
 Status: **design, revision 1** (2026-11-14). **Phase 1 built** (2026-11-14, §12); the rest waits. This doc folds in `CAMPS_DESIGN.md` revision 2 (mobile camps, dens, your camp as a place): the owner, 2026-11-14, "same mechanic just different purpose". Where the two disagree, this one wins; `CAMPS_DESIGN.md`'s decisions D1–D13 still hold.
 
 ## The owner's brief (2026-11-14)
