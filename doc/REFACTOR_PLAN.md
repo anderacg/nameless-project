@@ -39,3 +39,5 @@ ECS/component split for soldiers; an AI state-machine framework (at most a `setP
 
 ## Runtime follow-up (2026-11-21)
 Baseline fixtures repaired against untouched `5ecd53f` (see `RUNTIME_REFACTOR_BASELINE.md`). Implemented elapsed-time stepping, one shared frame budget, background profiling and cooperative daily transactions; extracted HUD ownership and semantic icon names; centralized painted ground queries and split marching presentation. Targeted validation and remaining measured limits are recorded with this batch. Renderer passes and terrain worker dependency extraction remain deferred until the engine decision.
+
+Runtime validation follow-up (2026-11-22): long tests now stream progress; the save matrix completes with 22 passes. Final world checks pass 15 with one W6 mismatch reproduced on untouched production. Painter hot loops yield more often, reuse a scratch buffer and restore shared climate material when interleaving. Worker and phone HUD checks pass; physical phone testing remains open. See `RUNTIME_VALIDATION_FOLLOWUP.md` for evidence and timing limits.

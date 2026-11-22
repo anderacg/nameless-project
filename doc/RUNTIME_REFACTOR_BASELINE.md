@@ -55,3 +55,5 @@ The repaired fixtures also pass on untouched production code: worldui 48, buildm
 Full `worldprint` reached the 600-second limit on both the untouched and changed revisions. The current broad `worldsave` matrix reached the limit too, after an earlier 240-second attempt. Neither reported JavaScript errors before timeout, but these runs are **unverified**, not passes. No world fingerprints were re-recorded. The focused midnight suite does exercise the real compressed autosave and read its record back; session checks also pass. This is not a full-suite green-baseline claim.
 
 Renderer passes and worker dependency extraction remain deferred until the engine choice. Terrain kernels and daily callbacks still need finer subdivision to eliminate the remaining long operations. The coordinator's full sweep remains outstanding.
+
+Follow-up (2026-11-22): the long suites have now completed. See [RUNTIME_VALIDATION_FOLLOWUP.md](RUNTIME_VALIDATION_FOLLOWUP.md) for save results, the reproduced pre-existing W6 mismatch, finer painter steps and phone-emulation coverage. The timeout results above describe the earlier runs.
