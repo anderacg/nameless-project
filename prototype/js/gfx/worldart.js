@@ -184,7 +184,7 @@ function trample(P,D,x0,y0,w,h,[cx,cy,rx,ry,amt]){if(cx+rx<x0||cy+ry<y0||cx-rx>=
 // engine/worldnature.js PX.CROP_PLANTS: young, ripe, full, flower, fruit, leaf, stubble, bare; none: as it is all year). A crop a
 // plot (seeded by its tile)
 const FARM={ripe:1,season:null,ripeOf:{young:.15,ripe:1,full:1,flower:.7,fruit:1,leaf:.5,stubble:1,bare:.6},
-  grow:{wheat:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},barley:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},
+  grow:{hay:{spring:'young',summer:'full',autumn:'stubble',winter:'bare'},wheat:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},barley:{spring:'young',summer:'ripe',autumn:'stubble',winter:'bare'},
     rye:{spring:'young',summer:'ripe',autumn:'ripe',winter:'stubble'},veg:{spring:'young',summer:'full',autumn:'full',winter:'bare'},
     turnips:{spring:'young',summer:'full',autumn:'full',winter:'full'},potato:{spring:'young',summer:'full',autumn:'full',winter:'bare'},
     flax:{spring:'young',summer:'flower',autumn:'ripe',winter:'bare'},herbs:{spring:'young',summer:'flower',autumn:'flower',winter:'young'},
@@ -226,16 +226,37 @@ function farmPlot(t,tx,ty,c,fr,ed,px,z=1,pxf=null){const h=(x,y,s)=>hash(x,y,t.s
   //  then its picture, its rim the ground's own darkened)); at any other scale each game px lit at its top left, shaded at its bottom right
   const F=FARM.fine;
   if(z<=1||!pxf){for(let i=0;i<256;i++)if(T[i])px([Q[i*3],Q[i*3+1],Q[i*3+2]],i&15,i>>4);return}
-  const Z=16*z,FC=new Float32Array(Z*Z*3),FD=new Uint8Array(Z*Z),sf=fine?PX.worldCrop(k,c,PX.CROP_PLANTS[k]?Math.floor(h(0,0,23)*4):v,{ripe:rp,stage:stg,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z}):null;
+  const Z=16*z,FC=new Float32Array(Z*Z*3),FD=new Uint8Array(Z*Z),sf=fine?PX.worldCrop(k,c,PX.CROP_PLANTS[k]?Math.floor(h(0,0,23)*4):v,{ripe:rp,stage:stg,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z,soilOnly:!!PX.CROP_PLANTS[k]}):null;
   for(let i=0;i<256;i++){if(!T[i])continue;const x=i&15,y=i>>4,e=SK[i]===2?9:ed(x,y);
     for(let j=0;j<z;j++)for(let q=0;q<z;q++){const X=x*z+q,Y=y*z+j;if(e<2&&h(tx*64+X,ty*64+Y,42)<F.rag)continue;const n=h(tx*64+X,ty*64+Y,41)-.5,o=(Y*Z+X)*3,fi=Y*Z+X;
       if(sf&&SK[i]!==2){const m=1+n*(sf.tr[fi]?F.soil:F.leaf);FC[o]=Math.min(255,sf.rgb[fi*3]*m);FC[o+1]=Math.min(255,sf.rgb[fi*3+1]*m);FC[o+2]=Math.min(255,sf.rgb[fi*3+2]*m)}
       else{const m=SK[i]===2?1:SK[i]===1?1+n*F.soil:(q===0&&j===0?F.lit:q===z-1&&j===z-1?F.shade:1)+n*F.leaf;FC[o]=Math.min(255,Q[i*3]*m);FC[o+1]=Math.min(255,Q[i*3+1]*m);FC[o+2]=Math.min(255,Q[i*3+2]*m)}
       FD[fi]=1}}
+  const plantMask=fine&&PX.CROP_PLANTS[k]?FD.slice():null;
   for(const [S,X,Y] of FS){for(let j=0;j<S.sh.length;j+=2){const x=X+S.sh[j],y=Y+S.sh[j+1];if(x<0||y<0||x>=Z||y>=Z||!FD[y*Z+x])continue;const o=(y*Z+x)*3;FC[o]+=(18-FC[o])*.3;FC[o+1]+=(26-FC[o+1])*.3;FC[o+2]+=(42-FC[o+2])*.3}
     const N=S.width;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const a=S.a[j*N+i];if(!a)continue;const x=X-S.ax+i,y=Y-S.ay+j;if(x<0||y<0||x>=Z||y>=Z)continue;const o=(y*Z+x)*3,u=(j*N+i)*3;
-      if(a===2){const g=FD[y*Z+x]?.55:1;FC[o]=FC[o]*(1-g)+30*g;FC[o+1]=FC[o+1]*(1-g)+28*g;FC[o+2]=FC[o+2]*(1-g)+30*g}else{FC[o]=S.rgb[u];FC[o+1]=S.rgb[u+1];FC[o+2]=S.rgb[u+2]}FD[y*Z+x]=1}}
-  for(let i=0;i<Z*Z;i++)if(FD[i])pxf([FC[i*3],FC[i*3+1],FC[i*3+2]],i%Z,(i/Z)|0)}
+      if(a===2){const g=FD[y*Z+x]?.55:1;FC[o]=FC[o]*(1-g)+30*g;FC[o+1]=FC[o+1]*(1-g)+28*g;FC[o+2]=FC[o+2]*(1-g)+30*g}else{FC[o]=S.rgb[u];FC[o+1]=S.rgb[u+1];FC[o+2]=S.rgb[u+2]}FD[y*Z+x]=1;if(plantMask)plantMask[y*Z+x]=0}}
+  for(let i=0;i<Z*Z;i++)if(FD[i])pxf([FC[i*3],FC[i*3+1],FC[i*3+2]],i%Z,(i/Z)|0);
+  if(fine&&PX.CROP_PLANTS[k])return {tx,ty,kind:k,clim:c,variant:Math.floor(h(0,0,23)*4),stage:stg,snow:c==='grass'||c==='frost'?fr:0,wet:c==='swamp'?1:0,terrace:(FARM.terrace[cu]||[]).includes(k),fine:z,mask:plantMask};
+}
+// Farm foliage shares grass's spatial wind, but uses cached crop sprites; roots and soil never move.
+const CropWind={
+  lean:2,amplitude:{hay:1,wheat:1,barley:1,rye:1,veg:.35,turnips:.3,potato:.4,flax:.85,herbs:.55,vines:.4,irrigated:.5},
+  phase(x,y,kind,now=performance.now()/1000){
+    if(reducedMotion())return 0;const G=WORLD_FLORA.grass,z=2,X=x*z,Y=y*z;
+    return clamp(Math.round((this.amplitude[kind]||.5)*G.wind*(Math.sin(now*1.9+X*.05+Y*.03)+.8*Math.sin(now*G.gust[1]*6.28/3+X*6.28/G.gust[0]-Y*.01))),-this.lean,this.lean);
+  },
+  sprite(p,lean){return PX.worldCrop(p.kind,p.clim,p.variant,{fine:p.fine,stage:p.stage,snow:p.snow,wet:p.wet,terrace:p.terrace,plantsOnly:true,lean})},
+  mask(p){if(p.path)return p.path;const path=p.path=new Path2D(),N=TILE*p.fine;
+    for(let y=0;y<N;y++){let start=-1;for(let x=0;x<=N;x++){const on=x<N&&p.mask[y*N+x];if(on&&start<0)start=x;else if(!on&&start>=0){path.rect(start,y,x-start,1);start=-1}}}return path;
+  },
+  draw(ground,sx,sy,now=performance.now()/1000){
+    for(const p of ground.crops||[]){const x=sx+p.tx*TILE-ground.x,y=sy+p.ty*TILE-ground.y;if(x+TILE<0||y+TILE<0||x>VW||y>VH)continue;
+      const lean=p.stage!=='bare'&&p.stage!=='stubble'&&(CHEAT.noFog||inSight(p.tx*TILE+8,p.ty*TILE+8))?this.phase(p.tx*TILE,p.ty*TILE,p.kind,now):0,sp=this.sprite(p,lean);if(sp.box[2]<sp.box[0])continue;
+      ctx.save();try{ctx.translate(x,y);ctx.scale(1/p.fine,1/p.fine);ctx.clip(this.mask(p));ctx.imageSmoothingEnabled=false;ctx.drawImage(sp,0,0)}finally{ctx.restore()}
+    }
+  }
+};
 /* ---------- the world's water and roads (doc/WORLD_DESIGN.md §12.1). The water by the pixel (wpx): the water tiles (sea and lake, river, a ford's shallows, under a bridge:
    the plan's wk) read as a smooth field, its shore a curve (lakes rounded, rivers bending, a staircase of tiles a slope), wobbling
    a pixel or two. Over the window painted and a margin,
