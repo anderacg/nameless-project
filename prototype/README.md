@@ -1499,11 +1499,20 @@ Each suite in `tests/` runs headless in Chrome or Edge by opening `Ashmark.html?
 **World battles in the tests** (2026-10-30): the harness runs every suite with world battles on, as the game does (`WORLD_BATTLE.on`): an encounter met on the map is fought in the map's own circle, and the map shows the marching armies. A suite of the battle screen's own rules (its field, its controls and HUD, the fingerprint suites; the screen caves, sieges, tournaments and the lab still fight on) opts out with `window.ARENA=true` as its first line. `tests/battlescreen.js` checks the battle screen itself with world battles on: a cave, a tournament and the lab each open on their own field, and a band met on the map in its circle.
 
 ```
-.\tests\run-tests.ps1                                  # every suite (about 4 min)
-.\tests\run-tests.ps1 -Parallel 4                      # every suite, 4 browsers at once (about 1.5 min)
-.\tests\run-tests.ps1 -Suites rosters,parties,garrison # selected suites
-.\tests\run-tests.ps1 -Suites siege -Seed (1..8)       # reproducible random scenarios
+.\tests\run-tests.ps1 -Suites rosters,parties,garrison -Parallel 2
+.\tests\run-tests.ps1 -Suites siege -Seed (1..8) -Parallel 2
+.\tests\run-tests.ps1 -Suites worldprint,worldsave -Seed 1 -Parallel 2 -TimeoutSeconds 600
 ```
+
+Use targeted suites with two browser workers; the coordinator runs the full sweep.
+
+For long checks, the optional Node/Playwright runner streams stage and chunk progress while synchronous JavaScript is busy:
+
+```
+node tests/run-progress.cjs worldprint worldsave
+```
+
+It requires Node and Playwright, uses an installed Chrome/Edge or Playwright Chromium, and prints a temporary report directory containing results and every progress event. `CHROME_BIN` selects another browser. Each suite runs with seed 1; phone suites get an 844 × 390 touch viewport. `ASHMARK_TEST_JOBS` is 1 or 2 (default 2), `ASHMARK_TEST_STALL_SECONDS` defaults to 180 without progress, and `ASHMARK_TEST_TOTAL_SECONDS` defaults to 2400 per suite. The runner closes its own pages and browser. `Kit.progress` and `Kit.paintProgress` use the wall clock because rendered-view fingerprints freeze `performance.now`.
 
 Every run is on the generated world, the only one. `-Gen`, the old switch for it, adds nothing; it is kept so old commands still
 work (`-Classic` and `?gen=0`, today's map's, are gone with it: D49).

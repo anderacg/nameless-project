@@ -4,14 +4,15 @@
 // painted there is the very chunk painted here, its pictures at game px and fine px, its props, grass, water and standing index (8
 // chunks: water, roads, holdings, bridges); in play the chunks queued are painted there, none outside the view here (one in view waiting
 // longer than ART_WORKERS.help helped here too, the first done kept); a job of an older world is thrown away.
-window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m);
+window.RUN=async()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(text);Kit.progress('assertion',{text})},info=m=>{o.push('INFO '+m);Kit.progress('info',{text:m})};
  const done=()=>{const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
- const wait=ms=>new Promise(r=>setTimeout(r,ms)),until=async(f,ms)=>{const t0=performance.now();while(!f()&&performance.now()-t0<ms)await wait(50);return f()};
+ const wait=ms=>new Promise(r=>setTimeout(r,ms)),until=async(f,ms,stage)=>{const t0=performance.now();let ping=Date.now();while(!f()&&performance.now()-t0<ms){if(Date.now()-ping>=5000){Kit.progress(stage,{ms:performance.now()-t0});ping=Date.now()}await wait(50)}return f()};
  try{const t=T,G=t.G,WA=t.WorldArt,AW=t.ArtWorkers,MW=t.MW,MH=t.MH,TILE=t.TILE,CH=t.CHUNK;
-  Kit.begin('soldier',1);Kit.world();G.mode='world';G.modal=false;t.drawWorld();
+  // This async fixture draws its own cameras; the live loop must not replace their queues between awaits.
+  window.requestAnimationFrame=()=>0;Kit.progress('worker parity setup');Kit.begin('soldier',1);Kit.world();G.mode='world';G.modal=false;t.drawWorld();
   // ---- the pool booted, the world sent and loaded there
   const t0=performance.now();ok(AW.start(true),'the painter workers start ('+AW.list.length+' of them, '+(navigator.hardwareConcurrency||'?')+' cores)');
-  const up=await until(()=>AW.ready(),240000);ok(up,'the world loaded in them ('+((performance.now()-t0)/1000).toFixed(1)+' s, booted and made again from the save record)');
+  const up=await until(()=>AW.ready(),240000,'worker world startup');ok(up,'the world loaded in them ('+((performance.now()-t0)/1000).toFixed(1)+' s, booted and made again from the save record)');
   if(!up){info('pool: fail '+AW.fail+' '+(AW.why||'')+','+AW.list.length+' workers, n '+AW.n+', theirs '+AW.list.map(w=>w.wn+(w.last?' '+w.last:'')).join(' / '));done();return}
   // ---- 8 chunks: the most water, roads, holdings' lots and bridges
   const cols=WA.cols,rows=WA.rows,score=[];for(let cy=0;cy<rows;cy++)for(let cx=0;cx<cols;cx++){let w=0,r=0;const tx0=cx*CH/TILE,ty0=cy*CH/TILE;
@@ -25,7 +26,7 @@ window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>
   const same=(a,b)=>{if(!a||!b)return a===b;if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(a[i]!==b[i])return false;return true};
   const there=(cx,cy,fine)=>new Promise(res=>{const w=AW.list.find(q=>!q.busy&&q.wn===AW.n)||AW.list[0];AW.post(w,cx,cy,fine,res)});
   const bad=[];let n=0,props=0,clumps=0,stand=0,ms=[0,0];
-  for(const s of pick)for(const fine of [1,2]){const a=performance.now(),W=await there(s.cx,s.cy,fine),b=performance.now(),j=WA.paintJob(s.cx,s.cy,fine);t.runGen(j.gen);const H=j.rec;ms[0]+=b-a;ms[1]+=performance.now()-b;n++;
+  for(const s of pick)for(const fine of [1,2]){Kit.progress('worker chunk sent',{cx:s.cx,cy:s.cy,fine});const a=performance.now(),W=await there(s.cx,s.cy,fine),b=performance.now(),j=WA.paintJob(s.cx,s.cy,fine);t.runGen(j.gen);const H=j.rec;Kit.progress('worker chunk painted',{cx:s.cx,cy:s.cy,fine});ms[0]+=b-a;ms[1]+=performance.now()-b;n++;
    const tag=s.cx+','+s.cy+' x'+fine,no=m=>bad.push(tag+': '+m);
    if(!same(px(W.cv),px(H.cv)))no('game-px picture differs');if(!!W.fcv!==!!H.fcv||W.fcv&&!same(px(W.fcv),px(H.fcv)))no('fine picture differs');
    for(const k of ['shore','flow','wet','shd','lift','dep'])if(!same(W[k],H[k]))no(k+' differs');
@@ -34,7 +35,7 @@ window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>
    if((W.props||[]).length!==(H.props||[]).length)no('props '+(W.props||[]).length+' / '+(H.props||[]).length);else H.props.forEach((p,i)=>{const q=W.props[i];props++;
     for(const k of ['x','y','ax','ay','kind','low'])if(p[k]!==q[k])no('prop '+i+' '+k);if(JSON.stringify(p.bake||null)!==JSON.stringify(q.bake||null))no('prop '+i+' bake');if(i<60&&!same(px(p.s),px(q.s)))no('prop '+i+' picture')});
    const SH=H.n&&H.n.stand,SW=W.n&&W.n.stand;for(const k of ['trees','fen','hills','peaks','decor','flat','rock'])if(H.n[k]!==W.n[k])no('count '+k);
-   if(SH){for(const k of ['X','Y','w','h','n','C','R'])if(SH[k]!==SW[k])no('stand '+k);if(!same(SH.at,SW.at)||!same(SH.L,SW.L))no('stand grid');stand+=SH.n;
+   if(SH){for(const k of ['X','Y','w','h','n','C','R'])if(SH[k]!==SW[k])no('stand '+k);if(!same(SH.at,SW.at)||!same(SH.L,SW.L))no('stand grid');stand+=SH.n||0;
     for(let e=0;e<SH.n;e++){const o=e*4;if(SH.E[o]!==SW.E[o]||SH.E[o+1]!==SW.E[o+1]||SH.E[o+3]!==SW.E[o+3])no('stand entry '+e);const r=SH.E[o+2],q=SW.E[o+2];
      if((r<0||q<0)?r!==q:(()=>{const A=t.PX.WN_SPR[r],B=t.PX.WN_SPR[q];return !B||A.width!==B.width||!same(A.a,B.a)||String(A.box)!==String(B.box)})())no('stand sprite '+e)}}}
   ok(!bad.length,'a chunk painted in a worker is the very one painted here: '+n+' paintings (8 chunks at game px and fine px), '+props+' props, '+clumps+' grass clumps, '+stand+' standing entries'+(bad.length?'; '+bad.slice(0,8).join('; '):''));
@@ -43,7 +44,7 @@ window.RUN=async()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>
   {const st=WA.start,calls={n:0,v:0};WA.start=function(cx,cy){if(!WA.view.has(cy*WA.cols+cx)){calls.n++;if(!calls.st)calls.st=cx+','+cy+' '+new Error().stack.split('\n').slice(1,6).join(' | ')}else calls.v++;return st.call(this,cx,cy)};const lo=WA.liveOk;WA.liveOk=true;let keepLive=0;
    try{const far=pick[0],cam={x:far.cx*CH+8,y:far.cy*CH+8};for(const k of [...WA.chunks.keys()])WA.forget(...(()=>{const x=k%cols,y=(k/cols)|0;return[x*CH,y*CH,x*CH+1,y*CH+1]})());
     keepLive=setInterval(()=>{WA.idleAt=performance.now()},20);    WA.idleAt=performance.now();t.ctx.save();WA.draw(t.ctx,cam);t.ctx.restore();const want=[...WA.view];
-    const got=await until(()=>{WA.idleAt=performance.now();t.ctx.save();WA.draw(t.ctx,cam);t.ctx.restore();return want.every(k=>WA.chunks.has(k))},120000);
+    const got=await until(()=>{WA.idleAt=performance.now();t.ctx.save();WA.draw(t.ctx,cam);t.ctx.restore();return want.every(k=>WA.chunks.has(k))},120000,'worker viewport fill');
     ok(got&&calls.n===0,'in play the chunks queued are painted by the workers, none outside the view here; those in view filled ('+want.filter(k=>WA.chunks.has(k)).length+' of '+want.length+'; in view helped here after '+t.ART_WORKERS.help+' ms: '+calls.v+' steps begun; outside it '+calls.n+(calls.st?', first '+calls.st:'')+')');
     const k0=[...AW.jobs.keys()][0];WA.invalidate();await wait(1500);ok(!AW.jobs.size||![...AW.jobs.values()].some(j=>j.n===AW.n),'a world changed: the jobs of the one before thrown away when they come back'+(k0==null?' (none in flight)':''))}
    finally{WA.start=st;WA.liveOk=lo;clearInterval(keepLive)}}

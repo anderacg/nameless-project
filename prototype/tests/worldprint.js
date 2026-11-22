@@ -29,7 +29,7 @@
 // And the sums the generator makes (WM.sum: the classic world, seeds s1-s3 at Normal and s1 at Large), against SUMS.
 // The notes below call W1-W8 and B2 G1-G8 and GB2: their names while the old hand-made map kept W1-W8 (its own table, EXPECT
 // then, went with the map, D49: the generated world's GEXPECT is EXPECT now).
-window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.push('INFO '+m),t=T,G=t.G,P=t.P,W=t.W;
+window.RUN=()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(text);Kit.progress('assertion',{text})},info=m=>{o.push('INFO '+m);Kit.progress('info',{text:m})},t=T,G=t.G,P=t.P,W=t.W;
 // (G1-G8, GB2 and the sums recorded 2026-10-22 in wave 3's last merge (E), on 70970ed: A's classic terrain (the hints of §8.15) and
 //  B's classic anchors (the old map's 37 holdings at their places), the first generated classic world the plan holds still. From here
 //  they hold, re-recorded only with a reason; at the flip (wave 4) W1-W8 took their values. W6's spots are the
@@ -911,6 +911,8 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),info=m=>o.pus
 // (W5, W6 re-recorded 2026-11-19 again, on purpose, the owner's "please fix that straight line steep hill": a face's rock and sand
 //  blended by noise, not picked per column, and painted as earth or rock with a ragged grassy lip, strata, cracks, roots and scree
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
+// Managed Linux Chromium: W6 f9a69e4c on both untouched 5ecd53f and 937a988, all six view hashes identical.
+// The canonical W6 below is retained; the follow-up report records this pre-existing environment mismatch.
 const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
@@ -1010,7 +1012,8 @@ const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12ad
 // (classic re-recorded 2026-11-17 again, on purpose: its peaks and great river back (7570e2c: W1-W8 above); the random presets'
 //  sums hold, the hints the classic world's alone. Was classic 943ffc16)
 const SUMS={classic:'cddc33f6','Normal s1':'91cae7e6','Normal s2':'3fd4482d','Normal s3':'43cecd26','Large s1':'37ce35ca'};
-const r0=Math.random,pn=performance.now,t0=pn.call(performance);
+const r0=Math.random,pn=performance.now,t0=pn.call(performance),restorePaint=Kit.paintProgress();
+Kit.progress('worldprint start');
 try{
  try{localStorage.clear()}catch(e){}
  const fnv=()=>{let h=2166136261;const H={
@@ -1019,9 +1022,9 @@ try{
    n(v){h=Math.imul(h^(Math.round(v*1e6)|0),16777619)>>>0;h=Math.imul(h^(Math.round(v)|0),16777619)>>>0;return H},
    get x(){return h.toString(16).padStart(8,'0')}};return H};
  const bytes=a=>new Uint8Array(a.buffer,a.byteOffset,a.byteLength),words=a=>new Uint32Array(a.buffer,a.byteOffset,a.byteLength>>2);
- const got={},lines={},check=(id,h,what)=>{got[id]=h;lines[id]=id+' '+h+' '+what},seed=n=>{Math.random=t.seeded(n)};
+ const got={},lines={},check=(id,h,what)=>{got[id]=h;lines[id]=id+' '+h+' '+what;Kit.progress('fingerprint',{id,hash:h,what})},seed=n=>{Math.random=t.seeded(n)};
  // ---- the game: one begin (the world's picture made first, as the title screen makes it)
- t.worldCv();seed(9001);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();const d0=G.day;
+ Kit.progress('painting initial whole world');t.worldCv();Kit.progress('starting first game');seed(9001);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();const d0=G.day;
  // W1-W4: the world begin leaves (asked again after the second begin)
  const world=()=>{const h={};
   h.W1=[fnv().b(t.tiles).b(t.climate).x,'tiles and climate ('+t.MW+'x'+t.MH+')'];
@@ -1039,22 +1042,22 @@ try{
  {const spots=[[P.x,P.y],[1792,1280],[2688,768]],keep={x:P.x,y:P.y,clock:G.clock},parts=[],h=fnv();let k=0,now=1e7;
   performance.now=()=>now;
   for(const [x,y] of spots)for(const day of [.3,.8]){P.x=x;P.y=y;P.tx=P.ty=null;G.chase=null;G.clock=day*t.DAY;seed(9061+k);now=1e7+k*1e4;
-   t.drawWorld();const p=fnv().b(words(t.ctx.getImageData(0,0,t.VW,t.VH).data)).x;parts.push(p);h.s(p);k++}
+   Kit.progress('drawing world view',{k,x,y,day});t.drawWorld();const p=fnv().b(words(t.ctx.getImageData(0,0,t.VW,t.VH).data)).x;parts.push(p);h.s(p);k++}
   performance.now=pn;P.x=keep.x;P.y=keep.y;G.clock=keep.clock;
   check('W6',h.x,'drawWorld at 3 spots by day and night ('+t.VW+'x'+t.VH+': '+parts.join(' ')+')')}
  // ---- W8: 600 frames, you on the move
- {seed(9008);t.setSpeed(1);P.tx=P.x+96;P.ty=P.y+48;for(let f=0;f<600;f++)t.updateWorld(.05);
+ {seed(9008);t.setSpeed(1);P.tx=P.x+96;P.ty=P.y+48;for(let f=0;f<600;f++){if(!(f%100))Kit.progress('march simulation',{frame:f});t.updateWorld(.05)}
   const h=fnv().n(P.x).n(P.y),n=[],lists={lords:W.lords,bands:t.bandits,patrols:W.patrols,comps:t.cparties(),caravans:W.caravans,monsters:W.monsters,
    critters:W.critters,refugees:W.refugees,folk:W.folk,ships:W.ships,fights:W.fights};
   for(const k in lists){const L=lists[k]||[];h.s(k).n(L.length);for(const q of L)h.n(q.x).n(q.y);n.push(k+' '+L.length)}
   check('W8',h.x,'every party\'s place after 600 frames (you at '+P.x.toFixed(1)+','+P.y.toFixed(1)+', mode '+G.mode+'; '+n.join(', ')+')')}
  // ---- W7: on until 3 days have passed, then the save
  {seed(9007);P.x=-999;P.y=-999;P.tx=P.ty=null;G.chase=null;t.setSpeed(3);let f=0;
-  for(;f<4000&&G.day<d0+3;f++)t.updateWorld(.05);
+  for(;f<4000&&G.day<d0+3;f++){if(!(f%250))Kit.progress('three-day simulation',{frame:f,day:G.day});t.updateWorld(.05)}
   const mode=G.mode;G.mode='world';const s=save();
   check('W7',fnv().s(s).x,'the save once 3 days have passed (day '+G.day+', '+f+' more frames, mode '+mode+', '+s.length+' chars)')}
  // ---- begin twice: the same world and the same game as the first begin, a fresh page's
- {seed(9001);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
+ {Kit.progress('starting second game');seed(9001);t.act('begin','soldier');G.quietEvents=true;G.mode='world';G.modal=false;t.hidePanel();
   const w2=world(),s=save(),diff=Object.keys(w1).filter(id=>w2[id][0]!==w1[id][0]),p2=paint()[0];
   ok(p2===got.W5,'begin twice: the second paints the world as the first did (W5'+(p2===got.W5?'':'; differs: '+p2)+')');
   ok(!diff.length,'begin twice: the second makes the world the first made (W1-W4'+(diff.length?'; differ: '+diff.map(id=>id+' '+w2[id][0]).join(', '):'')+')');
@@ -1065,8 +1068,8 @@ try{
   else o.push('FAIL '+id+' has no baseline ('+got[id]+')');
  // ---- the generator's sums: the classic world, seeds s1-s3 at Normal, s1 at Large
  {const S={classic:t.classicSettings(),'Normal s1':{preset:'normal',seed:'s1'},'Normal s2':{preset:'normal',seed:'s2'},'Normal s3':{preset:'normal',seed:'s3'},'Large s1':{preset:'large',seed:'s1'}};
-  for(const k in SUMS){const h=t.genWorld(S[k]).map.sum.toString(16).padStart(8,'0');info('sum '+k+' '+h);if(SUMS[k])ok(h===SUMS[k],'the sum the generator makes, '+k+', equals the baseline ('+h+(h===SUMS[k]?'':'; baseline '+SUMS[k])+')');else o.push('FAIL sum '+k+' has no baseline ('+h+')')}}
+  for(const k in SUMS){Kit.progress('generator checksum',{world:k});const h=t.genWorld(S[k]).map.sum.toString(16).padStart(8,'0');info('sum '+k+' '+h);if(SUMS[k])ok(h===SUMS[k],'the sum the generator makes, '+k+', equals the baseline ('+h+(h===SUMS[k]?'':'; baseline '+SUMS[k])+')');else o.push('FAIL sum '+k+' has no baseline ('+h+')')}}
 }catch(e){o.push('EXC '+e.message+' '+e.stack)}
-finally{Math.random=r0;performance.now=pn}
+finally{Math.random=r0;performance.now=pn;restorePaint()}
 info('took '+((pn.call(performance)-t0)/1000).toFixed(1)+' s');
 const d=document.createElement('pre');d.id='OUT';d.textContent=o.concat(ERR.map(e=>'ERR '+e)).join('\n');document.body.appendChild(d)};
