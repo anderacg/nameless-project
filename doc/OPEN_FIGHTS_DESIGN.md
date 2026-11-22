@@ -116,3 +116,11 @@ The actual active combat edge is now visible by default (`OPEN_FIGHT.ring`). A n
 Checks: `battleboundary` verifies visible pixels, animation, reduced motion, proximity feedback, preserved canvas state and unchanged area/health; `openfights` checks the default visibility switch and existing world behavior.
 
 Validation: battleboundary 11 and openfights 20 passed, with no JavaScript errors. The boundary checks also pass at the actual responsive viewport; desktop and phone previews are in `/workspace/artifacts/battle-boundary/`.
+
+## Individual wildlife visibility — 2026-11-22
+
+Implemented: wildlife members each have their own position, forest-cover sight check, drawing entry and `WorldFigure` target. The herd is retained internally as the shared roaming/fleeing coordinator. A hidden centre cannot hide exposed members, and a visible centre cannot reveal members hidden in the forest. Drawing and picking filter each animal independently. Hunting validates and approaches the actual selected animal; a target lost in cover is no longer chased through its live hidden coordinates.
+
+The controller's shared marker and outline are removed. Wild counts map to actual members, including counts above the old six-sprite display cap; pasture livestock retains its existing cap and presentation. Nearby formation movement continues when the centre is hidden. A broad sight test includes the formation's possible extent, existing member positions and saved scatter offsets, avoiding work on distant flocks while keeping separated visible members discoverable. Saves, population accounting, rewards and coordinated herd movement retain their existing rules.
+
+Validation: individualwildlife covers mixed forest/open ground, independent drawing/picking/targeting, complete counts, scattered members and hidden-centre updates. Worldcombat, wildlife, wildground and critters check hunting, rewards, animation, terrain/wading and livestock. Drawing-only fixture overrides now target member visibility and pass an explicit sight radius rather than bypassing group visibility.

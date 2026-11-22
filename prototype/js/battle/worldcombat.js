@@ -10,8 +10,8 @@ class WorldFigure extends WorldObject{
   get faction(){return this.owner.faction}
   get meetsAnyTime(){return true}
   here(){return this.owner.here()&&!this.unit.dead&&(this.index==null?MARCH_ARMIES.get(this.owner)?.units.includes(this.unit):HERD_FLOCK.get(this.owner)?.m[this.index]===this.unit)}
-  inView(V){return this.owner.inView(V)&&manSpotted(yourSight(V),this)}
-  chaseable(){return this.here()}
+  inView(V){return this.index!=null?this.here()&&this.owner.memberVisible(this.unit,V):this.owner.inView(V)&&manSpotted(yourSight(V),this)}
+  chaseable(){return this.here()&&(this.index==null||this.inView(vis()))}
   meetPoint(){return this}
   pick(at){const b=this.index!=null?[-critterArt(this.id,0).w/2,-critterArt(this.id,0).h,critterArt(this.id,0).w/2,1]:MARCH_ARMIES.get(this.owner)?.figure(this.unit);if(b)at.box(this,this.x+b[0],this.y+b[1],this.x+b[2],this.y+b[3])}
   meet(){if(!this.here())return false;G.worldTarget=this;return this.index!=null?WildHunt.prepare(this.owner,this):this.owner.meet()}
