@@ -369,12 +369,17 @@ function calloutDraw(C){
    by battle and group: taken the first frame the group is on the field, a group come late at its coming; more men since count as
    whole), in the unit card's health green over a dark trough; every group's, yours, your allies' and the enemy's, faded as its flag
    is under another. On the screen as the flags are, at their scale. w, gap: its width and the gap to the crossbar, art px (the flag's) */
-const GROUP_HP={w:4,gap:1,col:'#78c474',trough:'#2c2a26',edge:'#0a0c12',now:{}},GROUP_HP0=new WeakMap();
+// (beasts: each beast its own bar over it, never its group's by its icon (the owner, 2026-11-22: "For monster can you show an individual
+// health bar instead of group health?"; render.js drawUnit): a pack's bar said nothing of which wolf was hurt)
+const GROUP_HP={w:4,gap:1,col:'#78c474',trough:'#2c2a26',edge:'#0a0c12',now:{},beasts:true},GROUP_HP0=new WeakMap();
+// (whether u, a beast, has its own bar over it in place of its group's)
+const ownHpBar=u=>!!(GROUP_HP.beasts&&u&&u.s&&u.s.beast);
 function drawGroupHealth(){
-  const G=GROUP_HP,now=G.now;for(const k in now)now[k]=0;for(const u of B.units)if(u.grp&&u.hp>0)now[u.grp]=(now[u.grp]||0)+u.hp;
+  const G=GROUP_HP,now=G.now,own=new Set();for(const k in now)now[k]=0;for(const u of B.units){if(u.grp&&ownHpBar(u))own.add(u.grp);if(u.grp&&u.hp>0)now[u.grp]=(now[u.grp]||0)+u.hp}
   let h0=GROUP_HP0.get(B);if(!h0)GROUP_HP0.set(B,h0={});for(const g in B.groups)if(h0[g]==null&&now[g]>0)h0[g]=now[g];
   if(!B.icons||!B.icons.length)return;const K=unitIconScale(),H=FLAG.ch;
-  for(const r of B.icons){const f=Math.min(1,(now[r.g]||0)/Math.max(1,h0[r.g]||1)),n=Math.round((H-2)*f);
+  for(const r of B.icons){if(own.has(r.g))continue;// (a beasts' group: each its own bar, ownHpBar)
+    const f=Math.min(1,(now[r.g]||0)/Math.max(1,h0[r.g]||1)),n=Math.round((H-2)*f);
     ctx.save();ctx.translate(r.x-(G.w+G.gap+2)*K,r.y);ctx.scale(K,K);if(r.under)ctx.globalAlpha=ICON_FAN.under;
     ctx.fillStyle=G.edge;ctx.fillRect(0,0,G.w,H);ctx.fillStyle=G.trough;ctx.fillRect(1,1,G.w-2,H-2);if(n>0){ctx.fillStyle=G.col;ctx.fillRect(1,H-1-n,G.w-2,n)}ctx.restore()}
 }

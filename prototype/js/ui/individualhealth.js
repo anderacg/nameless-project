@@ -4,7 +4,7 @@ const UNIT_HEALTH={per:25,size:3,gap:1,row:8,edge:'#39372f',empty:'#292b28',heal
 class IndividualHealth{
   static segments(hp,max){return Array.from({length:max>0&&Number.isFinite(max)?Math.ceil(max/UNIT_HEALTH.per):0},(_,i)=>clamp((hp-i*UNIT_HEALTH.per)/Math.min(UNIT_HEALTH.per,max-i*UNIT_HEALTH.per),0,1))}
   static wanted(u){if(!(u.hp>0)||!(u.max>0)||u.left||u.residentHidden)return false;const selected=B&&B.sel!=='all'&&selGroups().includes(u.grp),target=B?.worldTarget===u;
-    return HPBARS.on||u.hp<u.max-.01||selected||target||!!(u.tgt&&u.tgt.hp>0&&Math.hypot(u.x-u.tgt.x,u.y-u.tgt.y)<Math.max(u.s?.range||0,70*fightSpace()));}
+    return HPBARS.on||ownHpBar(u)||u.hp<u.max-.01||selected||target||!!(u.tgt&&u.tgt.hp>0&&Math.hypot(u.x-u.tgt.x,u.y-u.tgt.y)<Math.max(u.s?.range||0,70*fightSpace()));}
   static paint(x,y,hp,max,k=1){
     const H=UNIT_HEALTH,values=this.segments(hp,max),rows=Math.ceil(values.length/H.row),cols=Math.min(H.row,values.length),step=H.size+H.gap,col=hp/max<.25?H.critical:hp/max<.6?H.hurt:H.healthy;
     ctx.save();ctx.translate(Math.round(x),Math.round(y));ctx.scale(k,k);

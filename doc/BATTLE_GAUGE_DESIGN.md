@@ -8,7 +8,7 @@ Status: **design, for the owner's answers** (2026-11-10). Nothing built yet. Moc
 
 ## 1. What is there today
 
-- **Over each group:** a plate in its side's colour with its kind's glyph (13 art px, drawn 2× on the screen: `ui/moraleicons.js` `drawUnitIcons`, `UICON`). A health bar stands on its left (`ui/battlehud.js` `drawGroupHealth`), and its status badges sit on its right.
+- **Over each group:** a plate in its side's colour with its kind's glyph (13 art px, drawn 2× on the screen: `ui/moraleicons.js` `drawUnitIcons`, `UICON`). A health bar stands on its left (`ui/battlehud.js` `drawGroupHealth`), and its status badges sit on its right. A pack of beasts has none there: each beast has its own bar over it (`ownHpBar`, 2026-11-22).
 - **Overlap:** plates may overlap. Only plates of two sides at blows are fanned apart side by side (`iconLayout`, `ICON_FAN`). Allies' plates and your own pile up, one over another.
 - **The top bar:** stays as it is.
 
