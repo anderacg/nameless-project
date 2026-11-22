@@ -53,8 +53,8 @@ Kit.suite(({ok})=>{
   window.dangerInSight=()=>'';G.chase=town;P.tx=town.x;P.ty=town.y;C.frame(2);ok(!C.journey,'automatic rest never interrupts a chase');G.chase=null;P.tx=null;
   window.campSpot=()=>({x:P.x,y:P.y,across:false});P.tx=goal.x;P.ty=goal.y;P.bsta=20;C.frame(2);
   ok(!!P.camp&&C.journey?.camp,'a legal nearby site pitches the existing company camp');P.bsta=85;C.frame(2);
-  ok(!P.camp&&!C.journey&&P.tx===goal.x,'recovery strikes the camp and resumes travel');
-  P.bsta=20;C.frame(2);t.toggleCamp();P.bsta=100;C.frame(2);ok(!C.journey&&!P.camp&&P.tx==null,'manual camp controls cancel automatic continuation');
+  ok(!!P.camp?.pack&&!C.journey&&P.tx===goal.x,'recovery queues the route while the camp is packed');t.campStep();G.clock+=(t.campPackLeft()+.001)*t.DAY/24;t.campStep();ok(!P.camp&&P.tx===goal.x,'travel resumes after packing');
+  P.bsta=20;C.frame(2);t.toggleCamp();P.bsta=100;C.frame(2);ok(!C.journey&&!!P.camp?.pack&&P.tx==null,'manual camp controls cancel automatic continuation and start packing');G.clock+=(t.campPackLeft()+.001)*t.DAY/24;t.campStep();
   t.Saves.loadOf('companyRules',{rest:true,journey:{x:goal.x,y:goal.y,camp:true}});P.bsta=85;C.frame(2);
   ok(!C.journey&&P.tx===goal.x,'loading during a campsite approach retains the original destination without replaying an unfinished approach');
   C.reset({rest:true});P.bsta=20;for(const g of ['water','ale','liquor'])t.goodTake(g,1e6);window.supplyLand=()=>({...old.supplyLand(),desert:true,well:false,water:false});

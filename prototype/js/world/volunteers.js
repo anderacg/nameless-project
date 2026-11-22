@@ -9,7 +9,7 @@
    stops. P.recruit: {town, acc (the part of the next one come), n (joined so far)} ---------- */
 const VOLUNTEERS={standing:20,slow:.5,fast:1,at:80,renown:400,renownMax:.5};
 // (where you could recruit now: the holding you stay in, or whose lands your camp is on)
-const volunteerTown=()=>P.stay?townBy(P.stay.town):P.camp?landHold(P.x,P.y):null;
+const volunteerTown=()=>P.stay?townBy(P.stay.town):P.camp&&!P.camp.pack?landHold(P.x,P.y):null;
 // (why its people will not come: '' when they will)
 function volunteerWhy(t){if(!t||t.gone)return 'No holding near';if(hostileTo(t.owner))return 'Its realm is hostile to you';if(recruitment.closed(t))return 'It is in no state to spare men';
   if(standingAt(t)<VOLUNTEERS.standing)return 'They do not know you well enough (standing '+standingAt(t)+' of '+VOLUNTEERS.standing+')';if(!volunteerGroups(t).length)return 'None of your groups to refill';return ''}

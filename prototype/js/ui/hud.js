@@ -71,7 +71,7 @@ function updateHUD(force){
     setHtml(d,(K?'<i class="wx" title="Weather: '+Weather.name(w)+', travel ×'+K.speed+', sight ×'+K.sight+'">'+(w==='clear'?sky:icon('wx_'+w,16))+'</i>':sky)+'<span>Day '+G.day+(K?', '+Weather.season().n:'')+', '+timeOfDay()+(K?', '+Weather.name(w):'')+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>')}
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   window.campaignHud?.update(S,cnt);
-  const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp))}
+  const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp));cb.disabled=!!P.camp?.pack;cb.setAttribute('aria-busy',String(!!P.camp?.pack));cb.title=P.camp?.pack?'Packing camp: '+Math.ceil(campPackLeft()*60)+' game minutes':(P.camp?'Break camp':'Make camp')+' (Z)'}
   questTrackHUD();// (the quests you track, under the band card as it now stands: ui/questtrack.js)
   underwayHUD();// (what your band is doing, under the minimap: ui/underway.js)
 }

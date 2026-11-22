@@ -28,11 +28,11 @@ class CompanyRules{
   endPace(){const p=this.pace;this.pace=null;if(p&&!p.manual&&G.speed===p.boost)setSpeed(p.before,undefined,true)}
   paceStep(){
     if(G.mode!=='world'||G.modal){if(G.mode==='battle')this.endPace();return}
-    const resting=P.tx==null&&!G.chase&&!G.follow&&!G.pitch&&(P.camp||P.stay||this.journey);
+    const resting=P.tx==null&&!G.chase&&!G.follow&&!G.pitch&&(P.camp&&!P.camp.pack||P.stay||this.journey&&!P.camp?.pack);
     if(!resting){this.endPace();return}
     if(!this.pace)this.pace={before:G.speed,boost:Math.max(COMPANY_RULES.restSpeed,G.speed),manual:false};
     const p=this.pace,danger=dangerInSight();
-    if(danger){if(G.speed>1)setSpeed(1,undefined,true);p.manual=true;return}
+    if(danger){if(G.speed>1){if(P.camp)log('Your camp stirs: '+danger+'.','bad','band');setSpeed(1,undefined,true)}p.manual=true;return}
     if(P.bsta>=100){if(!p.manual&&G.speed===p.boost)setSpeed(p.before,undefined,true);p.manual=true;return}
     if(!p.manual&&G.speed!==p.boost)setSpeed(p.boost,undefined,true);
   }

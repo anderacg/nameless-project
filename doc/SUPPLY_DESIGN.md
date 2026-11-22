@@ -129,9 +129,9 @@ Owner (2026-10-19): ale and liquor slow the drain and lift morale; water does ne
 ## 7. Make camp (owner: add it)
 
 - **Make camp** from the keyboard (**Z**, owner: yes), the bottom-right dock, or the **action ring** (§7a) for mouse and touch.
-- Your band stops and pitches tents (drawn at your figure: two small tents and a fire). Stamina +8 an hour, the wounded heal ×1.5, food and drink at the rest rate.
+- Your band stops and pitches tents (drawn at your figure: two small tents and a fire). Stamina +20 an hour, the wounded heal ×1.5, food and drink at the rest rate.
 - **Fast forward:** 8× is allowed in camp, and stops at once when anything hostile comes into sight, as travelling fast does.
-- **Breaking camp:** any travel order. A hostile band that finds you in camp catches you unready: your troops start that battle a little lower in morale.
+- **Breaking camp:** Break camp or any travel order starts a packing timer. The band stays put until it finishes, then follows the latest queued destination. A hostile band that finds you in camp catches you unready: your troops start that battle a little lower in morale.
 - Camping beside water refills empty waterskins for free.
 
 ## 7a. The action ring: left-click and hold (owner)
@@ -146,7 +146,7 @@ A ring of actions for mouse and touch, so nothing needs a key:
 | Button | When | Does |
 |---|---|---|
 | **Make camp** | always (on the map, not in a holding) | §7 |
-| **Break camp** | in camp | leaves camp |
+| **Break camp** | in camp | packs before departing; Cancel packing stays in camp |
 | **Travel here** | held on the ground | the same as a click (for touch) |
 | **Travel here fast** | held on the ground, nothing hostile in sight | travel at 8× until anything calls for you |
 | **Fill waterskins** | at the water's edge or a holding's well (lit while filling; "No empty waterskins" with none to fill) | fills your empty waterskins, free, over game time (§4, §4a) |
@@ -217,3 +217,5 @@ The hero's Health and Mana bars leave the party card for the Hero window (C), an
 3. ~~Make camp~~: decided (Z, the dock, and the action ring on a left-click and hold).
 
 Recovery estimates (2026-10-25): Army cards and inspectors show remaining recovery time and estimated ready day/hour for wounded companions and troop groups; the Condition summary includes each wounded troop type. Companion forecasts share compRecoveryRate with hourly healing, including lodging/camp and Medicine. Troop forecasts calculate expected daily healing rolls until the originating group (or whole type) recovers, including time to the next daily roll, using the existing probabilistic rounding rule. Forecasts use current conditions, consume no RNG and do not change healing state; troop dates are estimates, not promises. Blocked group restoration displays an unavailable-recovery message. Helpers: companions.js compRecoveryHours; world.js woundedRecoveryHours; ui/partypage.js formatting. Tests: recoveryeta (12), recoverypace (6).
+
+Camp packing (2026-11-22, built): `P.camp.pack` in the existing band save stores the start/end game hour, remaining visual fraction and queued point. Duration is 15 + 3 minutes per tent, capped at 45 game minutes (`SUPPLY.camp.pack`). Tents lower in reverse setup order. The Under way panel shows time remaining and Cancel; the camp button is busy during packing. Departure, approaching an object, following and hunting wait for completion. A new destination replaces the queued point without restarting the timer. Pause freezes it; saved time and a queued point survive loading. No stamina recovery, camp healing multiplier or volunteer recruitment while packing. Rest time acceleration ends when packing starts; manual speed still applies. An attack interrupts packing and uses the existing caught-in-camp rules. There is no separate cooldown before pitching again. Checks: camppacking, companyrules, camp, underway.

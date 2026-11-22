@@ -19,7 +19,7 @@ Kit.suite(({ok})=>{
  // ======== the rest, each its line and way out
  {P.byRoad=true;hud();ok(row('road')&&el().querySelectorAll('.uw-row').length===1,'by road: its line in the panel');
   press('road');ok(!P.byRoad&&!row('road')&&el().hidden,'By road: Off; nothing left, no panel')}
- {t.pitchCamp();hud();ok(row('camp'),'in camp');press('camp');ok(!P.camp&&!row('camp'),'Break: camp struck')}
+ {t.pitchCamp();hud();ok(row('camp'),'in camp');press('camp');ok(!!P.camp?.pack&&row('pack')&&!row('camp'),'Break: packing countdown shown');press('pack');ok(!!P.camp&&!P.camp.pack&&row('camp'),'Cancel: remain in camp');press('camp');G.clock+=(t.campPackLeft()+.001)*t.DAY/24;t.campStep();hud();ok(!P.camp&&!row('pack'),'packing ends and camp is struck')}
  {G.pitch={x:P.x+40,y:P.y};P.tx=P.x+40;P.ty=P.y;hud();ok(row('pitch'),'making for a camp spot');press('pitch');ok(!G.pitch&&P.tx==null,'Stop: you stay where you are')}
  {const L=W_LORD();if(L){G.follow={o:L,crumbs:[[L.x,L.y]]};hud();ok(row('follow')&&row('follow').textContent.includes(t.lordName(L)),'following '+t.lordName(L));press('follow');ok(!G.follow&&!row('follow'),'Stop: you stop following')}else ok(false,'(a lord to follow)')}
  // ======== a siege of yours: Open, its window

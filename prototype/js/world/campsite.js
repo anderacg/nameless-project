@@ -20,6 +20,7 @@
 const CAMP_SITE={men:8,most:14,ring:36,squash:.7,space:34,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7},
   makeshift:{level:4,men:16,per:5,most:4,rings:2,ring:22,space:24,styles:['leanto','pup','leanto'],cloth:['#8a7a5c','#9a8a6a','#7a6c54'],trim:['#5a4a3a','#6a5440'],rolls:4,roll:['#6a5a44','#7a6248','#5a5040']}};
 class CampSite{
+  // Your dismantling uses the saved game-clock progress, lowering these same tents in reverse setup order.
   static t0=new Map();static seen=new Map();static lay=new Map();static spots=new Map();
   // (its pitching begins now, unless it has begun)
   static pitch(key){if(!this.t0.has(key))this.t0.set(key,performance.now()/1000)}
@@ -63,7 +64,8 @@ class CampSite{
      banner (its banner's look, or none), seed, pic (q, i, clim: tent i's picture; none: an army's, CampSite.pic, or a makeshift's, rough),
      makeshift (bedrolls by its fire; ring, space: its ring's, else CAMP_SITE's)}. Each tent by its feet among
      everyone, going up in its turn; the fire and the banner's pole at its middle */
-  static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),T=t0==null?1e9:now-t0,L=this.layoutOf(c),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
+  static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),elapsed=t0==null?1e9:now-t0,L=this.layoutOf(c),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
+    const T=c.key==='you'&&P.camp?.pack?(P.camp.pack.visual??1)*(1-campPackProgress())*this.span(L.length):elapsed;
     L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):c.makeshift?this.rough(q,i,clim):this.pic(q.s,clim,i,c);ents.push({x:q.x,y:q.y,nf:1,st:inSight(q.x,q.y),f:()=>this.tent(pic,q,p,cam)})});
     const lit=(L.length-1)*X.gap+X.pole+X.rise;
     ents.push({x:c.x,y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);

@@ -54,7 +54,7 @@ const SUPPLY={march:2,rough:1.5,night:1.3,forced:1.5,dry:1.5,desertDry:2,heat:1.
   drink:{perDay:1,rest:.5,once:true,order:['water','ale','liquor'],water:{morale:0},ale:{morale:2},liquor:{morale:6}},skins:{start:4,recruit:1,lot:5},
   thirst:{desert:2,parched:12,pace:.85,morale:1,dying:24,death:48,toll:6,hero:{hp:.1,mp:.1}},lost:{days:7,keep:20},
   fill:{days:2,near:.5,well:1.5,timed:true,minPerDay:15,min:5,max:180},furPer:5,frost:{every:6,morale:1},
-  battleMin:25,camp:{heal:1.5,caught:8,r:12,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1]},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
+  battleMin:25,camp:{heal:1.5,caught:8,r:12,step:8,hop:2,across:4,m:2,road:4,lot:0,ring:1,site:4,pole:[20,1],pack:{base:15,tent:3,max:45}},hint:60,hurt:3,fever:{sick:.5,die:.2,dieMin:.05,med:.02}};
 
 /* the band's own record, kept beside P (not on it: P is your hero's record too, which every battle's snapshot holds whole): its
    camp ({at: the hour it was made} or null) and the hour's counters: food and drink due (fractions of a ration), hours hungry,
@@ -66,7 +66,7 @@ const freshBand=()=>({camp:null,eat:0,drink:0,hungry:0,dry:0,worn:0,tired:0,cold
 let BAND=freshBand();
 onWorld(()=>{BAND=freshBand()});
 // (the sick and the lost written only when there are any, so a save with none is as it was; filled in again on loading)
-Saves.add({key:'band',order:280,defaults:freshBand(),save:()=>{if(JSON.stringify(BAND)===BAND_FRESH)return;const {sick,lost,...o}=BAND;return Object.keys(sick).length||lost.length?BAND:o},load:v=>{BAND={...freshBand(),...v};SKINS.reset(false)}});
+Saves.add({key:'band',order:280,defaults:freshBand(),save:()=>{campPackQueue();if(JSON.stringify(BAND)===BAND_FRESH)return;const {sick,lost,...o}=BAND;return Object.keys(sick).length||lost.length?BAND:o},load:v=>{BAND={...freshBand(),...v};SKINS.reset(false)}});
 
 /* ---------- where you stand, as your supplies see it ---------- */
 // the climate; rough ground; a harsh desert or frost (not your race's home, no holding near to shelter you); at the water's edge
@@ -210,6 +210,7 @@ function supplyFrame(d,dt){
    liquor or null); L, where it stands (supplyLand) */
 function staminaRate(moving,dr,L){
   const S=SUPPLY,why=[],x=m=>'×'+Math.round(m*100)/100;
+  if(P.camp?.pack)return{n:0,why:['packing camp']};
   if(moving){let n=S.march;why.push('marching −'+S.march);const mul=(m,w)=>{if(m!==1){n*=m;why.push(w+' '+x(m))}};
     if(L.rough)mul(S.rough,'rough ground');
     {const b=waterBand(Math.floor(P.y/TILE)*MW+Math.floor(P.x/TILE));if(b>=4)mul(WATER.swim,'swimming');else if(b===3)mul(WATER.wade,'wading')}
@@ -403,13 +404,24 @@ function pitchCamp(){G.pitch=null;P.camp={at:Clock.hours()};CampSite.strike('you
   toast('Your band makes camp. Stamina comes back faster, and the wounded mend.','good','band');updateHUD(true);return true}
 // your march ends (world.js marchStep): at the clear ground you made for, the band pitches; anywhere else the plan is dropped
 function campArrive(){const p=G.pitch;if(!p)return;G.pitch=null;if(Math.hypot(p.x-P.x,p.y-P.y)<3&&!campWhy()){P.x=p.x;P.y=p.y;pitchCamp()}}
-function breakCamp(why){if(!P.camp)return false;P.camp=null;CampSite.strike('you');toast(why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
+const campPackLeft=()=>Math.max(0,(P.camp?.pack?.until||0)-Clock.hours());
+const campPackProgress=()=>{const p=P.camp?.pack;return p?clamp((Clock.hours()-p.at)/Math.max(.001,p.until-p.at),0,1):0};
+function campPackQueue(){const p=P.camp?.pack;if(!p)return;if(G.chase||G.follow)delete p.goal;else if(P.tx!=null)p.goal={x:P.tx,y:P.ty}}
+function breakCamp(why){
+  if(!P.camp||P.camp.pack)return false;companyRules.cancel();if(P.recruit)volunteerStop('packing camp');
+  const c=CampSite.yours(P.x,P.y),n=CampSite.layoutOf(c).length,K=SUPPLY.camp.pack,h=Math.min(K.max,K.base+K.tent*n)/60,at=Clock.hours(),t0=CampSite.t0.get('you');
+  P.camp.pack={at,until:at+h,visual:t0==null?1:clamp((performance.now()/1000-t0)/CampSite.span(n),0,1),...(why?{why}:{})};
+  toast('Your band packs camp before departing. About '+Math.round(h*60)+' game minutes.','','band');updateHUD(true);return true;
+}
+function finishCampPack(){const p=P.camp?.pack;if(!p)return false;P.camp=null;CampSite.strike('you');if(P.tx==null&&!G.chase&&!G.follow&&p.goal){P.tx=p.goal.x;P.ty=p.goal.y}toast(p.why||'Your band breaks camp.',undefined,'band');updateHUD(true);return true}
+function cancelCampPack(){if(!P.camp?.pack)return false;delete P.camp.pack;P.tx=P.ty=null;G.chase=null;followStop();companyRules.cancel();CampSite.strike('you');CampSite.pitch('you');toast('Your band stays in camp.','','band');updateHUD(true);return true}
 function toggleCamp(){companyRules.cancel();return P.camp?breakCamp():makeCamp()}
-// each moment in camp (world.js marchStep): a travel order breaks it (true: the march goes on), but not a press on the map that may
-// yet open the action ring (ui/ring.js RING.press); going faster than 1x, anything hostile in sight brings it back to 1x
+// Each moment in camp (world.js marchStep): travel starts packing; true once packed, when marching may resume. A press that may
+// yet open the action ring waits (RING.press). Anything hostile in sight returns fast time to 1x, including while packing.
 function campStep(){
-  if((P.tx!=null||G.chase||P.stay)&&!RING.press){breakCamp();return true}
   if(G.speed>1){const d=dangerInSight();if(d){log('Your camp stirs: '+d+'.','bad','band');setSpeed(1)}}
+  if(P.camp.pack){campPackQueue();return campPackLeft()<=1e-8?finishCampPack():false}
+  if((P.tx!=null||G.chase||P.stay)&&!RING.press)breakCamp();
   return false}
 // (Hurry, a forced march on key R and the action ring, is gone: the owner, 2026-10-31, "remove hurry features": an army marches at
 // its men's pace, its ring never outrunning them, world/march.js)
@@ -439,7 +451,7 @@ function supplyNow(){
   if(!dr)tags.push(thirstTag(L));
   if(!foodN()||BAND.hungry)tags.push(hungerTag());
   if(L.frost&&coldShare())tags.push(['Cold','bad','Short of furs in the frost ('+furs.have+' of '+furs.need+'): stamina drains faster, and frostbite takes men.']);
-  if(P.camp)tags.push(['In camp','good','Resting: stamina +'+S.rest.camp+' an hour, the wounded mend faster. Any travel order breaks camp.']);
+  if(P.camp)tags.push(P.camp.pack?['Packing camp','warn',Math.ceil(campPackLeft()*60)+' game minutes until departure.']:['In camp','good','Resting: stamina +'+S.rest.camp+' an hour, the wounded mend faster. Travel begins after packing camp.']);
   {const pas=Escort.tag();if(pas)tags.push(pas)}// (your passengers, who eat with you: world/escort.js)
   return{L,go,dr,r,st,foodDays,drinkDays,furs,fit:P.fitness(),tags,fill:SKINS.on?Math.floor(SKINS.share*100):null}}
 /* your band's fitness, 0-100 (the card's Fitness bar; the owner, 2026-10-23): the fit troops (companions with them) and your
@@ -455,7 +467,7 @@ function mapRingItems(wx,wy,o,cx,cy){
   const L=supplyLand(),ground=!o,look=o&&tipFor(o)||rumourTip(wx,wy)||trackTip(wx,wy);// (a rumour's "?", else tracks you see: world/tracks.js)
   return[
     !P.camp&&!campWhy()&&{icon:'fire',label:'Make camp',run:makeCamp},
-    P.camp&&{icon:'fire',label:'Break camp',run:()=>breakCamp(),active:true},
+    P.camp&&{icon:'fire',label:P.camp.pack?'Cancel packing':'Break camp',run:()=>P.camp.pack?cancelCampPack():breakCamp(),active:true},
     followItem(o),
     ground&&{icon:'banner',label:'Travel here',run:()=>worldMove(wx,wy)},
     (ground||P.byRoad)&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy),active:!!P.byRoad},

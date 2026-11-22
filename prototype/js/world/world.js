@@ -87,8 +87,10 @@ function pickAt(wx,wy){
 const objKind=o=>(o=asWorldObject(o)) instanceof WorldObject&&o.here()?o.mapKind:null;
 // meet whatever you have reached, each its own way (WorldObject meet; G.youAttack: you started whatever fight this opens at once:
 // engage.js startEncounter)
-function interact(o){if(B&&G.mode==='battle')return false;// (none while a fight goes on: worldbattle.js openFightWorld)
-  const k=objKind(o);P.tx=null;G.chase=null;G.youAttack=true;if(k)breakCamp();
+function interact(o){
+  if(B&&G.mode==='battle')return false;// (none while a fight goes on: worldbattle.js openFightWorld)
+  const k=objKind(o);if(k&&P.camp){G.chase=o;P.tx=o.x;P.ty=o.y;breakCamp();return true}
+  P.tx=null;G.chase=null;G.youAttack=true;if(k)breakCamp();
   try{
     if(o&&o.fight&&fightOf(o)){fightMeet(fightOf(o));return true}
     if(k)o.meet();
@@ -134,7 +136,7 @@ function followWatch(){Host.watch();const F=G.follow;if(!F)return;const o=F.o;
   // keep your place, at his gate)
   if(F.host&&FOLLOW.ends.includes(G.mode)){Host.paused=true;return followStop()}
   if(FOLLOW.keep&&FOLLOW.ends.includes(G.mode)&&!P.stay)return;// (paused: taken up again when the map is yours)
-  if(FOLLOW.ends.includes(G.mode)||P.camp||G.pitch||P.stay||G.chase)return followStop();
+  if(FOLLOW.ends.includes(G.mode)||P.camp&&!P.camp.pack||G.pitch||P.stay||G.chase)return followStop();
   if(F.host)return;
   const nm=followName(o);
   if(FOLLOW.keep){if(!objKind(o)||o.dead||o.gone)return followStop(cap1(nm)+' is gone.',true);
@@ -399,7 +401,7 @@ function arriveStep(){
 
 // the wounded heal: each day a share of them is fit again (more with Medicine, more near a friendly holding, faster in camp or
 // staying in a holding)
-function healShare(){const near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear);return{near,share:Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:P.camp?SUPPLY.camp.heal:1))}}
+function healShare(){const near=TOWNS.some(t=>!hostileTo(t.owner)&&Math.hypot(t.x-P.x,t.y-P.y)<WORLD_SCALE.land.healNear);return{near,share:Math.min(.9,(.2+.03*skill('med')+(near?.2:0))*(P.stay?2:P.camp&&!P.camp.pack?SUPPLY.camp.heal:1))}}
 // n of kind k out of the line, wounded (sick on the march, an outcome's), each from his own group and kept under it in
 // P.woundedGroups, as a battle's wounded are (so the March and Army windows show them there). Returns how many
 function woundTroops(k,n=1){const r=partyRoster(P),wg=P.woundedGroups||(P.woundedGroups=[]);let got=0;P.wounded=P.wounded||{};

@@ -1,6 +1,6 @@
 'use strict';
 // Make camp (doc/SUPPLY_DESIGN.md §7, world/supply.js): Z, the dock's Camp (and the action ring: tests/ring.js). Your band stops
-// and pitches its tents: stamina +8 an hour, the wounded mend faster, food and drink at the rest rate; any travel order breaks
+// and pitches its tents: stamina +20 an hour, the wounded mend faster, food and drink at the rest rate; any travel order breaks
 // camp; going faster than 1x, anything hostile in sight brings the speed back to 1x; a band that finds you in camp catches you
 // unready; there is no camping inside a holding; the camp is drawn in your place, and saved. Only on allowed ground (the owner,
 // 2026-10-22, 2026-10-23): where you stand if it is; else within SUPPLY.camp.hop tiles your band steps there and pitches at once,
@@ -12,6 +12,7 @@ try{
  const t=T,G=t.G,P=t.P,S=t.SUPPLY,ev=s=>(0,eval)(s);
  Kit.begin('soldier',4242);Kit.clear();Kit.world();
  const spot=(()=>{for(let ty=8;ty<t.MH-8;ty++)for(let tx=8;tx<t.MW-8;tx++){const x=(tx+.5)*16,y=(ty+.5)*16;if(t.tAt(tx,ty)===t.T_OPEN&&t.climAt(x,y)==='grass'&&!t.TOWNS.some(h=>Math.hypot(h.x-x,h.y-y)<160)&&!t.nearWater(x,y,4)&&t.campGround(x,y))return [x,y]}})();// (clear ground: the camp pitched at once)
+ const packed=()=>{t.campStep();G.clock+=(t.campPackLeft()+.001)*t.DAY/24;t.campStep()};
  const bag=g=>{for(const k of ['water','ale','liquor',...t.FOODS])t.goodTake(k,1e9);for(const k in g)t.playerInventory.add('good',k,g[k])};
  const reset=()=>{Kit.world();Kit.goTo(spot[0],spot[1]);P.troops={hum_levy:5};P.wounded={};P.woundedGroups=[];P.comps={};P.bsta=50;P.morale=60;ev('BAND=freshBand()');G.speed=1;G.encCool=99;G.clock=t.DAY*.3;bag({water:200,grain:60})};
  // (what is said: on screen, as the journal keeps no camp orders; every line logged is shown so too)
@@ -20,10 +21,10 @@ try{
  reset();Kit.key('KeyZ','z');ok(!!P.camp&&P.tx==null&&msgs(/makes camp/)===1,'Z: your band makes camp');
  t.updateHUD(true);{const tags=[...document.querySelectorAll('#stats .pc-tags .tag')].map(x=>x.textContent);ok(tags.includes('In camp')&&document.getElementById('campBtn').classList.contains('on'),'the card says In camp, the dock’s Camp is lit')}
  {const L=t.supplyLand();ok(t.staminaRate(false,t.drinkNext(L),L).n===S.rest.camp,'in camp stamina comes back +'+S.rest.camp+' an hour');const b0=P.bsta;t.supplyHour();ok(Math.abs(P.bsta-b0-S.rest.camp)<1e-9,'and an hour passes so ('+Math.round(b0)+' → '+Math.round(P.bsta)+')')}
- Kit.key('KeyZ','z');ok(!P.camp&&msgs(/breaks camp/)===1,'Z again: it breaks camp');
- document.getElementById('campBtn').click();ok(!!P.camp,'the dock’s Camp makes camp');document.getElementById('campBtn').click();ok(!P.camp,'and breaks it');
+ Kit.key('KeyZ','z');ok(!!P.camp?.pack,'Z again: packing begins');packed();ok(!P.camp&&msgs(/breaks camp/)===1,'the camp is struck after packing');
+ document.getElementById('campBtn').click();ok(!!P.camp,'the dock’s Camp makes camp');document.getElementById('campBtn').click();packed();ok(!P.camp,'and packs it before leaving');
  // ---- a travel order breaks it
- reset();t.makeCamp();P.tx=P.x+60;P.ty=P.y;t.updateWorld(.05);ok(!P.camp&&P.tx!=null,'a travel order breaks camp, and you march');
+ reset();t.makeCamp();P.tx=P.x+60;P.ty=P.y;t.updateWorld(.05);ok(!!P.camp?.pack&&P.tx!=null,'a travel order starts packing');packed();t.updateWorld(.05);ok(!P.camp&&P.tx!=null,'then the band marches');
  // ---- not inside a holding
  reset();{const h=Kit.goHome();P.rep[h.name]=40;t.startStay(h);ok(!t.makeCamp()&&!P.camp&&/staying/.test(t.campWhy()),'no camp while you stay in a holding ('+t.campWhy()+')');t.leaveStay();Kit.world()}
  // ---- faster than 1x, anything hostile in sight brings it back
@@ -71,7 +72,7 @@ try{
   t.makeCamp();{const p=t.CampSite.pitching('you',t.partySize());ok(p,'pitching: the camp goes up a tent after another, your men standing by (world/campsite.js)')}t.CampSite.t0.set('you',performance.now()/1000-99);const b=draws(),pole=b.bn.find(o=>o!==P&&o.faction==='player'),c=t.campAt(P.x,P.y),px=pole&&pole.x-2,py=pole&&pole.headY()-t.BANNER_GAP;
   ok(!!P.camp&&!b.hero&&!b.bn.includes(P),'in camp your figure, host and the banner over you are not drawn');
   {const L=t.CampSite.lay.get('you')?.p||[];ok(pole&&L.some(q=>Math.abs(pole.x-q.x)<=12&&Math.abs(pole.y-q.y)<=4),'your banner stands on a pole planted in the camp, beside its first tent'+(pole?' ('+Math.round(pole.x)+','+Math.round(pole.y)+')':''))}
-  const at=[P.x,P.y];t.breakCamp();const d=draws();ok(d.hero>0&&!d.bn.some(o=>o!==P&&o.faction==='player')&&P.x===at[0]&&P.y===at[1],'the camp broken, your figure is drawn again at its spot')}
+  const at=[P.x,P.y];t.breakCamp();packed();const d=draws();ok(d.hero>0&&!d.bn.some(o=>o!==P&&o.faction==='player')&&P.x===at[0]&&P.y===at[1],'the camp broken, your figure is drawn again at its spot')}
  // ---- only on allowed ground (the owner, 2026-10-23): from many spots on the roads and round the holdings, the camp never stands
  // on a road or track (its tile or its band as painted), a crossing, a ford, water (a pond's too), a lot, a holding's ring, a site,
  // a field or a brook, nor on ground the art keeps clear

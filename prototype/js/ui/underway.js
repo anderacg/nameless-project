@@ -9,7 +9,8 @@ const UNDERWAY=[
    title:t=>'Staying in '+t.name+(stayFree(t)?': free, as long as you like':': '+stayCost()+'g a day; your gold lasts until Day '+stayUntil()),btn:['sy-leave','Leave']},
   {k:'recruit',on:()=>P.recruit&&townBy(P.recruit.town),ico:'recruit',cls:'uw-live',line:t=>'<b>Recruiting</b>, '+t.name+', +'+P.recruit.n,title:t=>P.recruit.n+' joined so far. Volunteers from '+t.name+' join your groups for free, about '+volunteerRate(t).toFixed(1)+' an hour, while you stay or camp on its lands',btn:['uw-vstop','Stop']},
   {k:'volunteers',on:()=>!P.recruit&&(P.camp||P.stay)&&volunteerTown(),ico:'recruit',line:t=>'<b>Volunteers</b>, '+t.name,title:t=>volunteerWhy(t)||'Its people would join you for free to refill your groups: about '+volunteerRate(t).toFixed(1)+' an hour',btn:['uw-vgo','Recruit'],off:t=>volunteerWhy(t)},
-  {k:'camp',on:()=>P.camp,ico:'fire',line:()=>'<b>In camp</b>'+(P.recruit?' '+icon('recruit',12,'gico uw-live')+' <small>recruiting</small>':''),title:()=>'Your band rests: stamina comes back faster and the wounded mend (Z)',btn:['uw-camp','Break']},
+  {k:'camp',on:()=>P.camp&&!P.camp.pack,ico:'fire',line:()=>'<b>In camp</b>'+(P.recruit?' '+icon('recruit',12,'gico uw-live')+' <small>recruiting</small>':''),title:()=>'Your band rests: stamina comes back faster and the wounded mend (Z)',btn:['uw-camp','Break']},
+  {k:'pack',on:()=>P.camp?.pack,ico:'fire',cls:'uw-live',line:()=>'<b>Packing</b><small>'+Math.ceil(campPackLeft()*60)+' min left</small>',title:()=>'Packing camp '+Math.round(campPackProgress()*100)+'%. Travel resumes when the camp is packed; Cancel stays here.',btn:['uw-pack','Cancel']},
   {k:'pitch',on:()=>!P.camp&&G.pitch,ico:'fire',line:()=>'<b>Making camp</b>',title:()=>'Your band makes for clear ground to camp',btn:['uw-pitch','Stop']},
   {k:'follow',on:()=>G.follow,ico:'shoe',line:f=>'<b>'+followName(f.o,true)+'</b>',title:f=>'Following '+followName(f.o)+': your band keeps after it at a distance (any other order ends it)',btn:['uw-follow','Stop']},
   // (in column: your army marching in one now, marchstyles.js TravelStyle)
@@ -38,6 +39,7 @@ function underwayHUD(){
 }
 onAct('uw-',a=>{
   if(a==='uw-camp')breakCamp();
+  else if(a==='uw-pack')cancelCampPack();
   else if(a==='uw-pitch'){G.pitch=null;P.tx=P.ty=null}
   else if(a==='uw-follow'&&G.follow)followItem(G.follow.o).run();
   else if(a==='uw-road')setByRoad(false);

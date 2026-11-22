@@ -1,0 +1,43 @@
+'use strict';
+Kit.suite(({ok})=>{
+ const t=T,P=t.P,G=t.G,C=t.companyRules;
+ Kit.begin('soldier',93);Kit.clear();Kit.world();
+ const layout=t.CampSite.layoutOf,danger=window.dangerInSight;
+ const clock=()=>t.Clock.hours(),advance=h=>{G.clock+=h*t.DAY/24},finish=()=>{advance(t.campPackLeft()+.001);t.campStep()};
+ try{
+  window.dangerInSight=()=>'';t.CampSite.layoutOf=()=>[{x:P.x,y:P.y,s:0},{x:P.x+24,y:P.y,s:1}];
+  C.reset();G.speed=1;G.paused=false;G.chase=G.follow=G.pitch=null;P.stay=P.siege=P.raid=null;P.tx=P.ty=null;
+  t.pitchCamp();t.CampSite.t0.set('you',performance.now()/1000-100);P.bsta=40;P.recruit={town:t.TOWNS[0].name,n:0,acc:0};
+  ok(t.breakCamp()&&!!P.camp?.pack,'breaking camp starts a packing timer and retains the camp');
+  ok(!P.recruit&&!t.volunteerTown(),'packing ends volunteer recruitment and cannot start a new recruitment session');
+  const p=P.camp.pack,until=p.until,start={x:P.x,y:P.y},duration=p.until-p.at;
+  ok(duration>0&&Math.abs(duration-21/60)<1e-8,'packing time scales with the tents (two tents: 21 game minutes)');
+  ok(!t.breakCamp()&&P.camp.pack.until===until,'repeated dismantle requests cannot restart or skip the timer');
+  const L=t.supplyLand();ok(t.staminaRate(false,'water',L).n===0,'packing is work, not camp stamina recovery');
+  const heal=t.healShare().share,camp=P.camp;P.camp=null;ok(t.healShare().share===heal,'packing receives no camp healing multiplier');P.camp=camp;
+  C.frame(2);ok(G.speed===1,'rest acceleration does not speed packing automatically');
+  const target=t.Router.open(P.x+120,P.y+40,P);P.tx=target.x;P.ty=target.y;t.marchStep(.01);
+  ok(!!P.camp&&P.x===start.x&&P.y===start.y&&P.tx===target.x,'queued movement waits until packing finishes');
+  P.tx=target.x+16;t.campStep();ok(P.camp.pack.goal.x===target.x+16&&P.camp.pack.until===until,'a new destination updates the queue without resetting packing');
+  P.tx=target.x+32;const rec=JSON.parse(JSON.stringify(t.Saves.saveOf('band').band));
+  ok(rec.camp.pack.goal.x===target.x+32,'saving captures a new destination even before the next simulation step');P.tx=P.ty=null;t.Saves.loadOf('band',rec);
+  ok(P.camp.pack.until===until&&P.camp.pack.goal.x===target.x+32,'save/load retains the timer and queued point');
+  advance(duration*.5);ok(Math.abs(t.campPackProgress()-.5)<1e-8&&t.campPackLeft()>0,'packing exposes real progress and remaining game time');
+  const before=clock();G.paused=true;t.updateWorld(.5);ok(clock()===before&&!!P.camp,'pausing freezes packing');G.paused=false;
+  t.updateHUD(true);t.underwayHUD();ok(document.querySelector('#underway [data-k="pack"]')&&document.getElementById('campBtn').disabled,'packing shows a countdown and disables the busy camp button');
+  ok(t.supplyNow().tags.some(([name])=>name==='Packing camp'),'company status distinguishes packing from resting');
+  const entries=()=>{const a=[];t.bandCampEnts(a,{x:P.x-t.VW/2,y:P.y-t.VH/2});return a};
+  const middle=entries();advance(duration*.4);const late=entries();ok(late.length<middle.length,'tents are lowered in reverse order while packing');
+  let err='';t.ctx.save();try{for(const e of late)e.f()}catch(e){err=e.message}finally{t.ctx.restore()}ok(!err,'packing camp art renders without errors');
+  finish();ok(!P.camp&&P.tx===target.x+32,'packing completes once and restores the saved destination');
+  t.updateHUD(true);ok(!document.getElementById('campBtn').disabled,'camp controls become available after departure');
+  P.tx=P.ty=null;t.pitchCamp();t.breakCamp();P.tx=P.x+100;G.chase={x:P.x+100,y:P.y};t.act('uw-pack');
+  ok(!!P.camp&&!P.camp.pack&&P.tx==null&&!G.chase,'Cancel packing keeps the camp and clears departure orders');
+  t.breakCamp();const morale=P.morale;t.campCaught({});ok(!P.camp&&P.morale===morale-t.SUPPLY.camp.caught,'an attack interrupts packing and applies the existing caught-in-camp penalty');
+  t.pitchCamp();t.breakCamp();finish();ok(!P.camp&&P.tx==null,'a manual break without a destination does not invent a trip');
+  t.pitchCamp();const town=t.TOWNS[0],mode=G.mode;t.interact(town);
+  ok(!!P.camp?.pack&&G.chase===town&&G.mode===mode,'a nearby interaction waits for packing instead of opening immediately');t.cancelCampPack();
+  const deer=Object.assign(new t.Herd(),{id:'deer',n:1,x:P.x+5,y:P.y,hx:P.x+5,hy:P.y,coat:1});t.W.critters=[deer];
+  const oldBattle=t.B;ok(t.WildHunt.start(deer)&&!!P.camp?.pack&&G.chase===deer&&t.B===oldBattle,'hunting is queued until camp is packed');
+ }finally{window.dangerInSight=danger;t.CampSite.layoutOf=layout;P.camp=null;G.chase=G.follow=G.pitch=null;P.tx=P.ty=null;C.reset();Kit.done()}
+});

@@ -9,6 +9,7 @@ class WildHunt{
     return this.start(c,target)}
   static start(c,target=null){
     if(!c?.wild||!c.n||B||G.mode!=='world'||P.stay)return false;const area=this.areaFor(c,target||c);if(Math.hypot(P.x-area.x,P.y-area.y)>=HUNT_AREA.radius-WORLD_BATTLE.inner)return false;
+    if(P.camp){followStop();G.chase=target||c;P.tx=G.chase.x;P.ty=G.chase.y;breakCamp();return true}
     // (your walk ends here, as any fight's (engage.js startEncounter): its goal's way and arrow were drawn on through the hunt, the
     // map under it; the owner, 2026-11-13: "bug on the new hunting (the guide path)")
     breakCamp();followStop();G.chase=null;G.pitch=null;G.byRoad=null;P.tx=P.ty=null;P.stuck=0;hidePanel();

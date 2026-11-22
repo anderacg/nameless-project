@@ -464,6 +464,9 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uw-row+.uw-row{border-top:1px solid var(--line)}
 .uw-row .gico{flex:none;color:var(--trim-hi)}
 .uw-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.uw-row b{color:var(--accent)}
+.uw-row[data-k="pack"]>span{white-space:normal;line-height:1.2}
+.uw-row[data-k="pack"] b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.uw-row[data-k="pack"] small{display:block;font-size:var(--fs-xs);color:inherit}
 .uw-row .btn.sm{flex:none;min-height:26px;padding:2px 8px}
 .uw-live{animation:uw-live 1.6s ease-in-out infinite}.uw-row small{color:var(--fg-2)}
 @keyframes uw-live{50%{opacity:.45;transform:translateY(-1px)}}
