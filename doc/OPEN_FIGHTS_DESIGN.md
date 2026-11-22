@@ -1,5 +1,7 @@
 # Fights in the open
 
+**Bandit purse fallback, 2026-11-22:** after items are shared onto the fallen, every otherwise empty hostile bandit corpse gets 1–3 gold (`CARCASS.banditGold`). Coins stay on the body, make it glow and remain clickable, and transfer once when searched. Purse contents and emptied purses are saved. NPC looters can take the same coins into their plunder. Bodies with items, friendly casualties and beasts receive no fallback coins. Checks: `banditloot`, `carcasses`.
+
 The owner, 2026-11-14: "Can you remove the battle area for hunting? The hunting is just using the same world speed and battle sprites and hunt drops, trophy required player to click at carcass to loot them. This is also the same as monsters etc." Asked to choose, the owner picked: the world keeps running, every fight on the map, and the loot in a window where you decide what to take and look it over.
 
 Status: **built 2026-11-14**, extended for continuous encounters on 2026-11-22 (section 5 supersedes the older meeting, exclusion-zone and results-window rules below). Switches: `OPEN_FIGHT` (`battle/worldbattle.js`) and `CARCASS` (`data/drops.js`). Tests: `tests/openfights.js`, `tests/carcasses.js` and `tests/fallenlife.js` (yours too, looters, clearers).

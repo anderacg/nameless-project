@@ -71,21 +71,21 @@ class Carcass extends WorldObject{
   static list=[];
   get mapKind(){return 'carcass'}
   here(){return Carcass.list.includes(this)}
-  empty(){return !this.items.length}
+  empty(){return !this.items.length&&!(this.gold>0)}
   inView(V){return spotted(this,V)}
   pick(at){at.add(this,CARCASS.pick,2)}
   get meetsAnyTime(){return true}
   get beast(){return !!(this.wild||this.mon||this.bst)}
   name(){if(this.cache)return 'Spoils';return this.wild?CRITTERS[this.wild]?.n||'Beast':this.mon?MONSTERS[this.mon]?.n||'Beast':ST[this.type]?.n||'Foe'}
   label(){if(this.cache)return 'A pile of spoils';return (this.beast?'A '+this.name().toLowerCase()+'’s carcass':'A fallen '+this.name().toLowerCase())}
-  what(){const n=this.items.reduce((a,s)=>a+s.n,0);return n?n+' thing'+(n>1?'s':'')+(this.cache?' here':' on '+(this.beast?'it':'him')):'picked clean'+(this.robbed?' by '+this.robbed:'')}
+  what(){const n=this.items.reduce((a,s)=>a+s.n,0);const coins=this.gold>0?this.gold+' gold':'';return coins?coins+(n?' and '+n+' thing'+(n>1?'s':''):''):n?n+' thing'+(n>1?'s':'')+(this.cache?' here':' on '+(this.beast?'it':'him')):'picked clean'+(this.robbed?' by '+this.robbed:'')}
   ago(){const d=Math.floor(G.day+Clock.frac-this.day);return d<1?'fell today':d===1?'fell yesterday':'fell '+d+' days ago'}
   tip(){return '<b>'+htmlText(this.label())+'</b><small>'+htmlText(cap1(this.ago()))+', '+this.what()+'</small>'+(this.empty()?'':'<span class="act">Click: go there and look</span>')}
   // (all with anything on them within CARCASS.near of it: what one click opens)
   near(){return Carcass.list.filter(c=>!c.empty()&&Math.hypot(c.x-this.x,c.y-this.y)<=CARCASS.near)}
   // met: the window of what lies on the fallen here, beside your bag (ui/loot.js), the rest left on this one
   meet(){const here=this.near();if(!here.length){toast(cap1(this.label())+': '+this.what()+'.');return}
-    lootEnd();G.mode='dialog';G.loot={from:lootSnap(),pile:[],capture:false};for(const c of here)for(const s of c.items)lootPile(s.k,s.id,s.n);
+    lootEnd();G.mode='dialog';G.loot={from:lootSnap(),pile:[],capture:false};let gold=0;for(const c of here){gold+=c.gold||0;c.gold=0}if(gold){P.gold+=gold;toast('Found '+gold+' gold.','gold')}for(const c of here)for(const s of c.items)lootPile(s.k,s.id,s.n);
     const meatBefore=goodN('meat'),hunted=here.reduce((n,c)=>{const meat=c.items.filter(s=>s.k==='good'&&s.id==='meat').reduce((a,s)=>a+s.n,0);return n+Math.min(meat,c.huntLeft??(c.wild?meat:0))},0);
     const kinds=[...new Set(here.map(c=>c.name().toLowerCase()))],n=here.length,beasts=here.every(c=>c.beast),self=this;
     G.lootView={head:'<div class="top"><h2>'+(n>1?'The fallen':this.cache?'Spoils':beasts?'A carcass':'The fallen')+'</h2><span class="muted">'+htmlText(n>1?n+' here: '+kinds.join(', '):cap1(this.name().toLowerCase()))+', '+this.ago()+'</span></div>'+
@@ -100,14 +100,16 @@ class Carcass extends WorldObject{
     // yours (share puts the spoils on your foes))
     for(const c of b.corpses){const u=DEATH_OF.get(c);if(!u||u.hp>0||u.left||u.waiting||u.hero)continue;// (you: your remains, world/death.js)
 const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.type);
-      out.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,type:u.type,wild:u.wildlife||null,mon:M||null,bst:!!ST[u.type]?.beast,face:c.face||1,corpse:c,...(battleEnemy(0,u)?{}:{ours:true})})}
+      out.push({x:Math.round(p.x*10)/10,y:Math.round(p.y*10)/10,type:u.type,wild:u.wildlife||null,mon:M||null,bst:!!ST[u.type]?.beast,face:c.face||1,corpse:c,bandit:this.isBandit(u),...(battleEnemy(0,u)?{}:{ours:true})})}
     return out}
+  static isBandit(u){const o=armySource(u.sourceArmy),s=u.residentSite;return !!(o?.mapKind==='band'&&(o.kind||o===G.enc?.ref||bandits.includes(o))||s instanceof Lair||s?.band||!o&&u.team!==0&&['party','camp','outpost'].includes(G.enc?.kind)&&(G.enc.ref?.mapKind==='band'||G.enc.ref instanceof Lair||G.enc.ref?.band))}
+  static provision(cs){for(const c of cs)if(c.bandit&&!c.ours&&!c.beast&&c.empty())c.gold=rint(...CARCASS.banditGold)}
   // laid on the map once the fight is settled: what its window would have held shared among them (share), the window told
   static lay(fell){if(!fell?.length)return;const cs=fell.map(f=>asCarcass({cc:1,...f,day:G.day+Clock.frac,items:[]})),L=G.loot,V=G.lootView;this.list.push(...cs);
     // (a quest item stays in the window, yours: never left to rot, core/items.js QuestItem)
     const on=L&&!L.capture&&V&&!V.keep?L.pile.filter(s=>!lootBound(s)):[];if(on.length){const n=on.reduce((a,s)=>a+s.n,0);for(const s of on)this.share(cs,s);L.pile=L.pile.filter(lootBound);
       V.head+='<p class="fb-carcass gold">'+n+' thing'+(n>1?'s':'')+' lie on the fallen: walk to them and click one to look them over.</p>';renderLoot()}
-    this.prune()}
+    this.provision(cs);this.prune()}
   // (a pile entry onto the fallen it belongs to: meat, furs and a beast's trophy on beasts (its own kind's first), gear and goods
   // on the men; else on any; split among them, a piece at a time)
   static share(cs,s){const foes=cs.filter(c=>!c.ours);if(foes.length)cs=foes;const mat=c=>c.mon?MONSTERS[c.mon]?.mat:c.wild?CRITTERS[c.wild]?.mat?.[0]:null,beasty=s.k==='good'&&['meat','furs'].includes(s.id)||s.k==='mat',
@@ -135,7 +137,7 @@ const p=b.world.world(c),M=Object.keys(MONSTERS).find(k=>MONSTERS[k].unit===u.ty
     if(dd>CARCASS.loot.at){const s=moveStep(partySpeed(b,b.troops),d);if(dd<2*CARCASS.loot.at||!Router.travel(b,q,s))walk(b,dx,dy,Math.min(dd,s));b.idle=false;return true}// (the last of the way straight: the router's cells stop short; at L.at its men stand round them, its middle off them)
     b.idle=true;q.wait-=d;if(q.wait>0)return true;b.corpse=null;
     const c=this.list.find(o=>Math.hypot(o.x-q.x,o.y-q.y)<1);if(c){const p=b.plunder||(b.plunder={gold:0,items:[],of:[]}),who=robberOf(b);let n=0;
-      for(const o of c.near()){for(const s of o.items){p.items.push([s.k,s.id,s.n]);n+=s.n}o.items=[];o.robbed=who}if(n&&!p.of.includes('the fallen of your fight'))p.of.push('the fallen of your fight')}
+      for(const o of c.near()){const gold=o.gold||0;p.gold+=gold;n+=gold;o.gold=0;for(const s of o.items){p.items.push([s.k,s.id,s.n]);n+=s.n}o.items=[];o.robbed=who}if(n&&!p.of.includes('the fallen of your fight'))p.of.push('the fallen of your fight')}
     return true}
   // (the clearers: each of the fallen past its time (C.bare picked clean, C.after any) with a holding's gate within C.reach: out of
   //  your sight gone at once; in it, one of its folk walks out to it (Carcass.diggers), digs, and walks home)

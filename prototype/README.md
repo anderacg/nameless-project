@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Compact health and bandit loot:** individual health squares are smaller and sit just above the visible body, ignoring transparent sprite padding. An otherwise empty hostile bandit corpse keeps 1–3 gold, collected once when searched; saved purses and NPC looters use the same gold. Existing item drops, friendly casualties and beasts keep their loot rules. Checks: `banditloot`, `carcasses`, `beasthp`.
+
 **Resident guards and bandit life:** camp guards and outpost sentries defend their actual posts using persistent people, with saved wounds and deaths. Bandit camps have local detection, spreading alarms, sleeping occupants and daily raiding parties drawn from their own residents. Individual health uses one small square per 25 maximum HP; Settings offers Automatic or Always. See `doc/SITE_RESIDENTS_DESIGN.md`; checks: `sitelife`, `outposts`, `encampments`, `worldcombat`, `battlecommands`, `structure`.
 
 **Files:** `world/sitelife.js` owns resident books, site defence, bandit routines and returning raids. `ui/individualhealth.js` draws each visible individual's health above the scene and below the GUI. `CampFolk` and `OutpostWatch` reference those same people rather than separate decorative defenders.

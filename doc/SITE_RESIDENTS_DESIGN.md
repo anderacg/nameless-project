@@ -30,6 +30,8 @@ Living residents recover eight percent of maximum health per peaceful game hour.
 
 `ui/individualhealth.js` draws one small square per 25 maximum HP. Damage empties squares, including a partially filled square; a short final segment is full at maximum health. Rows wrap after eight squares. These use each actor's health, never a formation total.
 
+Refined on 2026-11-22: square interiors are two art pixels and the overlay is scaled down with whole device-pixel edges. The visible body's alpha bounds determine its top; transparent canvas padding and separately held weapons do not push health away from the unit. The bottom row sits one scaled pixel above that top, including the unit's terrain and tower lift.
+
 Automatic mode shows wounded, engaged, selected and targeted individuals. Always mode shows all visible living individuals. Beasts always show their individual squares in either mode and retain the incoming removal of combined pack health. Hidden occupants and units outside sight do not reveal health indicators. The existing health preference selects these modes. Indicators draw above world units and below the GUI, using the same zoom/DPR sizing rules as battle indicators. Sprite height determines the battle indicator's anchor.
 
 ## Verification
