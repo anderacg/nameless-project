@@ -196,7 +196,7 @@ class CampDweller extends WorldObject{
 }
 SITE_CLASS.travelers=Encampment;
 
-/* ---------- a camp's people (doc §4): made from its seed when it comes near you (ENCAMP.folk.near), never saved, as the estates'
+/* ---------- a camp's people (doc §4): made from its seed when it comes near you (ENCAMP.folk.near), with saved identities and health in SiteLife; their routine figures are recreated near you, as the estates'
    workers are (world/folk.js); each where the hour says: asleep in his tent by night (the watch by the fire, another walking the
    ring), round the fire at dawn and dusk, at his work by day (ENCAMP_ROLES: the fire, the ring, the wares, his tent's door, out to
    the woods or the rocks and back, a prayer at midday, music, children at play). A band or a beast near sends them into their tents,

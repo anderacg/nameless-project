@@ -16,7 +16,7 @@ class ResidentFigure extends WorldObject{
   get x(){return this.person.x} get y(){return this.person.y}
   get mapKind(){return 'resident'}
   get meetsAnyTime(){return true}
-  here(){return !this.site.cleared&&this.person.hp>0&&!this.person.away&&!SiteLife.inBattle(this.site)}
+  here(){return W.sites.includes(this.site)&&!!this.site.residents?.people.includes(this.person)&&!this.site.cleared&&this.person.hp>0&&!this.person.away&&!SiteLife.inBattle(this.site)}
   inView(V){return this.here()&&this.person.mode!=='sleep'&&yourSight(V).sees(this.x,this.y,1.2)}
   pick(at){if(this.inView(at.V))at.add(this,6,4)}
   meet(){if(!this.here())return false;if(!SiteLife.hostile(this.site))return this.site.meet();G.residentTarget={site:this.site.i,id:this.person.id};const started=SiteLife.engage(this.site);if(!started)G.residentTarget=null;return started}
@@ -95,19 +95,19 @@ class SiteLife{
   static visible(){const out=[],S=yourSight();for(const [s,people] of this.active)if(!this.inBattle(s))for(const p of people)if(p.hp>0&&!p.away&&p.mode!=='sleep'&&S.sees(p.x,p.y,1.2))out.push(p);return out}
   static draw(ents,cam,V){const S=yourSight(V);for(const [s,people] of this.active){if(s instanceof Encampment||s instanceof Outpost||this.inBattle(s))continue;const owner=this.force(s);
     for(const p of people)if(p.hp>0&&!p.away&&p.mode!=='sleep'&&S.sees(p.x,p.y,1.2))ents.push({x:p.x,y:p.y,f:()=>drawMarcher(p,owner,cam)})}}
-  static bind(b,area,only=null){const units=only||b.units,used=new Set(b.units.filter(u=>u.resident).map(u=>u.resident)),main=G.enc?.ref;
+  static bind(b,area,only=null){const units=only||b.units,used=new Set(b.units.filter(u=>u.resident).map(u=>u.resident)),main=G.enc?.ref;let changed=false;
     for(const u of units){if(u.resident||u.hero||u.comp||u.waiting)continue;const source=armySource(u.sourceArmy);let s=source?.residentSite;
       if(!s&&u.team===1&&u.grp.startsWith('e0_')&&this.managed(main))s=main;
       const raid=source?.residentHome!=null?W.sites.find(s=>s.i===source.residentHome):null;if(!s&&raid)s=raid;
       if(!s)continue;const people=raid?this.book(s).people.filter(p=>source.residentIds.includes(p.id)&&p.hp>0):this.fighters(s),p=people.find(p=>!used.has(p)&&(p.type===u.type||p.type==='chief'&&u.leader));if(!p)continue;used.add(p);
-      u.resident=p;u.residentSite=s;u.hp=u.max*clamp(p.hp/p.max,0,1);p.max=u.max;p.hp=u.hp;
+      changed=true;u.resident=p;u.residentSite=s;u.hp=u.max*clamp(p.hp/p.max,0,1);p.max=u.max;p.hp=u.hp;
       if(raid){u.residentRoamer=true;u.residentAwake=true;continue}
       const tower=u.grp.endsWith('_tower'),at=area.constrain(area.field(p),16);if(!tower){u.x=at.x;u.y=at.y}
       const old=b.groups[u.grp],id='resident_'+s.i+'_'+p.id,g=new BattleControl(id,u.team,{player:false,ally:u.team===0,foe:u.team!==0,post:true,resident:true,role:old.role,type:u.type,name:p.name,ax:u.x,ay:u.y});
       if(tower){old.post=true;u.residentHome={x:u.x,y:u.y}}else{u.grp=id;b.groups[id]=g;u.residentHome=area.field(p.home)}
       u.residentAwake=p.mode!=='sleep';u.residentHidden=!u.residentAwake;u.residentAlarm=null;
     }
-    for(const id of Object.keys(b.groups))if(!b.units.some(u=>u.grp===id))delete b.groups[id];
+    if(!changed)return;for(const id of Object.keys(b.groups))if(!b.units.some(u=>u.grp===id))delete b.groups[id];
     if(b.sides)for(const r of b.sides.records){const members=b.units.filter(u=>u.sourceArmy===r.force||armySource(u.sourceArmy)===r.owner||r.owner===P&&b.groups[u.grp]?.player);if(members.length)r.groups=[...new Set(members.map(u=>u.grp))]}
   }
   static local(u,e){if(!u.resident||u.residentRoamer)return true;const h=u.residentHome;return u.residentAwake&&u.residentAlarm!=null&&Math.hypot(e.x-h.x,e.y-h.y)<=SITE_LIFE.leash*B.world.scale}
