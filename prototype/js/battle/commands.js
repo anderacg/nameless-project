@@ -58,7 +58,7 @@ function rtsOrder(x,y,opt){
   else{gs.forEach(regroup);const cx=gs.reduce((a,g)=>a+B.groups[g].ax,0)/gs.length,cy=gs.reduce((a,g)=>a+B.groups[g].ay,0)/gs.length;
     gs.forEach(g=>{const gr=B.groups[g];gr[am?'attackMove':'moveTo'](x+gr.ax-cx,y+gr.ay-cy,{run:!!opt.run})});if(am)amSay()}
   if(B.deploy)deploySnap(gs);
-  B.mark={x,y,t:.7,foe:!!e};if(am&&!e)B.mark.am=true},{late:true});
+  B.mark={x,y,t:.7,foe:!!e,target:e||null};if(am&&!e)B.mark.am=true},{late:true});
 }
 // an attack-move asked for (Ctrl) or armed (the button: armAttackMove), the arm spent by this order; never while deploying
 function amTake(opt){const am=!!(opt&&opt.amove||B.amArm)&&!B.deploy;if(B.amArm){B.amArm=false;setOrderUI()}return am}

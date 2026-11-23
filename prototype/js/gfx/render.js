@@ -658,7 +658,12 @@ function drawBattle(){
   drawFormGhost();// (a line being dragged: formations.js)
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
-  if(B.mark&&B.mark.t>0){const m=B.mark;ctx.strokeStyle=m.foe||m.am?'#ff6a5a':'#e8b94a';ctx.globalAlpha=Math.min(1,m.t*2);ctx.beginPath();ctx.ellipse(m.x,m.y-fieldLift(m.x,m.y),8*(1.4-m.t*.5),4*(1.4-m.t*.5),0,0,7);ctx.stroke();ctx.globalAlpha=1;m.t-=1/60}
+  if(B.mark&&B.mark.t>0){const m=B.mark,now=performance.now();m.until??=now+m.t*1000;m.t=Math.max(0,(m.until-now)/1000);
+    if(m.target&&m.target.hp>0&&!m.target.left){m.x=m.target.x;m.y=m.target.y}
+    const x=m.x,y=m.y-fieldLift(m.x,m.y),r=reducedMotion()?9:8*(1.4-m.t*.5);ctx.save();ctx.strokeStyle=m.foe?'#ff8069':'#efd17d';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=1.5;ctx.globalAlpha=Math.min(1,m.t*3);
+    ctx.beginPath();ctx.ellipse(x,y,r,r*.5,0,0,7);ctx.stroke();ctx.beginPath();
+    for(const side of [-1,1]){ctx.moveTo(x+side*(r+4),y-4);ctx.lineTo(x+side*(r+1),y);ctx.lineTo(x+side*(r+4),y+4)}ctx.stroke();
+    if(!m.foe){ctx.beginPath();ctx.moveTo(x,y-4);ctx.lineTo(x+3,y);ctx.lineTo(x,y+4);ctx.lineTo(x-3,y);ctx.closePath();ctx.fill()}ctx.restore()}
   // (obstacles: their ground, then each in the depth order: sprites.js; on the world map (a world battle) each with the trees in front of
   // it drawn back over it, as the map's own figures are, those over your men faded: depth.js worldOverdraw; the owner, 2026-10-31:
   // "the forest seems not to cover units")

@@ -36,7 +36,7 @@ class WorldCombat{
     if(!this.live()||B.over||!u||u.hp<=0||u.left||!battleEnemy(0,u)||!seenBy(0,u))return false;
     if(!gs.length)gs=playerGroups().filter(id=>grpUnits(id).some(u=>u.hero));
     playerOrder(gs,()=>{for(const id of gs)B.groups[id].attack(u,{run:true,individual:true})});
-    B.worldTarget=u;B.mark={x:u.x,y:u.y,t:.7,foe:true};return true;
+    B.worldTarget=u;B.mark={x:u.x,y:u.y,t:.7,foe:true,target:u};return true;
   }
   // A normal click/tap on an enemy has the same meaning before and during combat.
   static click(x,y,externalOnly=false){

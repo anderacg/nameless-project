@@ -1828,3 +1828,15 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 #bbar button:disabled{cursor:not-allowed}
 
 #screen:not(.mobile-battle) .btop{top:calc(var(--e-t) + 54px)}
+
+/* Selection feedback and progressively revealed phone orders. */
+.battle-selection-summary{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-width:0;font:10px/13px Arial,sans-serif;color:var(--fg-2)}
+.battle-selection-summary strong{max-width:28%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.battle-selection-summary b{color:var(--accent);white-space:nowrap}
+.battle-selection-health{display:block;position:relative;flex:0 0 42px;height:5px;background:#30251d;border:1px solid #806949}.battle-selection-health i{position:absolute;inset:0 auto 0 0;background:#81b681}
+.mobile-battle-hud .battle-selection-summary{font-size:9px;line-height:12px;gap:5px}.mobile-battle-hud .battle-selection-summary strong{max-width:22%}
+.battle-quick-orders{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:5px 0 8px}.battle-quick-orders button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:46px;font:700 11px Arial,sans-serif;color:var(--fg);background:var(--button-face);border:1px solid var(--trim)}
+.battle-advanced{border-top:1px solid var(--trim)}.battle-advanced>summary{padding:12px 4px;min-height:44px;color:var(--fg-2);font:700 12px Arial,sans-serif;cursor:pointer}.battle-advanced[open]>summary{color:var(--accent)}
+
+.battle-advanced>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+.mobile-battle-hud{gap:3px}.mobile-battle-hud .btop{padding-block:1px}

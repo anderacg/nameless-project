@@ -143,15 +143,20 @@ window.addEventListener('pointerup',e=>{if(e.pointerType==='touch'&&touchUp(e))r
   if(e.button===2&&B&&B.rdrag){const d=B.rdrag;B.rdrag=null;
   if(Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1,{amove:d.am});
   else{const L=B.lastRc,now=performance.now(),dbl=!!L&&now-L.t<350&&Math.hypot(L.x-d.x0,L.y-d.y0)<16;B.lastRc={t:now,x:d.x0,y:d.y0};rtsOrder(d.x0,d.y0,{queue:d.shift,run:dbl,amove:d.am})}return}
-  if(e.button===0&&B&&B.box){const b=B.box;B.box=null;if(!(Math.hypot(b.x1-b.x0,b.y1-b.y0)<5&&!b.add&&(WorldCombat.click(b.x1,b.y1)||WorldCombat.move(b.x1,b.y1))))rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
+  if(e.button===0&&B&&B.box){const b=B.box;B.box=null;if(Math.hypot(b.x1-b.x0,b.y1-b.y0)<5&&!b.add)battleTap(b.x1,b.y1);else rtsSelect(b.x0,b.y0,b.x1,b.y1,b.add)}/* (the bow, set aside:) if(e.button===0&&B&&B.draw)drawRelease() */});
 cv.addEventListener('pointermove',e=>{if(G.mode!=='battle'||!B)return;const p=toCanvas(e);
-  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.amArm||B.sel!=='all'&&selGroups().length&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
+  {const q=toField(p);B.hov=q;{const ic=iconAt(q.x,q.y);B.iconHov=ic?ic.g:null}cv.style.cursor=B.amArm||selGroups().length&&rtsUnitAt(q.x,q.y,1)?'crosshair':rtsUnitAt(q.x,q.y,0)?'pointer':''}// (what you point at: a ring, battlehud.js)
   if(B.cam&&B.cam.drag){camPan(B.cam.drag.x-p.x,B.cam.drag.y-p.y);B.cam.drag={x:p.x,y:p.y};return}// (middle-drag: pan)
   if(B.rdrag&&e.pointerType==='mouse'&&e.buttons&1){B.rdrag=null;return}// (the left button pressed mid right-drag comes as a move: called off)
   if(B.box||B.rdrag){const q=toField(p),o=B.box||B.rdrag;o.x1=q.x;o.y1=q.y}});
 // a drag under way in battle called off (Esc; a left-click during a right-drag; a second finger: touchDown): the line ghost,
 // the box or the finger's press gone, nothing sent, the selection kept; letting go after it does nothing. True if there was one
 function dragCancel(){if(G.mode!=='battle'||!B||!(B.rdrag||B.box||TOUCH.lp))return false;touchDrop();B.rdrag=null;B.box=null;return true}
+// Ordinary battle clicks and taps share intent. Modifier/box selection stays with rtsSelect.
+function battleTap(x,y){if(!B||G.mode!=='battle'||G.modal||B.over)return false;
+  if(WorldCombat.click(x,y)||WorldCombat.move(x,y))return true;
+  if(B.amArm||!rtsUnitAt(x,y,0)&&selGroups().length)rtsOrder(x,y);else rtsSelect(x,y,x,y,false);return true;
+}
 // the map's click or tap (ring.js ringUp, touchUp): on another party, its ring (partyRing); else worldMove
 function worldGo(wx,wy){
   if(G.mode!=='world'||G.modal)return;
@@ -228,8 +233,7 @@ function touchUp(e,cancel){const T=TOUCH,id=e.pointerId;if(!T.pts.has(id))return
   if(B!==l.B||G.mode!=='battle')return true;const q=l.q;
   if(l.armed){const d=B.rdrag;B.rdrag=null;if(d&&Math.hypot(d.x1-d.x0,d.y1-d.y0)>=FORM_DRAG)formDragTo(d.x0,d.y0,d.x1,d.y1);else rtsOrder(q.x,q.y);return true}
   if(l.box){const b=B.box;B.box=null;if(b)rtsSelect(b.x0,b.y0,b.x1,b.y1,false);return true}
-  if(WorldCombat.click(q.x,q.y)||WorldCombat.move(q.x,q.y))return true;
-  if(B.sel!=='all'&&selGroups().length&&!rtsUnitAt(q.x,q.y,0))rtsOrder(q.x,q.y);else rtsSelect(q.x,q.y,q.x,q.y,false);return true}// (a tap: as it always was)
+  battleTap(q.x,q.y);return true}// (a tap: as it always was)
 cv.addEventListener('pointermove',e=>{if(e.pointerType==='touch')touchMove(e,toCanvas(e))});
 window.addEventListener('pointercancel',e=>{if(e.pointerType==='touch')touchUp(e,true);else if(RING.press?.id===e.pointerId)ringDrop()});
 // anything else pressed puts the card away
@@ -410,12 +414,15 @@ class MobileBattleHud{
     const drawer=(id,title,body)=>'<section id="'+id+'" class="mbh-drawer" aria-label="'+title+'" hidden><header><strong>'+title+'</strong><button type="button" class="mbh-close" aria-label="Close '+title+'">×</button></header>'+body+'</section>';
     this.root.innerHTML='<div data-bplace="status"></div><div data-bplace="cards"></div><div class="mbh-action" data-bplace="action"></div><nav class="mbh-dock" aria-label="Battle controls"><div data-bplace="pause"></div><button type="button" id="battleSpeedToggle" aria-expanded="false" aria-controls="battleSpeedChoices">1× ▴</button><button type="button" id="battleOrdersToggle" aria-expanded="false" aria-controls="battleOrderChoices">Orders ▴</button><button type="button" id="battleAttackQuick" aria-pressed="false" aria-label="Attack move: choose a destination">'+icon('attack',18)+'<span>Attack</span></button><div data-bplace="menu"></div></nav>'+
       drawer('battleSpeedChoices','Battle speed','<div class="mbh-speed-grid" data-bplace="speed"></div>')+
-      drawer('battleOrderChoices','Orders & formations','<p class="mbh-help">Orders apply to selected units. Tap a unit card to change your selection.</p><div data-bplace="orders"></div><div data-bplace="powers"></div><div class="mbh-tools"><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">'+icon('menu',16)+' View & settings</button></div>')+
+      drawer('battleOrderChoices','Orders & formations','<p class="mbh-help">Orders apply to selected units. Tap a unit card to change your selection.</p><div class="battle-quick-orders" role="group" aria-label="Selected unit orders">'+[['attack','attack','Attack'],['hold','hold','Hold'],['withdraw','withdraw','Retreat'],['ai','ai','AI']].map(([key,art,label])=>'<button type="button" data-bquick="'+key+'" aria-pressed="false">'+(key==='ai'?'':icon(art,18))+'<span>'+label+'</span></button>').join('')+' </div><details class="battle-advanced"><summary>Advanced orders & formations</summary><div data-bplace="orders"></div><div data-bplace="powers"></div></details><div class="mbh-tools"><button type="button" id="battleMoreToggle" aria-expanded="false" aria-controls="battleMoreChoices">'+icon('menu',16)+' View & settings</button></div>')+
       drawer('battleMoreChoices','Battle view','<div class="mbh-options" data-bplace="options"><button type="button" data-bview="out">Zoom −</button><button type="button" data-bview="in">Zoom +</button><button type="button" data-bview="reset">Reset view</button></div><div data-bplace="info"></div>');
     $('#bbar').appendChild(this.root);
     this.panels=[['battleSpeedToggle','battleSpeedChoices'],['battleOrdersToggle','battleOrderChoices'],['battleMoreToggle','battleMoreChoices']].map(([button,panel])=>({button:$('#'+button),panel:$('#'+panel)}));
     for(const p of this.panels)p.button.addEventListener('click',()=>{const open=p.panel.hidden;this.close();p.panel.hidden=!open;p.button.setAttribute('aria-expanded',String(open))});
+    this.root.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&e.target.closest('.battle-advanced>summary,[data-bquick]')||e.key==='Tab'&&this.panels.some(p=>!p.panel.hidden))e.stopPropagation()});
     $('#battleAttackQuick').addEventListener('click',()=>{if(!B||B.deploy||B.muster?.active||B.over)return;armAttackMove();this.close();this.update()});
+    this.root.addEventListener('click',e=>{const b=e.target.closest('[data-bquick]');if(!b||b.disabled||!B)return;const k=b.dataset.bquick;
+      if(k==='attack'){armAttackMove();this.close()}else if(k==='ai'){autoKey()}else if(k==='withdraw'&&withdrawView.tap()){bhudTop()}else{setOrder(k);this.close()}this.update()});
     this.root.addEventListener('click',e=>{if(e.target.closest('.mbh-close'))this.close();const view=e.target.closest('[data-bview]');if(view){if(view.dataset.bview==='reset')camReset();else camZoom(view.dataset.bview==='in'?1:-1)}});
     document.addEventListener('click',e=>{if(e.target.closest('[data-bspeed],[data-order],#bAmove,#bCharge,[data-sslot],[data-power],#bAuto')||!this.root.contains(e.target))this.close();this.sync()});
     document.addEventListener('pointerdown',e=>{if(!this.root.contains(e.target))this.close()});
@@ -443,6 +450,7 @@ class MobileBattleHud{
   update(){
     if(!this.enabled||!B)return;const speed=B.speed||1,button=$('#battleSpeedToggle'),text=speed+'× ▴';if(button.textContent!==text)button.textContent=text;button.setAttribute('aria-label','Battle speed '+speed+' times');
     const attack=$('#battleAttackQuick');attack.disabled=!!(B.deploy||B.muster?.active||B.over||!selGroups().length);attack.classList.toggle('on',!!B.amArm);attack.setAttribute('aria-pressed',String(!!B.amArm));attack.querySelector('span').textContent=B.amArm?'Cancel':'Attack';attack.setAttribute('aria-label',B.amArm?'Cancel attack targeting':'Attack move: choose a destination');
+    const gs=selGroups().filter(g=>grpUnits(g).length);for(const b of this.root.querySelectorAll('[data-bquick]')){const k=b.dataset.bquick,on=k==='attack'?!!B.amArm:k==='ai'?gs.length>0&&gs.every(g=>aiHas(B.groups[g])):k==='hold'?gs.length>0&&gs.every(holding):withdrawView.armed();b.disabled=!!(B.over||B.muster?.active||!gs.length||B.deploy&&k!=='hold');b.setAttribute('aria-pressed',String(on));if(k==='withdraw')b.querySelector('span').textContent=withdrawView.armed()?'Confirm':'Retreat'}
     const labels={hold:'Hold',charge:KITS.keys2?'Run':'Charge',advance:'Walk',withdraw:'Retreat',firm:'Hold ground',cease:'Hold fire',skirmish:'Skirmish',melee:'Melee',shieldWall:'Shields'};
     for(const b of this.root.querySelectorAll('.obtn'))if(!b.querySelector('.mbh-label')){
       const label=b.id==='bAmove'?'Attack move':labels[b.dataset.order||b.dataset.flag]||(b.dataset.form&&FORMS[b.dataset.form]?.n)||(b.dataset.abil&&UNIT_SKILLS[b.dataset.abil]?.n);

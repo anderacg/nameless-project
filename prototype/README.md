@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Direct battle controls and shop previews:** ordinary battle clicks/taps select friends, attack foes or move the selected groups (including All). Shared selection feedback shows health, order and AI ownership; phone Orders puts common actions before collapsed advanced controls. Ground/target markers use real-time feedback and follow clicked enemies. Smith previews compare current/proposed portraits and stats; Buy & equip preserves old gear and rolls back failed transfers before charging gold. See `doc/CASUAL_INTERACTION_DESIGN.md`; checks: `casualbattle`, `shoppreview`, `mobilebattlehud`, `touch`, `rts`.
+
 **Portrait equipment:** 39 wearable armor and helmet styles now use their exact portrait parts, with corresponding battlefield armor/helmet families and harness straps. Smithies reserve two of their six weekly pieces for armor/headwear, using the same material budget and culture-biased stock; loot can include the styles and matching damaged versions that smiths repair. All races may wear them. See `doc/PORTRAIT_EQUIPMENT_DESIGN.md`; checks: `portraitgear`, `junkgear`, `furgear`.
 
 **Equipped fur:** snow no longer grants animal-pelt hoods or fur cloaks. The worn Bear Hide Coat supplies its own fur mantle in every climate; carried fur and unrelated equipment do not. Body/cape and head fur are independent item visuals, shared by hero and companions. Checks: `furgear`.

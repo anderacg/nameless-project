@@ -182,6 +182,14 @@ function bhudCardOf(g,S,rep,st){const m=S.m,hero=g==='hero',tm=tiredMul(m[0]),st
   if(S.mo)now.mor=S.mo.v*100;
   return new UnitCard({key:rep,s:st,name:htmlText(hero&&!S.gr.customName?(P.name||'Your hero'):groupName(g)),sub:hero?'Your hero':ST[rep]?ST[rep].n:rep,hero,now,strength:hero?null:{fit:m.length,max:start,hurt:0,tip:'Men still fighting, of the '+start+' it began with'},
     meters:hero&&B.hx?[{label:'Stamina',v:B.hx.sp,max:maxSP()},{label:'Mana',v:B.hx.mp,max:maxMP()}]:null,abil:unitAbilities(st),kit:!hero&&m[0]&&!ladderless(m[0])?kitChips(battleRec(B.groups[g])):null}).html()}// (a troop's kit: unitcard.js kitChips)
+// Compact shared selection feedback; detailed unit cards remain available separately.
+function bhudSelection(){
+  let el=document.getElementById('bSelectionSummary');if(!el){el=document.createElement('div');el.id='bSelectionSummary';el.className='battle-selection-summary';document.querySelector('.btop')?.appendChild(el)}
+  const gs=selGroups().filter(g=>grpUnits(g).some(u=>!u.left)),men=gs.flatMap(grpUnits).filter(u=>!u.left);if(!men.length){setHtml(el,'<span>Select a unit to give orders</span>');return}
+  const hp=men.reduce((a,u)=>a+u.hp,0),max=men.reduce((a,u)=>a+u.max,0),orders=[...new Set(gs.map(g=>B.groups[g].amove?'Attack move':cap1(B.groups[g].order)))],auto=gs.filter(g=>aiHas(B.groups[g])).length,
+    name=gs.length===1?groupName(gs[0]):B.sel==='all'?'All troops':gs.length+' units';
+  setHtml(el,'<strong>'+htmlText(name)+'</strong><span>'+men.length+' fighters</span><span class="battle-selection-health" role="meter" aria-label="Selected unit health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(hp/Math.max(1,max)*100)+'"><i style="width:'+pct(hp/Math.max(1,max))+'"></i></span><span>'+htmlText(orders.length===1?orders[0]:'Mixed orders')+'</span><b>'+(auto===gs.length?'AI on':auto?'AI mixed':'Manual')+'</b>');
+}
 // the top bar: each side's numbers and strength (health by tier), the field, and what is happening (deploying, paused, speed)
 function bhudTop(){
   if(!B)return;window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
@@ -193,7 +201,7 @@ function bhudTop(){
   $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.amArm?'Choose an attack destination':withdrawView.armed()?'Retreat preview: tap Retreat again to confirm':B.muster?.active?(B.paused?'Preparation paused, Space to continue':'Forming up, '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready, Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone, Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused, give your orders, Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
-  bhudSkills();bhudRing();bhudArmies();withdrawView.hud();bhudSkip();
+  bhudSelection();bhudSkills();bhudRing();bhudArmies();withdrawView.hud();bhudSkip();
 }
 // (your army down, others fighting on without you: a bar saying so, and Skip to the end: sides.js skipBattle (it settles the fight by
 // the strength left if playing it out does not; Auto-resolve beside it was the same choice twice: the owner, 2026-11-14, "redundant");

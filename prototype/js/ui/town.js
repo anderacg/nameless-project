@@ -237,7 +237,7 @@ function buffShop(t,place){const ids=Buffs.offer(t,place),L='<div class="lab">Up
 function buffBuy(arg,t,place){const [id,b]=String(arg).split('|');if(Buffs.buy(t,place,id,b))log(armyGroupLabel(id)+': '+BUFFS[b].n+' at '+t.name+'.','gold')}
 class Smithy extends Place{
   constructor(id){
-    super(id,{n:'Smithy',ico:'anvil',verbs:{'buy-gear':'buyGear','buy-quiver':'buyQuiver','buff-buy':'buyBuff','mend-gear':'mendGear'}});
+    super(id,{n:'Smithy',ico:'anvil',verbs:{'buy-gear':'buyGear','buy-equip':'buyEquip','preview-gear':'previewGear','preview-close':'closePreview','buy-quiver':'buyQuiver','buff-buy':'buyBuff','mend-gear':'mendGear'}});
   }
   shut(t){
     const closed=Place.closed(t);
@@ -255,9 +255,24 @@ class Smithy extends Place{
   body(t){
     const st=this.stock(t);
     return railCards([{pic:personPic('smith',t.races[0]),name:'The smith',role:'At the forge of '+t.name,facts:[st.length?st.length+' pieces for sale':'Sold out','New stock in '+(7-Clock.daysSince(W.shops[t.name].day)%7)+' days'],
-      note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
-      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+', '+I.d+'</small><small class="diff">'+(gearDiff(id).join(', ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
+      note:forgeText(t)+' Bring copper and tin, silver, gold, mithril or adamantite to its market and the smith will forge with them.'}])+this.previewPane(t)+'<div class="lab">For sale</div>'+(st.length?st.map((id,i)=>{const I=ITEMS[id],p=gearPrice(id);
+      return '<div class="row"><div class="info"><strong style="color:'+RARITY[I.r]+'">'+I.n+'</strong><small>'+SLOTS[I.slot]+', '+I.d+'</small><small class="diff">'+(gearDiff(id).join(', ')||'<span class="muted">No change from what you wear.</span>')+'</small></div><div class="acts">'+railBtn('preview-gear',i,'Preview')+railBtn('buy-gear',i,'Buy',P.gold<p?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</div><span class="own gold">'+p+'g</span></div>'}).join('')
       :'<p class="muted">Sold out until the next delivery.</p>')+this.mendRows()+quiverRows(t,'smith','buy-quiver');
+  }
+  previewGear(arg,t){this.previewId=this.stock(t)[+arg]||null;this.previewAt=t.name}
+  closePreview(){this.previewId=null;this.previewAt=null}
+  focus(a){if(a!=='preview-gear')return false;const el=panel.querySelector('.equipment-buy-preview');if(!el)return false;el.focus({preventScroll:true});el.scrollIntoView({block:'start'});return true}
+  previewPane(t){const id=this.previewAt===t.name&&this.stock(t).includes(this.previewId)?this.previewId:null;if(!id)return '';const I=ITEMS[id],key=targetKey(id),current=P.gear[key],price=gearPrice(id),diff=gearDiff(id,key),blocked=heroEquipment.blockedWhy(key);
+    let images=itemIllustration(I,64);if(['body','head','cape'].includes(I.slot)&&typeof Faces!=='undefined'&&Faces.ok()){
+      const base=Faces.you(),next=Faces.dress(base,{...P.gear,[key]:id},P.race,P.bg),now=Faces.yours();
+      images='<figure><img src="'+Faces.pic(now)+'" alt="Current equipment"><figcaption>Wearing now</figcaption></figure><figure><img src="'+Faces.pic(next)+'" alt="Preview with '+htmlText(I.n)+'"><figcaption>With '+htmlText(I.n)+'</figcaption></figure>';
+    }
+    return '<section class="equipment-buy-preview" aria-label="Equipment comparison" tabindex="-1"><header><strong>'+htmlText(I.n)+'</strong>'+railBtn('preview-close',null,'Close preview')+'</header><div class="equipment-preview-pictures">'+images+'</div><p>Compared with '+htmlText(current?ITEMS[current].n:'an empty '+SLOTS[I.slot].toLowerCase()+' slot')+'</p><div class="equipment-preview-diff">'+(diff.join(' ')||'Same stats as your current equipment.')+'</div><footer><b class="gold">'+price+'g</b>'+railBtn('buy-equip',id,'Buy & equip',P.gold<price?'Not enough gold':blocked)+railBtn('buy-gear',this.stock(t).indexOf(id),'Buy to bag',P.gold<price?'Not enough gold':playerInventory.room('gear',id)<1?BAG_FULL:'')+'</footer></section>';
+  }
+  buyEquip(id,t){const st=this.stock(t),i=st.indexOf(id);if(i<0||this.previewId!==id||this.previewAt!==t.name||!ITEMS[id])return false;
+    const key=targetKey(id),price=gearPrice(id);if(P.gold<price||!heroEquipment.accepts(key,id)||heroEquipment.blockedWhy(key))return false;
+    const result=heroEquipment.transaction(()=>{const old=P.gear[key];P.gear[key]=id;return !old||playerInventory.add('gear',old,1)===1},BAG_FULL);
+    if(!equipmentFeedback(result))return false;P.gold-=price;st.splice(i,1);this.closePreview();addRep(t.name,ITEMS[id].v/120,true);log('You buy and equip the '+ITEMS[id].n+'.','gold');updateHUD(true);return true;
   }
   /* mending (the owner, 2026-11-13: damaged gear, data/gear.js DAMAGED): each damaged piece you carry or wear, once of a kind, made
      whole for mend × the difference of their prices */
@@ -273,7 +288,7 @@ class Smithy extends Place{
   buyBuff(arg,t){buffBuy(arg,t,this.id)}
   // a piece (its place in the stock): yours, your standing up a little
   buyGear(arg,t){
-    const st=this.stock(t),id=st[+arg];if(id&&P.gold>=gearPrice(id)&&invAdd('gear',id,1)){P.gold-=gearPrice(id);st.splice(+arg,1);addRep(t.name,ITEMS[id].v/120,true);log('You buy the '+ITEMS[id].n+'.','gold')}
+    const st=this.stock(t),id=st[+arg];if(id&&P.gold>=gearPrice(id)&&invAdd('gear',id,1)){P.gold-=gearPrice(id);st.splice(+arg,1);this.closePreview();addRep(t.name,ITEMS[id].v/120,true);log('You buy the '+ITEMS[id].n+'.','gold')}
   }
   // a quiver (its id): yours, your standing up a little
   buyQuiver(arg,t){quiverBuy(arg,t,this.id)}

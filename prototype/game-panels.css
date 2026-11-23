@@ -35,7 +35,7 @@
 
 /* Small iron frames; gold fills mark a choice without the old heavy underline. */
 .panel :is(.btn,.card,.rkact,.fb-choice),.mainmenu[data-mobile] .mm-btn,
-.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-speed-grid button,.mbh-dock button,.mbh-options button,.mbh-tools button){
+.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-speed-grid button,.mbh-dock button,.mbh-options button,.mbh-tools button,.battle-quick-orders button){
   border:3px solid transparent;border-image:var(--ui-rim) 176/5px;
   border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;
   background-clip:padding-box;box-shadow:inset 0 1px #d8ba7618,0 2px 3px #0004;
@@ -46,7 +46,7 @@
 .panel .fb-shell .btn,.panel>.nav .btn,.panel .rwin>.nav .btn{min-height:44px}
 .panel :is(.btn.primary,.btn.on,.card.on,.fb-choice.on,[aria-pressed="true"].btn,[aria-selected="true"].btn),
 .mainmenu .mm-btn:focus-visible,
-.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button,.mbh-tools button):is(.on,.primary,[aria-pressed="true"],[aria-expanded="true"]){
+.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button,.mbh-tools button,.battle-quick-orders button):is(.on,.primary,[aria-pressed="true"],[aria-expanded="true"]){
   background:var(--ui-selected);background-size:auto,640px 320px;
   color:#fff0c9;box-shadow:inset 0 0 0 1px #e8c67788,0 2px 3px #0004;
 }
@@ -87,7 +87,7 @@
 
 @media(hover:hover){
   .panel :is(.btn,.card,.rkact,.fb-choice):hover:not(:disabled),.mainmenu .mm-btn:hover:not(:disabled),
-  .screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button,.mbh-tools button):hover:not(:disabled){
+  .screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button,.mbh-tools button,.battle-quick-orders button):hover:not(:disabled){
     background:linear-gradient(#846b3538,#846b3538),var(--ui-wood);
     background-size:auto,auto,640px 320px;color:#fff3d3;
     box-shadow:inset 0 0 0 1px #e4c67a88,0 2px 3px #0004;
@@ -122,3 +122,9 @@
 .gc-card .btn{border:3px solid transparent;border-image:var(--ui-rim) 176/5px;border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;box-shadow:none}
 .gc-card .btn.primary{background:var(--ui-selected);background-size:auto,640px 320px}
 .slot-menu .sm-i:is(:hover,:focus-visible):not(:disabled){background:var(--ui-selected);background-size:auto,640px 320px}
+
+/* Inspect equipment before spending gold; the preview never equips it. */
+.equipment-buy-preview{margin:10px 0;padding:12px;border:7px solid transparent;border-image:var(--ui-rim) 176/9px;background:var(--ui-wood);background-clip:padding-box}
+.equipment-buy-preview header,.equipment-buy-preview footer{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.equipment-buy-preview header strong{font-size:16px;color:var(--accent)}
+.equipment-preview-pictures{display:flex;align-items:center;justify-content:center;gap:14px;margin:10px 0}.equipment-preview-pictures figure{margin:0;min-width:0;width:min(160px,42%);text-align:center}.equipment-preview-pictures img{display:block;width:100%;aspect-ratio:1;object-fit:contain;image-rendering:auto}.equipment-preview-pictures figcaption{font:11px/1.3 Arial,sans-serif;color:var(--fg-2)}
+.equipment-buy-preview p{margin:6px 0;font-size:12px}.equipment-preview-diff{display:flex;flex-wrap:wrap;gap:7px;font-size:12px;margin:8px 0 12px}.equipment-buy-preview footer .btn{min-height:44px}
