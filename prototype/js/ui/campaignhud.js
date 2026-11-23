@@ -15,6 +15,7 @@ class CampaignHud{
     this.resources.addEventListener('click',e=>{if(e.target.closest('[data-supply]'))document.getElementById('invBtn').click()});
     this.commandArt=[['campBtn','fire'],['mapBtn','map'],['mapToggle','map'],['charBtn','troops'],['skillBtn','skills'],['invBtn','bag'],['journalBtn','book']];
     this.regionCard=document.createElement('aside');this.regionCard.className='campaign-region';this.regionCard.hidden=true;this.regionCard.setAttribute('aria-label','Current region');this.regionCard.setAttribute('aria-live','polite');this.regionCard.setAttribute('aria-atomic','true');this.root.querySelector('.campaign-rail').appendChild(this.regionCard);
+    this.danger=document.createElement('aside');this.danger.className='campaign-danger';this.danger.setAttribute('aria-label','Local monster difficulty');$('.hudlayer').appendChild(this.danger);
     this.details.textContent='Details';this.details.setAttribute('aria-label','Company details');this.details.title='Company details';
     this.mobileMini=document.createElement('button');this.mobileMini.type='button';this.mobileMini.className='campaign-mobile-survey';this.mobileMini.hidden=true;this.mobileMini.setAttribute('aria-label','Open full map');$('.hudlayer').appendChild(this.mobileMini);this.mobileMini.addEventListener('click',()=>document.getElementById('mapBtn').click());
     this.slot.addEventListener('click',()=>document.getElementById('mapBtn').click());
@@ -45,6 +46,7 @@ class CampaignHud{
     const cell=(ic,label,value,title,warn,coverage)=>{const supply=coverage!=null,tag=supply?'button':'div';return '<'+tag+' class="campaign-resource'+(warn?' warn':'')+'"'+(supply?' type="button" data-supply="'+ic+'"':'')+' title="'+htmlText(title+(warn?'. Running low':'')+(supply?'. Open inventory':''))+'">'+this.art(ic,'campaign-resource-art')+'<span><small>'+label+(warn?'<em class="campaign-resource-alert">LOW</em>':'')+'</small><b>'+value+'</b>'+(supply?'<i class="campaign-supply-track" aria-hidden="true"><em style="width:'+Math.min(100,Math.max(0,coverage/3*100))+'%"></em></i>':'')+'</span></'+tag+'>'};
     setHtml(this.resources,cell('gold','Gold',P.gold,'Your gold')+cell('troops','Company',cnt,'Your company’s troop count')+cell('food','Food',days(S.foodDays),'Food remaining at the current consumption rate',S.foodDays<1,S.foodDays)+cell('mug','Drink',days(S.drinkDays),'Drink remaining at the current consumption rate',S.drinkDays<1,S.drinkDays));
     this.updateRegion();
+    this.updateDanger();
     this.slot.style.aspectRatio=MW+'/'+MH;
   }
   updateRegion(){
@@ -52,6 +54,11 @@ class CampaignHud{
     this.region=t&&Discovery.named(t)?t:null;this.regionCard.hidden=!this.region;if(!this.region)return;
     const realm=t.owner&&FACS[t.owner],terrain=regionAt(P.x,P.y);
     setHtml(this.regionCard,'<span class="campaign-region-frame" aria-hidden="true"></span><div class="campaign-region-content"><small>Current region</small><h3>'+htmlText(landName(P.x,P.y))+'</h3><p>'+icon('banner',16)+'<span>'+htmlText(realm?realm.n:'Free folk')+'</span><span aria-hidden="true">·</span>'+icon('map',16)+'<span>'+htmlText(terrain.name)+'</span></p></div>');
+  }
+  updateDanger(){const d=MonsterRegions.forecast(P.x,P.y);this.danger.dataset.risk=d.risk;this.danger.title='Typical local monsters compared with your current company.'+(d.nearby?' Stronger visible threat: '+d.nearby+'.':' Individual packs and roaming threats vary.');
+    const pips=Array.from({length:4},(_,i)=>'<i'+(i<=d.tier?' class="lit"':'')+'></i>').join('');
+    setHtml(this.danger,'<span class="danger-crest" aria-hidden="true">'+icon('pelt',26)+'</span><span class="danger-copy"><strong>'+d.name+'</strong><small>Monsters · Lv '+d.lo+'–'+d.hi+'</small><b>'+d.word+' for your company</b><span class="danger-pips" aria-hidden="true">'+pips+'</span></span>');
+    this.danger.setAttribute('aria-label',d.name+'. Typical monsters, levels '+d.lo+' to '+d.hi+'. '+d.word+' for your company.');
   }
   presentMini(face){
     let target;if(this.desktop)target=this.slot;else if(this.phone){

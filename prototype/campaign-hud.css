@@ -208,3 +208,12 @@ svg [role="button"],svg [role="button"]:focus-visible{outline:none!important;fil
  :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]){transition:none!important}
  :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:active,.ui-clicked){translate:none!important}
 }
+
+/* Local monster forecast: geographic pips, company-relative colour, shared forged materials. */
+.campaign-danger{--danger-col:#9dbd83;position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--e-t) + 82px);display:none;align-items:center;gap:8px;width:190px;padding:8px 10px;border:7px solid transparent;border-image:var(--campaign-frame) 176/9px;background:var(--campaign-surface);background-clip:padding-box;box-shadow:0 4px 8px #0006;pointer-events:auto;color:var(--hud-ink);font-family:var(--hud-font)}
+.campaign-danger[data-risk="1"]{--danger-col:#dbc77d}.campaign-danger[data-risk="2"]{--danger-col:#e9a45f}.campaign-danger[data-risk="3"]{--danger-col:#e37d72}
+.danger-crest{display:grid;place-items:center;flex:none;width:34px;height:38px;border:1px solid var(--danger-col);border-radius:50% 50% 45% 45%;background:#17130eaa;color:var(--danger-col)}
+.danger-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.danger-copy strong{font-size:12px}.danger-copy small{font-size:10px;color:var(--hud-muted)}.danger-copy b{font-size:10px;color:var(--danger-col)}
+.danger-pips{display:flex;gap:4px;margin-top:2px}.danger-pips i{height:4px;width:23px;background:#13110e;border:1px solid #746047}.danger-pips .lit{background:var(--danger-col);box-shadow:0 0 3px color-mix(in srgb,var(--danger-col),transparent 65%)}
+.campaign-world .campaign-danger{display:flex}
+.mobile-world .campaign-danger{left:var(--e-l);transform:none;top:var(--e-t);width:min(190px,calc(100% - 160px));min-width:130px;gap:5px;padding:6px;border-width:5px}.mobile-world .danger-crest{width:25px;height:31px}.mobile-world .danger-crest .gico{width:22px;height:22px}.mobile-world .danger-copy strong{font-size:11px}.mobile-world .danger-copy small,.mobile-world .danger-copy b{font-size:9px}

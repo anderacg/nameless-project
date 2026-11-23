@@ -34,6 +34,11 @@ const MONSTERS={
     mythic:{title:'A dragon descends',first:8,back:30,lair:['mountains','hills'],see:80,speed:[16,30],fly:true,mapH:18,scorch:.15,ravage:.5,fame:20,
       hoard:{gold:250,renown:40,gear:[4,5],egg:['m_drake',.35],text:'You claim the dragon’s hoard. Bards will sing of this.'}}}
 };
+// Overworld difficulty belongs to the land, not the calendar or the hero's level.
+const MONSTER_REGIONS={edges:[20,36,56],shelter:12,rough:8,harsh:16,
+  names:['Settled lands','Frontier','Wilds','Deep wilds'],levels:[[1,2],[2,3],[3,5],[5,7]],
+  minimum:{wolf:0,boar:0,spider:0,slime:0,scorpion:1,tiger:1,bear:1,troll:2,griffin:2,wyrm:3},
+  risk:[.6,1,1.5],words:['Easy','Even','Dangerous','Deadly']};
 // trophies sell at any town market. icon and col pick the pixel icon drawn for the inventory
 const MATS={pelt:{n:'Wolf Pelt',v:12,icon:'pelt',col:'#9aa3ad'},tusk:{n:'Boar Tusk',v:14,icon:'tusk',col:'#e8e4d0'},tigerpelt:{n:'Tiger Pelt',v:90,icon:'pelt',col:'#e08a2a'},
   bearhide:{n:'Bear Hide',v:40,icon:'pelt',col:'#6e4e36'},silk:{n:'Spider Silk',v:25,icon:'silk',col:'#e4e0cf'},trollhide:{n:'Troll Hide',v:70,icon:'pelt',col:'#6a8a6a'},

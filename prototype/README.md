@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Regional monster difficulty:** overworld births use geographic level bands (1-2, 2-3, 3-5, 5-7), smaller packs near settlements, and deep-wilderness gates for trolls, griffins and wyrms. The shared desktop/phone danger crest shows the band, four geographic pips and difficulty relative to the current company. Existing monsters, quest/dungeon levels and mythic spawning retain their values and rules. See `doc/MONSTER_REGIONS_DESIGN.md`; checks: `monsterregions`, `campaignhud`, `alphawolf`.
+
 **Battle controls:** phone Attack is available directly on the five-button dock; View & settings is inside Orders. Main desktop orders have labels. Attack targeting and the existing two-tap retreat preview show contextual instructions, with pressed and keyboard-focus feedback. Combat rules are unchanged. Checks: `mobilebattlehud`, `buttonstates`.
 
 **Wildlife icons:** world beast markers and battle flags share the painted animal icon. Hunted wildlife uses that icon instead of a weapon symbol. Marker placement and picking stay the same. Checks: `uiicons`, `mapoverlay`, `marchpivots`.

@@ -59,6 +59,31 @@ const breedsFor=id=>MONSTER_BREEDS.on?Object.entries(MONSTER_BREEDS.kinds).filte
 const lairWhere=id=>[...MONSTERS[id].where,...breedsFor(id).flatMap(([,b])=>b.where)];
 function breedAt(id,x,y,tags){const on=w=>tags.includes(w),L=[...(MONSTERS[id].where.some(on)?[[null,1]]:[]),...breedsFor(id).filter(([,b])=>b.where.some(on)).map(([k,b])=>[k,b.w])];
   let r=PX.hash(Math.round(x),Math.round(y),(WM?.seedNum||0)^7919)*L.reduce((a,q)=>a+q[1],0);for(const [k,w] of L){r-=w;if(r<=0)return k}return L.length?L[L.length-1][0]:null}
+// One geographic query drives new spawns and their HUD forecast. No player level, clock or RNG changes the area's band.
+class MonsterRegions{
+  static at(x,y){const C=MONSTER_REGIONS;let near=Infinity;for(const t of TOWNS)if(!t.gone)near=Math.min(near,Math.hypot(x-t.x,y-t.y)/TILE);
+    const tags=habitatAt(x,y),harsh=['frost','desert','swamp'].includes(climAt(x,y)),rough=tags.some(t=>t==='forest'||t==='hills'),score=near<=C.shelter?near:near+(harsh?C.harsh:rough?C.rough:0);
+    let tier=0;for(const edge of C.edges)if(score>=edge)tier++;
+    return{tier,name:C.names[tier],lo:C.levels[tier][0],hi:C.levels[tier][1]};
+  }
+  static allows(id,area){return !!MONSTERS[id]&&!MONSTERS[id].mythic&&(MONSTER_REGIONS.minimum[id]??0)<=area.tier}
+  static where(id,area){return area.tier>0?lairWhere(id):MONSTERS[id].where}
+  static count(id,tier,n){return tier===0?Math.max(1,Math.ceil(n*.5)):tier===1?MONSTERS[id].count[0]:n}
+  static level(area,r){return r.int(area.lo,area.hi)}
+  static birth(id,x,y,r){const M=MONSTERS[id],area=this.at(x,y),m=asMonster({id,x,y,hx:x,hy:y,lv:this.level(area,r),n:this.count(id,area.tier,r.int(M.count[0],M.count[1])),t:0,a:0,cool:0});
+    if(wolfAlphaAt(m))m.alpha=1;const breed=area.tier>0&&breedAt(id,x,y,habitatAt(x,y));if(breed)m.breed=breed;W.monsters.push(m);return m;
+  }
+  static forecast(x,y){const area=this.at(x,y),tags=habitatAt(x,y),powers=[];
+    for(const [id,M] of Object.entries(MONSTERS))if(this.allows(id,area)&&this.where(id,area).some(w=>tags.includes(w))){
+      const n=this.count(id,area.tier,Math.round((M.count[0]+M.count[1])/2));powers.push(rating(Array(n).fill(M.unit),(area.lo+area.hi)/2));
+    }
+    powers.sort((a,b)=>a-b);let foes=powers.length?powers[Math.floor((powers.length-1)*.75)]:0,nearby=null;const V=vis();
+    for(const m of W.monsters||[])if(!m.dead&&m.n>0&&Math.hypot(m.x-x,m.y-y)<=V&&m.inView?.(V)){const p=m.power();if(p>foes){foes=p;nearby=monOf(m).n}}
+    const ratio=foes/Math.max(1,partyPower());let risk=0;
+    for(const edge of MONSTER_REGIONS.risk)if(ratio>=edge)risk++;
+    return{...area,risk,word:MONSTER_REGIONS.words[risk],nearby};
+  }
+}
 function spawnMonster(initial){
   // pick the kind first, favoring kinds that are scarce on the map, then find it a home in its habitat
   const ids=Object.keys(MONSTERS).filter(id=>!MONSTERS[id].mythic),wt=id=>MONSTERS[id].w/(1+W.monsters.filter(m=>m.id===id).length);
@@ -69,12 +94,17 @@ function spawnMonster(initial){
   // that after 300 tries); after 200 tries, its ground not found there, at a land's far edge: lairLand. A rare kind (its w rare or
   // less: a troll, a griffin, a wyrm) rareK times as far from them and from you, never nearer the holdings than monsterHold: the
   // owner, 2026-11-13, "Griffin or rare monster should be spawn in far away")
-  const S=WORLD_SCALE.spawn,far=M.w<=S.rare?S.rareK:1;
+  const S=WORLD_SCALE.spawn,far=M.w<=S.rare?S.rareK:1;let fallback=null;
   for(let k=0;k<400;k++){
     const x=R.int(2,MW-3)*TILE+8,y=R.int(2,MH-3)*TILE+8,tags=habitatAt(x,y),hold=S.monsterHold*Math.max(far>1?1:0,far*(k>=300?.5:1));
-    if(!lairWhere(id).some(w=>tags.includes(w))||Math.hypot(x-P.x,y-P.y)<S.monster[initial?0:1]*far||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<hold)||!lairLand(x,y,k>=200))continue;
-    const m=asMonster({id,x,y,hx:x,hy:y,lv:monLevel(R),n:R.int(M.count[0],M.count[1]),t:0,a:0,cool:0});if(wolfAlphaAt(m))m.alpha=1;{const br=breedAt(id,x,y,tags);if(br)m.breed=br}W.monsters.push(m);return;
+    if(Math.hypot(x-P.x,y-P.y)<S.monster[initial?0:1]*far||TOWNS.some(t=>Math.hypot(t.x-x,t.y-y)<hold)||!lairLand(x,y,k>=200))continue;
+    const area=MonsterRegions.at(x,y);if(!MonsterRegions.where(id,area).some(w=>tags.includes(w))||!MonsterRegions.allows(id,area)){
+      const kinds=ids.filter(k=>MONSTERS[k].w>0&&MonsterRegions.allows(k,area)&&MonsterRegions.where(k,area).some(w=>tags.includes(w)));if(kinds.length)fallback={x,y,kinds};continue;
+    }
+    MonsterRegions.birth(id,x,y,R);return;
   }
+  // A rare species without suitable deep land yields its population slot to a local eligible kind.
+  if(fallback){const {x,y,kinds}=fallback;MonsterRegions.birth(R.pick(kinds),x,y,R)}
 }
 // where a beast may make its lair (the owner, 2026-10-19): in the wilds, on no holding's land; or, when rim (its kind's ground
 // not found in the wilds this time), within WORLD_SCALE.spawn.rim tiles of a land's edge, away from every holding and estate

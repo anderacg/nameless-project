@@ -18,6 +18,7 @@ function qtPlace(el){
   if(window.campaignHud?.desktop){const map=worldMiniRect(),k=cv.clientWidth/VW;el.style.top=((map.y+map.h+UW_FRAME)*k+QTRACK.gap+QTRACK.mapControls)+'px';el.style.left='auto';el.style.right='var(--e-r)';return}el.style.right='';
   const s=document.getElementById('stats'),phone=document.getElementById('screen')?.classList.contains('mobile-world'),up=!phone&&s&&s.offsetParent&&!s.hidden&&getComputedStyle(s).display!=='none';// (a phone: the card a sheet over the bottom bar, the tracker at the top)
   el.style.top=up?s.offsetTop+Math.max(s.offsetHeight,s.scrollHeight)+QTRACK.gap+'px':'';el.style.left=up?s.offsetLeft+'px':'';
+  if(phone&&window.campaignHud?.danger){const r=window.campaignHud.danger.getBoundingClientRect(),host=el.parentNode.getBoundingClientRect();el.style.top=(r.bottom-host.top+QTRACK.gap)+'px'}
   if(phone&&typeof worldMiniRect==='function'){const m=worldMiniRect(),k=cv.clientWidth/VW;el.style.setProperty('--qt-phone-width',Math.max(140,Math.min(270,(m.x-UW_FRAME)*k-el.offsetLeft-8))+'px')}
 }
 // each HUD tick (render.js updateHUD): drawn afresh only when what it shows has changed
