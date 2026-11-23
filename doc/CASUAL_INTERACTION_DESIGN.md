@@ -15,3 +15,16 @@ Buy & equip uses the shared equipment transaction for displaced gear, inventory 
 Validation: focused battle, purchase and phone layout suites; existing touch and RTS command regressions. Checks cover All commands, individual targeting, selecting friends, attack-move cancellation, AI status, real pointer routing, non-mutating previews, successful purchase and stale/insufficient-funds/full-inventory/mount failures. Visual review covers phone/desktop battle and smith layouts.
 
 Validation result: 53 focused checks passed (12 battle, 9 shop, 32 phone). Existing touch tests have the same three world-action-ring failures/exception on the untouched code; RTS has the same legacy white-flag/badge assertion failure on both, with 429 checks passing. RTS comparisons use the same fixed-view harness; responsive preview runs use `v=1`. No fingerprints were re-recorded.
+
+
+## Optional road choices (2026-11-23)
+
+Implemented in `world/roadguide.js`: On the road opens a framed choice page from the quest tracker or Camp dock. It offers up to one hunt, camp-clearing and exploration destination. Missing opportunities show a scouting hint rather than inventing content. Only visible individual wildlife and discovered, uncleared camps/caves or unsearched ruins qualify; destinations must be reachable within the existing route system. Sites are limited to 80 tiles. Herd centres do not control wildlife eligibility.
+
+Cards show estimated game-time travel, the existing regional danger forecast and possible reward types. Area danger is explicitly an estimate, not knowledge of a hidden garrison. Track destination marks the world, minimap and full map without moving, engaging, creating a quest or granting a reward. Visible animal positions update at most once per second; losing sight retains the last seen position. Saving keeps that waypoint without serializing animal objects. Cleared sites and dead tracked animals remove their marker.
+
+The Camp dock now opens these choices. Rest until ready pitches a legal camp, uses existing hourly stamina recovery and time acceleration, and restores prior speed at full stamina. Food/water limits and estimates appear before starting. Danger cancels recovery and drops to 1×. Manual travel cancels it, as does packing. Stop recovery retains camp at normal speed; Make camp and Pack camp preserve untargeted camping and the existing packing timer. The Z shortcut still directly toggles camp. Wounded recovery remains on its normal schedule; no instant healing or supply purchases are added.
+
+Automatic looting is reserved for a future pet ability, per the owner. All loot collection remains manual.
+
+Validation: 27 road-guide checks, 47 company-rule checks, 24 camp-packing checks, 36 structure checks, 31 survival-quest checks and 88 quest checks passed. Supply: 93 passed, with the same four terrain/legacy HUD assertions failing on unchanged ee28990. Desktop, landscape phone and portrait phone previews have no horizontal overflow, three illustrated cards and standard navigation. An additional identity probe confirms that replacing a herd member cannot silently retarget its waypoint. No fingerprints were re-recorded.

@@ -24,15 +24,16 @@ function qtPlace(el){
 // each HUD tick (render.js updateHUD): drawn afresh only when what it shows has changed
 function questTrackHUD(){
   let el=QT.el;const host=document.querySelector('.hudlayer');if(!host)return;
-  if(!el){el=QT.el=document.createElement('aside');el.id='qtrack';el.className='qtrack';el.setAttribute('aria-label','Tracked quests');host.appendChild(el);
+  if(!el){el=QT.el=document.createElement('aside');el.id='qtrack';el.className='qtrack';el.setAttribute('aria-label','Road guide and tracked quests');host.appendChild(el);
     el.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(b){e.stopPropagation();act(b.dataset.act,b.dataset.arg)}})}
   const scr=document.getElementById('screen'),now=performance.now()/1000;QT.pops=QT.pops.filter(p=>now<p.until);const ps=QT.pops.slice(-QTRACK.stack);
-  const survival=typeof survivalGuide!=='undefined'?survivalGuide.popup():'',ks=QuestTrack.list(),on=G.mode==='world'&&!G.modal&&!scr?.classList.contains('party-open')&&(ks.length||ps.length||survival);
+  const survival=typeof survivalGuide!=='undefined'?survivalGuide.popup():'',ks=QuestTrack.list(),on=G.mode==='world'&&!G.modal&&!scr?.classList.contains('party-open');
   el.hidden=!on;if(!on){if(el.dataset.sig){el.innerHTML='';el.dataset.sig=''}return}qtPlace(el);
   const rows=ks.map(k=>{const L=qtLines(k);return '<button type="button" class="qt-row'+(k===P.track?' on':'')+'" data-act="qt-open" data-arg="'+k+'" title="Open it in your Quests"><b>'+htmlText(L.title)+'</b><small>'+htmlText(L.todo)+'</small>'+(L.way?'<em>'+htmlText(L.way)+'</em>':'')+'</button>'}).join('');
   const going=p=>now>p.until-QTRACK.fade;
   const pop=p=>'<div class="qt-pop'+(going(p)?' going':'')+'" role="status" data-k="'+p.k+'"><button type="button" class="qt-x" data-act="qt-hide" data-arg="'+p.k+'" aria-label="Close" title="Close">×</button><span class="qt-new">New quest</span><b>'+htmlText(p.title)+'</b><div class="qt-btns"><button type="button" class="btn sm primary" data-act="qt-track" data-arg="'+p.k+'">Track</button></div><div class="qt-bar"><i style="animation-duration:'+QTRACK.show+'s"></i></div></div>';
-  const html=(rows?'<div class="qt-list"><div class="qt-head">Quests</div>'+rows+'</div>':'')+(ps.length?'<div class="qt-pops">'+ps.map(pop).join('')+'</div>':'')+survival,sig=html.replace(/ going/g,'')+ps.map(p=>going(p)?'g':'').join('');
+  const goal=roadGuide.goal(),guide='<div class="qt-list qt-road"><button type="button" class="qt-row" data-act="road-open">'+icon('map',14)+' <b>On the road</b><small>'+(companyRules.recover?'Resting until ready':goal?htmlText(goal.name)+' · '+htmlText(questWay(goal)):'Nearby adventures · Rest')+'</small></button></div>';
+  const html=guide+(rows?'<div class="qt-list"><div class="qt-head">Quests</div>'+rows+'</div>':'')+(ps.length?'<div class="qt-pops">'+ps.map(pop).join('')+'</div>':'')+survival,sig=html.replace(/ going/g,'')+ps.map(p=>going(p)?'g':'').join('');
   if(el.dataset.sig===sig)return;
   // (each note's bar keeps running as the rest is drawn afresh: a note already shown is kept as it was)
   const old=new Map([...el.querySelectorAll('.qt-pop')].map(d=>[d.dataset.k,d]));el.innerHTML=html;el.dataset.sig=sig;

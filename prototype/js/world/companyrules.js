@@ -4,8 +4,8 @@ const COMPANY_RULES={days:2,reserve:100,wages:2,restAt:25,resumeAt:85,restSpeed:
 const COMPANY_DUTIES={manual:['Manual','Wait for your orders.'],protect:['Protect me','Stay close to your hero and fight nearby enemies.'],line:['Hold line','Hold the starting position and fight enemies that approach.'],support:['Support','Follow behind your hero and engage nearby enemies.'],skirmish:['Skirmish','Ranged troops keep their distance; melee troops protect your hero.']};
 class CompanyRules{
   constructor(){this.reset()}
-  reset(v={}){this.resupply=v.resupply===true;this.rest=v.rest===true;this.duties={};for(const [id,d] of Object.entries(v.duties||{}))if(COMPANY_DUTIES[d]&&d!=='manual')this.duties[id]=d;this.journey=v.journey&&Number.isFinite(v.journey.x)&&Number.isFinite(v.journey.y)?{...v.journey}:null;this.pace=v.pace&&[...SPEEDS,TRAVEL_FAST].includes(v.pace.before)?{...v.pace,boost:Math.max(COMPANY_RULES.restSpeed,v.pace.before)}:null;this.wait=0;this.battles=new WeakMap()}
-  save(){if(!this.resupply&&!this.rest&&!Object.keys(this.duties).length&&!this.journey&&!this.pace)return;return {resupply:this.resupply,rest:this.rest,duties:{...this.duties},journey:this.journey&&{...this.journey},...(this.pace?{pace:{...this.pace}}:{})}}
+  reset(v={}){this.resupply=v.resupply===true;this.rest=v.rest===true;this.duties={};for(const [id,d] of Object.entries(v.duties||{}))if(COMPANY_DUTIES[d]&&d!=='manual')this.duties[id]=d;this.journey=v.journey&&Number.isFinite(v.journey.x)&&Number.isFinite(v.journey.y)?{...v.journey}:null;this.pace=v.pace&&[...SPEEDS,TRAVEL_FAST].includes(v.pace.before)?{...v.pace,boost:Math.max(COMPANY_RULES.restSpeed,v.pace.before)}:null;this.recover=v.recover===true;this.wait=0;this.battles=new WeakMap()}
+  save(){if(!this.resupply&&!this.rest&&!Object.keys(this.duties).length&&!this.journey&&!this.pace&&!this.recover)return;return {...(this.recover?{recover:true}:{}),resupply:this.resupply,rest:this.rest,duties:{...this.duties},journey:this.journey&&{...this.journey},...(this.pace?{pace:{...this.pace}}:{})}}
   duty(id){return this.duties[id]||'manual'}
   setDuty(id,d){if(!COMPANY_DUTIES[d]||!partyRoster(P).groups.some(g=>g.id===id))return false;if(d==='manual')delete this.duties[id];else this.duties[id]=d;return true}
   toggle(k){if(k!=='rest'&&k!=='resupply')return;this[k]=!this[k];if(k==='rest'&&!this.rest)this.cancel()}
@@ -36,9 +36,25 @@ class CompanyRules{
     if(P.bsta>=100){if(!p.manual&&G.speed===p.boost)setSpeed(p.before,undefined,true);p.manual=true;return}
     if(!p.manual&&G.speed!==p.boost)setSpeed(p.boost,undefined,true);
   }
-  cancel(){this.endPace();const j=this.journey;if(j?.camp&&G.pitch&&P.tx===G.pitch.x&&P.ty===G.pitch.y){P.tx=P.ty=null;G.pitch=null}this.journey=null}
+  cancel(){const recovering=this.recover;this.recover=false;this.endPace();const j=this.journey;if((j?.camp||recovering)&&G.pitch&&P.tx===G.pitch.x&&P.ty===G.pitch.y){P.tx=P.ty=null;G.pitch=null}this.journey=null}
+  restRate(){const L=supplyLand(),dr=drinkNext(L)||(L.well||canFill(L)?'water':null);return staminaRate(false,dr,L)}
+  stopRecovery(){this.cancel();if(P.camp&&!P.camp.pack){this.pace={before:1,boost:COMPANY_RULES.restSpeed,manual:true};setSpeed(1,undefined,true)}}
+  beginRecovery(){
+    if(G.mode!=='world'||G.modal||P.camp?.pack||P.siege||P.raid||P.stay||dangerInSight()||P.bsta>=100||Captivity.held||this.restRate().n<=0||!P.camp&&!campSpot())return false;
+    this.cancel();followStop();G.chase=null;G.pitch=null;P.tx=P.ty=null;
+    if(!P.camp&&!makeCamp())return false;
+    this.recover=true;this.wait=0;G.paused=false;pauseUI();this.paceStep();updateHUD(true);return true;
+  }
+  recoveryStep(){
+    if(!this.recover||G.mode!=='world'||G.modal)return;
+    const pitching=G.pitch&&P.tx===G.pitch.x&&P.ty===G.pitch.y,danger=dangerInSight();
+    if(danger){this.cancel();setSpeed(1,undefined,true);toast('Rest interrupted: '+danger+'.','bad','band');return}
+    if(P.camp?.pack||P.tx!=null&&!pitching||G.chase||G.follow||P.stay||P.siege||P.raid||!P.camp&&!pitching){this.cancel();return}
+    if(!pitching&&this.restRate().n<=0){this.stopRecovery();toast('Recovery needs drinking water.','bad','band');return}
+    if(!pitching&&P.bsta>=100){this.cancel();toast('Your band is rested. Camp remains until you pack up.','good','band');updateHUD(true)}
+  }
   frame(dt){
-    this.paceStep();if(!this.rest){if(this.journey)this.cancel();return}if((this.wait-=dt)>0)return;this.wait=COMPANY_RULES.every;
+    if(this.recover){this.paceStep();if((this.wait-=dt)<=0){this.wait=COMPANY_RULES.every;this.recoveryStep()}return}this.paceStep();if(!this.rest){if(this.journey)this.cancel();return}if((this.wait-=dt)>0)return;this.wait=COMPANY_RULES.every;
     if(G.mode!=='world'||G.modal)return;
     const j=this.journey;
     if(j){

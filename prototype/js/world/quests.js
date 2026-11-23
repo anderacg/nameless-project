@@ -1515,6 +1515,7 @@ const QUEST_MARK={col:'#ffe040',on:'#fff6c0',ring:'#ffd040',edge:14,mini:2,miniO
 // (its "!" and "?" the map's own marks (worldui.js wuiArrow), as an encounter's and a rumour's: drawn after the labels' pass, txt
 //  wrote them in the 8 px font enlarged; a lead's circle a fine px wide, as the rings are)
 function drawQuestMarks(cam){
+  const guide=typeof roadGuide!=='undefined'&&roadGuide.goal();if(guide){const x=Math.round(guide.x-cam.x),y=Math.round(liftY(guide.x,guide.y)-cam.y),t=performance.now()/300;if(x<0||y<0||x>VW||y>VH)questEdgeMark(x,y,t);else questBrackets(x,y,t)}
   const t=performance.now()/300,M=QUEST_MARK,bob=Math.round(Math.sin(t)*2);
   for(const q of P.quests){const Q=Quest.as(q),on=QuestTrack.on(Q),g=questGoal(q);if(!g)continue;const sx=Math.round(g.x-cam.x),sy=Math.round((typeof liftY==='function'?liftY(g.x,g.y):g.y)-cam.y);// (over its goal as drawn, up by its ground's lift)
     if(sx<-10||sy<-10||sx>VW+10||sy>VH+10){if(on)questEdgeMark(sx,sy,t);continue}
@@ -1548,7 +1549,7 @@ function questEdgeMark(sx,sy,t){
 }
 // the minimap's dots (dot: gfx/render.js drawWorld's), the tracked one last, bigger, in a white ring
 function drawQuestDots(dot,mark){
-  const M=QUEST_MARK;let on=null;
+  const M=QUEST_MARK;let on=null;const guide=typeof roadGuide!=='undefined'&&roadGuide.goal();if(guide){if(mark)mark(guide.x,guide.y,true);else{dot(guide.x,guide.y,'#fff',M.miniOn+2);dot(guide.x,guide.y,M.ring,M.miniOn)}}
   for(const q of P.quests){const g=questGoal(q);if(!g)continue;if(QuestTrack.on(q))on=g;else if(mark)mark(g.x,g.y,false);else dot(g.x,g.y,M.col,M.mini)}
   if(on){if(mark)mark(on.x,on.y,true);else{dot(on.x,on.y,'#fff',M.miniOn+2);dot(on.x,on.y,M.ring,M.miniOn)}}
 }
@@ -1557,6 +1558,6 @@ function questMiniMark(g,x,y,u,tracked,ink){const M=QUEST_MARK,r=M.dia[tracked?1
   g.fillStyle=tracked?M.ring:M.col;g.fill();g.lineJoin='round';g.lineWidth=M.ink*u;g.strokeStyle=ink;g.stroke();
   if(tracked){g.beginPath();g.moveTo(x,y-r*.55);g.lineTo(x+r*.55,y);g.lineTo(x,y+r*.15);g.lineTo(x-r*.55,y);g.closePath();g.fillStyle=M.on;g.fill()}g.restore()}
 // the full map's marks (ui/map.js): each quest's goal, its title, whether it is the tracked one
-const questMapMarks=()=>P.quests.map(q=>{const g=questGoal(q);return g&&{x:g.x,y:g.y,title:q.title+(g.name?': '+g.name:''),on:QuestTrack.on(q)}}).filter(Boolean);
+const questMapMarks=()=>P.quests.map(q=>{const g=questGoal(q);return g&&{x:g.x,y:g.y,title:q.title+(g.name?': '+g.name:''),on:QuestTrack.on(q)}}).filter(Boolean).concat(typeof roadGuide!=='undefined'&&roadGuide.goal()?[{...roadGuide.goal(),title:roadGuide.goal().name,on:true}]:[]);
 // its work in the world's day and frame (core/systems.js)
 Systems.add({name:'quests',order:{day:210},day:questDay});

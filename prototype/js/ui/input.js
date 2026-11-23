@@ -72,7 +72,7 @@ $('#saveBtn').addEventListener('click',()=>saveGame(false,'quick'));
 $('#menuBtn').addEventListener('click',menuKey);$('#bMenu').addEventListener('click',menuKey);// (the battle's own, for phones: the dock is hidden there)
 
 $('#charBtn').addEventListener('click',()=>{if(G.mode==='char')act('char-close');else if(G.mode==='skills')act('sk-map');else openChar()});// (the Army window, its Skills view too)
-$('#campBtn').addEventListener('click',()=>toggleCamp());// (make camp or break it: world/supply.js)
+$('#campBtn').addEventListener('click',()=>openRoadGuide());// (nearby adventures and camp recovery: world/roadguide.js)
 $('#mapBtn').addEventListener('click',()=>fullMapKey());// (the full map opened, or closed: map.js)
 $('#helpBtn').addEventListener('click',()=>{if(G.mode==='help')closeOver();else openHelp()});
 $('#journalBtn').addEventListener('click',()=>journalKey());// (the Journal opened, or closed: journal.js)

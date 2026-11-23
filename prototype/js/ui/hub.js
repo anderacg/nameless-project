@@ -93,4 +93,4 @@ defineMenuEntry('journal',{label:'Journal',icon:'book',key:'J',open:()=>openJour
 defineMenuEntry('map',{label:'Map',icon:'map',key:'M',open:()=>fullMapOpen(),why:menuMapOnly});
 defineMenuEntry('skills',{label:'Skills',icon:'skills',key:'K',open:()=>openSkills(),why:menuMapOnly});
 defineMenuEntry('help',{label:'Help',icon:'help',key:'H',open:()=>openHelp()});
-defineMenuEntry('camp',{label:'Camp',icon:'fire',key:'Z',open:()=>toggleCamp(),why:menuMapOnly});
+defineMenuEntry('camp',{label:'Camp',icon:'fire',key:'Z',open:()=>openRoadGuide(),why:menuMapOnly});
