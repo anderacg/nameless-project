@@ -56,7 +56,7 @@ class BattleTargetFeedback{
     ctx.beginPath();ctx.moveTo(u.x,u.y-fieldLift(u.x,u.y));ctx.lineTo(t.x,t.y-fieldLift(t.x,t.y));ctx.stroke();ctx.restore();
   }
   drawTarget(){
-    const v=this.view();if(!v)return;const t=v.target,p=fromField({x:t.x,y:t.y-fieldLift(t.x,t.y)}),x=p.x,y=p.y,k=B.world?VS:bview().k,r=((t.s.big?11:8)+(reducedMotion()?0:Math.sin(performance.now()/260)*.6))*k;
+    const v=this.view();if(!v)return;const t=v.target,p=fromField({x:t.x,y:t.y-fieldLift(t.x,t.y)}),x=p.x,y=p.y,k=unitIconScale()/UICON.k,r=((t.s.big?11:8)+(reducedMotion()?0:Math.sin(performance.now()/260)*.6))*k;
     ctx.save();ctx.strokeStyle=BATTLE_TARGET[v.kind];ctx.lineWidth=1.5*k;ctx.beginPath();ctx.ellipse(x,y,r,r*.45,0,0,Math.PI*2);ctx.stroke();
     for(const side of [-1,1]){ctx.beginPath();ctx.moveTo(x+side*(r+4*k),y-5*k);ctx.lineTo(x+side*(r+k),y);ctx.lineTo(x+side*(r+4*k),y+5*k);ctx.stroke()}
     ctx.fillStyle=BATTLE_TARGET[v.kind];ctx.beginPath();ctx.moveTo(x,y-19*k);ctx.lineTo(x+2.5*k,y-16*k);ctx.lineTo(x,y-13*k);ctx.lineTo(x-2.5*k,y-16*k);ctx.closePath();ctx.fill();ctx.restore();
