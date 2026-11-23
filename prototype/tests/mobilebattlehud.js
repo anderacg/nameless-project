@@ -1,6 +1,6 @@
 'use strict';
 window.PHONE=true;// (run in a phone's window, 844 x 390 with touch: tests/run-tests.ps1)
-Kit.suite(({ok})=>{
+Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);Kit.clear();Kit.world();t.WORLD_BATTLE.on=true;t.GUIDE.on=false;
  const home=Kit.goHome('Ashford');Kit.goTo(home.x+160,home.y+120);P.troops={hum_foot:5,hum_bow:4};
  const enemy=t.asParty({kind:'bandits',troops:['militia','archer'],x:P.x+70,y:P.y,cool:0});G.enc={kind:'party',ref:enemy,list:enemy.troops.slice(),allies:[],foes:[],mine:true};t.startBattle({enemies:G.enc.list,tournament:false});for(let i=0;i<1600&&t.B.muster?.active;i++)t.updateBattle(.1);t.battlePause(true);t.frame();
@@ -10,6 +10,11 @@ Kit.suite(({ok})=>{
  ok(!shown(document.querySelector('.btime'))&&!shown(document.querySelector('.bcmd')),'the old overlapping bars are hidden');
  const dock=root.querySelector('.mbh-dock'),buttons=[...dock.children].map(e=>e.tagName==='BUTTON'?e:e.firstElementChild),bounds=r(dock);
  ok(buttons.every((b,i)=>r(b).width>=44&&r(b).height>=44&&r(b).left>=bounds.left&&r(b).right<=bounds.right&&(!i||r(b).left>=r(buttons[i-1]).right)),'five accessible battle controls share a single row without overlap');
+ const faces=buttons.map(b=>({b,ico:b.querySelector(':scope > [data-ui-icon]'),label:b.querySelector(':scope > span')}));
+ ok(faces.every(f=>f.ico&&f.label&&r(f.ico).bottom<=r(f.label).top+1&&Math.abs(r(f.ico).left+r(f.ico).width/2-r(f.label).left-r(f.label).width/2)<2),'every primary button uses a centered illustrated icon above its label');
+ ok(faces.every(f=>Math.abs(r(f.ico).width-18)<1&&Math.abs(r(f.ico).height-18)<1)&&!/[▶⏸≡]/.test(dock.textContent),'primary icons share a size and avoid emoji or text-symbol substitutes');
+ const armyButton=document.getElementById('battleArmiesToggle');ok(r(armyButton).width<=74&&r(armyButton).height<=34&&armyButton.scrollWidth<=armyButton.clientWidth+1,'Armies control is compact and its label fits');
+ info(JSON.stringify({height:r(root).height,ready:t.B.ready,deploy:t.B.deploy,statusHeight:r(root.querySelector('.btop')).height,dockHeight:r(dock).height,buttonHeights:buttons.map(b=>r(b).height)}));
  ok(r(root).bottom<=innerHeight&&r(root).height<innerHeight*.46,'the collapsed battle HUD leaves most of the battlefield visible');
  const status=root.querySelector('.btop'),cards=root.querySelector('.bcards');ok(r(status).bottom<=r(cards).top&&r(cards).bottom<=r(dock).top,'status, unit cards and controls stack without overlap');
  const card=cards.querySelector('[data-grp]:not([data-grp="all"])');card.click();ok(t.B.sel===card.dataset.grp,'unit cards still select their real army groups');
@@ -43,5 +48,7 @@ Kit.suite(({ok})=>{
  ok(shown(document.getElementById('bPause')),'Start remains available in the dock while Orders are open');hud.close();
  click('bPause');ok(!t.B.deploy,'Begin starts the battle');
  click('battleSpeedToggle');ok([...speeds.querySelectorAll('[data-bspeed]')].map(b=>b.textContent).join()==='0.5×,1×,2×,5×','field battles retain their distinct speed settings');hud.close();t.battlePause(true);
+ ok(document.getElementById('bPause').querySelector('[data-ui-icon="play"]')&&document.getElementById('bPause').textContent.includes('Play'),'paused state retains the illustrated play face');
+ t.battlePause(false);ok(document.getElementById('bPause').querySelector('[data-ui-icon="pause"]')&&document.getElementById('bPause').textContent.includes('Pause'),'running state swaps to the matching illustrated pause face');t.battlePause(true);
  ok(!ERR.length,'mobile battle controls produce no runtime errors');
 });
