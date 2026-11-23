@@ -742,7 +742,7 @@ const WorldArt={
   //  as it takes; none where you know none of its land)
   standIn(g,cx,cy,x0,y0,x1,y1,cam){const [X,Y,w,h]=this.rect(cx,cy),sx=Math.max(x0,X),sy=Math.max(y0,Y),sw=Math.min(x1,X+w)-sx,sh=Math.min(y1,Y+h)-sy;
     if(sw<=0||sh<=0||(typeof seenAny==='function'&&!seenAny(sx,sy,sx+sw,sy+sh)))return false;
-    g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();return true},
+    g.save();g.imageSmoothingEnabled=true;g.drawImage(this.mini(1),sx/TILE,sy/TILE,sw/TILE,sh/TILE,sx-cam.x,sy-cam.y,sw,sh);g.restore();TileGround.fallback(g,sx,sy,sw,sh,cam);return true},
   // (the frame drawn: ms of its time left for the chunks ahead, slice at least while any are queued; then a piece of a painted
   //  chunk handed to the keeper, one a frame (a strip of its pixels: artkeep.js pump): main.js loop)
   keepLive(){this.idleAt=performance.now();this.idled=true},

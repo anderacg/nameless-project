@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Terrain tile experiment:** `terrain-tiles.html` previews grassland, a curved road and a riverbank using prebuilt local textures. `gfx/tileground.js` caches small sections and preserves the existing world-way geometry. `Ashmark.html?tileground` optionally overlays finished sections on supported flat grassland while final artwork paints; normal play retains the current renderer. Atlas: `art/terrain/grassland-tiles.png`; offline builder: `art/terrain/build_tiles.py`. See `doc/TILE_TERRAIN_DESIGN.md`; checks: `tileground`, `structure`.
+
 **Compact health and bandit loot:** individual health squares are smaller and sit just above the visible body, ignoring transparent sprite padding. An otherwise empty hostile bandit corpse keeps 1–3 gold, collected once when searched; saved purses and NPC looters use the same gold. Existing item drops, friendly casualties and beasts keep their loot rules. Checks: `banditloot`, `carcasses`, `beasthp`.
 
 **Resident guards and bandit life:** camp guards and outpost sentries defend their actual posts using persistent people, with saved wounds and deaths. Bandit camps have local detection, spreading alarms, sleeping occupants and daily raiding parties drawn from their own residents. Individual health uses one small square per 25 maximum HP; Settings offers Automatic or Always. See `doc/SITE_RESIDENTS_DESIGN.md`; checks: `sitelife`, `outposts`, `encampments`, `worldcombat`, `battlecommands`, `structure`.
