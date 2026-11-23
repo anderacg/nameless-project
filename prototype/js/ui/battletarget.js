@@ -47,9 +47,11 @@ class BattleTargetFeedback{
   }
   hud(){
     const v=this.view();if(!this.el){if(!v)return;this.el=document.createElement('div');this.el.id='bTargetFeedback';this.el.className='battle-target-feedback';this.el.setAttribute('role','status');this.el.setAttribute('aria-live','polite')}
-    const host=document.querySelector('.btop');if(host&&this.el.parentNode!==host)host.appendChild(this.el);this.el.hidden=!v;
+    const host=document.querySelector('.battle-power-body')||document.querySelector('.btop');if(host&&this.el.parentNode!==host)host.appendChild(this.el);this.el.hidden=!v;
     if(v){this.el.dataset.kind=v.kind;setHtml(this.el,icon('sword',12)+'<strong>'+htmlText(v.target.s.n||ST[v.target.type]?.n||'Enemy')+'</strong><span>'+htmlText(v.text)+'</span>')}
   }
+  owns(target){return !!target&&this.view()?.target===target}
+  forGroup(group){const v=this.view();return !!v&&this.ordered(group,v.target)}
   drawGround(){
     const v=this.view();if(!v)return;const u=v.unit,t=v.target,col=BATTLE_TARGET[v.kind];ctx.save();ctx.strokeStyle=col;ctx.globalAlpha=.38;ctx.lineWidth=1;ctx.setLineDash([3,4]);
     if(!v.ranged){ctx.beginPath();ctx.arc(u.x,u.y-fieldLift(u.x,u.y),v.range,0,Math.PI*2);ctx.stroke()}

@@ -184,21 +184,30 @@ function bhudCardOf(g,S,rep,st){const m=S.m,hero=g==='hero',tm=tiredMul(m[0]),st
     meters:hero&&B.hx?[{label:'Stamina',v:B.hx.sp,max:maxSP()},{label:'Mana',v:B.hx.mp,max:maxMP()}]:null,abil:unitAbilities(st),kit:!hero&&m[0]&&!ladderless(m[0])?kitChips(battleRec(B.groups[g])):null}).html()}// (a troop's kit: unitcard.js kitChips)
 // Compact shared selection feedback; detailed unit cards remain available separately.
 function bhudSelection(){
-  let el=document.getElementById('bSelectionSummary');if(!el){el=document.createElement('div');el.id='bSelectionSummary';el.className='battle-selection-summary';document.querySelector('.btop')?.appendChild(el)}
+  let el=document.getElementById('bSelectionSummary');if(!el){el=document.createElement('div');el.id='bSelectionSummary';el.className='battle-selection-summary';(document.querySelector('.battle-power-body')||document.querySelector('.btop'))?.appendChild(el)}
   const gs=selGroups().filter(g=>grpUnits(g).some(u=>!u.left)),men=gs.flatMap(grpUnits).filter(u=>!u.left);if(!men.length){setHtml(el,'<span>Select a unit to give orders</span>');return}
   const hp=men.reduce((a,u)=>a+u.hp,0),max=men.reduce((a,u)=>a+u.max,0),orders=[...new Set(gs.map(g=>B.groups[g].amove?'Attack move':cap1(B.groups[g].order)))],auto=gs.filter(g=>aiHas(B.groups[g])).length,
     name=gs.length===1?groupName(gs[0]):B.sel==='all'?'All troops':gs.length+' units';
   setHtml(el,'<strong>'+htmlText(name)+'</strong><span>'+men.length+' fighters</span><span class="battle-selection-health" role="meter" aria-label="Selected unit health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(hp/Math.max(1,max)*100)+'"><i style="width:'+pct(hp/Math.max(1,max))+'"></i></span><span>'+htmlText(orders.length===1?orders[0]:'Mixed orders')+'</span><b>'+(auto===gs.length?'AI on':auto?'AI mixed':'Manual')+'</b>');
 }
 // the top bar: each side's numbers and strength (health by tier), the field, and what is happening (deploying, paused, speed)
+function bhudPowerDetails(){
+  const host=document.querySelector('.btop');if(!host)return;
+  let el=document.getElementById('bPowerDetails');
+  if(!el){el=document.createElement('details');el.id='bPowerDetails';el.className='battle-power-details';el.innerHTML='<summary class="battle-power-summary" aria-label="Army power and battle details" title="Battle details"><span class="battle-power-caret" aria-hidden="true">⌄</span></summary><div class="battle-power-body"></div>';
+    const summary=el.querySelector('summary'),body=el.querySelector('.battle-power-body');summary.prepend(host.querySelector('.bpow'));body.appendChild(document.getElementById('bField'));host.prepend(el);
+    el.addEventListener('toggle',()=>window.mobileBattleHud?.measure());summary.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter')e.stopPropagation()})}
+  if(el.battle!==B){el.battle=B;el.open=false}
+}
 function bhudTop(){
-  if(!B)return;window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
+  if(!B)return;bhudPowerDetails();window.mobileBattleHud?.update();const w=u=>u.hp/Math.max(1,u.max)*(u.hero||u.leader||u.comp?4:(ST[u.type]&&ST[u.type].tier||1));let me=0,foe=0,nm=0,nf=0;
   for(const u of B.units){if(u.hp<=0)continue;if(battleFriend(0,u)){nm++;if(!u.rout)me+=w(u)}else if(battleEnemy(0,u)){nf++;if(!u.rout)foe+=w(u)}}
   const $id=id=>document.getElementById(id);if(!$id('bMine'))return;$id('bMine').textContent=nm;$id('bFoe').textContent=nf;$id('bPowMe').style.width=pct(me/Math.max(.01,me+foe));
   const huntEnd=$id('huntEnd');if(huntEnd)huntEnd.hidden=!B.hunt;const foeLabel=$id('bFoeLabel');if(foeLabel)foeLabel.textContent=B.hunt?'Wildlife':B.sides?.active?'Hostile':'Enemy';
   const at=B.world?.world(B.hero||{x:B.world.cx,y:B.world.cy}),sky=at&&WEATHER.on?Weather.at(at.x,at.y):B.env.w;
   $id('bField').textContent=B.env.name+(sky&&WEATHER.kinds[sky]?', '+Weather.name(sky):'')+(B.opts.tournament?', tournament':'')+(B.sides?', '+B.sides.records.filter(r=>r.joined).length+'/'+BATTLE_JOIN.armies+' armies':'');
   $id('bStatus').textContent=B.over?(B.hunt?'Hunt over':B.retreat?'Withdrawn':B.win?'Victory':'Defeat'):B.amArm?'Choose an attack destination':withdrawView.armed()?'Retreat preview: tap Retreat again to confirm':B.muster?.active?(B.paused?'Preparation paused, Space to continue':'Forming up, '+B.muster.done+'/'+B.muster.entries.length):B.ready?'Ready, Start Battle to begin':B.deploy?(GUIDE.on?'Deploy: place your band in the shaded zone, Space to begin':'Deploying'):B.paused?(GUIDE.on?'Paused, give your orders, Space to go on':'Paused'):B.speed!==1?B.speed+'×':'';
+  const status=$id('bStatus'),field=status.parentElement;status.title=status.textContent;if(!B.amArm&&!withdrawView.armed()&&!B.over){if(B.deploy)status.textContent='Deploying';else if(B.ready)status.textContent='Ready';else if(B.muster?.active)status.textContent='Forming up, '+B.muster.done+'/'+B.muster.entries.length;else status.textContent=''}field.hidden=!status.textContent;
   document.querySelector('.bfield').classList.toggle('alert',!!(B.deploy||B.paused));
   {const b=$id('bAmove');if(b){b.classList.toggle('on',!!B.amArm);b.setAttribute('aria-pressed',String(!!B.amArm));b.disabled=!!B.deploy}}// (armed: commands.js armAttackMove)
   bhudSelection();battleTargetFeedback.hud();bhudSkills();bhudRing();bhudArmies();withdrawView.hud();bhudSkip();
@@ -401,7 +410,7 @@ function drawSelection(){
   for(const g of sel)for(const u of grpUnits(g)){const k=u.s.big?2:1;ctx.fillStyle='rgba(255,210,90,.35)';ctx.beginPath();ctx.ellipse(Math.round(u.x),fy(u),7*k,3.5*k,0,0,7);ctx.fill();ring(u,'#ffe08a',1,2)}
   const h=B.hov;if(!h)return;const mine=rtsUnitAt(h.x,h.y,0),foe=!mine&&rtsUnitAt(h.x,h.y,1);
   if(mine&&mine.grp&&(all||!sel.includes(mine.grp)))for(const u of grpUnits(mine.grp))ring(u,sideKey(u)==='ally'?SIDE.ally.ui:'#ffffff',.7,1.5);// (your allies': their colour)
-  if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])if(seenBy(0,u))ring(u,'#ff6a5a',.9,1.5)}// (none under those you cannot see: terrain.js)
+  if(foe){const g=foe.grp;for(const u of g?grpUnits(g):[foe])if(seenBy(0,u)&&!battleTargetFeedback.owns(u))ring(u,'#ff6a5a',.9,1.5)}// (none under those you cannot see: terrain.js)
 }
 /* the reach of shooters: one frontage-aware shaded envelope for each selected group (or the group whose icon you point at);
    an enemy group of shooters you point at, theirs, in red. Point at an enemy with shooters selected: a line of fire from each group, green when all can
@@ -489,7 +498,7 @@ function drawOrderLines(){
     const an=Math.atan2(b.y-a.y,b.x-a.x);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-Math.cos(an-.5)*5,b.y-Math.sin(an-.5)*5);ctx.lineTo(b.x-Math.cos(an+.5)*5,b.y-Math.sin(an+.5)*5);ctx.fill()};
   for(const g of selGroups()){const m=grpUnits(g).filter(u=>!u.rout);if(!m.length)continue;const gr=B.groups[g],c={x:m.reduce((a,u)=>a+u.x,0)/m.length,y:m.reduce((a,u)=>a+u.y,0)/m.length};
     // (an attack on those gone from sight: to where they were last seen, terrain.js sightGoal)
-    const target=sightGoal(gr,0)||gr.targetPoint();if(target){line(c,target,'rgba(255,106,90,.9)',[]);ctx.strokeStyle='#ff6a5a';ctx.beginPath();ctx.ellipse(target.x,target.y,8,4,0,0,7);ctx.stroke();continue}
+    const target=sightGoal(gr,0)||gr.targetPoint();if(target){line(c,target,'rgba(255,106,90,.9)',[]);if(!battleTargetFeedback.forGroup(gr)){ctx.strokeStyle='#ff6a5a';ctx.beginPath();ctx.ellipse(target.x,target.y,8,4,0,0,7);ctx.stroke()}continue}
     if(gr.order==='charge'){const ts=[...new Set(m.map(u=>u.tgt).filter(t=>t&&t.hp>0))];if(ts.length){const t={x:ts.reduce((a,u)=>a+u.x,0)/ts.length,y:ts.reduce((a,u)=>a+u.y,0)/ts.length};if(Math.hypot(t.x-c.x,t.y-c.y)>12)line(c,t,'rgba(255,106,90,.7)')}continue}
     if(gr.order==='withdraw'&&B.exit){line(c,exitFor({x:c.x,y:c.y,team:gr.team,grp:g}),'rgba(111,168,224,.9)');continue}
     const a={x:gr.ax,y:gr.ay};

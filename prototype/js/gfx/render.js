@@ -658,7 +658,7 @@ function drawBattle(){
   drawFormGhost();// (a line being dragged: formations.js)
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
-  if(B.mark&&B.mark.t>0){const m=B.mark,now=performance.now();m.until??=now+m.t*1000;m.t=Math.max(0,(m.until-now)/1000);if(m.target&&(m.target.hp<=0||m.target.left||!seenBy(0,m.target)))m.t=0;
+  if(B.mark&&B.mark.t>0){const m=B.mark,now=performance.now();m.until??=now+m.t*1000;m.t=Math.max(0,(m.until-now)/1000);if(m.target&&(m.target.hp<=0||m.target.left||!seenBy(0,m.target)||m.foe&&battleTargetFeedback.owns(m.target)))m.t=0;
     if(m.target&&m.target.hp>0&&!m.target.left){m.x=m.target.x;m.y=m.target.y}
     const x=m.x,y=m.y-fieldLift(m.x,m.y),r=reducedMotion()?9:8*(1.4-m.t*.5);ctx.save();ctx.strokeStyle=m.foe?'#ff8069':'#efd17d';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=1.5;ctx.globalAlpha=Math.min(1,m.t*3);
     ctx.beginPath();ctx.ellipse(x,y,r,r*.5,0,0,7);ctx.stroke();ctx.beginPath();

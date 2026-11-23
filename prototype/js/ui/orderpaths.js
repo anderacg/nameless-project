@@ -106,7 +106,7 @@ function drawOrderPaths(){
   if(opMode()==='off')return false;if(B.deploy)return true;opReset();
   const now=OPATH.now(),sel=selGroups(),{x:vx,y:vy,w:vw,h:vh,z}=camView(),u=1/Math.min(1,z),ph=orderPathPhase(now,reducedMotion());
   const D=OPS.dash;if(D.u!==u){D.u=u;D.d=OPATH.dash.map(v=>v*u);D.o=OPATH.dot.map(v=>v*u)}
-  let tallied=false;OPS.drawn.length=0;OPS.ph=ph;
+  let tallied=false,focused=null,focusRead=false;OPS.drawn.length=0;OPS.ph=ph;
   for(const id in B.groups){const al=orderPathAlpha(id,sel,now),pv=withdrawView.shows(id)&&B.groups[id].order!=='withdraw';if(al<=.01)continue;if(!tallied){opTally();tallied=true}if(!opBuild(B.groups[id],pv))continue;
     // (each point up by its ground's lift in a fight on the map, as the men on it: vfx.js fieldLift)
     if(B.world)for(let i=0;i<OPS.n;i++)OPS.y[i]-=fieldLift(OPS.x[i],OPS.y[i]);
@@ -121,7 +121,8 @@ function drawOrderPaths(){
     ctx.setLineDash(OPS.kind==='withdraw'?D.o:D.d);opLine(0,q,u,dk,cl);
     if(OPS.n>q){ctx.setLineDash(D.d);opLine(Math.max(0,q-1),OPS.n,u,'rgba(10,12,18,'+(.36*al).toFixed(2)+')','rgba('+col+','+(.6*al).toFixed(2)+')')}
     // (the chevrons and rings, in one stroke: a ring where it ends (dotted for a place last seen), a small one at each waypoint)
-    ctx.setLineDash(OPS.none);opMarks(u,u,ph,vx,vy,vw,vh);ctx.strokeStyle=dk;ctx.stroke();opMarks(0,u,ph,vx,vy,vw,vh);ctx.strokeStyle=cl;ctx.stroke();
+    let targeted=false;if(OPS.kind==='attack'&&!OPS.lost){if(!focusRead){focused=battleTargetFeedback.view();focusRead=true}targeted=!!focused&&battleTargetFeedback.ordered(g,focused.target)}
+    ctx.setLineDash(OPS.none);opMarks(u,u,ph,vx,vy,vw,vh,targeted);ctx.strokeStyle=dk;ctx.stroke();opMarks(0,u,ph,vx,vy,vw,vh,targeted);ctx.strokeStyle=cl;ctx.stroke();
     if(OPS.am||OPS.wam){ctx.lineWidth=1.5*u;opBlades(u,u);ctx.strokeStyle=dk;ctx.stroke();opBlades(0,u);ctx.strokeStyle='rgba('+OPATH.blades+','+al.toFixed(2)+')';ctx.stroke();ctx.lineWidth=u}// (an attack-move's end)
     if(OPS.lost&&q>1){ctx.setLineDash(D.o);for(let k=0;k<2;k++){const o=k?0:u;ctx.beginPath();ctx.ellipse(OPS.x[q-1]+o,OPS.y[q-1]+o,6*u,3*u,0,0,6.283);ctx.strokeStyle=o?dk:cl;ctx.stroke()}ctx.setLineDash(OPS.none)}
     // (a withdrawal's end, previewed or under way: where they leave the field)
@@ -136,7 +137,7 @@ function opLine(i0,i1,u,dk,cl){if(i1-i0<2)return;const X=OPS.x,Y=OPS.y;
 // (the frame's chevrons, a V every OPATH.gap px along (OPATH.qgap on the queued legs) the way it goes, on a pixel's middle so it
 // stays crisp, marching with the dashes (none at the main stretch's first few px, among the men, nor its last, under the ring;
 // culled to the view), and its rings, as one path, offset by o)
-function opMarks(o,u,ph,vx,vy,vw,vh){
+function opMarks(o,u,ph,vx,vy,vw,vh,targeted=false){
   const X=OPS.x,Y=OPS.y,q=OPS.q,A=OPATH.arm*u;ctx.beginPath();
   const vees=(i0,i1,main)=>{if(i1-i0<2)return;const G=(main?OPATH.gap:OPATH.qgap)*u;let tot=0;for(let i=i0;i<i1-1;i++)tot+=Math.hypot(X[i+1]-X[i],Y[i+1]-Y[i]);const lo=main?4*u:2*u,hi=tot-(main?8*u:4*u);let s=(ph*u)%G,acc=0;
     for(let i=i0;i<i1-1&&s<=hi;i++){const dx=X[i+1]-X[i],dy=Y[i+1]-Y[i],L=Math.hypot(dx,dy);if(!(L>0))continue;const cx=dx/L,cy=dy/L;
@@ -145,7 +146,7 @@ function opMarks(o,u,ph,vx,vy,vw,vh){
       acc+=L}};
   vees(0,q,true);if(OPS.n>q)vees(Math.max(0,q-1),OPS.n,false);
   const ring=(i,rx,ry)=>{const x=X[i]+o,y=Y[i]+o;ctx.moveTo(x+rx,y);ctx.ellipse(x,y,rx,ry,0,0,6.283)};
-  if(q>1&&!OPS.lost&&!(OPS.am&&OPS.kind==='move'))ring(q-1,6*u,3*u);for(let k=0;k<OPS.wn;k++)if(!OPS.wa[k])ring(OPS.w[k],k===OPS.wn-1?5*u:3*u,k===OPS.wn-1?2.5*u:1.5*u)}
+  if(q>1&&!OPS.lost&&!targeted&&!(OPS.am&&OPS.kind==='move'))ring(q-1,6*u,3*u);for(let k=0;k<OPS.wn;k++)if(!OPS.wa[k])ring(OPS.w[k],k===OPS.wn-1?5*u:3*u,k===OPS.wn-1?2.5*u:1.5*u)}
 // (an attack-move's crossed blades, where its move ends and at each waypoint of one, as one path, offset by o: two blades crossed,
 // a guard across each near its hilt)
 function opBlades(o,u){ctx.beginPath();const X=OPS.x,Y=OPS.y,at=(i,r)=>{const x=X[i]+o,y=Y[i]+o,h=r*.55;
