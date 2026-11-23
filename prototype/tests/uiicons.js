@@ -19,6 +19,15 @@ window.RUN=async()=>{const {ok,exc,out}=Kit.report(),t=T,parse=s=>{const e=docum
   ok(Object.keys(t.FORMS).every(k=>parse(t.formIcon(k,24,16))?.dataset.uiFormation===k),'formation diagrams retain their real geometry with matching metal studs');
   const images=await Promise.all(t.UI_ICON_SHEETS.map(async S=>{const i=new Image();i.src=S[0];await i.decode();return i}));
   await Promise.all(t.UI_ICON_SHEETS.map((S,i)=>t.uiAtlasImage(i).decode()));const c=document.createElement('canvas');c.width=80;c.height=40;const g=c.getContext('2d');ok(t.uiCanvasIcon(g,'sword',0,0,32,32)&&t.uiCanvasBadge(g,'confident',40,0,32,t.BADGE_RIM.confident)&&g.getImageData(0,0,80,40).data.some((v,i)=>i%4===3&&v>0),'tactical markers render the same illustrations on canvas');
+  {const wildlife=Object.keys(t.CRITTERS).filter(k=>!t.CRITTERS[k].live).map(k=>t.wildTroop(k));
+   ok(wildlife.length>0&&wildlife.every(k=>t.iconOfType(k)==='beast'),'all hunted wildlife uses the animal flag symbol instead of a weapon');
+   const draw=window.uiCanvasIcon,calls=[],col='#817b43';t.BAND_MARKERS.delete(col);
+   try{window.uiCanvasIcon=(g,name,...args)=>{calls.push(name);return draw(g,name,...args)};const s=t.bandMarkerSprite(col);
+    ok(calls.length===1&&calls[0]===t.UI_UNIT_ART.beast&&s.width/4===9&&s.height/4===11,'world markers share the battle animal artwork and preserve their displayed bounds');
+    ok(t.bandMarkerSprite(col)===s&&calls.length===1,'ready animal markers reuse their painted cache');
+   }finally{window.uiCanvasIcon=draw;t.BAND_MARKERS.delete(col)}
+   const ready=window.uiIconReady;try{window.uiIconReady=()=>false;t.bandMarkerSprite(col);ok(!t.BAND_MARKERS.has(col),'unloaded animal artwork never leaves a blank marker cached')}finally{window.uiIconReady=ready}
+  }
   ok(images.every((im,i)=>im.naturalWidth===t.UI_ICON_SHEETS[i][1]&&im.naturalHeight===t.UI_ICON_SHEETS[i][2]),'all shared icon atlases load at their registered native sizes');
   const canvases=images.map(im=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);return c.getContext('2d',{willReadFrequently:true})});
   ok(canvases.every((g,i)=>[[0,0],[images[i].width-1,0],[0,images[i].height-1],[images[i].width-1,images[i].height-1]].every(([x,y])=>g.getImageData(x,y,1,1).data[3]<=1)),'all atlas outside corners are transparent apart from at most 1/255 antialiasing');

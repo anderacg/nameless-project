@@ -43,12 +43,12 @@ function drawMover(e){const bs=e.x!=null?WorldGround.bridge(e.x,e.ly??e.y):null;
    (supply.js campPole) */
 const BANNER_GAP=2;let BANNERQ=[];
 const BAND_MARKERS=new Map();
-function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){s=mkc(9,11,g=>{rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);for(const [x,y] of [[2,3],[4,2],[6,3]])rect(g,'#efe2bb',x,y);rect(g,'#efe2bb',3,5,3,2);rect(g,col,4,9,1,2)});BAND_MARKERS.set(col,s)}return s}
+function bandMarkerSprite(col){let s=BAND_MARKERS.get(col);if(!s){const ready=uiIconReady(UI_UNIT_ART.beast);s=mkc(36,44,g=>{g.save();g.scale(4,4);rect(g,col,0,0,9,9);rect(g,'#211b16',1,1,7,7);uiCanvasIcon(g,UI_UNIT_ART.beast,1,1,7,7);rect(g,col,4,9,1,2);g.restore()});if(ready)BAND_MARKERS.set(col,s)}return s}
 // Shared marker bounds include its native-resolution count, so nearby indicators leave both visible.
 function bandMarkerAt(o,m,cam){
-  const s=bandMarkerSprite(m.col),x=snapV(o.x)-cam.x-4,y=snapV(o.y)-cam.y-m.h-BANNER_GAP-s.height,// (to the screen's own pixel, as the band under it: snapV)
+  const s=bandMarkerSprite(m.col),x=snapV(o.x)-cam.x-4,y=snapV(o.y)-cam.y-m.h-BANNER_GAP-s.height/4,// (to the screen's own pixel, as the band under it: snapV)
     n=o.fighters??o.n;
-  const count=n>1?mapTxtPic(String(n),m.col,'center',VS,dprOf()):null,right=Math.max(x+s.width,count?x+4+(count.width-count.ox+1)/VS:x+s.width);
+  const count=n>1?mapTxtPic(String(n),m.col,'center',VS,dprOf()):null,right=Math.max(x+s.width/4,count?x+4+(count.width-count.ox+1)/VS:x+s.width/4);
   return{s,x,y,top:y,right};
 }
 // (where a party's army stands, its tag over it (the owner, 2026-10-31: "locked to the army's ring"): the point its rings are
@@ -143,7 +143,7 @@ function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine
   for(const q of BANNERQ){const LQ=q.lift??liftAt(q.o.x,q.o.y);if(LQ){ctx.save();ctx.translate(0,-LQ);try{drawBanner1(q,cam,now,still)}finally{ctx.restore()}}else drawBanner1(q,cam,now,still)}
   BANNERQ=[]}
 // (one banner, a marker or a label: drawBanners)
-function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
+function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y,r.s.width/4,r.s.height/4);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
     // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
     if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}return}
     // (at the lab's scale where the scene has fine px: bannerFine, its pole's foot where the banner's stands)
