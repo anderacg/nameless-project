@@ -197,8 +197,8 @@ function lookOf(type,team,hero,v,cid,cg){
     if(lg&&ITEMS[lg]&&ITEMS[lg].col)o.legsC=ITEMS[lg].col;if(ft&&ITEMS[ft]&&ITEMS[ft].col)o.feetC=ITEMS[ft].col;
     // (the owner, 2026-11-07: "hero sprite looks weird": what he wears as it is: a mail or plate coat mail, a coat or vest a tunic, in the
     // item's colour; a helm worn a helm in its colour; nothing worn, a leather jerkin, his head bare (the owner: "no need the crown"))
-    if(body&&ITEMS[body]&&ITEMS[body].col){const bi=ITEMS[body];o.outer=bi.col;o.armor=bi.base==='mail'||bi.icon==='plate'?'mail':'leather'}
-    if(head&&ITEMS[head]&&ITEMS[head].col){o.helm='kettle';o.helmC=ITEMS[head].col}
+    if(body&&ITEMS[body]&&ITEMS[body].col){const bi=ITEMS[body];o.outer=bi.col;o.armor=bi.base==='mail'||bi.icon==='plate'?'mail':'leather';if(bi.look){o.armor=bi.look.armor;o.harness=!!bi.look.harness}}
+    if(head&&ITEMS[head]&&ITEMS[head].col){o.helm=ITEMS[head].look?.helm||'kettle';o.helmC=ITEMS[head].col}
     // (a shield in the off hand shows, slung on his arm: drawn only, offShield (his kind's o.shield is what CharacterMind reads))
     const off=hero?P.gear.offhand:cg&&cg.offhand,oi=off&&ITEMS[off];if(oi&&oi.icon==='shield')o.offShield=oi.col||'wood'}
   // (no cape (the owner, 2026-11-07: "please remove cape"); his head a crop and an eye: "revise head")

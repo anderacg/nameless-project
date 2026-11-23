@@ -60,8 +60,44 @@ Object.keys(BASES).forEach(b=>MATERIALS.forEach((mat,t)=>{const W=ITEMS[gearId(b
   for(const k in W.m){const v=W.m[k];if(typeof v!=='number')continue;m[k]=(v>0)!==(GEAR_STAT[k]?.[2]===-1)?+(v*DAMAGED.m).toFixed(k==='hp'||k==='mp'||k==='slots'||k==='reach'?0:2)||v:v}
   ITEMS[damagedId(b,t)]={...W,n:'Damaged '+W.n,m,v:Math.max(1,Math.round(W.v*DAMAGED.v)),damaged:true,whole:gearId(b,t),
     d:'Damaged: '+describeGear(m,W.tag).replace(/^./,c=>c.toLowerCase())+' A smith can mend it.'+W.d.slice(describeGear(W.m,W.tag).length)}}));
+// Wearable versions of the portrait catalog. Tier controls availability; culture biases stock, never who may wear it.
+// [portrait part, name, tier, battlefield silhouette, armor class / culture]
+const ARMOR_STYLES={body:[
+  ['padded-jack','Padded Jack',0,'leather','leather'],['gambeson','Quilted Gambeson',1,'leather','leather'],
+  ['orc-leather-vest','Laced Leather Vest',2,'leather','leather'],['orc-studded-leather','Studded Leather',2,'leather','leather'],
+  ['orc-cross-harness','Cross Harness Vest',1,'harness','leather'],['orc-ring-harness','Ring Harness Vest',1,'harness','leather'],
+  ['orc-layered-hide','Layered Hide Armor',2,'leather','leather','orc'],['orc-leather-guard','Leather Shoulder Guard',3,'leather','leather','orc'],
+  ['brigandine','Brigandine',3,'mail','mail'],['coat-of-plates','Coat of Plates',3,'mail','mail'],
+  ['steel-cuirass','Knight Cuirass',4,'plate','plate'],['dwarf-runic-plate','Runic Plate',5,'plate','plate','dwarf'],
+  ['dwarf-forge-plate','Forge Plate',6,'plate','plate','dwarf'],['elf-silver-scale','Elven Silver Scale',4,'mail','mail','elf'],
+  ['elf-leaf-cuirass','Leaf Cuirass',5,'plate','plate','elf'],['elf-leaf-mail','Leaf Mail',3,'mail','mail','elf'],
+  ['fur','Fur Mantle Coat',0,'leather','leather']
+],head:[
+  ['arming-cap','Padded Arming Cap',0,'cap'],['coif','Mail Coif',1,'coif'],['nasal','Nasal Helm',2,'kettle'],['kettle','Kettle Helm',2,'kettle'],
+  ['sallet','Sallet',3,'kettle'],['open-bascinet','Open Bascinet',3,'kettle'],['closed-knight-helm','Closed Knight Helm',4,'great'],
+  ['great-helm','Great Helm',3,'great'],['barrel-great-helm','Barrel Great Helm',4,'great'],['rivet-banded-helm','Rivet Banded Helm',4,'great'],
+  ['fluted-knight-helm','Fluted Knight Helm',5,'great'],['horned-closed-helm','Horned Closed Helm',6,'closedHorned','dwarf'],
+  ['leaf-visor-helm','Leaf Visor Helm',5,'great','elf'],['tusked-closed-helm','Tusked Closed Helm',5,'great','orc'],
+  ['visored-bascinet','Visored Bascinet',4,'great'],['closed-sallet','Closed Sallet',4,'great'],['beaked-bascinet','Beaked Bascinet',4,'great'],
+  ['slit-mask-helm','Slitted War Mask',3,'great','orc'],['dwarf-horned-helm','Dwarven Horned Helm',4,'horned','dwarf'],
+  ['dwarf-rune-helm','Dwarven Rune Helm',5,'great','dwarf'],['elf-winged-helm','Elven Winged Helm',6,'plume','elf'],['forge-helm','Forge Helm',3,'kettle','dwarf']
+]};
+const STYLE_GEAR=[];
+for(const [slot,rows] of Object.entries(ARMOR_STYLES))for(const [part,n,tier,shape,extra,culture] of rows){
+  const id='a_'+part,body=slot==='body',base=body?'mail':'helm',heavy=shape==='plate'||shape==='great'||shape==='horned'||shape==='closedHorned',light=body&&(shape==='leather'||shape==='harness'),
+    armor=body?extra:null,m={hp:BASES[base].m(tier).hp+(heavy?4:0)};
+  if(light)m.spd=.02;if(shape==='harness'){m.hp=Math.max(6,m.hp-4);m.crit=.02}if(heavy)m.spd=-.02;
+  const col=light||tier===0?'#806047':extra==='orc'||culture==='orc'?'#8a8173':'#a9adb0',look=body?{armor:shape==='harness'?'leather':shape,harness:shape==='harness'}:{helm:shape},
+    it={n,slot,tier,base,armor,m,v:Math.round(BASES[base].v*2**tier*1.15),r:tier>=5?'epic':tier>=3?'rare':'common',icon:body?(light?'vest':'plate'):'helm',col,
+      portrait:{[body?'clothing':'headwear']:part},look,culture:body?culture:extra,d:describeGear(m,heavy&&body?'heavy':null),...(heavy&&body?{tag:'heavy'}:{})};
+  if(body&&part==='fur')it.fur={cape:true};ITEMS[id]=it;STYLE_GEAR.push(id);
+  const worn='ad_'+part,dm={};for(const [k,v] of Object.entries(m))dm[k]=v>0?+(v*DAMAGED.m).toFixed(k==='hp'?0:2)||v:v;
+  ITEMS[worn]={...it,n:'Damaged '+n,m:dm,v:Math.max(1,Math.round(it.v*DAMAGED.v)),damaged:true,whole:id,d:'Damaged: '+describeGear(dm,it.tag)+' A smith can mend it.'};it.damagedForm=worn;
+}
+function styleGear(slot,tier,race,random=Math.random){const L=STYLE_GEAR.filter(k=>ITEMS[k].slot===slot&&ITEMS[k].tier===tier);if(!L.length)return null;
+  const weight=id=>ITEMS[id].culture===race?3:1;let n=random()*L.reduce((a,k)=>a+weight(k),0);return L.find(k=>(n-=weight(k))<0)||L[L.length-1];}
 // a random ordinary piece of a tier in [lo, hi]
-const randomGear=(lo,hi)=>gearId(Object.keys(BASES)[rint(0,Object.keys(BASES).length-1)],rint(lo,Math.min(hi,MATERIALS.length-1)));
+const randomGear=(lo,hi)=>{const base=Object.keys(BASES)[rint(0,Object.keys(BASES).length-1)],tier=rint(lo,Math.min(hi,MATERIALS.length-1));return styleGear(BASES[base].slot,tier)||gearId(base,tier)};
 
 /* ---------- mounts: one mount slot, and nobody starts with one ---------- */
 // sold at stables: where 'any' (every holding), 'town' (towns and castles), 'castle', or by race or climate. drop: only from beasts.

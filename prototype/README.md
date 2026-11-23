@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Portrait equipment:** 39 wearable armor and helmet styles now use their exact portrait parts, with corresponding battlefield armor/helmet families and harness straps. Smithies reserve two of their six weekly pieces for armor/headwear, using the same material budget and culture-biased stock; loot can include the styles and matching damaged versions that smiths repair. All races may wear them. See `doc/PORTRAIT_EQUIPMENT_DESIGN.md`; checks: `portraitgear`, `junkgear`, `furgear`.
+
 **Equipped fur:** snow no longer grants animal-pelt hoods or fur cloaks. The worn Bear Hide Coat supplies its own fur mantle in every climate; carried fur and unrelated equipment do not. Body/cape and head fur are independent item visuals, shared by hero and companions. Checks: `furgear`.
 
 **Regional monster difficulty:** overworld births use geographic level bands (1-2, 2-3, 3-5, 5-7), smaller packs near settlements, and deep-wilderness gates for trolls, griffins and wyrms. The shared desktop/phone danger crest shows the band, four geographic pips and difficulty relative to the current company. Existing monsters, quest/dungeon levels and mythic spawning retain their values and rules. See `doc/MONSTER_REGIONS_DESIGN.md`; checks: `monsterregions`, `campaignhud`, `alphawolf`.

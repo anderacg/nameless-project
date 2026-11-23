@@ -199,12 +199,13 @@ class Faces{
   static armour(t,race){const D=FACE_GEAR,own=D.bodyOf[race]?.[t];return this.fits(race,'clothing',own)?own:D.body[Math.max(0,Math.min(D.body.length-1,t))]}
   static helm(t,race){const D=FACE_GEAR,own=D.headOf[race]?.[t];return this.fits(race,'headwear',own)?own:D.head[Math.max(0,Math.min(D.head.length-1,t))]}
   static dress(rec,gear,race,past){if(!rec||!this.ok())return rec;gear=gear||{};const D=FACE_GEAR,r=this.raceOf(race||rec.config.race),c={...rec.config},col={...rec.colors},b=ITEMS[gear.body],h=ITEMS[gear.head];
-    if(b){const it=D.items[gear.body],cl=it?(typeof it==='string'?it:it[r]||it.any):b.base==='mail'?this.armour(b.tier,r):null;
-      if(this.fits(r,'clothing',cl)){c.clothing=cl;if(b.base==='mail'&&b.tier>0)col.metal=this.metal(b.tier)}}
+    c.equipment={};if(b?.portrait?.clothing)c.equipment.clothing=b.portrait.clothing;if(h?.portrait?.headwear)c.equipment.headwear=h.portrait.headwear;
+    if(b){const it=b.portrait?.clothing||D.items[gear.body],cl=it?(typeof it==='string'?it:it[r]||it.any):b.base==='mail'?this.armour(b.tier,r):null;
+      if((b.portrait&&PortraitEngine.options.clothing.includes(cl))||this.fits(r,'clothing',cl)){c.clothing=cl;if(b.portrait)col.cloth=b.col;if(b.base==='mail'&&b.tier>0)col.metal=b.portrait?b.col:this.metal(b.tier)}}
     else if(gear.cape&&this.fits(r,'clothing',D.cape))c.clothing=D.cape;
-    else if(D.armours.includes(c.clothing)){const pl=D.plain[past]||D.plain.any;if(this.fits(r,'clothing',pl))c.clothing=pl}
-    if(h&&h.base==='helm'){const hw=this.helm(h.tier,r);if(this.fits(r,'headwear',hw)){c.headwear=hw;if(!b&&h.tier>0)col.metal=this.metal(h.tier)}}
-    else if(D.helms.includes(c.headwear))c.headwear='none';
+    else if(D.armours.includes(c.clothing)||rec.config.equipment?.clothing===c.clothing){const pl=D.plain[past]||D.plain.any;if(this.fits(r,'clothing',pl))c.clothing=pl}
+    if(h&&h.base==='helm'){const hw=h.portrait?.headwear||this.helm(h.tier,r);if((h.portrait&&PortraitEngine.options.headwear.includes(hw))||this.fits(r,'headwear',hw)){c.headwear=hw;if(h.portrait)col.headwear=h.col;if(!b&&h.tier>0)col.metal=h.portrait?h.col:this.metal(h.tier)}}
+    else if(D.helms.includes(c.headwear)||rec.config.equipment?.headwear===c.headwear)c.headwear='none';
     return {...rec,config:PortraitEngine.normalize(c),colors:col}}
   // (your hero's face as you are now: in what you wear)
   static yours(){return this.dress(this.you(),P.gear,P.race,P.bg)}

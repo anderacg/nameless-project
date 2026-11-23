@@ -51,7 +51,7 @@ class BattleDrops{
     if(Math.random()<D.gear&&(this.gears||0)<D.gears){this.gears=(this.gears||0)+1;this.ground.push({k:'gear',id:randomGear(0,gearTop()),...spot()});return}
     // (else, now and then, a piece of his broken in the fight or junk: DROPS.worn, data/gear.js DAMAGED, data/drops.js JUNK)
     const W=D.worn;if(!W||(this.worn||0)>=W.most)return;const r=Math.random();
-    if(r<W.damaged){this.worn=(this.worn||0)+1;const g=ITEMS[randomGear(0,gearTop())];this.ground.push({k:'gear',id:damagedId(g.base,g.tier),...spot()})}
+    if(r<W.damaged){this.worn=(this.worn||0)+1;const g=ITEMS[randomGear(0,gearTop())];this.ground.push({k:'gear',id:g.damagedForm||damagedId(g.base,g.tier),...spot()})}
     else if(r<W.damaged+W.junk){this.worn=(this.worn||0)+1;const J=Object.keys(JUNK);this.ground.push({k:'mat',id:J[rint(0,J.length-1)],...spot()})}}
   // (dots from u to whom they go: out in a burst, then home on him)
   burst(u,to,c,c2,on){const k=worldEffectScale(),a=Math.random()*6.283,v=(40+Math.random()*70)*k;

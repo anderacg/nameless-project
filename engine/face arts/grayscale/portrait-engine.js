@@ -1364,7 +1364,10 @@
     const selectedRace=OPTIONS.race.includes(input.race)?input.race:'human';
     const c={...DEFAULTS,...(selectedRace==='human'?{}:RACE_FEATURES[selectedRace]),race:selectedRace};
     for(const [key,values] of Object.entries(OPTIONS))if(values.includes(input[key]))c[key]=input[key];
-    for(const key of Object.keys(OPTIONS)){if(key==='race')continue;const allowed=partsFor(c.race,key);if(!allowed.includes(c[key])){const fallback=RACE_FEATURES[c.race][key];c[key]=allowed.includes(fallback)?fallback:allowed.includes(DEFAULTS[key])?DEFAULTS[key]:allowed[0];}}
+    // Worn clothing and helmets may cross cultures; facial parts and generated recipes keep their racial catalogs.
+    const equipment={};for(const key of ['clothing','headwear'])if(input.equipment?.[key]===input[key]&&OPTIONS[key].includes(input[key]))equipment[key]=input[key];
+    if(Object.keys(equipment).length)c.equipment=equipment;
+    for(const key of Object.keys(OPTIONS)){if(key==='race')continue;const allowed=equipment[key]?OPTIONS[key]:partsFor(c.race,key);if(!allowed.includes(c[key])){const fallback=RACE_FEATURES[c.race][key];c[key]=allowed.includes(fallback)?fallback:allowed.includes(DEFAULTS[key])?DEFAULTS[key]:allowed[0];}}
     if(PROFILES.includes(input.profile))c.profile=input.profile;
     if(Number.isFinite(input.seed))c.seed=Math.trunc(input.seed)>>>0;
     c.adjustments=Object.fromEntries(Object.entries(ADJUSTMENTS).map(([key,range])=>{const value=input.adjustments?.[key];return [key,Number.isFinite(value)?Math.max(range.min,Math.min(range.max,Math.round(value))):0];}));

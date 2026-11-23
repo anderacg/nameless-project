@@ -21,7 +21,7 @@ const dollable=o=>DOLL_FIGS.on&&(!o.mount||DOLL_FIGS.riders)&&!!(window.PX&&PX.d
 // (a look's helm as the doll's head part and its material)
 // (each class its own outline (the owner, 2026-11-07: "distinct helmets"): a plume a great helm crested in the side's colour, a horned
 // helm its horns, a circlet gold round the brow, a wizard his tall hat, a shaman a skull; several parts a list)
-const DOLL_HELM={bandana:['bandana','team'],pelt_wolf:['peltWolf','#c8c4b8'],pelt_bear:['peltBear','#7a5236'],cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:[['great','steel'],['crest','team']],horned:[['kettle','iron'],['horns','linen']],
+const DOLL_HELM={coif:['coif','steel'],closedHorned:[['great','steel'],['horns','linen']],bandana:['bandana','team'],pelt_wolf:['peltWolf','#c8c4b8'],pelt_bear:['peltBear','#7a5236'],cap:['cap','steel'],kettle:['kettle','steel'],great:['great','steel'],plume:[['great','steel'],['crest','team']],horned:[['kettle','iron'],['horns','linen']],
   wizard:['wizard','purple'],straw:['cap','cloth'],skull:['skull','white'],bandage:['bandage','linen'],circlet:['circlet','gold'],crown:['crown','gold']};
 // a look's parts on the doll, in the game's materials ('team': the side's colour, a tone darker than the palette's lightest: T)
 // (o.helmC: a worn helm's own colour, its first part in it; an armour's colour (a '#rrggbb', the item's) its mail's too)
@@ -40,7 +40,8 @@ function dollParts(o){const T={dark:1},P=[],out=o.outer||'leather',arm=o.armor||
   else{P.push(['hose',o.legs||DOLL_LEGS[[...String(o.hair)+o.skin].reduce((a,c)=>a+c.charCodeAt(0),0)%DOLL_LEGS.length]],['boots','leather']);
     // (no tabard (o.tabard false: your hero, his cape your colour): his armour itself shows)
     const tb=o.tabard===false?[]:o.outlaw?[['sash','team',T]]:o.surcoat?[['tabard',o.surcoat,{rows:DOLL_TABARD.coat}],['cross','team',T]]:[['tabard','team',{...T,rows:DOLL_TABARD.rows}]];
-    if(arm==='mail'||arm==='plate')P.push(['mail',metal],...tb,['belt','leather']);
+    if(o.harness)P.push(['shirt',o.inner||'linen'],['vest',out],['strap','leather'],['belt','leather']);
+    else if(arm==='mail'||arm==='plate')P.push(['mail',metal],...tb,['belt','leather']);
     // (o.sleeves: a jerkin over the body only, his shirt's sleeves and collar showing (your hero: the owner, 2026-11-07, "too blocky"))
     else if(arm==='leather')P.push(['shirt',o.inner||'linen'],['tunic',out,o.sleeves!==false?{cover:'cbpt'}:undefined],...tb,['belt','leather']);
     // (unarmoured: his sleeves his shirt's, the side's colour on his body only, so his arms read apart from it (the owner, 2026-11-07:

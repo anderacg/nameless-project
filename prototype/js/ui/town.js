@@ -248,7 +248,7 @@ class Smithy extends Place{
     W.shops=W.shops||{};const sh=W.shops[t.name];
     if(!sh||Clock.daysSince(sh.day)>=7){const items=[],bases=Object.keys(BASES);
       for(let i=0;i<6;i++){const ok=forgeTiers(t);if(!ok.length)break;const w=ok.map(k=>k?1+k*.25:.6);let x=Math.random()*w.reduce((a,b)=>a+b,0),tier=ok[0];for(let j=0;j<ok.length;j++){x-=w[j];if(x<0){tier=ok[j];break}}
-        for(const g in FORGE[tier])t.stock[g]-=FORGE[tier][g];items.push(gearId(bases[rint(0,bases.length-1)],tier))}
+        for(const g in FORGE[tier])t.stock[g]-=FORGE[tier][g];items.push(i<2?(styleGear(i?'head':'body',tier,t.races?.[0])||gearId(i?'helm':'mail',tier)):gearId(bases[rint(0,bases.length-1)],tier))}
       W.shops[t.name]={day:G.day,items}}
     return W.shops[t.name].items;
   }
