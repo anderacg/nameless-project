@@ -35,7 +35,7 @@
 
 /* Small iron frames; gold fills mark a choice without the old heavy underline. */
 .panel :is(.btn,.card,.rkact,.fb-choice),.mainmenu[data-mobile] .mm-btn,
-.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-speed-grid button,.mbh-dock button,.mbh-options button){
+.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-speed-grid button,.mbh-dock button,.mbh-options button,.mbh-tools button){
   border:3px solid transparent;border-image:var(--ui-rim) 176/5px;
   border-radius:0;background:var(--ui-wood);background-size:auto,640px 320px;
   background-clip:padding-box;box-shadow:inset 0 1px #d8ba7618,0 2px 3px #0004;
@@ -46,7 +46,7 @@
 .panel .fb-shell .btn,.panel>.nav .btn,.panel .rwin>.nav .btn{min-height:44px}
 .panel :is(.btn.primary,.btn.on,.card.on,.fb-choice.on,[aria-pressed="true"].btn,[aria-selected="true"].btn),
 .mainmenu .mm-btn:focus-visible,
-.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button):is(.on,.primary,[aria-pressed="true"],[aria-expanded="true"]){
+.screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button,.mbh-tools button):is(.on,.primary,[aria-pressed="true"],[aria-expanded="true"]){
   background:var(--ui-selected);background-size:auto,640px 320px;
   color:#fff0c9;box-shadow:inset 0 0 0 1px #e8c67788,0 2px 3px #0004;
 }
@@ -87,7 +87,7 @@
 
 @media(hover:hover){
   .panel :is(.btn,.card,.rkact,.fb-choice):hover:not(:disabled),.mainmenu .mm-btn:hover:not(:disabled),
-  .screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button):hover:not(:disabled){
+  .screen[data-mode="battle"] :is(.btn,.obtn,.tbtn,.cbtn,.dbtn,.mbh-dock button,.mbh-options button,.mbh-tools button):hover:not(:disabled){
     background:linear-gradient(#846b3538,#846b3538),var(--ui-wood);
     background-size:auto,auto,640px 320px;color:#fff3d3;
     box-shadow:inset 0 0 0 1px #e4c67a88,0 2px 3px #0004;

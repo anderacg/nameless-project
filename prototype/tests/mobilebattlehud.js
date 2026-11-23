@@ -13,6 +13,10 @@ Kit.suite(({ok})=>{
  ok(r(root).bottom<=innerHeight&&r(root).height<innerHeight*.46,'the collapsed battle HUD leaves most of the battlefield visible');
  const status=root.querySelector('.btop'),cards=root.querySelector('.bcards');ok(r(status).bottom<=r(cards).top&&r(cards).bottom<=r(dock).top,'status, unit cards and controls stack without overlap');
  const card=cards.querySelector('[data-grp]:not([data-grp="all"])');card.click();ok(t.B.sel===card.dataset.grp,'unit cards still select their real army groups');
+ const quick=document.getElementById('battleAttackQuick'),pos=Object.values(t.B.groups).filter(g=>g.player).map(g=>[g.ax,g.ay]);
+ ok(dock.contains(quick)&&shown(quick)&&r(quick).height>=44,'Attack is reachable directly on the existing compact dock');
+ quick.click();ok(t.B.amArm&&quick.getAttribute('aria-pressed')==='true'&&quick.textContent.includes('Cancel')&&document.getElementById('bStatus').textContent.includes('destination'),'one tap arms attack targeting and immediately explains the next action');
+ quick.click();ok(!t.B.amArm&&quick.getAttribute('aria-pressed')==='false'&&JSON.stringify(pos)===JSON.stringify(Object.values(t.B.groups).filter(g=>g.player).map(g=>[g.ax,g.ay])),'a second tap cancels targeting without issuing a movement order');
  click('battleOrdersToggle');const orders=document.getElementById('battleOrderChoices');ok(!orders.hidden&&r(orders).bottom<=r(root).top&&root.contains(document.getElementById('bCmd')),'orders and commander powers open together above the dock');
  // (the order bar in the drawer, the unit kits' (doc/UNIT_KITS_DESIGN.md §10 step 1): its stance rows and the skill bar's three slots,
  // bowmen selected, every button a thumb's size, none over another, within the drawer, in a few rows)
@@ -26,13 +30,13 @@ Kit.suite(({ok})=>{
  click('battleSpeedToggle');const speeds=document.getElementById('battleSpeedChoices');ok([...speeds.querySelectorAll('[data-bspeed]')].map(b=>b.textContent).join()===t.BATTLE_SPEEDS.map(v=>v+'×').join(),'world-battle speed choices retain their correct values');
  const g0=G.speed;speeds.querySelector('[data-bspeed="2"]').click();ok(t.B.speed===2&&G.speed===2&&speeds.hidden&&document.getElementById('battleSpeedToggle').textContent.includes('2×'),'world combat and travel share the chosen speed and the picker collapses');
  click('bPause');ok(!t.B.paused,'Play uses the existing battle pause control');click('bPause');
- click('battleMoreToggle');const more=document.getElementById('battleMoreChoices'),hp=t.HPBARS.on;click('hpBtn');ok(t.HPBARS.on!==hp&&!more.hidden,'display settings remain functional in More');
+ click('battleOrdersToggle');ok(shown(document.getElementById('battleMoreToggle')),'View and settings remain reachable inside Orders');click('battleMoreToggle');const more=document.getElementById('battleMoreChoices'),hp=t.HPBARS.on;click('hpBtn');ok(t.HPBARS.on!==hp&&!more.hidden,'display settings remain functional in More');
  ok(root.querySelector('[data-bview="in"]')&&more.contains(document.getElementById('bInfo')),'view controls and selected-unit details are available in More');
  document.getElementById('game').dispatchEvent(new PointerEvent('pointerdown',{pointerId:9,pointerType:'touch',bubbles:true,clientX:10,clientY:10}));ok(more.hidden,'touching the battlefield dismisses the drawer');
  click('battleOrdersToggle');window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true}));ok(orders.hidden&&G.mode==='battle','Escape closes battle panels before the game menu');
  click('bMenu');t.frame();ok(G.mode==='esc'&&!hud.enabled,'Menu opens the existing paused battle menu');t.act('esc-resume');t.frame();ok(hud.enabled&&t.B.paused,'Resume restores the battle HUD and tactical pause');
  t.WORLD_BATTLE.on=false;G.enc=null;t.BDEPLOY.on=true;t.startBattle({enemies:['militia'],deploy:true});t.frame();
- ok(t.B.deploy&&document.getElementById('bPause').textContent.includes('Start'),'deployment retains a visible Start button');
+ ok(t.B.deploy&&document.getElementById('bPause').textContent.includes('Start')&&quick.disabled,'deployment retains a visible Start button and disables attack targeting');
  click('battleOrdersToggle');
  ok(getComputedStyle(document.querySelector('.battle-start')).visibility==='hidden','the center Start button does not cover the open Orders drawer');
  ok(shown(document.getElementById('bPause')),'Start remains available in the dock while Orders are open');hud.close();

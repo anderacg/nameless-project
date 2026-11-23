@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Battle controls:** phone Attack is available directly on the five-button dock; View & settings is inside Orders. Main desktop orders have labels. Attack targeting and the existing two-tap retreat preview show contextual instructions, with pressed and keyboard-focus feedback. Combat rules are unchanged. Checks: `mobilebattlehud`, `buttonstates`.
+
 **Wildlife icons:** world beast markers and battle flags share the painted animal icon. Hunted wildlife uses that icon instead of a weapon symbol. Marker placement and picking stay the same. Checks: `uiicons`, `mapoverlay`, `marchpivots`.
 
 **Compact health and bandit loot:** individual health squares are smaller and sit just above the visible body, ignoring transparent sprite padding. An otherwise empty hostile bandit corpse keeps 1–3 gold, collected once when searched; saved purses and NPC looters use the same gold. Existing item drops, friendly casualties and beasts keep their loot rules. Checks: `banditloot`, `carcasses`, `beasthp`.
