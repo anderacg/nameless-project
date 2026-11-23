@@ -1843,3 +1843,7 @@ img[src^="art/portrait/game/"]{image-rendering:auto;object-fit:cover;box-sizing:
 .battle-advanced>summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 
 .mobile-battle-hud{gap:3px}.mobile-battle-hud .btop{padding-block:1px}
+
+/* Explicit enemy targeting: one quiet status row, shared by desktop and phone. */
+.battle-target-feedback{display:flex;align-items:center;justify-content:center;gap:6px;min-width:0;width:100%;font:11px/15px Arial,sans-serif;color:#e6c57d}.battle-target-feedback[hidden]{display:none}.battle-target-feedback strong{max-width:50%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.battle-target-feedback span{min-width:0}.battle-target-feedback[data-kind="ready"]{color:#a9d58c}.battle-target-feedback[data-kind="blocked"]{color:#ed9c81}.mobile-battle-hud .battle-target-feedback{font-size:10px;line-height:13px}
+.screen:not([data-mode="world"]) .qtrack{display:none}

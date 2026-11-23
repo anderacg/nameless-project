@@ -652,13 +652,13 @@ function drawBattle(){
   for(const g of playerGroups()){const gr=B.groups[g];if((gr.order!=='hold'&&gr.order!=='advance')||!grpUnits(g).length)continue;
     const fx_=Math.round(gr.ax),fy=Math.round(gr.ay);rect(ctx,C.wood,fx_,fy-14,1,14);rect(ctx,C.team[0],fx_+1,fy-14,6,4);rect(ctx,'#e4e0cf',fx_+3,fy-13,2,2)}
   // your selection underlined; the box you drag; where you last sent them (a ring), or whom you set them on (red)
-  drawFireRange();drawSelection();// (shooters' reach and line of fire: battlehud.js)
+  drawFireRange();drawSelection();battleTargetFeedback.drawGround();// (shooters' reach and line of fire: battlehud.js)
   if(B.hunt)B.hunt.tracks.draw(B.units.filter(u=>u.team===0&&u.hp>0&&!u.left));// (a hunt's tracks your hunters read, under everyone: battle/hunting.js)
   if(orderPathsOn())drawOrderPaths();else drawOrderLines();// (order paths and destination ghosts beneath characters: ui/orderpaths.js)
   drawFormGhost();// (a line being dragged: formations.js)
   drawCommandPowers();// (the command radius, Stand Fast!'s glow: commandpowers.js)
   if(B.box){const b=B.box;ctx.strokeStyle='#e8b94a';ctx.lineWidth=1;ctx.strokeRect(Math.min(b.x0,b.x1)+.5,Math.min(b.y0,b.y1)+.5,Math.abs(b.x1-b.x0),Math.abs(b.y1-b.y0))}
-  if(B.mark&&B.mark.t>0){const m=B.mark,now=performance.now();m.until??=now+m.t*1000;m.t=Math.max(0,(m.until-now)/1000);
+  if(B.mark&&B.mark.t>0){const m=B.mark,now=performance.now();m.until??=now+m.t*1000;m.t=Math.max(0,(m.until-now)/1000);if(m.target&&(m.target.hp<=0||m.target.left||!seenBy(0,m.target)))m.t=0;
     if(m.target&&m.target.hp>0&&!m.target.left){m.x=m.target.x;m.y=m.target.y}
     const x=m.x,y=m.y-fieldLift(m.x,m.y),r=reducedMotion()?9:8*(1.4-m.t*.5);ctx.save();ctx.strokeStyle=m.foe?'#ff8069':'#efd17d';ctx.fillStyle=ctx.strokeStyle;ctx.lineWidth=1.5;ctx.globalAlpha=Math.min(1,m.t*3);
     ctx.beginPath();ctx.ellipse(x,y,r,r*.5,0,0,7);ctx.stroke();ctx.beginPath();
@@ -708,6 +708,7 @@ function drawBattle(){
   for(const f of B.floats){const a=f.age||0,k=a<.12?1+(1-a/.12)*.6:1,fy=f.y-fieldLift(f.x,f.y);if(k===1){txt(f.t,Math.round(f.x),Math.round(fy),f.c,'center');continue}ctx.save();ctx.translate(Math.round(f.x),Math.round(fy));ctx.scale(k,k);txt(f.t,0,0,f.c,'center');ctx.restore()}
   ctx.restore();
   IndividualHealth.battle();if(B.world)WorldFlags.draw(G.cam);
+  battleTargetFeedback.drawTarget();
   drawFogGhosts();drawUnitIcons();drawGroupHealth();// (the fog's ghosts, where enemy groups were last seen; each group's type, health, morale and weaknesses, over it, the same size at any zoom: ui/moraleicons.js; its health of what it began with, a bar standing by it: battlehud.js)
   // the HUD at the screen's scale over the zoomed-out field
   ctx.save();ctx.scale(V.w/VW,V.h/VH);
