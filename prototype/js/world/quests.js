@@ -46,13 +46,14 @@ class JobQuest extends Quest{
      know where it was then (lead {x, y, day, r}); the circle grows LEAD.grow tiles a day (to LEAD.max) as the word ages. It is
      sharpened by the talk at a holding within LEAD.ask tiles of it (hear: where it is now), and by your tracking inside the
      circle (an hour's check, QUEST_CHECKS.track: its tracks, a tight circle where it is); found once you see it (its own sight
-     rule, inView), then followed as before. Plain fields, saved with it */
+     rule, inView), and followed only while visible. Plain fields, saved with it */
   get leads(){
     return false;
   }
   target(){
     return null;
   }
+  quarryObject(){return this.target()}
   markLead(o,r){
     this.lead={x:Math.round(o.x),y:Math.round(o.y),day:G.day,r:r??LEAD.r};
   }
@@ -60,19 +61,26 @@ class JobQuest extends Quest{
     const L=this.lead;
     return L?Math.min(LEAD.max,L.r+LEAD.grow*Math.max(0,G.day-L.day)):0;
   }
-  // (where to look: the lead's circle, {x, y, r tiles}; found, seen or none: null)
+  quarryVisible(o){
+    if(!o||o.gone)return false;
+    const inn=o.inside&&townBy(o.inside);
+    return !!(o.inView&&o.inView(vis())||inn&&Math.hypot(inn.x-P.x,inn.y-P.y)<=vis());
+  }
+  // Found is objective progress, not permanent sight. Lost targets keep their last observed lead.
   spot(){
-    if(!this.leads||this.found||!this.lead)return null;
-    const o=this.target();
-    // (in sight; or resting inside a holding (off the map, never in view), that holding in your sight)
-    const inn=o&&!o.gone&&o.inside&&townBy(o.inside);
-    if(o&&!o.gone&&(o.inView&&o.inView(vis())||inn&&Math.hypot(inn.x-P.x,inn.y-P.y)<=vis())){
-      this.found=true;
-      log('You have found '+this.quarryName()+'.','gold','story',this.journalKey);
-      return null;
+    if(!this.leads)return null;const o=this.quarryObject();
+    if(this.quarryVisible(o)){
+      if(!this.found)log('You have found '+this.quarryName()+'.','gold','story',this.journalKey);
+      this.found=true;this.markLead(o.inside&&townBy(o.inside)||o,LEAD.r/2);return null;
     }
-    this.track(o);
+    if(!this.lead)return null;
+    if(!this.found)this.track(o);
     return {x:this.lead.x,y:this.lead.y,r:this.leadR()};
+  }
+  quarryGoal(name){
+    const lead=this.spot();if(lead)return {...lead,name};
+    const o=this.quarryObject();if(!this.quarryVisible(o))return null;
+    const at=o.inside&&townBy(o.inside)||o;return {x:at.x,y:at.y,name};
   }
   quarryName(){
     return 'them';
@@ -90,8 +98,8 @@ class JobQuest extends Quest{
   }
   // (at a holding: what they say there of it, if it is near)
   hear(t){
-    if(!this.leads||this.found||this.done)return;
-    const o=this.target();
+    if(!this.leads||this.done)return;
+    const o=this.quarryObject();
     if(!o||o.gone||qTiles(o,t)>LEAD.ask)return;
     this.markLead(o);
     log('In '+t.name+' they say '+this.quarryName()+' were seen '+Math.round(qTiles(o,t))+' tiles '+compass(o.x-t.x,o.y-t.y)+' of here.','gold','story',this.journalKey);
@@ -347,8 +355,7 @@ class BountyQuest extends JobQuest{
     if(h&&this.hideOf()===h)return {x:h.x,y:h.y,name:'the '+this.band+' at the '+h.name};
     const b=this.target();
     if(!b)return null;
-    const s=this.spot();
-    return s?{...s,name:'the '+this.band}:{x:b.x,y:b.y,name:(b.ld?b.ld.name+' and ':'')+'the '+this.band};
+    return this.quarryGoal((b.ld?b.ld.name+' and ':'')+'the '+this.band);
   }
   get deed(){
     return 'band:beaten';
@@ -461,8 +468,7 @@ class BeastQuest extends JobQuest{
   seek(){
     const m=this.target();
     if(!m)return null;
-    const s=this.spot();
-    const n=monRec(this.mon,this.breed).n.toLowerCase();return s?{...s,name:n}:{x:m.x,y:m.y,name:n};
+    return this.quarryGoal(monRec(this.mon,this.breed).n.toLowerCase());
   }
   get deed(){
     return 'monster:slain';
@@ -803,12 +809,12 @@ class LordkillQuest extends JobQuest{
     this.pays(280,0,15,80);
   }
   begin(){
-    this.x=null;
+    this.x=null;const lord=this.quarryObject();if(lord)this.markLead(lord);
   }
-  seek(){
-    const l=W.lords.find(x=>x.name===this.target&&!x.dead);
-    return l?{x:l.x,y:l.y,name:this.target}:null;
-  }
+  get leads(){return true}
+  quarryObject(){return W.lords.find(x=>x.name===this.target&&!x.dead&&!x.gone)||null}
+  quarryName(){return this.target+'’s army'}
+  seek(){return this.quarryGoal(this.target)}
   get deed(){
     return 'lord:beaten';
   }
@@ -955,9 +961,9 @@ class ScoutQuest extends JobQuest{
   seek(){
     const f=this.foe();
     if(!f)return null;
-    const s=this.spot();
-    if(!s&&this.found&&!this.done)this.finish();
-    return s?{...s,name:this.foeName}:{x:f.x,y:f.y,name:this.foeName};
+    const goal=this.quarryGoal(this.foeName);
+    if(this.found&&!this.done){this.finish();return this.homeGoal()}
+    return goal;
   }
   get deedWord(){
     return 'found';
@@ -1110,8 +1116,7 @@ class MissingQuest extends JobQuest{
     }
     const b=this.target();
     if(!b)return null;
-    const sp=this.spot();
-    return sp?{...sp,name:this.band}:{x:b.x,y:b.y,name:this.band};
+    return this.quarryGoal(this.band);
   }
   todo(){
     return 'Break '+this.band+' and free '+this.pn+'.';

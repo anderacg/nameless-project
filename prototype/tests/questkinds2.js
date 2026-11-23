@@ -25,7 +25,11 @@ Kit.suite(({ok})=>{
  {foe.state='march';foe.inside=null;foe.x=ash.x+900;foe.y=ash.y+300;P.x=ash.x-1500;P.y=ash.y-1500;const q=t.makeQuest('scout',ash,lord);
   ok(q&&q.foeName&&(t.KNOWLEDGE.knowsLord(q.foe())?q.cause.includes(q.foeName):!q.title.includes(q.foeName)),lord.name+' wants '+(q&&q.foeName)+'’s army found (its lord named once known: '+q.title+')');q.accept();ok(q.title.includes(q.foeName)&&t.KNOWLEDGE.knowsLord(q.foe()),'taken, the work names him and you know him: '+q.title);
   const g=t.questGoal(q);ok(g&&g.r>0&&!q.done,'a lead: where it was last heard of');
-  const f=q.foe();P.x=f.x+20;P.y=f.y;t.questGoal(q);ok(q.found&&q.done,'seen: found, done; report back');P.quests=[]}
+  const f=q.foe();P.x=f.x+20;P.y=f.y;const home=t.questGoal(q);ok(q.found&&q.done,'seen: found, done; report back');ok(home&&home.name!==f.name&&home.x===q.homeGoal().x,'finding an army immediately redirects the first marker to the giver');P.quests=[]}
+ {const q=t.makeQuest('lordkill',ash,lord);q.accept();const f=q.quarryObject(),seen=f.inView;f.inside=null;
+  try{f.inView=()=>true;const g=t.questGoal(q);ok(!g.r&&g.x===f.x,'a defeat-lord job follows an enemy only while visible');const last={...q.lead};f.inView=()=>false;f.x+=700;
+   const lost=t.questGoal(q);ok(lost.r>0&&lost.x===last.x&&typeof q.target==='string','defeat-lord jobs retain saved target names without a hidden army location feed');
+  }finally{f.inView=seen}P.quests=[]}
  Kit.clear();
  ok(!ERR.length,'no runtime errors'+(ERR.length?': '+ERR[0]:''));
 });

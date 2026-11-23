@@ -180,14 +180,14 @@ Each kind is offered only while its cause holds. Its target is the cause's own o
 
 ## 6. Leads and finding things out
 
-A target is not shown as a pin until you have found it.
+A moving enemy gets an exact pin only while visible. Discovering it once does not grant permanent sight.
 
 - **The lead:** an area round where the target was last known (`LEAD.r` tiles), and how old that word is. The map shows a dashed
   circle, not a mark. It grows as the word ages (`LEAD.grow` tiles a day, up to `LEAD.max`) because the band may have moved.
 - **Sharpening it:** asking at a holding or a village near it (the news service, `rumourFrom`: a fresher sighting moves the circle),
   a tracking check on the spot (`QUEST_CHECKS.track`: the circle shrinks to its true place), your scouts' sight (seen: it is
   found).
-- **Found:** once you have seen it, it is marked as today and followed as it moves (`seek`).
+- **Found:** a visible moving enemy has an exact marker. Losing sight freezes its last observed coordinates and restores a search circle that ages normally; finding it once never grants permanent sight. Initial tracking checks still sharpen an undiscovered lead, and asking at a nearby holding can refresh later leads. Scout quests return the marker to the giver immediately when the army is found. Existing saves retain their old lead until a new sighting or report; they never sample a hidden target to repair it.
 - **Fixed things** (a site, a holding, a caravan) are marked at once. Only moving targets have leads.
 
 ## 7. Turns on the way
@@ -289,3 +289,5 @@ Each step is its own patch, behaviour-preserving first where it refactors; tests
 
 Fingerprints: the quests draw from their own stream, so `worldprint` should hold. The battle suites are untouched. Any re-record
 gets its reason written, as always.
+
+Quest sight validation (2026-11-23): questleads 18, questkinds2 17, questkinds3 24 and quests 88 checks passed (147 total). Coverage includes loss/reacquisition of sight, aging last-seen circles, save/load, missing observations, legitimate reports, defeat-lord jobs and immediate scout return goals. No fingerprints were re-recorded.
