@@ -150,9 +150,10 @@ function gatheringAct(a,arg){
   const cs=g.choices(),c=CHOICE_PAGE.choose(cs,arg,g);
   if(!c)return;
   if(c.asks(g)&&!String(arg).endsWith('!'))return CHOICE_PAGE.confirm(c,g,{sub:g.kind.n,act:'gth-do',i:parseInt(arg),back:['gth-back',null,'Back']});
-  G.gatherMsg=c.perform(g)||'';
+  return Dice.wait(c.perform(g),m=>{G.gatherMsg=m||'';
   updateHUD(true);
   g.show();
+  });
 }
 onAct('gth-',gatheringAct);
 // the day's check: last of the day's systems, after every other (so none of theirs moves)

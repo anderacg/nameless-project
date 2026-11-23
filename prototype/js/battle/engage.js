@@ -249,14 +249,17 @@ function fleeOdds(e){
 // woken guardians, sites.js Ruins)
 function fleeBtn(e,label){if(e.sealed)return '<button class="btn" type="button" data-act="flee" disabled title="'+e.sealed+'">Leave, '+e.sealed+'</button>';const od=fleeOdds(e);if(od.leave)return '<button class="btn" type="button" data-act="flee">'+(label||'Leave')+'</button>';
   return '<button class="btn" type="button" data-act="flee"'+(od.ch<=0?' disabled title="'+od.why+'"':'')+'>Flee, '+(od.ch<=0?od.why:Math.round(od.ch*100)+'% to get away')+'</button>'}
+const ESCAPE_GRACE={foe:.75,world:.5,leave:1};
+function escapeStep(o,distance){let dx=P.x-o.x,dy=P.y-o.y;if(Math.hypot(dx,dy)<1){dx=1;dy=0}const l=Math.hypot(dx,dy);walk(P,dx/l,dy/l,distance)}
 function flee(){
   const e=G.enc;if(!e||e.sealed)return;const o=e.ref,od=fleeOdds(e);if(!od.leave&&od.ch<=0)return;
-  if(!od.leave&&Math.random()>=od.ch){// they run you down: the rearguard pays, and you must fight
+  const won=od.leave||Dice.check(od.ch,'Escape');return Dice.after(()=>{
+  if(!won){// they run you down: the rearguard pays, and you must fight
     const n=P.size?Math.max(1,Math.round(P.size*.1*(has('rearguard')?.5:1))):0,lost=countsOf(P.removeAny(n));e.noFlee=true;
     log('They run you down'+(n?': your rearguard loses '+lossText(lost):'')+'. You must fight.','bad','war');mood('flee');return startEncounter(e)}
-  let dx=P.x-o.x,dy=P.y-o.y;const l=Math.hypot(dx,dy)||1;
-  walk(P,dx/l,dy/l,od.leave?40:56);if(e.kind!=='camp')o.cool=od.leave?6:12;G.encCool=od.leave?4:3;// got away: they lose your trail for a while
+  escapeStep(o,od.leave?40:56);if(e.kind!=='camp')o.cool=od.leave?ESCAPE_GRACE.leave:ESCAPE_GRACE.foe;G.encCool=ESCAPE_GRACE.world;// got away: they lose your trail for a while
   if(!od.leave)P.morale=clamp(P.morale-2,0,100);G.enc=null;G.mode='world';hidePanel();log(od.leave?'You leave them be.':'You get away.',undefined,'war');if(!od.leave)mood('flee');encLost(e);
+  });
 }
 // experience: yours (leaders.js), and your companions share what you learn
 // (experience as practice for your hero and your companions by the deed's kind: characters.js gainXp, REWARD_TRAIN)

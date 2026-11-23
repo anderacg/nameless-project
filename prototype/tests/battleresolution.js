@@ -140,7 +140,10 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
   //  a cost, a bandits' camp by one nudged to a clear spot near (data/world.js EDGE_PLACE, holding.js campOffEdge), a moving camp
   //  never back onto its own spot (encampments.js), which moves the parties and the save. Were: field_loss bfba6f5c, retreat_caught
   //  ae506e55, lord_win 574c3f91, auto_resolve 59e7ac6f)
-  const REC={field_win:'29808af7',field_loss:'55be19f1',retreat_away:'62e4fa27',retreat_caught:'0eafa6eb',carried_retreat:'d8e8ccb8',tournament_win:'aed93b18',tournament_loss:'a8c55aa8',siege_win:'67a22594',siege_loss:'02195ec0',lord_win:'83efe0ae'/* (re-recorded 2026-11-01, on purpose: a lord you do not know changes his mind quietly (relations.js Relations.change; the owner: "I randomly get to know lords that I'm not even met yet"), so the beaten lord's “thinks less of you” is no longer in the log. Proof: that guard taken out gives fd9d15a9 again. Was fd9d15a9) */,lord_loss:'82859d4b',monster_win:'8b112ce7',auto_win:'703c81f7',auto_loss:'5f44103d',auto_resolve:'d7b0ced7'};
+  // 2026-11-23: world withdrawal grace is .5 instead of 4; surviving armies resume after .75.
+  // Only retreat_away, retreat_caught and carried_retreat changed (were 62e4fa27, 0eafa6eb, d8e8ccb8).
+  // Replaying the first five fixtures with 734a521 resolution.js/sides.js restored all old fingerprints; the other 12 still match.
+  const REC={field_win:'29808af7',field_loss:'55be19f1',retreat_away:'b153f3e5',retreat_caught:'124c7884',carried_retreat:'59f4f9b6',tournament_win:'aed93b18',tournament_loss:'a8c55aa8',siege_win:'67a22594',siege_loss:'02195ec0',lord_win:'83efe0ae'/* (re-recorded 2026-11-01, on purpose: a lord you do not know changes his mind quietly (relations.js Relations.change; the owner: "I randomly get to know lords that I'm not even met yet"), so the beaten lord's “thinks less of you” is no longer in the log. Proof: that guard taken out gives fd9d15a9 again. Was fd9d15a9) */,lord_loss:'82859d4b',monster_win:'8b112ce7',auto_win:'703c81f7',auto_loss:'5f44103d',auto_resolve:'d7b0ced7'};
   // (field_loss and auto_loss re-recorded 2026-11-11, on purpose: a band strips you as it takes you (world/captivity.js CAPTIVITY.band.strip,
   //  ca9d60c; the owner: "when you captured by bandits normally you'll lose all your golds or inventories"): your gold in these two is the
   //  quarter you hid, 50 of 200, the rest and your spare gear taken (took). Were field_loss e6c2d381, auto_loss 918cfb3d; checked: with
@@ -199,7 +202,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL ')+m),t=T,G=t.G,P=t
       ok(!t.B&&G.mode==='dialog'&&G.loot&&G.loot.capture===false,name+': field released and loot summary ready');
       ok(t.BATTLE_MOOD===null&&G.msgs.length===callsBefore,name+': morale carry-over consumed without snapshot side effects');
       if(tournament)ok(P.gold===(win?245:200)&&P.renown===(win?36:30)&&G.lootView.next==='back-town'&&P.troops.hum_spear===6,name+': tournament rewards and roster isolation preserved');
-      else ok(G.enc===null&&G.encCool===(retreat?4:3)&&G.lootView.next==='cont',name+': encounter cleanup and continuation preserved');
+      else ok(G.enc===null&&G.encCool===(retreat?t.ESCAPE_GRACE.world:3)&&G.lootView.next==='cont',name+': encounter cleanup and continuation preserved');
       if(name==='field_win')ok(chief&&band.ld===null&&P.captives.some(c=>c.k==='chief'&&c.ld===chief),'victory captures the same band chief');
       if(!tournament&&name.endsWith('_loss'))ok(!P.captives.length&&!Object.keys(P.prisoners).length&&(t.Captivity.held?P.gold===(t.Captivity.held.took?50:200):P.gold===150),'defeat releases captives and prisoners; away in the rout it costs a quarter of your gold, taken captive the ransom waits, by a band it strips you to the quarter you hid (world/captivity.js: '+(t.Captivity.held?t.Captivity.held.took?'stripped':'taken':'away')+')');t.Captivity.held=null;t.Captivity.scattered=[];
       if(name==='retreat_caught')ok(G.encAgain===e&&e.noFlee&&P.renown===28&&G.lootView.head.includes('Run down'),'caught retreat keeps the same encounter for another fight');

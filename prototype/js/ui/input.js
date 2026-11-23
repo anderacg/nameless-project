@@ -14,6 +14,7 @@
 }
 /* ---------- actions ---------- */
 function act(a,arg){
+  if(typeof Dice!=='undefined'&&Dice.pending)return;
   if(a==='begin')return begin(arg);
   if(settingAct(a,arg))return;// (the Settings buttons: ui.js)
   if(routeAct(a,arg)||menuAct(a,arg))return;

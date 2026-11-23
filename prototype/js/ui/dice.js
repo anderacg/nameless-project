@@ -4,7 +4,7 @@
    rules (the owner: "Use d20 rules for the dice"): a twenty-sided die rolls onto the board, your bonus (what your skills add to the
    chance, 5% a point) is added, and you win on its DC or over; a natural 20 always wins, a natural 1 always fails. The bar under
    it the faces you needed (green, the win from the mark up; amber, won in part just under it), then what came of it.
-   Only the showing: the chance is the check's own, and the roll its one draw (Dice.check draws it once, as the check did;
+   The chance is the check's own, and the roll its one draw (Dice.check draws it once, as the check did;
    Dice.show shows one already drawn), so no stream, no fingerprint moves. The die reads it in twentieths: the face you needed
    is 21 less your chance's faces (kept to 2..20, so a 1 can always fail and a 20 always win), and the face shown is kept on the
    side of it that the draw fell (a draw at the edge of a twentieth: the face beside it).
@@ -14,7 +14,8 @@
    how long it rolls (ms); die, its look and throw. Reduced motion (the system's): the die at rest, still. It stays till you close
    it (the owner: "Please wait the player to close the panel, dont auto close"): Continue, a click anywhere, Enter, Space or Esc
    (ui/input.js: while it is up no other key reaches the game); a new roll replaces it. The overlay is over the screen, not in the
-   window ---------- */
+   window. Dice.after applies the outcome only when the die lands; Dice.wait and sequence preserve synchronous behavior
+   when the animation is disabled. Early dismissal is blocked, and the simulation waits while the overlay is visible ---------- */
 const DICE={on:true,tumble:1000,
   // (r the die's size, px; h the canvas's height; spin its turns; hop how high it bounces (px); tilt and roll how it rests
   // (radians); far the eye's distance (perspective); wood light to dark; ink and scorch the burnt numbers; light where it comes from)
@@ -50,14 +51,18 @@ class Dice{
   static check(p,label,draw=Math.random,bonus=0){const r=draw(),won=r<p;this.show({p,r,label,bonus});return won}
   /* (a roll already drawn, shown: p its odds, r the draw, label what it was for; part: the share beyond p that wins in part;
      bonus: your skills' share of p) */
-  static show(o){if(!DICE.on||typeof document==='undefined'||!document.body)return;const s=this.face(o);setTimeout(()=>this.draw(s),0)}
+  static afterRoll(p,label){const won=this.check(p,label);return this.after(()=>won)}
+  static sequence(steps){const next=value=>{const step=steps.next(value);return step.done?step.value:this.wait(step.value,next)};return next()}
+  static wait(value,done){return value&&typeof value.then==='function'?value.then(done):done(value)}
+  static after(done){if(!this.pending)return done();return new Promise((resolve,reject)=>this.pending.push(()=>{try{resolve(done())}catch(e){reject(e)}}))}
+  static show(o){if(!DICE.on||typeof document==='undefined'||!document.body)return;const s=this.face(o);this.draw(s)}
   /* (what the die says: need the face you needed (won on it or over), low the lowest that wins in part, n the face rolled (kept on
      the right side of both), b your bonus (a point each 5%), dc what the roll and bonus had to make) */
   static face({p,r,label,part=0,bonus=0}){const F=v=>Math.round(Math.max(0,Math.min(1,v))*20),need=Math.max(2,Math.min(20,21-F(p))),won=r<p,half=!won&&part>0&&r<p+part;
     let low=part>0?Math.max(2,Math.min(need,21-F(p+part))):need;if(half&&low===need)low=need-1;
     let n=20-Math.min(19,Math.floor(Math.max(0,r)*20));n=won?Math.max(n,need):half?Math.max(low,Math.min(need-1,n)):Math.min(n,low-1);
     const b=Math.max(0,Math.round(bonus*20));return {label,need,low,n,b,dc:need+b,pct:Math.round(Math.max(0,Math.min(1,p))*100),res:won?'won':half?'part':'lost'}}
-  static draw(s){this.clear();const quiet=matchMedia('(prefers-reduced-motion: reduce)').matches,W={won:'Success',part:'In part',lost:'Failed'}[s.res],pc=v=>(v-1)*5+'%';
+  static draw(s){this.clear();this.pending=[];this.landed=false;const quiet=matchMedia('(prefers-reduced-motion: reduce)').matches,W={won:'Success',part:'In part',lost:'Failed'}[s.res],pc=v=>(v-1)*5+'%';
     const nat=s.n===20&&s.res==='won'?'A natural 20!':s.n===1&&s.res==='lost'?'A natural 1':'';
     const el=document.createElement('div');el.className='dice-ov'+(quiet?' quiet':'');el.setAttribute('role','status');el.setAttribute('aria-live','polite');
     el.innerHTML='<div class="dice-card dice-'+s.res+'">'+(s.label?'<div class="dice-lab">'+s.label+'</div>':'')+
@@ -65,18 +70,19 @@ class Dice{
       '<div class="dice-bar"><b style="left:'+pc(s.need)+'"></b>'+(s.low<s.need?'<u style="left:'+pc(s.low)+';width:'+(s.need-s.low)*5+'%"></u>':'')+'<em style="left:'+((s.n-.5)*5)+'%"></em></div>'+
       '<div class="dice-res"><span>Rolled '+s.n+(s.b?' + '+s.b+' = '+(s.n+s.b):'')+', DC '+s.dc+' ('+s.pct+'%)'+(s.low<s.need?', in part on '+(s.low+s.b):'')+'</span>'+
       (nat?'<em class="dice-nat">'+nat+'</em>':'')+'<strong>'+W+'</strong></div><button class="dice-go" type="button">Continue</button></div>';
-    el.style.setProperty('--tumble',(quiet?0:DICE.tumble)+'ms');el.addEventListener('click',e=>{e.stopPropagation();this.clear()});document.body.appendChild(el);this.el=el;
-    this.roll(el.querySelector('.dice-cv'),s.n,quiet);el.querySelector('.dice-go').focus({preventScroll:true})}
+    el.style.setProperty('--tumble',(quiet?0:DICE.tumble)+'ms');el.addEventListener('click',e=>{e.stopPropagation();if(this.landed)this.clear()});document.body.appendChild(el);this.el=el;
+    el.querySelector('.dice-go').disabled=!quiet;this.roll(el.querySelector('.dice-cv'),s.n,quiet);el.querySelector('.dice-go').focus({preventScroll:true})}
   // (a key while it is up (ui/input.js): Enter, Space or Esc close it; true: the key is the die's, nothing else hears it)
-  static key(k){if(!this.el)return false;if(k==='escape'||k==='enter'||k===' ')this.clear();return true}
-  static clear(){cancelAnimationFrame(this.raf);if(this.el)this.el.remove();this.el=null}
+  static key(k){if(!this.el)return false;if(this.landed&&(k==='escape'||k==='enter'||k===' '))this.clear();return true}
+  static settle(){if(this.landed)return;this.landed=true;const pending=this.pending||[];this.pending=null;if(this.el)this.el.querySelector('.dice-go').disabled=false;for(const done of pending)done()}
+  static clear(){this.pending=null;this.landed=true;cancelAnimationFrame(this.raf);if(this.el)this.el.remove();this.el=null}
   // (the throw: the die from the left, hopping lower each time, its turns running out as it comes to rest on its number)
-  static roll(cv,n,quiet){const D=DICE.die,dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth||200,h=D.h,x=cv.getContext('2d');if(!x)return;
+  static roll(cv,n,quiet){const D=DICE.die,dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth||200,h=D.h,x=cv.getContext('2d');if(!x){setTimeout(()=>this.settle(),quiet?0:DICE.tumble);return;}
     cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);const rest=D20.rest(n,D.roll),ax=[.3+.1*(n%3),.35,1],spin=D.spin+(n*7%5)*.08,at=w/2,t0=performance.now(),T=quiet?0:DICE.tumble;
     const frame=now=>{if(!cv.isConnected)return;x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
       const t=T?Math.max(0,Math.min(1,(now-t0)/T)):1,e=1-Math.pow(1-t,2.4),lift=D.hop*Math.abs(Math.cos(2.5*Math.PI*t))*Math.pow(1-t,1.6),
         M=t<1?v3.mm(v3.rot(ax,spin*2*Math.PI*Math.pow(1-t,2.2)),rest):rest;
-      this.paint(x,at-(1-e)*(at+D.r*1.6),h/2+2-lift,lift,M);if(T&&now-t0<T+20)this.raf=requestAnimationFrame(frame)};
+      this.paint(x,at-(1-e)*(at+D.r*1.6),h/2+2-lift,lift,M);if(t<1)this.raf=requestAnimationFrame(frame);else queueMicrotask(()=>{if(cv.isConnected)this.settle()})};
     frame(t0)}
   // (the die drawn: its shadow on the board, then the faces that look to you, each its wood, its light and its burnt number)
   static paint(x,cx,cy,lift,M){const D=DICE.die,r=D.r,f=D.far,P=p=>{const q=v3.ap(M,p),k=f/(f-q[2]);return [cx+q[0]*r*k,cy-q[1]*r*k]},L=v3.norm(D.light),gy=cy+r*.98+lift;

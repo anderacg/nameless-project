@@ -167,8 +167,8 @@ function roadAct(a,arg){const e=G.road;if(G.mode!=='road'||!e)return;const D=e.D
   if(a==='enc-back'){showRoad();return}
   if(a==='enc-do'&&!e.done){const i=parseInt(arg),c=CHOICE_PAGE.choose(D.acts,arg,e);if(!c)return;
     if(c.asks(e)&&!String(arg).endsWith('!'))return CHOICE_PAGE.confirm(c,e,{sub:D.n,act:'enc-do',i,back:['enc-back',null,'Back']});
-    const m=c.perform(e);P.morale=clamp(P.morale,0,100);updateHUD(true);if(G.road!==e)return;// (a fight began, or a chase)
-    if(!c.again){e.done=1;e.settle()}if(e.done)e.finish('done');G.roadMsg=m;log(m);showRoad();railFocus(a,arg)}}// (dealt with: its story over, Encounter finish)
+    return Dice.wait(c.perform(e),m=>{P.morale=clamp(P.morale,0,100);updateHUD(true);if(G.road!==e)return;// (a fight began, or a chase)
+    if(!c.again){e.done=1;e.settle()}if(e.done)e.finish('done');G.roadMsg=m;log(m);showRoad();railFocus(a,arg)})}}// (dealt with: its story over, Encounter finish)
 onAct('enc-',roadAct);
 
 /* ---------- the save: W.road, once there is one (absent: none, as every save before it; the save registry, core/saves.js). Each

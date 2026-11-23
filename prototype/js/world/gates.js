@@ -78,13 +78,13 @@ class Gates{
     if(this.barred(t))return false;
     // (one bribe a day at a gate: taken, you are in; refused, your coin back; caught, your coin taken and your name marked)
     if(a==='gt-bribe'){const c=X.bribe[t.kind];if(!c||P.gold<c||this.bribed(t))return false;(P.gateTried??={})[t.name]=G.day;
-      if(Dice.check(this.odds('bribe',t),'Bribe the warden',()=>R.next(),this.mine('bribe'))){P.gold-=c;this.give(t,'bribe',null,G.day);log('The warden pockets '+c+' gold and looks the other way.','gold');return true}
+      const won=Dice.check(this.odds('bribe',t),'Bribe the warden',()=>R.next(),this.mine('bribe'));return Dice.after(()=>{if(won){P.gold-=c;this.give(t,'bribe',null,G.day);log('The warden pockets '+c+' gold and looks the other way.','gold');return true}
       if(R.next()<X.bribe.caught){P.gold-=c;if(t.owner&&FACS[t.owner])addHonor(t.owner,-X.bribe.honor,true);addRep(t.name,-X.bribe.rep,true);(P.gateBan??={})[t.name]=G.day+X.bribe.ban;G.gateSay=['bad','The warden takes your coin and calls his sergeant. You are marked as a briber (honour \u2212'+X.bribe.honor+', reputation \u2212'+X.bribe.rep+').']}
-      else G.gateSay=['muted','The warden pushes your coin back across the table. Not today.'];return false}
+      else G.gateSay=['muted','The warden pushes your coin back across the table. Not today.'];return false})}
     if(a==='gt-slip'){if(!Clock.isNight)return false;
-      if(Dice.check(this.odds('slip',t),'Slip in by night',()=>R.next(),this.mine('slip'))){this.give(t,'night',null,G.day);log('You slip into '+t.name+' in the dark.','gold');return true}
+      const won=Dice.check(this.odds('slip',t),'Slip in by night',()=>R.next(),this.mine('slip'));return Dice.after(()=>{if(won){this.give(t,'night',null,G.day);log('You slip into '+t.name+' in the dark.','gold');return true}
       const fine=Math.floor(P.gold*X.slip.fine);P.gold-=fine;if(t.owner&&FACS[t.owner])addHonor(t.owner,-X.slip.honor,true);addRep(t.name,-X.slip.rep,true);(P.gateBan??={})[t.name]=G.day+X.slip.ban;
-      G.gateSay=['bad','The watch catches you at the wall. A fine of '+fine+' gold, and they will know your face (honour \u2212'+X.slip.honor+', reputation \u2212'+X.slip.rep+').'];return false}
+      G.gateSay=['bad','The watch catches you at the wall. A fine of '+fine+' gold, and they will know your face (honour \u2212'+X.slip.honor+', reputation \u2212'+X.slip.rep+').'];return false})}
     return false}
   // the steward's word: a great lord who will not see you yet (g: audience)
   static showSteward(l,g){
@@ -96,7 +96,7 @@ class Gates{
 // its pages' answers: the market outside (the holding's window with its market alone), leave
 onAct('gt-',a=>{
   if(a==='gt-market'&&G.mode==='gate'&&G.gate){const t=G.gate;G.gate=null;enterTown(t);G.town.outside=true;G.town.tab='trade';renderTown();return true}
-  if((a==='gt-writ'||a==='gt-bribe'||a==='gt-slip')&&G.mode==='gate'&&G.gate){const t=G.gate;if(Gates.tryWay(t,a)){G.gate=null;G.gateSay=null;enterTown(t)}else Gates.showGate(t,Gates.admits(t));return true}
+  if((a==='gt-writ'||a==='gt-bribe'||a==='gt-slip')&&G.mode==='gate'&&G.gate){const t=G.gate;Dice.wait(Gates.tryWay(t,a),ok=>{if(ok){G.gate=null;G.gateSay=null;enterTown(t)}else Gates.showGate(t,Gates.admits(t))});return true}
   if(a==='gt-leave'){G.gate=null;G.gateSay=null;G.mode='world';hidePanel();return true}
   if(a==='gt-steward'){G.enc=null;G.mode=G.town?'town':'world';if(G.town)renderTown();else hidePanel();return true}
 });

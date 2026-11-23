@@ -97,14 +97,16 @@ class BattleResolution{
       else{html='<h2>Beaten</h2><p>The champion takes your entry fee and sends you off with a bruised pride.</p>';log('You lose the tournament.','bad')}
       lootShow(html,null,0,'back-town');return;
     }
-    if(b.sides?.active){WorldCombat.wildlifeRewards(b);b.sides.settle(b,lost,groupLosses)}
-    else if(b.hunt)b.hunt.settle(b,lost,groupLosses);
-    else{WorldCombat.wildlifeRewards(b);this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},groupLosses)}
-    armies?.present();Carcass.lay(fell);WorldCombat.complete(b);
+    let settled;
+    if(b.sides?.active){WorldCombat.wildlifeRewards(b);settled=b.sides.settle(b,lost,groupLosses)}
+    else if(b.hunt)settled=b.hunt.settle(b,lost,groupLosses);
+    else{WorldCombat.wildlifeRewards(b);settled=this.conclude(win,lost,kills,false,slain,retreat&&{caught,got,standing,fallen,blocked:!!b.stalemate,carried:h.hp<=0&&!h.left},groupLosses)}
+    return Dice.wait(settled,()=>{armies?.present();Carcass.lay(fell);WorldCombat.complete(b)});
   }
-  conclude(win,lost,kills,auto,slain,retreat,groupLosses){
+  conclude(...args){return Dice.sequence(this.concludeSteps(...args))}
+  *concludeSteps(win,lost,kills,auto,slain,retreat,groupLosses){
     if(auto)BATTLE_MOOD=null;
-    lootStart();const e=G.enc;if(e)reinfAfter(e,win);let html;const saved=heal(lost,groupLosses);
+    lootStart();const e=G.enc;if(e)reinfAfter(e,win);let html,escaped=false;const saved=heal(lost,groupLosses);
     if(groupLosses){for(const g of groupLosses)if(g.count)partyRoster(P).remove(g.type,g.count,g.id)}else applyLosses(lost);
     if(win){
       const O=ON_WIN[e.kind]||ON_WIN.party,big=!!O.big,res={gold:0,fame:O.fame};let bounty='';slain=slain||[];
@@ -132,10 +134,10 @@ class BattleResolution{
       if(e.kind==='siege'||e.kind==='raid')siegeFallen(e.ref,this.wallsFell);
       if(e.list)for(const k of slain){const i=e.list.indexOf(k);if(i>=0)e.list.splice(i,1)}
       mood('flee');if(kills)gainXp(WorldCombat.remaining(this.battle,kills*BATTLE_SPOILS.lostXp));
-      const od=retreat.blocked?{leave:true,ch:1}:fleeOdds(e),away=od.leave||od.ch>0&&Math.random()<od.ch,rear={};
+      const od=retreat.blocked?{leave:true,ch:1}:fleeOdds(e),away=od.leave||od.ch>0&&(yield Dice.afterRoll(od.ch,'Escape from battle')),rear={};
       // (a retreat costs, as in Total War: the band's morale and your renown; run down, more)
       const moodLine=battleMood(retreat.blocked?0:-MOOD.retreat-(away?0:MOOD.runDown),retreat.blocked?'disengaged':away?'a retreat':'run down in the retreat');P.renown=Math.max(0,P.renown-(retreat.blocked?0:MOOD.renown));
-      if(away){if(o&&o.x!=null){const dx=P.x-o.x,dy=P.y-o.y,l=Math.hypot(dx,dy)||1;walk(P,dx/l,dy/l,40)}if(o&&e.kind!=='camp')o.cool=12}
+      if(away){if(o&&o.x!=null){escapeStep(o,40)}if(o&&e.kind!=='camp')o.cool=ESCAPE_GRACE.foe}
       else{const n=P.size?Math.max(1,Math.round(P.size*.1*(has('rearguard')?.5:1))):0;
         const before=groupLosses&&new Map(partyRoster(P).groups.map(g=>[g.id,g.count]));
         Object.assign(rear,countsOf(P.removeAny(n)));for(const k in rear)lost[k]=(lost[k]||0)+rear[k];
@@ -154,7 +156,7 @@ class BattleResolution{
       if(e.kind==='patrol'){const h=townBy(e.ref.home);if(h)h.crime=null}
       if(e.kind==='party'||e.kind==='camp')chiefWins(e.ref,partySize()+1);// the chieftain who beat you grows
       // (taken captive, or away in the rout, or left for dead by beasts: world/captivity.js)
-      const fate=Captivity.defeat(e,this.battle);if(e.kind!=='camp'&&e.ref)e.ref.cool=8;
+      const fate=yield Captivity.defeat(e,this.battle);escaped=fate.how==='escaped';if(e.kind!=='camp'&&e.ref)e.ref.cool=escaped?ESCAPE_GRACE.foe:8;
       if(e.kind==='lord'){const l=e.ref;if(auto)cull(l,.3);else if(!this.primaryLossesApplied)for(const k of slain)l.remove(k,1);lordWins(l,partySize())}
       html='<h2>Defeat</h2><p>Your band was routed. '+fate.text+'</p>'+moodLine;
       log('Defeat. '+fate.text,'bad','war');
@@ -169,14 +171,14 @@ class BattleResolution{
     // (how it went, on the world's bus: an encounter fought on the road ends with it, passengers are lost with a defeat; run down,
     // it is to be faced again: story/encounter.js, world/escort.js)
     worldEmit('battle:ended',{enc:e,how:win?'won':!retreat?'lost':G.encAgain===e?'rundown':'withdrawn'});
-    G.encCool=retreat?4:3;G.enc=null;G.mode='dialog';
+    G.encCool=retreat||escaped?ESCAPE_GRACE.world:3;G.enc=null;G.mode='dialog';
     const report=groupLosses?{groups:groupLosses.slice().sort((a,b)=>a.slot-b.slot).map(row=>({id:row.id,type:row.type,name:row.name,start:row.start,
       fit:row.start-row.count-row.rearguard,wounded:row.wounded,killed:row.count-row.wounded+row.rearguard,saved:row.saved,rearguard:row.rearguard})),characters:this.characterReport||[],...(this.unitOfBattle?{best:this.unitOfBattle}:{}),...(this.ambush?{ambush:this.ambush}:{})}:null;
     lootShow(html,lost,saved,'cont',report);
   }
 }
 // Existing callers (simulation, auto-resolve, encounters and tests) keep the same entry points.
-function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();if(B&&DROPS.on)BattleDrops.of(B).end(B);const live=WorldCombat.live();G.worldSettlement=live;try{return new BattleResolution(B).finish()}finally{G.worldSettlement=false}}// (won: the field's drops gathered, battle/drops.js)
+function finishBattle(){if(B&&B.opts.sandbox)return BattleLab.finish();if(B&&DROPS.on)BattleDrops.of(B).end(B);const live=WorldCombat.live();G.worldSettlement=live;try{const result=new BattleResolution(B).finish();if(result&&typeof result.then==='function')return result.finally(()=>{G.worldSettlement=false});G.worldSettlement=false;return result}catch(e){G.worldSettlement=false;throw e}}// (won: the field's drops gathered, battle/drops.js)
 function concludeEncounter(win,lost,kills,auto,slain,retreat){return new BattleResolution().conclude(win,lost,kills,auto,slain,retreat)}
 // each of your troop groups that fought: its men's average experience (attacks.js u.xp), and TROOP_XP.fight and, won, .win;
 // Leadership 5% more a level. Its ranks gained (core/ranks.js), for the report

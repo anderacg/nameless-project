@@ -28,6 +28,7 @@ function paintIdle(now){if(worldPaintActive())try{
 }catch(e){loopError(e)}}
 
 function stepSimulation(dt){
+  if(Dice.el)return true;
   const mode=G.mode;
   if(G.mode==='battle'&&B){updateBattle(heroBeat(dt)*BATTLE_TEMPO);openFightWorld(dt*WORLD_TEMPO)}
   else openFightOver();

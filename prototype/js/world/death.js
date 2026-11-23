@@ -46,7 +46,8 @@ class Death{
   static fall(e){
     // (a lost roll kills you, DEATH.die: off, every roll lives)
     const o=this.odds(e),m=e.kind==='monster'&&e.ref instanceof Monster?e.ref:null;
-    if(DEATH.die&&!Dice.check(o.ch,'The roll to live',undefined,(o.why.find(w=>w[0]==='Medicine')||[0,0])[1]))return this.died(e,o,m);
+    const won=!DEATH.die||Dice.check(o.ch,'The roll to live',undefined,(o.why.find(w=>w[0]==='Medicine')||[0,0])[1]);return Dice.after(()=>{
+    if(DEATH.die&&!won)return this.died(e,o,m);
     const say=['The '+this.beastName(e)+' tear through the last of you, and you fall among your dead. A day later you wake, badly hurt.'];
     if(DEATH.die)say[0]+=' ('+Math.round(o.ch*100)+'% chance to live)';
     say.push(this.dismiss());
@@ -55,7 +56,7 @@ class Death{
     const pass=this.passengers();if(pass)say.push(pass);
     const eater=m&&this.eater(m);if(eater)say.push(eater);
     this.pending={m,hx:m?.hx,hy:m?.hy};
-    return {how:'beast',text:say.join(' ')}}
+    return {how:'beast',text:say.join(' ')}})}
   /* ---- dying (phase 2): your remains where you fell (Remains: your gear, your bag and a share of your gold, for whoever finds them
      first), the beast a man-eater with a bounty on it, the chronicle's line, then the Slain page (open). A new person in the same
      world is phase 3: until then its way out is a save or the main menu */

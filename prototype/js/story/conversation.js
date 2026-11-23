@@ -131,16 +131,16 @@ class LordSpeaker extends Speaker{
   attempt(id,w,cv){const l=this.o,X=DIALOGUE.checks[id];cv.aim=null;if(!X||this.checkWhy(id)||w&&this.wayWhy(w))return cv.reshow();const m=TalkMemory.meet(this.key);(m.tried||(m.tried={}))[id]=G.day;
     // (your words: what you ask (none for his regard: the way is the asking), then the way you put it)
     const W0=w&&DIALOGUE.ways[w],me=heroName()||'You';if(!(w&&X.ways.length>1)||X.ask)cv.say(this.fill(X.ask||X.you),false,me);if(w&&X.ways.length>1)cv.say(this.fill(W0.you),false,me);
-    const p=this.odds(id,w),r=rngOf('talk').next(),won=r<p?true:r<p+DIALOGUE.part?'part':false,words=won==='part'?X.half:won?X.yes:X.no;train('pers',won?3:1);
+    const p=this.odds(id,w),r=rngOf('talk').next(),won=r<p?true:r<p+DIALOGUE.part?'part':false,words=won==='part'?X.half:won?X.yes:X.no;
     // (the roll shown as it falls: ui/dice.js)
     Dice.show({p,r,part:DIALOGUE.part,bonus:this.mine(id),label:this.fill(X.label)+(w&&X.ways.length>1?': '+this.fill(W0.label):'')});
-    cv.say(this.fill(words[this.temper()]||words.plain));const o=this.outcome(id,won);
+    return Dice.after(()=>{train('pers',won?3:1);cv.say(this.fill(words[this.temper()]||words.plain));const o=this.outcome(id,won);
     // (a way's cost whatever comes of it: leaning on him for what is not tribute, his liking)
     if(W0?.cost&&id!=='threaten')o.rel=[l,(o.rel?.[1]||0)+W0.cost,'you leaned on them'];
     if(won&&id==='favour'){const got=lordLend(l,won==='part'?X.part.lend:undefined);cv.say(l.name+' lends you '+got.join(', ')+'.',true)}
     if(won&&id==='follow'){const n=Host.lead(l,won==='part'?X.part.days:undefined);cv.say(l.name+' will follow you for '+n+' days.',true)}// (his place in your host: world/hosts.js)
     if(o.gold)W.treas[l.fac]=Math.max(0,treas(l.fac)-o.gold);Outcome.apply(o,{});const d=Outcome.describe(o);if(d)cv.say('<span class="muted">'+d+'</span>',true);
-    if(id==='threaten')m.threat=G.day;else if(!won&&id!=='follow')m.slight=G.day;updateHUD(true);lordMeet(l)}
+    if(id==='threaten')m.threat=G.day;else if(!won&&id!=='follow')m.slight=G.day;updateHUD(true);lordMeet(l)})}
   facts(){const l=this.o,f=FACS[l.fac],st=hostileTo(l.fac)?'Your realms are at odds, but '+l.name+' will not draw on a friend.':P.fac===l.fac?'You serve the '+f.n+'.':P.fac?'Your employer is at '+(relOf(P.fac,l.fac).s==='ally'?'alliance':'peace')+' with them.':'They have no quarrel with you.';
     return '<p class="muted">Level '+lordStats(l).lv+', renown '+(l.renown||0)+', Leadership '+Math.round(lordSkill(l,'lead')*PROF.per)+', Tactics '+Math.round(lordSkill(l,'tact')*PROF.per)+', Medicine '+Math.round(lordSkill(l,'med')*PROF.per)+', leads up to '+lcapOf(l)+'.</p><p>'+st+'</p>'}
   // (the page under the replies: his standing toward you and the way to attack him; in his Work, his job; in another topic, none)

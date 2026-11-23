@@ -16,8 +16,8 @@ try{
  ok(!od.leave&&od.ch>0&&od.ch<1&&/Flee, \d+% to get away/.test(panel()),'when they come for you, Flee shows your chance ('+Math.round(od.ch*100)+'%)');
  {const r=Math.random;Math.random=()=>.999;flee();Math.random=r;ok(G.mode==='dialog'&&G.enc&&G.enc.noFlee&&P.troops.hum_levy===9&&/They caught you/.test(panel()),'caught: your rearguard falls (1 of 10) and you must fight; Flee is closed')}
  world();b=band(12);t.startEncounter({kind:'party',ref:b,n:12,band:'bandits'});{const r=Math.random;Math.random=()=>0;const x0=P.x;flee();Math.random=r;
-  ok(G.mode==='world'&&b.cool>=10&&Math.hypot(P.x-x0,0)>30,'got away: you put ground between you, and they lose your trail ('+b.cool+'s)');
-  const d0=Math.hypot(b.x-P.x,b.y-P.y);for(let i=0;i<20;i++)t.updateWorld(.05);ok(Math.hypot(b.x-P.x,b.y-P.y)>=d0-14&&G.mode==='world','meanwhile they do not come and stand on you (they wander, no more)')}
+  ok(G.mode==='world'&&b.cool>0&&b.cool<=1&&Math.hypot(P.x-x0,0)>30,'got away: you put ground between you, and they lose your trail ('+b.cool+'s)');
+  const d0=Math.hypot(b.x-P.x,b.y-P.y);for(let i=0;i<4;i++)t.updateWorld(.05);ok(Math.hypot(b.x-P.x,b.y-P.y)>=d0-14&&G.mode==='world','meanwhile they do not come and stand on you (they wander, no more)')}
  // what helps and what hurts
  world();b=band(14);b.troops=Array(14).fill('elf_glade');t.startEncounter({kind:'party',ref:b,n:14,band:'bandits',list:b.troops.slice()});// light infantry: close to your pace
  const day=t.fleeOdds(G.enc).ch;G.clock=t.DAY*.85;const night=t.fleeOdds(G.enc).ch;G.clock=t.DAY*.3;

@@ -559,13 +559,12 @@ const TOWN_WINDOW_ACTS={
 };
 function townAct(a,arg,t){
   const keep=panel.scrollTop,p=placeActing(a);
-  if(p){
-    if(p.act(a,arg,t)===Place.AWAY)return;
-  }
-  else if(TOWN_WINDOW_ACTS[a])TOWN_WINDOW_ACTS[a](arg);
-  if(!G.town)return;// (placing a new building: out on the map)
+  const result=p?p.act(a,arg,t):TOWN_WINDOW_ACTS[a]?.(arg);
+  return Dice.wait(result,result=>{
+  if(result===Place.AWAY||!G.town)return;// (placing a new building: out on the map)
   updateHUD(true);renderTown();panel.scrollTop=keep;
   if(!(p&&p.focus(a,arg)))railFocus(a,arg);
+  });
 }
 // the town's window (townui.js showTown): the rail of its places, and the place open: G.town.tab (none: the overview; a key no
 // place has: the tavern)

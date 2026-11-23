@@ -129,10 +129,10 @@ class BattleSides{
    if(o.residentSite)continue;
    if(o instanceof Party){const leader=survivors.find(u=>u.leader);if(leader)o.hp=(leader.left?leader.hpLeft:leader.hp)/FIELD_HP;
     if(!survivors.length){if(r.handled)continue;if(r.playerKills.length){if(o.mapKind==='monster')worldEmit('monster:slain',{monster:o});if(o.mapKind==='band')worldEmit('band:beaten',{band:o});if(o.mapKind==='lord')worldEmit('lord:beaten',{lord:o})}routParty(o,[]);continue}
-    const positions=survivors.map(u=>b.world.world(u));o.x=positions.reduce((n,p)=>n+p.x,0)/positions.length;o.y=positions.reduce((n,p)=>n+p.y,0)/positions.length;o.fight=null;o.cool=4;const live=survivors.filter(u=>u.hp>0&&!u.rout&&b.groups[u.grp]?.order!=='withdraw');if(live.length&&o.troops.length)alive.push(o);
+    const positions=survivors.map(u=>b.world.world(u));o.x=positions.reduce((n,p)=>n+p.x,0)/positions.length;o.y=positions.reduce((n,p)=>n+p.y,0)/positions.length;o.fight=null;o.cool=b.retreat?ESCAPE_GRACE.foe:4;const live=survivors.filter(u=>u.hp>0&&!u.rout&&b.groups[u.grp]?.order!=='withdraw');if(live.length&&o.troops.length)alive.push(o);
    }
   }
-  if(old)for(const o of fightParties(old))if(!this.byOwner.has(o)&&o.troops.length){o.fight=null;o.cool=4;alive.push(o)}
+  if(old)for(const o of fightParties(old))if(!this.byOwner.has(o)&&o.troops.length){o.fight=null;o.cool=b.retreat?ESCAPE_GRACE.foe:4;alive.push(o)}
   resumeArmyFight(alive,(a,b)=>{const x=this.byOwner.get(a),y=this.byOwner.get(b);return x&&y?this.pair(x,y)<0:old?fightHostile(old,a,b):armyRelation(a,b)<0});
  }
  // (won: the armies that won it with you, each with its share of the spoils by its part in the fight (the harm it did the foe, else
@@ -144,7 +144,8 @@ class BattleSides{
  // watch's holding (REINF.rep))
  thanks(){for(const r of this.records){if(r.owner===P||!r.joined||this.relation(0,r.team)<=0)continue;const o=r.owner;
    if(o.mapKind==='lord'&&!o.dead)changeRel(o,RELATION.fightBeside,'you fought beside them');if(o.fac&&FACS[o.fac]&&o.fac!=='player')addHonor(o.fac,REINF.honor.beside,true);if(o.mapKind==='patrol'&&o.home)addRep(o.home,REINF.rep,true)}}
- settle(b,lost,groups){
+ settle(...args){return Dice.sequence(this.settleSteps(...args))}
+ *settleSteps(b,lost,groups){
   const e=this.enc,credit=this.records.find(r=>r.owner===P),kills=(credit?.kills||[]).filter(k=>!ST[k]?.wildlife),saved=heal(lost,groups);for(const g of groups)if(g.count)partyRoster(P).remove(g.type,g.count,g.id);
   // (the owner, 2026-10-30: won, "the split shared based on army performance"; lost or withdrawn, "no reward beside exp": only the
   // experience your army earned, its kills', BATTLE_SPOILS.lostXp of them)
@@ -157,7 +158,7 @@ class BattleSides{
    else if(o.mapKind==='caravan'&&r.playerKills.length>=r.start/2){if(e.kind==='caravan'&&o===e.ref&&e.seize)o.seize();else o.loot();r.handled=true}
    else if(o.mapKind==='band'&&o.ld&&r.playerLeader){spoilsWon({kind:'party',ref:o});if(down)chiefEscapes(o.ld);else captureChief(o.ld);o.ld=null}
   }
-  this.continueFight();let heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+(kills.length===1?' foe. ':' foes. ')+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.'+(down&&spoils.length?NONE_TAKEN:''):'You keep only what your men learned.');
+  this.continueFight();let escaped=false,heading=b.win?'Victory':b.retreat?'Withdrawn':'Defeat',detail=(b.byAllies?'Your army fell, but '+(b.units.some(u=>u.team!==0&&u.hp>0&&this.relation(0,u.team)>0)?'your allies':'the others')+' held the field. ':'')+'Your army defeated '+kills.length+(kills.length===1?' foe. ':' foes. ')+(b.win?'The spoils are shared by each army’s part in the fight: yours '+Math.round(mine*100)+'%.'+(down&&spoils.length?NONE_TAKEN:''):'You keep only what your men learned.');
   if(b.win){this.thanks();
    // (as a battle of two gives (resolution.js conclude, engage.js reinfAfter): the holding near the fight thinks better of you, and a
    // common enemy cleared on a realm's land with its men beside you, that realm more)
@@ -165,12 +166,12 @@ class BattleSides{
    const h=e&&commonFoe(e)&&landHold(P.x,P.y),lf=h&&h.owner;if(lf&&lf!=='player'&&this.records.some(r=>r.owner!==P&&r.joined&&this.relation(0,r.team)>0&&forceRealm(r.owner)===lf))addHonor(lf,REINF.honor.land,true)}
   // (beaten, your allies too: taken captive, or away in the rout: world/captivity.js)
   // (by whoever holds the field: captorEnc; it grows by its win as in a battle of two, resolution.js conclude)
-  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=Captivity.defeat(ce,b);if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=8;
+  if(!b.win&&!b.retreat){if(prisonerCount()){P.prisoners={};log('Your prisoners escape in the chaos.','bad','war')}captivesEscape();const ce=this.captorEnc(b.captor)||e,fate=yield Captivity.defeat(ce,b);escaped=fate.how==='escaped';if(ce?.ref&&ce.kind!=='camp')ce.ref.cool=escaped?ESCAPE_GRACE.foe:8;
    if(ce?.kind==='party')chiefWins(ce.ref,partySize()+1);if(ce?.kind==='lord')lordWins(ce.ref,partySize());if(ce?.kind==='patrol'){const h=townBy(ce.ref.home);if(h)h.crime=null}
    if(ce!==e)detail+=' '+cap1(this.label(b.captor))+' held the field.';detail+=' '+fate.text;log('Defeat. '+fate.text,'bad','war')}
   {const h=!b.win&&(b.captor||this.victor()),q=h?.owner?.mapKind==='monster'&&leaveFieldLoot(b.world.x,b.world.y,kills,h.owner);if(q)detail+=' '+fieldLootLine(q).replace(/<[^>]+>/g,'')}
   if(!b.win)encLost(e);
-  const moodLine=battleMood(b.win?(kills.length?4:0):b.retreat?-8:-15,b.win?'victory':b.retreat?'withdrawal':'defeat');G.enc=null;G.encCool=4;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.win?'won':b.retreat?'withdrawn':'lost'});
+  const moodLine=battleMood(b.win?(kills.length?4:0):b.retreat?-8:-15,b.win?'victory':b.retreat?'withdrawal':'defeat');G.enc=null;G.encCool=b.retreat||escaped?ESCAPE_GRACE.world:4;G.mode='dialog';worldEmit('battle:ended',{enc:e,how:b.win?'won':b.retreat?'withdrawn':'lost'});
   const report={groups:groups.map(g=>({id:g.id,type:g.type,name:g.name,start:g.start,fit:g.start-g.count,wounded:g.wounded,killed:g.count-g.wounded,saved:g.saved,rearguard:0})),characters:[]};
   lootShow('<h2>'+heading+'</h2><p>'+detail+' Surviving armies keep their own soldiers; other hostile armies can continue fighting.</p>'+moodLine+rankUpHtml(b.ranksUp||[]),lost,saved,'cont',report);updateHUD(true);
  }

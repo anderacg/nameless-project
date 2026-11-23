@@ -292,7 +292,7 @@ function questChainAct(a,arg){
   if(!c)return;
   const i=parseInt(arg);
   if(c.asks(th)&&!String(arg).endsWith('!'))return CHOICE_PAGE.confirm(c,th,{sub:th.kind.n,act:'thr-do',i,back:['thr-back',null,'Back']});
-  const m=c.perform(th);
+  return Dice.wait(c.perform(th),m=>{
   if(m)log(m,undefined,'story',th.journalKey);
   G.questChain=null;
   // (closed, unless what it did opened something else: a fight)
@@ -302,6 +302,7 @@ function questChainAct(a,arg){
   }
   updateHUD(true);
   worldEmit('page:chosen',{e:th,how:c.how!==undefined?c.how:String(i)});
+  });
 }
 onAct('thr-',questChainAct);
 /* the save: W.story.threads once one has begun or something has come once (none: as every save before it; the save registry,

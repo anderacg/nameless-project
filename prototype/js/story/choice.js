@@ -53,6 +53,7 @@ class Choice{
   }
   // (the road's stream: its odds are the road's checks, core/rng.js)
   roll(){
+    if(this.rolled!==undefined)return this.rolled;
     return Dice.check(this.chance(),typeof this.label==='string'?this.label:'',()=>rngOf('road').next(),statPart(this.odds));
   }
   read(o){
@@ -63,6 +64,10 @@ class Choice{
   }
   // done: its outcome applied (out's, or the one run returned), and the result's line
   perform(s){
+    if(this.odds&&DICE.on){const won=Dice.check(this.chance(),this.labelFor(s),()=>rngOf('road').next(),statPart(this.odds));return Dice.after(()=>{this.rolled=won;try{return this.apply(s)}finally{delete this.rolled}})}
+    return this.apply(s);
+  }
+  apply(s){
     const r=this.out?this.out(s):this.run(s,this);
     return Outcome.is(r)?Outcome.apply(r,{e:s}).say:r;
   }
