@@ -167,12 +167,11 @@ const ptop=g=>{const i=g.p.findIndex(c=>c);return i<0?g.h:Math.floor(i/g.w)};
 function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g.w;i++){const c=g.p[y*g.w+i];if(c){x.fillStyle=c;x.fillRect(i,y,1,1)}}})}
 
 // a soldier's whole look: its kind's, its race's, its variant's; the hero's and a companion's from their gear
-// (in the cold (the owner, 2026-11-07: "unit in winter area may use wolf or bear fur/equipments"): a wolf's or a bear's pelt over his
-// head by variant, a fur mantle on his shoulders; a helm of rank kept (keep), a cape of his own kept. sprites.js DRESS says when)
+// Snow never grants equipment; fur parts below come only from worn items or a troop's own kit.
 // (an outlaw's dress by the man: his head (a headscarf in his side's colour, a hood, a cap, bare), his coat, his shirt, his hood's cloth)
 const OUTLAW_DRESS={helm:['bandana','hood','bare','bandana','cap','hood'],cloth:['leather','cloth','dark','fur','olive','rust'],inner:['linen','wool','dark'],hood:['dark','brown','olive']};
-const WINTER={on:true,keep:['great','plume','horned','wizard','crown','circlet','skull'],wolf:'#c8c4b8',bear:'#7a5236'};
-function winterLook(L,v){if(!WINTER.on)return L;const k=(v|0)%2?'bear':'wolf';return{...L,helm:WINTER.keep.includes(L.helm)?L.helm:'pelt_'+k,cape:L.cape||WINTER[k]}}
+const WINTER={on:true};
+function winterLook(L){return L}
 function lookOf(type,team,hero,v,cid,cg){
   const st=ST[type],race=hero?P.race:(st&&st.race)||(PEOPLE_LOOK[type]&&PEOPLE_LOOK[type].race)||'human',R=RACE_LOOK[race]||RACE_LOOK.human;
   let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword'}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
@@ -206,6 +205,9 @@ function lookOf(type,team,hero,v,cid,cg){
   if(hero){o.cape=false;o.beard=null;o.hair=R.hair[0];o.tabard=false;o.sleeves=true;o.hairStyle='crop'}// (no eye: as every soldier, the owner, 2026-11-07: "I don't want eyes")
   // (your hero's and a companion's hair, beard and face as their portraits (ui/faces.js Faces.look))
   const face=typeof Faces!=='undefined'&&Faces.ok()?hero?Faces.you():COMPS[cid]?Faces.companion(cid):null:null;if(face)Object.assign(o,Faces.look(face));
+  // Body and cape fur never grant an animal hood; each equipped slot supplies only its own visible part.
+  const worn=hero?P.gear:cg;if(worn){for(const slot of ['body','cape']){const it=ITEMS[worn[slot]];if(it?.fur?.cape)o.cape=it.col||'fur'}
+    const it=ITEMS[worn.head];if(it?.fur?.helm){o.helm=it.fur.helm;o.helmC=it.col||undefined}}
   return o;
 }
 // the letters' colours for a look

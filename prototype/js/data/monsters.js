@@ -90,7 +90,7 @@ const ITEMS={
   clawblade:{n:'Tiger Claw Blade',slot:'weapon',r:'rare',d:'+3 damage. Crits 10% more often. Tears into archers.',m:{dmg:3,crit:.1},tag:'shock',v:140,icon:'blade',col:'#e08a2a'},
   trollclub:{n:'Troll Bone Club',slot:'weapon',r:'rare',d:'+6 damage, but swings 15% slower. Crushes armor.',m:{dmg:6,cd:.15},tag:'pierce',v:160,icon:'club',col:'#9a7a52'},
   wyrmspear:{n:'Wyrm Tooth Spear',slot:'weapon',r:'epic',d:'+5 damage and +6 reach. Fights as a spearman.',m:{dmg:5,reach:6},tag:'spear',v:320,icon:'spear',col:'#e0b870'},
-  bearcoat:{n:'Bear Hide Coat',slot:'body',r:'common',d:'+25 health.',m:{hp:25},v:90,icon:'coat',col:'#6e4e36'},
+  bearcoat:{n:'Bear Hide Coat',slot:'body',r:'common',fur:{cape:true},d:'+25 health.',m:{hp:25},v:90,icon:'coat',col:'#6e4e36'},
   silkvest:{n:'Spider Silk Vest',slot:'body',r:'rare',d:'+15 health. Move 10% faster in battle.',m:{hp:15,spd:.1},v:120,icon:'vest',col:'#d8d4c4'},
   scorpplate:{n:'Scorpion Plate',slot:'body',r:'rare',d:'+30 health. Blocked hits deal 5% less. Heavy armor against arrows.',m:{hp:30,block:.05},tag:'heavy',v:180,icon:'plate',col:'#b5733e'},
   trollhide:{n:'Troll Hide Armor',slot:'body',r:'rare',d:'+40 health. Heal 1 health per second in battle. Heavy armor against arrows.',m:{hp:40,regen:1},tag:'heavy',v:220,icon:'coat',col:'#6a8a6a'},

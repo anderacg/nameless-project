@@ -1,5 +1,7 @@
 # Ashmark prototype
 
+**Equipped fur:** snow no longer grants animal-pelt hoods or fur cloaks. The worn Bear Hide Coat supplies its own fur mantle in every climate; carried fur and unrelated equipment do not. Body/cape and head fur are independent item visuals, shared by hero and companions. Checks: `furgear`.
+
 **Regional monster difficulty:** overworld births use geographic level bands (1-2, 2-3, 3-5, 5-7), smaller packs near settlements, and deep-wilderness gates for trolls, griffins and wyrms. The shared desktop/phone danger crest shows the band, four geographic pips and difficulty relative to the current company. Existing monsters, quest/dungeon levels and mythic spawning retain their values and rules. See `doc/MONSTER_REGIONS_DESIGN.md`; checks: `monsterregions`, `campaignhud`, `alphawolf`.
 
 **Battle controls:** phone Attack is available directly on the five-button dock; View & settings is inside Orders. Main desktop orders have labels. Attack targeting and the existing two-tap retreat preview show contextual instructions, with pressed and keyboard-focus feedback. Combat rules are unchanged. Checks: `mobilebattlehud`, `buttonstates`.

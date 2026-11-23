@@ -37,8 +37,7 @@ const FLINCH_POSE=41,LOOK_POSE=42,SHIFT_POSE=43,BRACE_POSE=44,GRIP_POSE=45,LIFE_
 // (your hero's and a companion's key: their gear's, but a melee weapon's when it is held apart: one body for every sword)
 // (a figure's look, as unitSprite draws it: its kind's, a companion's gear on him, his side's cloth, tint (a world army's colour)
 // over it; the map's marchers' weapons drawn apart read it: weapons.js mapHeld)
-// (what the weather asks of his dress: cold, in the frost (people.js winterLook); set by whoever draws him there, about the call:
-// a battle by its ground, a march by where it is)
+// Climate is drawing context only; worn equipment owns fur and animal headwear.
 // (and the land's: clim, the climate he stands in, for a villager's clothes (data/dress.js FOLK_DRESS: a peasant, a worker, the folk);
 // dressedIn sets both by the climate)
 const DRESS={cold:false,clim:null},coldAt=(x,y)=>WINTER.on&&typeof climAt==='function'&&climAt(x,y)==='frost',dressClimAt=(x,y)=>typeof climAt==='function'?climAt(x,y):null;
@@ -56,7 +55,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
     if(DOLL_FIGS.on&&DOLL_FIGS.edge)return spr[key]=s;
     const c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
-  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'')+(DRESS.cold?'w':'')+(DRESS.clim&&ST[type]?.peasant?'d'+DRESS.clim:'');
+  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||'')+(P.gear.cape||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||'')+(cg.cape||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'')+(DRESS.cold?'w':'')+(DRESS.clim&&ST[type]?.peasant?'d'+DRESS.clim:'');
   {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
   // soldiers, your hero and companions: the template figures (people.js)
   const L0=spriteLook(type,team,hero,v,tint),L={...L0,...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
