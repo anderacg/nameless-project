@@ -195,7 +195,7 @@ function bhudPowerDetails(){
   const host=document.querySelector('.btop');if(!host)return;
   let el=document.getElementById('bPowerDetails');
   if(!el){el=document.createElement('details');el.id='bPowerDetails';el.className='battle-power-details';el.innerHTML='<summary class="battle-power-summary" aria-label="Army power and battle details" title="Battle details"><span class="battle-power-caret" aria-hidden="true">⌄</span></summary><div class="battle-power-body"></div>';
-    const summary=el.querySelector('summary'),body=el.querySelector('.battle-power-body');summary.prepend(host.querySelector('.bpow'));body.appendChild(document.getElementById('bField'));host.prepend(el);
+    const summary=el.querySelector('summary'),body=el.querySelector('.battle-power-body');const power=host.querySelector('.bpow'),versus=document.createElement('span');versus.className='bpow-versus';versus.setAttribute('aria-hidden','true');versus.innerHTML=icon('attack',14);power.appendChild(versus);summary.prepend(power);body.appendChild(document.getElementById('bField'));host.prepend(el);
     el.addEventListener('toggle',()=>window.mobileBattleHud?.measure());summary.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter')e.stopPropagation()})}
   if(el.battle!==B){el.battle=B;el.open=false}
 }
