@@ -7,7 +7,8 @@ const UI_ICON_SHEETS=[
   ["art/ui/icons-interface.png",1254,1254],
   ["art/ui/icons-trade.png",1254,1254],
   ["art/ui/icons-equipment.png",1254,1254],
-  ["art/ui/icons-supplies.png",1254,1254]
+  ["art/ui/icons-supplies.png",1254,1254],
+  ["art/ui/hourglass.svg",100,100]
 ];
 const UI_ILLUSTRATIONS={
   fire:[24,19,218,231],
@@ -40,6 +41,7 @@ const UI_ILLUSTRATIONS={
 Object.assign(UI_ILLUSTRATIONS,{
   attack:[36,43,206,205,1],
   speed:[282,39,199,213,1],
+  hourglass:[0,0,100,100,5],
   prisoners:[522,46,211,201,1],
   pelt:[764,29,223,229,1],
   eye:[1021,42,209,206,1],

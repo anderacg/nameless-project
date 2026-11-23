@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+<defs>
+ <linearGradient id="brass" x1="0" x2="1"><stop stop-color="#67401d"/><stop offset=".25" stop-color="#f8d383"/><stop offset=".5" stop-color="#b58335"/><stop offset=".75" stop-color="#e9bf64"/><stop offset="1" stop-color="#68421f"/></linearGradient>
+ <linearGradient id="glass" x1="0" x2="1"><stop stop-color="#43585b" stop-opacity=".8"/><stop offset=".3" stop-color="#d7ece6" stop-opacity=".6"/><stop offset=".65" stop-color="#8faeb0" stop-opacity=".25"/><stop offset="1" stop-color="#3c5255" stop-opacity=".8"/></linearGradient>
+ <linearGradient id="sand" x2="0" y2="1"><stop stop-color="#ffe3a1"/><stop offset="1" stop-color="#bd853b"/></linearGradient>
+</defs>
+<path d="M21 16H29V84H21ZM71 16H79V84H71Z" fill="url(#brass)" stroke="#694821" stroke-width="2"/>
+<path d="M33 19H67C67 36 63 39 55 48V52C63 61 67 64 67 81H33C33 64 37 61 45 52V48C37 39 33 36 33 19Z" fill="url(#glass)" stroke="#b5b7a0" stroke-width="2"/>
+<path d="M37 30H63C62 38 56 41 51 47H49C44 41 38 38 37 30ZM36 78C39 71 45 68 50 64C55 68 61 71 64 78Z" fill="url(#sand)"/>
+<path d="M50 48V66" stroke="#f8d68a" stroke-width="2"/>
+<path d="M37 22C37 35 40 38 44 42M36 71L38 64" fill="none" stroke="#edf4db" stroke-width="2" opacity=".75"/>
+<path d="M17 8H83L87 15L82 21H18L13 15ZM18 80H82L87 87L83 94H17L13 87Z" fill="url(#brass)" stroke="#68421f" stroke-width="2.5" stroke-linejoin="round"/>
+<path d="M20 11H80M20 83H80M20 90H80" stroke="#ffe6a1" stroke-width="2" opacity=".8"/>
+</svg>
