@@ -1,0 +1,105 @@
+/* =====================================================================================================================
+   Ashmark: the ink look (the owner, 2026-11-24, after a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like
+   this?"). Every rule here is under .screen.ink (ui/inkhud.js; Settings → Interface look: Ink or Forged), so Forged is today's look
+   untouched. Its art (the torn paper edge, the brushed ring, the minimap's paper rim) is drawn in inkhud.js.
+     1. tokens      the ink's colours: dark see-through panels, a pale ink rim, teal for what is yours and live, gold for coin
+     2. edge        the torn paper round the screen and the shade inside it
+     3. hero        your hero's card (a phone's map, top left): level in a brushed ring, health, stamina, morale, experience
+     4. quests      the quest cards under it: dark, teal-edged, a Quest tag, the title white, what to do next in teal
+     5. dock        the round buttons (bottom right), their names under them; the day's pill (bottom left); the speed and map choices
+     6. minimap     round, in a paper rim, N at its top; your purse beside it
+     7. messages    the log over the day's pill, the party's details over the card
+   ===================================================================================================================== */
+
+/* ---------- 1. tokens ---------- */
+.screen.ink{
+  --ink-panel:rgba(20,23,22,.82); --ink-panel-hi:rgba(30,34,32,.9); --ink-line:rgba(236,227,203,.42); --ink-line-hi:#ece3cb;
+  --ink-teal:#3cc4b0; --ink-teal-deep:#1d6c62; --ink-teal-fg:#9ff0e2; --ink-blue:#4d7fdb; --ink-amber:#e0a64a; --ink-gold:#e9c46a; --ink-red:#d8664f;
+  --ink-fg:#f6f1e4; --ink-fg-2:#c9c3b3; --ink-r:10px;
+  /* (white words on the map: an outline all round, so they read over grass, snow and water alike) */
+  --ink-out:0 1px 0 #0c0e0d,0 -1px 0 #0c0e0d,1px 0 0 #0c0e0d,-1px 0 0 #0c0e0d,1px 1px 1px #0c0e0d;
+  --ink-btn:var(--ink-ring) center/100% 100% no-repeat,radial-gradient(circle,#2c312e 0,#161a18 62%,#101312 100%);
+}
+
+/* ---------- 2. edge ---------- */
+.ink-edge{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:60;box-shadow:inset 0 0 22px 8px rgba(8,9,8,.42)}
+.ink-edge[hidden]{display:none}
+
+/* ---------- 3. hero ---------- */
+.ink-hero,.ink-purse{display:none}
+.screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:244px;display:flex;align-items:center;gap:8px;padding:5px 10px 6px 5px;
+  border:1.5px solid var(--ink-line);border-radius:var(--ink-r);background:var(--ink-panel);color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
+.ink-hero[aria-expanded="true"]{border-color:var(--ink-teal)}
+.ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
+  font:800 21px/1 var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
+.ink-lv small{font:700 9px/1 var(--font);color:var(--ink-teal-fg);letter-spacing:.06em;margin-bottom:1px}
+.ink-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.ink-name{display:flex;align-items:baseline;gap:6px;min-width:0}
+.ink-name strong{font:700 13px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--ink-out)}
+.ink-name small{margin-left:auto;flex:none;font:11px var(--font);color:var(--ink-fg-2)}
+.ink-bar{display:grid;grid-template-columns:27px minmax(0,1fr);align-items:center;column-gap:4px}
+.ink-bar>b{font:800 9px var(--font);letter-spacing:.03em}
+.ink-bar>i{position:relative;display:block;height:11px;border:1px solid #070807;border-radius:3px;background:#0e1211;overflow:hidden}
+.ink-bar>i>em{display:block;height:100%;border-radius:2px}
+.ink-bar>i>small{position:absolute;right:4px;top:0;font:700 9px/9px var(--font);color:#fff;text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
+.ink-bar.hp>b{color:var(--ink-teal)}.ink-bar.hp em{background:linear-gradient(#5fe0cb,#21927f)}
+.ink-bar.sta>b{color:#7fa6f0}.ink-bar.sta em{background:linear-gradient(#7da4f2,#3459b4)}
+.ink-bar.mor>b{color:var(--ink-amber)}.ink-bar.mor em{background:linear-gradient(#f0c070,#b7772a)}
+.ink-bar.low>i>em{background:linear-gradient(#ee8a6c,#a8402c)}
+.ink-bar.xp{grid-template-columns:27px minmax(0,1fr) auto;margin-top:1px}.ink-bar.xp>b{color:var(--ink-gold)}
+.ink-bar.xp>i{height:5px;border-radius:3px}.ink-bar.xp em{background:linear-gradient(#f4d27c,#c08c2e)}
+.ink-bar.xp>small{font:700 9px var(--font);color:var(--ink-fg-2);font-variant-numeric:tabular-nums}
+
+/* ---------- 4. quests ---------- */
+.screen.ink.mobile-world .qtrack{top:calc(var(--e-t) + 82px)}
+.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road{border:1.5px solid var(--ink-line);border-image:none;border-radius:var(--ink-r);background:var(--ink-panel);box-shadow:none;color:var(--ink-fg);text-shadow:none}
+.screen.ink.mobile-world .qtrack .qt-list:not(.qt-road){border:2px solid var(--ink-teal);padding:4px 6px 5px}
+.screen.ink.mobile-world .qtrack .qt-head{display:inline-block;margin:0 0 3px;padding:1px 7px;border-radius:4px;background:var(--ink-teal-deep);color:var(--ink-teal-fg);font:700 10px var(--font);letter-spacing:.04em;text-transform:none}
+.screen.ink.mobile-world .qtrack .qt-row{border:0;border-radius:6px;background:none;box-shadow:none;outline:0}.screen.ink.mobile-world .qtrack .qt-row+.qt-row{border-top:1px solid rgba(236,227,203,.16);border-radius:0}
+.screen.ink.mobile-world .qtrack .qt-row.on{background:none}.screen.ink.mobile-world .qtrack .qt-row.on b{color:var(--ink-fg)}
+.screen.ink.mobile-world .qtrack .qt-row b{color:var(--ink-fg);font:700 14px var(--font);text-shadow:var(--ink-out)}
+.screen.ink.mobile-world .qtrack .qt-row small{color:var(--ink-teal-fg);font:11px/1.3 var(--font)}
+.screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row{color:var(--ink-fg)}#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row b{color:var(--ink-fg);font:700 12px var(--font)}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row small{color:var(--ink-teal-fg)}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-road-more{color:var(--ink-teal)}
+.screen.ink.mobile-world .qtrack .qt-pop .btn{border:1.5px solid var(--ink-teal);border-image:none;border-radius:999px;background:var(--ink-teal-deep);color:#fff;box-shadow:none}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-bar{border-radius:3px;background:#0e1211}.screen.ink.mobile-world .qtrack .qt-pop .qt-bar>*{background:var(--ink-teal)}
+.screen.ink.mobile-world .qtrack .qt-x{color:var(--ink-fg-2)}
+/* (one quest on a phone, the tracked one (else the first), the rest counted on the tag, as the owner's picture has it: inkhud.js) */
+.screen.ink.mobile-world .qtrack .qt-list:has(.qt-row.on) .qt-row:not(.on),.screen.ink.mobile-world .qtrack .qt-list:not(.qt-road):not(:has(.qt-row.on)) .qt-row:nth-of-type(n+2){display:none}
+.screen.ink.mobile-world .qtrack .qt-head[data-more]:not([data-more=""])::after{content:attr(data-more);margin-left:8px;padding:0 6px;border-radius:4px;background:rgba(60,196,176,.18);color:var(--ink-teal-fg);font-weight:700}
+/* (one new-quest card at a time on a phone: two reached down over the day's pill under the hero's card) */
+.screen.ink.mobile-world .qtrack .qt-pop:nth-last-child(n+2){display:none}
+
+/* ---------- 5. dock ---------- */
+.screen.ink.campaign-world.mobile-world .mobile-world-hud{display:flex;flex-direction:row;align-items:flex-end;justify-content:space-between;gap:8px}
+.screen.ink.campaign-world.mobile-world .mobile-world-hud{bottom:calc(var(--e-b) + 6px)}
+.screen.ink.campaign-world.mobile-world .mwh-status{container-type:normal;flex:none;width:auto;min-height:0;padding:4px 12px 4px 4px;border:1.5px solid var(--ink-line);border-radius:999px;background:var(--ink-panel)}
+.screen.ink.campaign-world.mobile-world .mwh-status .wday{font:700 11px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
+.screen.ink.campaign-world.mobile-world #partyToggle{display:none}
+.screen.ink.campaign-world.mobile-world .mwh-dock{gap:8px;padding:0;border:0;background:none}
+.screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:7px}
+.screen.ink.campaign-world.mobile-world .mwh-dock :is(button,#speedToggle){width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-image:none;border-radius:50%;background:var(--ink-btn);color:var(--ink-fg);box-shadow:0 2px 4px rgba(0,0,0,.45)}
+#screen.ink.campaign-world.mobile-world .mwh-dock :is(button[aria-expanded="true"],button.on,button[aria-pressed="true"]),#screen.ink.campaign-world.mobile-world #speedToggle[aria-expanded="true"]{color:var(--ink-fg);background:var(--ink-ring) center/100% 100% no-repeat,radial-gradient(circle,#2a6b62 0,#143430 70%)}
+.screen.ink.campaign-world.mobile-world .mwh-dock #speedToggle strong{font:800 12px var(--font);text-shadow:var(--ink-out)}
+.screen.ink.campaign-world.mobile-world .mobile-world-hud .dbtn .dl{position:absolute;left:50%;bottom:-8px;width:auto;height:auto;margin:0;padding:0;clip-path:none;overflow:visible;transform:translateX(-50%);
+  font:700 10px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);white-space:nowrap}
+.screen.ink.campaign-world.mobile-world .mwh-dock .dbtn{position:relative}
+.screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map){border:1.5px solid var(--ink-line);border-image:none;border-radius:var(--ink-r);background:var(--ink-panel)}
+.screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button{border:1.5px solid var(--ink-line);border-image:none;border-radius:999px;background:var(--ink-panel-hi);color:var(--ink-fg)}
+.screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button:is(.on,[aria-pressed="true"]){border-color:var(--ink-teal);background:var(--ink-teal-deep)}
+
+/* ---------- 6. minimap ---------- */
+.screen.ink .campaign-mobile-survey{left:auto!important;right:var(--e-r);width:auto!important;aspect-ratio:1;border:0;border-image:none;border-radius:50%;overflow:hidden;background:none;box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.screen.ink .campaign-mobile-survey canvas{inset:auto;left:50%;top:50%;width:auto;height:calc(100% - 2*var(--phone-map-rim,8px));transform:translate(-50%,-50%)}
+.screen.ink .campaign-mobile-survey::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--ink-rim) center/100% 100% no-repeat;pointer-events:none}
+.screen.ink .campaign-mobile-survey::before{content:'N';position:absolute;top:1px;left:50%;transform:translateX(-50%);z-index:1;font:800 10px var(--font);color:#3a3226;pointer-events:none}
+.screen.ink.mobile-world .ink-purse:not([hidden]){position:absolute;display:flex;flex-direction:column;align-items:flex-end;gap:4px;pointer-events:none;z-index:2}
+.ink-purse>span{display:flex;align-items:center;gap:5px;padding:2px 10px 2px 4px;border:1.5px solid var(--ink-line);border-radius:999px;background:var(--ink-panel);font:700 12px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
+.ink-purse>span:first-child b{color:var(--ink-gold)}.ink-purse>span.low b{color:var(--ink-red)}
+
+/* ---------- 7. messages ---------- */
+.screen.ink .toasts div{border:0;border-radius:8px;background:rgba(18,21,20,.72);box-shadow:none;color:var(--ink-fg-2);font-size:12px}
+.screen.ink .toasts div:is(.good,.bad,.gold){border-left:3px solid var(--ink-teal)}.screen.ink .toasts div.bad{border-left-color:var(--ink-red)}.screen.ink .toasts div.gold{border-left-color:var(--ink-gold)}
+.screen.ink.campaign-world.mobile-world #stats{top:calc(var(--e-t) + 82px);bottom:auto;right:auto;width:300px;max-height:calc(100% - var(--e-t) - 82px - var(--e-b) - var(--mobile-hud-height,60px) - 12px);
+  border:1.5px solid var(--ink-teal);border-image:none;border-radius:var(--ink-r);background:var(--ink-panel-hi)}

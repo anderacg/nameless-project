@@ -73,6 +73,7 @@ function updateHUD(force){
   window.campaignHud?.update(S,cnt);
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp));cb.disabled=!!P.camp?.pack;cb.setAttribute('aria-busy',String(!!P.camp?.pack));cb.title=P.camp?.pack?'Packing camp: '+Math.ceil(campPackLeft()*60)+' game minutes':'Camp and recovery · Z: make / break camp'}
   questTrackHUD();// (the quests you track, under the band card as it now stands: ui/questtrack.js)
+  window.inkHud?.update(S);// (your hero's card and purse in the ink look, on a phone, and the quests' count: ui/inkhud.js)
   underwayHUD();// (what your band is doing, under the minimap: ui/underway.js)
 }
 // a short hint at the top of the screen for where you are (H shows every control)
