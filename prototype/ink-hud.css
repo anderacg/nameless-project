@@ -12,7 +12,7 @@
      5. dock        the round buttons (bottom right), their names at their feet; the speed and map choices
      6. minimap     round, in a thin gold ring, the day and night round its rim (the bar's sky icon at the hour); the day in one
                     short line under it
-     7. messages    the log bottom left, the party's details under the card
+     7. messages    the log bottom left, a level's skill points at the right, the party's details under the card
    ===================================================================================================================== */
 
 /* ---------- 1. tokens ---------- */
@@ -135,10 +135,23 @@
   filter:drop-shadow(0 0 2px rgba(18,13,7,.9))}.ink-hour .gico{width:17px;height:17px}
 
 /* ---------- 7. messages ---------- */
+/* (a level's skill points, the owner, 2026-11-24: "Change that and move it to the right side": a round button in the gold ring as the
+   others are, at the right under the day's line, its count on a gold tab, its name at its feet, a slow glow till they are spent;
+   the log's lines keep the bottom-left corner: "Make log fit in bottom left") */
+.screen.ink.mobile-world .lgroup{left:auto;right:var(--e-r);top:var(--ink-side-top,170px);bottom:auto;z-index:4}
+.screen.ink.mobile-world .lvup{position:relative;width:44px;height:44px;margin:0 auto 12px;border:0;border-radius:50%;background:var(--ink-btn);box-shadow:0 2px 4px rgba(0,0,0,.45);
+  color:var(--ink-gold);animation:ink-lvup 1.6s ease-in-out infinite}
+.screen.ink.mobile-world .lvup .gico{width:22px;height:22px}
+.screen.ink.mobile-world .lvup>b{position:absolute;top:-3px;right:-3px;min-width:18px;padding:1px 4px;border-radius:9px;background:linear-gradient(#f2cf6e,#b07d27);color:#2a1c08;font:800 10px/12px var(--font);text-align:center}
+.screen.ink.mobile-world .lvup>small{position:absolute;left:50%;bottom:-13px;transform:translateX(-50%);white-space:nowrap;font:700 10px var(--font);letter-spacing:0;text-transform:none;color:var(--ink-fg);text-shadow:var(--ink-out)}
+@keyframes ink-lvup{0%,100%{box-shadow:0 2px 4px rgba(0,0,0,.45),0 0 0 0 rgba(242,207,110,0)}50%{box-shadow:0 2px 4px rgba(0,0,0,.45),0 0 12px 4px rgba(242,207,110,.7)}}
+@media (prefers-reduced-motion:reduce){.screen.ink.mobile-world .lvup{animation:none}}
+.screen.ink.mobile-world[data-mode="world"] .hudlayer:has(.lgroup:not([hidden])) .toasts{left:var(--e-l)}
 .screen.ink .toasts div{border:0;border-left:3px solid var(--ink-gold-deep);border-radius:0;background:rgba(23,19,14,.74);box-shadow:none;color:var(--ink-fg-2);font-size:12px}
 .screen.ink .toasts div.good{border-left-color:var(--meter-hi,#9cc06a)}.screen.ink .toasts div.bad{border-left-color:var(--ink-red)}.screen.ink .toasts div.gold{border-left-color:var(--ink-gold)}
 /* (the log's lines in the bottom-left corner, beside the buttons, clear of the quest cards) */
-.screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + 2px);width:min(46%,380px)}
+.screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + 2px);width:min(46%,380px,calc(100% - 290px))}
+.screen.ink.mobile-world .toasts div{padding:3px 8px;font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .screen.ink.campaign-world.mobile-world #stats{top:calc(var(--e-t) + var(--ink-hero-h,64px) + 4px);bottom:auto;right:auto;width:300px;max-height:calc(100% - var(--e-t) - var(--ink-hero-h,64px) - 4px - var(--e-b) - var(--mobile-hud-height,60px) - 12px);background:var(--ink-panel-hi)}
 /* (a phone held upright: the log's lines over the buttons) */
 @media (max-width:600px){

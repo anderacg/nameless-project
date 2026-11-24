@@ -123,6 +123,8 @@ class InkHud{
     {const A=INK.dial,ro=r.width/2-A.rim*r.width,rc=ro-A.band*r.width/2,a=Math.PI+Clock.frac*2*Math.PI;this.hour.style.left=r.left+r.width/2+Math.cos(a)*rc-host.left+'px';this.hour.style.top=r.top+r.height/2+Math.sin(a)*rc-host.top+'px'}
     // (centred under it, but never past its right side: the minimap stands at the screen's edge and the line can be the wider)
     this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';
+    // (what stands at the right under the day's line: a level's skill points, ink-hud.css .lgroup)
+    this.screen.style.setProperty('--ink-side-top',this.day.getBoundingClientRect().bottom-host.top+6+'px');
   }
 }
 window.inkHud=document.getElementById('screen')?new InkHud(document.getElementById('screen')):null;

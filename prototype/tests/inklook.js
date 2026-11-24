@@ -56,6 +56,11 @@ Kit.suite(({ok,info})=>{
   ok(Math.abs(noon.x)<2&&noon.y<-mr.height*.35&&Math.abs(night.x)<2&&night.y>mr.height*.35&&dawn.x<-mr.width*.35,'the hour\'s icon: noon at its top, midnight at its foot, dawn at its left');
   info('the hour\'s icon at noon and midnight: '+(noon.html===night.html?'the same (the weather\'s)':'the sun\'s, then the moon\'s or the weather\'s'));
   ok(noon.html===noon.sky&&night.html===night.sky&&!!ink.hour.querySelector('svg'),'the bar\'s own sky icon, the sun\'s by day and the moon\'s or the weather\'s by night')}
+ // (a level's skill points: a round button at the right under the day's line (the owner: "Change that and move it to the right side");
+ // the log in the bottom-left corner ("Make log fit in bottom left"))
+ {const h=t.leaderOf(P);h.addXp(h.xpNeed()-(h.xp||0));t.updateHUD(true);const b=document.querySelector('#lgroup .lvup'),br=b&&rect(b),dr=rect(ink.day),sr=rect(scr),tr=rect(document.querySelector('.toasts')),dk=rect(document.querySelector('.mwh-dock'));
+  ok(b&&shown(b)&&Math.abs(br.width-br.height)<1&&getComputedStyle(b).borderTopLeftRadius==='50%'&&br.right>sr.right-20&&br.top>=dr.bottom,'a level\'s skill points: a round button at the right under the day ('+(br?[Math.round(br.left),Math.round(br.top)]:'none')+')');
+  ok(tr.left<sr.left+20&&tr.bottom>sr.bottom-20&&tr.right<=dk.left,'the log in the bottom-left corner, clear of the buttons')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
  ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.day)&&!shown(ink.dial)&&!shown(ink.hour)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card, the forged frames back, the party strip back');
