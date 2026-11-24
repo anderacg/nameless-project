@@ -67,6 +67,10 @@ Kit.suite(({ok,info})=>{
   const mr=R(window.campaignHud.mobileMini),dk=R(document.querySelector('.mwh-dock')),bs=[...document.querySelectorAll('.mwh-dock>div')].map(R),bg=bs.slice(1).map((r,i)=>Math.round(r.left-bs[i].right));
   const edges=[R(ink.hero).left-sr.left,R(ink.hero).top-sr.top,sr.right-mr.right,mr.top-sr.top,sr.right-dk.right,sr.bottom-dk.bottom].map(Math.round);
   ok(G===6&&gaps.every(g=>g===G)&&bg.every(g=>g===G)&&edges.every(e=>e===G)&&Math.round(R(ink.day).top-mr.bottom)===G,'one gap of '+G+' px: the left column ('+gaps+'), the buttons ('+bg+'), the screen\'s edges ('+edges+'), the minimap to its day')}
+ // (every round button's name on a tag across its ring's foot, the tags' feet at the screen's edge by the gap: "What about text at bottom right?")
+ {const sr=rect(scr),G=parseFloat(getComputedStyle(scr).getPropertyValue('--ink-gap')),bs=[...document.querySelectorAll('.mwh-dock>div>button')];
+  const tag=b=>{const e=b.querySelector('.dl,small');if(e&&shown(e))return{text:e.textContent,r:rect(e)};const a=getComputedStyle(b,'::after');return a.content&&a.content!=='none'?{text:a.content.replace(/"/g,''),r:{bottom:rect(b).bottom+parseFloat(a.bottom)*-1}}:null};
+  const tags=bs.map(tag);ok(tags.every(Boolean)&&tags.every(t=>Math.round(sr.bottom-t.r.bottom)===G),'every round button named on a tag, '+G+' px from the screen\'s foot ('+tags.map(t=>t&&t.text).join(', ')+')')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
  ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.day)&&!shown(ink.dial)&&!shown(ink.hour)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card, the forged frames back, the party strip back');

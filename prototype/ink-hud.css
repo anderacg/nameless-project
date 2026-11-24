@@ -112,13 +112,18 @@
 .screen.ink.campaign-world.mobile-world .mwh-status{display:none}
 .screen.ink.campaign-world.mobile-world #partyToggle{display:none}
 .screen.ink.campaign-world.mobile-world .mwh-dock{gap:var(--ink-gap);padding:0;border:0;background:none}
-.screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:7px}
+.screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:var(--ink-gap)}
 /* (round always: the frames' rounded corners, inkhud.js corners, are for the framed rest) */
 .screen.ink.campaign-world.mobile-world .mwh-dock :is(button,#speedToggle){width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-image:none;border-radius:50%!important;background:var(--ink-btn);color:var(--ink-fg);box-shadow:0 2px 4px rgba(0,0,0,.45)}
 #screen.ink.campaign-world.mobile-world .mwh-dock :is(button[aria-expanded="true"],button.on,button[aria-pressed="true"]),#screen.ink.campaign-world.mobile-world #speedToggle[aria-expanded="true"]{color:var(--ink-fg);background:var(--ink-btn-on)}
 .screen.ink.campaign-world.mobile-world .mwh-dock #speedToggle strong{font:800 12px var(--font);text-shadow:var(--ink-out)}
-.screen.ink.campaign-world.mobile-world .mobile-world-hud .dbtn .dl{position:absolute;left:50%;bottom:-8px;width:auto;height:auto;margin:0;padding:0;clip-path:none;overflow:visible;transform:translateX(-50%);
-  font:700 10px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);white-space:nowrap}
+/* (every round button's name on a small dark tag across its ring's foot, as the owner's picture has its "Mount": the pause's Pause or
+   Play, the speed's Speed, then Map, Army, Menu; the tags' feet at the screen's edge by the HUD's one gap, "What about text at bottom
+   right?") */
+.screen.ink.campaign-world.mobile-world .mwh-dock :is(#pause,#speedToggle){position:relative}
+.screen.ink.campaign-world.mobile-world :is(.mwh-dock .dbtn .dl,.mwh-dock #speedToggle small),.screen.ink.campaign-world.mobile-world .mwh-dock #pause::after{position:absolute;left:50%;bottom:calc(-1*var(--ink-gap));display:block;width:auto;height:auto;margin:0;padding:0 5px;
+  clip-path:none;overflow:visible;transform:translateX(-50%);border:1px solid rgba(226,189,104,.55);border-radius:6px;background:var(--ink-panel-hi);font:700 9px/11px var(--font);color:var(--ink-fg);text-shadow:none;white-space:nowrap}
+.screen.ink.campaign-world.mobile-world .mwh-dock #pause::after{content:'Pause'}.screen.ink.campaign-world.mobile-world .mwh-dock #pause.on::after{content:'Play'}
 .screen.ink.campaign-world.mobile-world .mwh-dock .dbtn{position:relative}
 .screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button:not(.mwh-dock button){border:1.5px solid var(--ink-gold-deep);border-image:none;border-radius:3px;background:var(--ink-panel-hi);color:var(--ink-fg)}
 
