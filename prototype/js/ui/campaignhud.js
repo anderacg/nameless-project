@@ -56,9 +56,9 @@ class CampaignHud{
     setHtml(this.regionCard,'<span class="campaign-region-frame" aria-hidden="true"></span><div class="campaign-region-content"><small>Current region</small><h3>'+htmlText(landName(P.x,P.y))+'</h3><p>'+icon('banner',16)+'<span>'+htmlText(realm?realm.n:'Free folk')+'</span><span aria-hidden="true">·</span>'+icon('map',16)+'<span>'+htmlText(terrain.name)+'</span></p></div>');
   }
   updateDanger(){const d=MonsterRegions.forecast(P.x,P.y);this.danger.dataset.risk=d.risk;this.danger.title='Typical local monsters compared with your current company.'+(d.nearby?' Stronger visible threat: '+d.nearby+'.':' Individual packs and roaming threats vary.');
-    const pips=Array.from({length:4},(_,i)=>'<i'+(i<=d.tier?' class="lit"':'')+'></i>').join('');
-    setHtml(this.danger,'<span class="danger-crest" aria-hidden="true">'+icon('pelt',26)+'</span><span class="danger-copy"><strong>'+d.name+'</strong><small>Monsters · Lv '+d.lo+'–'+d.hi+'</small><b>'+d.word+' for your company</b><span class="danger-pips" aria-hidden="true">'+pips+'</span></span>');
-    this.danger.setAttribute('aria-label',d.name+'. Typical monsters, levels '+d.lo+' to '+d.hi+'. '+d.word+' for your company.');
+    const stars=Array.from({length:4},(_,i)=>'<svg class="danger-star'+(i<=d.tier?' lit':'')+'" viewBox="0 0 24 24" width="16" height="16" focusable="false"><path d="M12 2L15 8.2L22 9.2L17 14.1L18.2 21L12 17.7L5.8 21L7 14.1L2 9.2L9 8.2Z"/></svg>').join('');
+    setHtml(this.danger,'<span class="danger-crest" aria-hidden="true">'+icon('pelt',26)+'</span><span class="danger-copy"><strong>'+d.name+'</strong><small>Monsters · Lv '+d.lo+'–'+d.hi+'</small><b>'+d.word+' for your company</b><span class="danger-stars" aria-hidden="true">'+stars+'</span></span>');
+    this.danger.setAttribute('aria-label',d.name+'. Typical monsters, levels '+d.lo+' to '+d.hi+'. '+d.word+' for your company. Area danger: '+(d.tier+1)+' of 4 stars.');
   }
   presentMini(face){
     let target;if(this.desktop)target=this.slot;else if(this.phone){
