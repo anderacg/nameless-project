@@ -31,6 +31,10 @@ Kit.suite(({ok,info})=>{
   const q=rect(document.getElementById('qtrack'));ok(q.top>=rect(h).bottom-1,'the quests below the card, not under it ('+Math.round(q.top)+' / '+Math.round(rect(h).bottom)+')');
   h.click();t.frame();ok(scr.classList.contains('party-open')&&shown(document.getElementById('stats'))&&h.getAttribute('aria-expanded')==='true','a tap on it opens the party\'s details');
   h.click();t.frame();ok(!scr.classList.contains('party-open'),'and another closes them')}
+ // (the quest cards as compact as the army card, the owner: "Make quest tracking and cool down panel even smaller and compact": as wide
+ // as it, each line one line)
+ {const q=document.getElementById('qtrack'),h=rect(ink.hero),rows=[...q.querySelectorAll('.qt-row b,.qt-row small')].filter(shown);
+  ok(rect(q).width<=h.width+1&&rows.length&&rows.every(e=>rect(e).height<=17),'the quest cards no wider than the army card, each line one line ('+Math.round(rect(q).width)+' px)')}
  // (the round minimap, the round buttons)
  {const m=window.campaignHud.mobileMini,mr=rect(m);
   ok(shown(m)&&Math.abs(mr.width-mr.height)<1&&getComputedStyle(m).borderTopLeftRadius==='50%','the minimap round ('+Math.round(mr.width)+' px)');

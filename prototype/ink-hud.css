@@ -78,6 +78,27 @@
 .screen.ink.mobile-world .qtrack .qt-pop .btn{border:1.5px solid var(--ink-gold);border-image:none;border-radius:3px;background:linear-gradient(#7a5a24,#4a3514);color:var(--ink-fg);box-shadow:none}
 .screen.ink.mobile-world .qtrack .qt-pop .qt-bar{border-radius:3px;background:#120e09}.screen.ink.mobile-world .qtrack .qt-pop .qt-bar>*{background:var(--ink-gold)}
 .screen.ink.mobile-world .qtrack .qt-x{color:var(--ink-fg-2)}
+/* (compact, as the army card is, the owner, 2026-11-24: "Make quest tracking and cool down panel even smaller and compact": as wide as
+   the card, each line one line (cut short with …), small type; the new-quest card one row (its title, Track, ×) over a thread of
+   a bar that runs down while it shows) */
+.screen.ink.mobile-world .qtrack{width:min(212px,calc(100% - 150px - var(--e-l) - var(--e-r)));gap:3px}
+.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pops,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road{width:100%;box-sizing:border-box}
+.screen.ink.mobile-world .qtrack .qt-list:not(.qt-road){padding:1px 3px 2px}
+.screen.ink.mobile-world .qtrack .qt-head{margin:0 0 1px;padding:0 5px;font-size:9px}
+.screen.ink.mobile-world .qtrack .qt-row{padding:1px 3px 2px;min-height:0}
+.screen.ink.mobile-world .qtrack .qt-row :is(b,small,em){display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen.ink.mobile-world .qtrack .qt-row b{font-size:12px}.screen.ink.mobile-world .qtrack .qt-row small{font-size:10px;line-height:1.25}
+.screen.ink.mobile-world .qtrack .qt-row em{font:10px/1.25 var(--font);font-style:normal;color:var(--ink-fg-2)}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road{padding:0 2px}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row{min-height:24px;padding:0 3px;column-gap:5px}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row b{font-size:11px}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row small{font-size:9px}
+.screen.ink.mobile-world .qtrack .qt-pop{display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;column-gap:5px;padding:1px 3px 3px 5px;position:relative}
+.screen.ink.mobile-world .qtrack .qt-pop>b{margin:0;font:700 11px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-btns{margin:0}
+.screen.ink.mobile-world .qtrack .qt-pop .btn.sm{min-height:22px;height:22px;padding:0 8px;font-size:11px}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-x{position:static;order:3;width:16px;height:22px;min-height:0;padding:0;font-size:14px;line-height:1}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-bar{position:absolute;left:6px;right:6px;bottom:1px;height:2px;margin:0}
 /* (one quest on a phone, the tracked one (else the first), the rest counted on the tag, as the owner's picture has it: inkhud.js) */
 .screen.ink.mobile-world .qtrack .qt-list:has(.qt-row.on) .qt-row:not(.on),.screen.ink.mobile-world .qtrack .qt-list:not(.qt-road):not(:has(.qt-row.on)) .qt-row:nth-of-type(n+2){display:none}
 .screen.ink.mobile-world .qtrack .qt-head[data-more]:not([data-more=""])::after{content:attr(data-more);margin-left:8px;padding:0 6px;border-radius:3px;background:rgba(226,189,104,.2);color:var(--ink-gold-fg);font-weight:700}
