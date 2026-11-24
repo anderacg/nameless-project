@@ -9,7 +9,8 @@
      3. hero        your hero's card (a phone's map, top left): your army's flag in a gold ring, health, stamina, morale, experience
      4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
      5. dock        the round buttons (bottom right), their names at their feet; the speed and map choices
-     6. minimap     round, in a thin gold ring, N at its top; the day on a plate across its foot; your purse beside it
+     6. minimap     round, in a thin gold ring, the day and night round its rim (a sun or moon at the hour); the day on a plate
+                    across its foot; your purse beside it
      7. messages    the log bottom left, the party's details under the card
    ===================================================================================================================== */
 
@@ -37,7 +38,7 @@
 
 
 /* ---------- 3. hero ---------- */
-.ink-hero,.ink-purse,.ink-day{display:none}
+.ink-hero,.ink-purse,.ink-day,.ink-dial{display:none}
 .screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(250px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
   color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
 .ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
@@ -102,6 +103,9 @@
 .screen.ink .campaign-mobile-survey{left:auto!important;right:var(--e-r);width:auto!important;aspect-ratio:1;border:0;border-image:none;border-radius:50%!important;overflow:hidden;background:none;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .screen.ink .campaign-mobile-survey canvas{inset:auto;left:50%;top:50%;width:auto;height:calc(100% - 2*var(--phone-map-rim,8px));transform:translate(-50%,-50%)}
 .screen.ink .campaign-mobile-survey::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--ink-rim) center/100% 100% no-repeat;pointer-events:none}
+.screen.ink.mobile-world .ink-dial:not([hidden]){display:block;position:absolute;pointer-events:none;z-index:2}
+/* (the north mark over the rim: not with the day and night round it, a phone's map) */
+.screen.ink.mobile-world .campaign-mobile-survey::before{content:none}
 .screen.ink .campaign-mobile-survey::before{content:'N';position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:1;font:800 10px var(--font);color:#2a1d0c;pointer-events:none}
 .screen.ink.mobile-world .ink-day:not([hidden]){position:absolute;display:flex;align-items:center;gap:6px;padding:0 9px 0 0;transform:translateX(-50%);white-space:nowrap;pointer-events:none;z-index:3;color:var(--ink-fg)}
 .ink-sky{flex:none;display:grid;place-items:center;width:26px;height:26px;margin:-3px 0 -3px -3px;border-radius:50%;background:var(--ink-btn)}.ink-sky .gico{width:15px;height:15px}

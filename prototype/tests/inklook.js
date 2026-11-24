@@ -40,9 +40,19 @@ Kit.suite(({ok,info})=>{
  {const d=ink.day,dr=rect(d),mr=rect(window.campaignHud.mobileMini),D=t.dayParts();
   ok(shown(d)&&d.textContent.includes(D.day)&&d.textContent.includes(D.time)&&dr.top<mr.bottom&&dr.bottom>mr.bottom&&dr.right<=mr.right+1&&dr.left<mr.left+mr.width/2,'the day, its season, time and weather on a plate across the minimap\'s foot ('+d.textContent+')');
   ok(!shown(document.querySelector('.mwh-status')),'no day strip by the buttons')}
+ // (day and night round the minimap's rim, the owner: "make day and night as a circle integrated with map": the sun by day, the moon by
+ // night, where the hour stands: dawn left, noon top, dusk right, midnight at its foot)
+ {const dl=ink.dial,mr=rect(window.campaignHud.mobileMini),dr=rect(dl),A=t.INK.dial,was=G.clock;
+  ok(shown(dl)&&Math.abs(dr.left-mr.left)<1&&Math.abs(dr.width-mr.width)<1&&Math.abs(dr.top-mr.top)<1,'the dial laid over the minimap\'s rim');
+  // (the sun's middle; the moon's lit side, its middle cut by the crescent's shadow)
+  const at=(f,dx=0,dy=0)=>{G.clock=f*t.DAY;t.updateHUD(true);const n=dl.width,m=n/2,ro=m-A.rim*n,ri=ro-A.band*n,rc=(ro+ri)/2,R=(ro-ri)*A.mark,a=Math.PI+f*2*Math.PI;return dl.getContext('2d').getImageData(Math.round(m+Math.cos(a)*rc+dx*R),Math.round(m+Math.sin(a)*rc+dy*R),1,1).data};
+  const hex=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)),near=(d,c)=>hex(c).every((v,i)=>Math.abs(v-d[i])<12);
+  const noon=at(.25),night=at(.75,-.6,.35);G.clock=was;t.updateHUD(true);
+  ok(near(noon,A.sun[0])&&near(night,A.moon[0]),'the sun at noon at its top, the moon at midnight at its foot (rgb '+[...noon].slice(0,3)+' / '+[...night].slice(0,3)+')');
+  ok(rect(ink.day).top>=mr.bottom-t.INK.dayLap-1,'the day\'s plate below the dial, the night\'s foot clear')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
- ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!shown(ink.day)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
+ ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!shown(ink.day)&&!shown(ink.dial)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
  t.prefSet('inklook',true);t.frame();ok(scr.classList.contains('ink')&&shown(ink.hero),'and Ink again');
  ok(!ERR.length,'no runtime errors');
 });
