@@ -8,7 +8,8 @@ const UI_ICON_SHEETS=[
   ["art/ui/icons-trade.png",1254,1254],
   ["art/ui/icons-equipment.png",1254,1254],
   ["art/ui/icons-supplies.png",1254,1254],
-  ["art/ui/hourglass.svg",100,100]
+  ["art/ui/hourglass.svg",100,100],
+  ["art/ui/monster.svg",100,100]
 ];
 const UI_ILLUSTRATIONS={
   fire:[24,19,218,231],
@@ -42,6 +43,7 @@ Object.assign(UI_ILLUSTRATIONS,{
   attack:[36,43,206,205,1],
   speed:[282,39,199,213,1],
   hourglass:[0,0,100,100,5],
+  monster:[0,0,100,100,6],
   prisoners:[522,46,211,201,1],
   pelt:[764,29,223,229,1],
   eye:[1021,42,209,206,1],
@@ -349,7 +351,7 @@ const UI_STATUS_ART={
 function uiStatusIcon(key,size,rim,label){const A=UI_STATUS_ART[key];if(!A)return '';const confident=key==='confident';return '<svg class="mico" data-ui-status="'+key+'" viewBox="0 0 100 100" width="'+size+'" height="'+size+'" focusable="false"'+(confident?' data-status="confident" role="img" aria-label="'+label+'"':' aria-hidden="true"')+'>'+(confident?'<title>'+label+'</title>':'')+'<circle cx="50" cy="50" r="46" fill="#221f18" stroke="'+rim+'" stroke-width="7"/><circle cx="50" cy="50" r="39" fill="none" stroke="#c4a365" stroke-width="2"/><svg x="14" y="14" width="72" height="72" viewBox="0 0 100 100">'+icon(A[0],100)+uiIconMark(A[1])+'</svg></svg>'}
 
 for(const [key,art] of Object.entries(UI_ORDER_ART))if(!UI_STATUS_ART[key])UI_STATUS_ART[key]=art;
-const UI_UNIT_ART={sword:'sword',spear:'spear',axe:'axe',hammer:'hammer',bow:'bow',xbow:'crossbow',javelin:'pikePush',staff:'staff',horse:'mount',beast:'pelt',hero:'crown'};
+const UI_UNIT_ART={sword:'sword',spear:'spear',axe:'axe',hammer:'hammer',bow:'bow',xbow:'crossbow',javelin:'pikePush',staff:'staff',horse:'mount',beast:'monster',wildlife:'pelt',hero:'crown'};
 
 // The tactical canvas uses the same atlas crops; callers retain their existing flag layout and picking.
 const UI_ICON_IMAGES=[];

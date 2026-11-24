@@ -97,7 +97,7 @@ const UNIT_GLYPH={
 };
 // what a group is, by its most common soldier: its weapon (people.js) or what it is (a beast, a rider, a caster)
 function unitIcon(g,m){
-  if(g==='hero')return 'hero';const rep=repOf(m),s=ST[rep]||m[0].s;if(s.wildlife||s.beast||s.big)return 'beast';
+  if(g==='hero')return 'hero';const rep=repOf(m),s=ST[rep]||m[0].s;if(s.wildlife)return 'wildlife';if(s.beast||s.big)return 'beast';
   const L=PEOPLE_LOOK[rep]||PEOPLE_LOOK[s.look]||{},w=L.weapon;if(L.mount)return 'horse';if(s.magic||w==='staff')return 'staff';
   if(w==='xbow')return 'xbow';if(s.range)return w==='javelin'?'javelin':'bow';
   return {sword:'sword',great:'sword',axe:'axe',bigaxe:'axe',hammer:'hammer',spear:'spear',pike:'spear',lance:'spear'}[w]||(unitClass(s)==='spear'?'spear':'sword')}

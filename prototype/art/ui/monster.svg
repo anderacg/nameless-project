@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+ <defs>
+  <linearGradient id="hide" x1=".1" y1="0" x2=".85" y2="1"><stop stop-color="#c4c0a2"/><stop offset=".35" stop-color="#8b9786"/><stop offset=".72" stop-color="#59695f"/><stop offset="1" stop-color="#384a43"/></linearGradient>
+  <linearGradient id="horn" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#fff1ba"/><stop offset=".45" stop-color="#ceb477"/><stop offset="1" stop-color="#79603a"/></linearGradient>
+  <linearGradient id="brow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#c6c8ab"/><stop offset="1" stop-color="#738275"/></linearGradient>
+  <linearGradient id="ivory" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff5ce"/><stop offset="1" stop-color="#b5a57b"/></linearGradient>
+ </defs>
+ <g stroke="#534737" stroke-width="2.5" stroke-linejoin="round">
+  <path d="M28 38C12 34 6 18 8 5C12 17 23 20 35 21L38 34Z" fill="url(#horn)"/>
+  <path d="M72 38C88 34 94 18 92 5C88 17 77 20 65 21L62 34Z" fill="url(#horn)"/>
+  <path d="M25 37L10 30L15 53L23 58L19 71L29 73L33 87L50 96L67 87L71 73L81 71L77 58L85 53L90 30L75 37L68 23L55 20L50 14L45 20L32 23Z" fill="url(#hide)"/>
+  <path d="M29 49L22 57L28 73L36 76L40 88L50 92L60 88L64 76L72 73L78 57L71 49L63 57L50 52L37 57Z" fill="#66766a" stroke="none"/>
+  <path d="M29 58L36 51L50 55L64 51L71 58L69 75L59 85H41L31 75Z" fill="#3e3630"/>
+  <path d="M35 72Q50 79 65 72L60 84L50 89L40 84Z" fill="#8a6d57" stroke="none"/>
+  <path d="M26 40L43 43L39 51L29 48ZM74 40L57 43L61 51L71 48Z" fill="#e6ad4c" stroke="#55402d" stroke-width="2"/>
+  <path d="M35 44V49M65 44V49" fill="none" stroke="#493a2a" stroke-width="3"/>
+  <path d="M23 34L40 33L49 43L39 45L26 41ZM77 34L60 33L51 43L61 45L74 41Z" fill="url(#brow)"/>
+  <path d="M44 45L38 57L42 65L50 68L58 65L62 57L56 45L50 49Z" fill="url(#hide)"/>
+  <path d="M43 58L48 60M57 58L52 60" fill="none" stroke="#3d4b42" stroke-width="3"/>
+  <path d="M31 62L41 66L36 80Z M69 62L59 66L64 80Z" fill="url(#ivory)" stroke="#8b7955" stroke-width="1.5"/>
+  <path d="M42 84L45 75L49 85M58 84L55 75L51 85" fill="url(#ivory)" stroke="none"/>
+  <path d="M34 27L43 25M57 25L66 27M35 88L48 94" fill="none" stroke="#d9d2a8" stroke-width="2" opacity=".65"/>
+ </g>
+</svg>
