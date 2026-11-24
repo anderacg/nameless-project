@@ -642,7 +642,7 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const E=mkcv(w,HE),eg=E.getContext('2d',{willReadFrequently:true});eg.putImageData(img,x0-X,y0-Y,X-x0,Y-y0,w,HE);
   const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+HE-1)>>4)+1),rr=(col,x,y,w,h)=>{eg.fillStyle=col;eg.fillRect(x,y,w||1,h||1)};
   for(const pass of OVER){yield;eg.save();eg.beginPath();eg.rect(0,0,w,HE);eg.clip();eg.translate(-X,-Y);pass(P,rr,tx0,ty0,tx1,ty1);eg.restore()}
-  yield;yield* terrainChunk(rec,P,eg.getImageData(0,0,w,HE).data,G0,KP,X,Y,w,h,HE,x0,y0,ww,r);
+  yield;yield* (tileGroundOn()?tileChunk:terrainChunk)(rec,P,eg.getImageData(0,0,w,HE).data,G0,KP,X,Y,w,h,HE,x0,y0,ww,r);
   g.save();g.imageSmoothingEnabled=false;g.clearRect(ox,oy,w,h);g.drawImage(rec.fcv,ox,oy,w,h);g.restore();
   rec.ms=performance.now()-t0;
 }
