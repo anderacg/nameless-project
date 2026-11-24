@@ -1,7 +1,7 @@
 'use strict';
 window.PHONE=true;// (run in a phone's window, 844 x 390 with touch: tests/run-tests.ps1)
 // The ink look (the owner, 2026-11-24, a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like this?", then "remove
-// the outer frame ... all ui sharing the same color tone ... a frame to be golden and torn out"; ui/inkhud.js, ink-hud.css): every frame a torn gold one; on a phone's map your hero's card top left (level in a ring, health,
+// the outer frame ... all ui sharing the same color tone ... a frame to be golden ...", \"golden rusted\", no black border, not square; ui/inkhud.js, ink-hud.css): every frame one of rusted gold, its corners round; on a phone's map your hero's card top left (level in a ring, health,
 // stamina, morale, experience) that opens the party's details, your purse by a round minimap, round buttons with their names under
 // them; Settings → Interface look: Forged puts every piece back as it was.
 Kit.suite(({ok,info})=>{
@@ -9,12 +9,16 @@ Kit.suite(({ok,info})=>{
  if(!window.mobileWorldHud.media.matches)return ok(false,'the mobile layout is on: this suite needs a phone-sized window ('+innerWidth+' x '+innerHeight+')');
  const scr=document.getElementById('screen'),ink=window.inkHud,rect=e=>e.getBoundingClientRect(),shown=e=>!!e&&!e.hidden&&!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
  ok(t.INK.on&&scr.classList.contains('ink')&&t.prefGet('inklook')===true,'the ink look is on at first');
- // (no frame round the screen; every frame in the game the torn gold one: the forged rim's two names, campaign-hud.css and game-panels.css)
+ // (no frame round the screen; every frame in the game the rusted gold one: the forged rim's two names, campaign-hud.css and game-panels.css)
  {const cs=getComputedStyle(document.getElementById('panel')),bi=getComputedStyle(document.querySelector('.ink-hero')).borderImageSource;
   ok(!document.querySelector('.ink-edge'),'no frame round the screen');
-  ok(cs.getPropertyValue('--ui-rim').trim()===ink.frameUrl&&getComputedStyle(scr).getPropertyValue('--campaign-frame').trim()===ink.frameUrl&&bi.startsWith('url("data:image/png'),'every frame the torn gold one: the windows\', the HUD\'s and the ink\'s own')
-  const g=document.createElement('canvas'),F=t.INK.frame;g.width=g.height=F.px;const c=g.getContext('2d');c.drawImage(ink.frame(),0,0);const a=(x,y)=>c.getImageData(x,y,1,1).data,mid=F.px/2;
-  const top=[...Array(F.period).keys()].map(i=>a(F.slice+i,Math.round((F.out[0]+F.out[1])/2))[3]>0?1:0).join('');ok(top.includes('0')&&top.includes('1')&&a(mid,F.slice-4)[3]>200,'torn: along its edge gold and gaps by turns; inside it the panel\'s dark ('+top.split('').filter(v=>v==='1').length+' of '+F.period+' px gold at the tear\'s middle depth)')}
+  ok(cs.getPropertyValue('--ui-rim').trim()===ink.frameUrl&&getComputedStyle(scr).getPropertyValue('--campaign-frame').trim()===ink.frameUrl&&bi.startsWith('url("data:image/png'),'every frame the rusted gold one: the windows\', the HUD\'s and the ink\'s own')
+  const F=t.INK.frame,g=ink.frame().getContext('2d'),px=(x,y)=>g.getImageData(x,y,1,1).data,mid=F.px/2,edge=px(mid,Math.round(F.band/2)),hole=px(mid,F.band+20),corner=px(2,2);
+  ok(edge[3]===255&&edge[0]>edge[2]+40&&Math.max(...edge.slice(0,3))>110&&hole[3]===0&&corner[3]===0,'the frame: gold along its side (rgb '+edge.slice(0,3).join(',')+'), nothing inside it, its corner cut round');
+  const hero=t.$('.ink-hero'),qt=document.querySelector('#qtrack .qt-list'),pan=document.getElementById('panel');
+  ok(parseFloat(getComputedStyle(hero).borderTopLeftRadius)>=8&&document.getElementById('ink-corners')&&ink.cornerRules>10&&parseFloat(getComputedStyle(pan).borderTopLeftRadius)>=8,'their corners round, the windows\' too ('+ink.cornerRules+' framed rules rounded)');
+  // (no black lines: the game's plates' hairline gold now)
+  ok(!/rgb\(0, 0, 0\)/.test(getComputedStyle(scr).getPropertyValue('--plate'))&&!getComputedStyle(scr).getPropertyValue('--plate').includes('#000'),'no black hairline inside the plates')}
  // (the hero's card: his level, health of his most, stamina, morale, his experience to the next level)
  P.hp=Math.round(P.heroStats().hp*.5);P.bsta=64;P.morale=41;P.xp=Math.floor(t.leaderOf(P).xpNeed()*.25);t.updateHUD(true);
  {const h=ink.hero,txt=h.textContent,max=Math.round(P.heroStats().hp);

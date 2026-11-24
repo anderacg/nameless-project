@@ -1,15 +1,15 @@
 /* =====================================================================================================================
    Ashmark: the ink look (the owner, 2026-11-24, after a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like
    this?", then "Can you remove the outer frame? ... ensure that all ui sharing the same color tone? I want a frame to be golden and torn
-   out"). Every rule here is under .screen.ink (ui/inkhud.js; Settings → Interface look: Ink or Forged), so Forged is the old look
-   untouched. Its art (the torn gold frame, the rings) is drawn in inkhud.js; the frame also takes the forged rim's place everywhere
+   out", then "golden rusted", rounded, no black border). Every rule here is under .screen.ink (ui/inkhud.js; Settings → Interface look: Ink or Forged), so Forged is the old look
+   untouched. Its art (the rusted gold frame, the rings) is drawn in inkhud.js; the frame also takes the forged rim's place everywhere
    else (--campaign-frame, --ui-rim), so the battle's bars, the windows and the desktop HUD wear the same gold.
-     1. tokens      one warm tone: dark see-through panels, cream words, gold; the torn frame as one border
-     2. frames      every framed thing: its frame's middle tiled, so the tear runs on along a long side
+     1. tokens      one warm tone: dark see-through panels, cream words, gold; the gold frame as one border
+     2. frames      every framed thing: its frame's middle tiled, so the rust runs on along a long side; no black hairlines
      3. hero        your hero's card (a phone's map, top left): level in a gold ring, health, stamina, morale, experience
-     4. quests      the quest cards under it: the torn gold frame, a gold Quest tag, the title cream, what to do next in gold
+     4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
      5. dock        the round buttons (bottom right), their names at their feet; the day (bottom left); the speed and map choices
-     6. minimap     round, in a torn gold ring, N at its top; your purse beside it
+     6. minimap     round, in a rusted gold ring, N at its top; your purse beside it
      7. messages    the log over the day, the party's details under the card
    ===================================================================================================================== */
 
@@ -26,14 +26,14 @@
 }
 
 /* ---------- 2. frames ---------- */
-/* (the frame's middle tiled, not stretched: each side's tear repeats to fit, inkhud.js frame) */
+/* (the frame's middle tiled, not stretched: its rust repeats to fit, never smeared along a long side: inkhud.js frame) */
 .screen.ink *{border-image-repeat:round!important}
-/* (the torn frame on the ink's own panels: the panel's dark inside its padding, the world showing past the tear) */
+/* (the gold frame on the ink's own panels, their corners as round as its) */
 .screen.ink :is(.ink-hero,.ink-purse>span),.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
 .screen.ink.campaign-world.mobile-world :is(.mwh-status,.mwh-speeds,.mwh-map),.screen.ink.campaign-world.mobile-world #stats{
-  border:8px solid transparent;border-image:var(--ink-frame) 176/11px round;border-radius:0;background:var(--ink-panel);background-clip:padding-box;box-shadow:none}
-/* (the windows and the battle's bars: their own fill kept inside the frame, so the tear shows the world past it) */
-.screen.ink :is(.overlay .panel,.mobile-battle-hud .btop,.mobile-battle-hud .mbh-dock>*,.mbh-drawer){background-clip:padding-box}
+  border:8px solid transparent;border-image:var(--ink-frame) 176/11px round;border-radius:11px;background:var(--ink-panel);box-shadow:0 2px 6px rgba(0,0,0,.35)}
+/* (no black hairline inside the game's plates: a faint gold one; every framed thing's corners rounded to its gold: inkhud.js corners) */
+.screen.ink{--plate:inset 0 0 0 1px rgba(226,189,104,.16);--plate-sm:inset 0 0 0 1px rgba(226,189,104,.14);--lift:0 2px 3px rgba(0,0,0,.3)}
 
 /* ---------- 3. hero ---------- */
 .ink-hero,.ink-purse{display:none}
@@ -48,7 +48,7 @@
 .ink-name small{margin-left:auto;flex:none;font:11px var(--font);color:var(--ink-fg-2)}
 .ink-bar{display:grid;grid-template-columns:27px minmax(0,1fr);align-items:center;column-gap:4px}
 .ink-bar>b{font:800 9px var(--font);letter-spacing:.03em}
-.ink-bar>i{position:relative;display:block;height:11px;border:1px solid #0b0805;border-radius:3px;background:#120e09;overflow:hidden}
+.ink-bar>i{position:relative;display:block;height:11px;border:1px solid rgba(125,88,36,.7);border-radius:3px;background:#120e09;overflow:hidden}
 .ink-bar>i>em{display:block;height:100%;border-radius:2px}
 .ink-bar>i>small{position:absolute;right:4px;top:0;font:700 9px/9px var(--font);color:#fff8e6;text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
 /* (health red, stamina gold, morale the green of the game's own meters: style.css --meter-face) */
@@ -88,7 +88,8 @@
 .screen.ink.campaign-world.mobile-world #partyToggle{display:none}
 .screen.ink.campaign-world.mobile-world .mwh-dock{gap:8px;padding:0;border:0;background:none}
 .screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:7px}
-.screen.ink.campaign-world.mobile-world .mwh-dock :is(button,#speedToggle){width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-image:none;border-radius:50%;background:var(--ink-btn);color:var(--ink-fg);box-shadow:0 2px 4px rgba(0,0,0,.45)}
+/* (round always: the frames' rounded corners, inkhud.js corners, are for the framed rest) */
+.screen.ink.campaign-world.mobile-world .mwh-dock :is(button,#speedToggle){width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-image:none;border-radius:50%!important;background:var(--ink-btn);color:var(--ink-fg);box-shadow:0 2px 4px rgba(0,0,0,.45)}
 #screen.ink.campaign-world.mobile-world .mwh-dock :is(button[aria-expanded="true"],button.on,button[aria-pressed="true"]),#screen.ink.campaign-world.mobile-world #speedToggle[aria-expanded="true"]{color:var(--ink-fg);background:var(--ink-btn-on)}
 .screen.ink.campaign-world.mobile-world .mwh-dock #speedToggle strong{font:800 12px var(--font);text-shadow:var(--ink-out)}
 .screen.ink.campaign-world.mobile-world .mobile-world-hud .dbtn .dl{position:absolute;left:50%;bottom:-8px;width:auto;height:auto;margin:0;padding:0;clip-path:none;overflow:visible;transform:translateX(-50%);
@@ -97,7 +98,7 @@
 .screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button:not(.mwh-dock button){border:1.5px solid var(--ink-gold-deep);border-image:none;border-radius:3px;background:var(--ink-panel-hi);color:var(--ink-fg)}
 
 /* ---------- 6. minimap ---------- */
-.screen.ink .campaign-mobile-survey{left:auto!important;right:var(--e-r);width:auto!important;aspect-ratio:1;border:0;border-image:none;border-radius:50%;overflow:hidden;background:none;box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.screen.ink .campaign-mobile-survey{left:auto!important;right:var(--e-r);width:auto!important;aspect-ratio:1;border:0;border-image:none;border-radius:50%!important;overflow:hidden;background:none;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .screen.ink .campaign-mobile-survey canvas{inset:auto;left:50%;top:50%;width:auto;height:calc(100% - 2*var(--phone-map-rim,8px));transform:translate(-50%,-50%)}
 .screen.ink .campaign-mobile-survey::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--ink-rim) center/100% 100% no-repeat;pointer-events:none}
 .screen.ink .campaign-mobile-survey::before{content:'N';position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:1;font:800 10px var(--font);color:#2a1d0c;pointer-events:none}
