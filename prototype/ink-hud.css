@@ -6,7 +6,7 @@
    else (--campaign-frame, --ui-rim), so the battle's bars, the windows and the desktop HUD wear the same gold.
      1. tokens      one warm tone: dark see-through panels, cream words, gold; the gold frame as one border
      2. frames      every framed thing: its frame's middle tiled, so the rust runs on along a long side; no black hairlines
-     3. hero        your hero's card (a phone's map, top left): level in a gold ring, health, stamina, morale, experience
+     3. hero        your hero's card (a phone's map, top left): your army's flag in a gold ring, health, stamina, morale, experience
      4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
      5. dock        the round buttons (bottom right), their names at their feet; the day (bottom left); the speed and map choices
      6. minimap     round, in a rusted gold ring, N at its top; your purse beside it
@@ -35,13 +35,14 @@
 /* (no black hairline inside the game's plates: a faint gold one; every framed thing's corners rounded to its gold: inkhud.js corners) */
 .screen.ink{--plate:inset 0 0 0 1px rgba(226,189,104,.16);--plate-sm:inset 0 0 0 1px rgba(226,189,104,.14);--lift:0 2px 3px rgba(0,0,0,.3)}
 
+
 /* ---------- 3. hero ---------- */
 .ink-hero,.ink-purse{display:none}
 .screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:250px;display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
   color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
 .ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
   font:800 21px/1 var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
-.ink-lv small{font:700 9px/1 var(--font);color:var(--ink-gold);letter-spacing:.06em;margin-bottom:1px}
+.ink-lv img{width:30px;height:30px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 1px 0 #120d07)}
 .ink-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .ink-name{display:flex;align-items:baseline;gap:6px;min-width:0}
 .ink-name strong{font:700 13px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--ink-out)}

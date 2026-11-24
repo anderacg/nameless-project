@@ -130,7 +130,7 @@ const WorldFlags={
 };
 const drawFlag=(b,x,y,seed)=>{const s=flagFine(b,Math.floor(performance.now()/400+(seed||0))%2);const X=Math.round(x)-s.ax,Y=Math.round(y)-s.ay,w=s.width/s.z,h=s.height/s.z;ctx.drawImage(s,X,Y,w,h);WorldFlags.add(s,X,Y,w,h)};
 // (a holding's flag: its realm's banner and device, yours with the crown, none held a grey one)
-const holdingFlag=(t,col)=>({k:'banner',col,dev:t.owner==='player'?'crown':t.owner||null});
+const holdingFlag=(t,col)=>({k:'banner',col,dev:t.owner?facDev(t.owner):null});
 // a camp's fire, its foot at (x, y): as it burns (fire.js fireCamp); FLAMES off, its flame through the engine's four frames
 const drawFire=(x,y,seed)=>{if(FLAMES.on){fireCamp(x,y,seed);return}const f=Math.floor(performance.now()/110+(seed||0))%4,s=spr['flm'+f]||(spr['flm'+f]=PX.flame(f));ctx.drawImage(s.img,Math.round(x)-s.ax,Math.round(y)-s.ay)};
 // the lots of every holding near the view: their fields flat on the ground, under everyone (their yards are painted in: townGround)

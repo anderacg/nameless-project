@@ -19,12 +19,12 @@ Kit.suite(({ok,info})=>{
   ok(parseFloat(getComputedStyle(hero).borderTopLeftRadius)>=8&&document.getElementById('ink-corners')&&ink.cornerRules>10&&parseFloat(getComputedStyle(pan).borderTopLeftRadius)>=8,'their corners round, the windows\' too ('+ink.cornerRules+' framed rules rounded)');
   // (no black lines: the game's plates' hairline gold now)
   ok(!/rgb\(0, 0, 0\)/.test(getComputedStyle(scr).getPropertyValue('--plate'))&&!getComputedStyle(scr).getPropertyValue('--plate').includes('#000'),'no black hairline inside the plates')}
- // (the hero's card: his level, health of his most, stamina, morale, his experience to the next level)
+ // (the hero's card: your army's flag (the owner: "Change level to army flag"), his level, health of his most, stamina, morale, his experience to the next level)
  P.hp=Math.round(P.heroStats().hp*.5);P.bsta=64;P.morale=41;P.xp=Math.floor(t.leaderOf(P).xpNeed()*.25);t.updateHUD(true);
  {const h=ink.hero,txt=h.textContent,max=Math.round(P.heroStats().hp);
   ok(shown(h)&&rect(h).top<rect(scr).top+20&&rect(h).left<rect(scr).left+20,'your hero\'s card stands top left');
-  ok(h.querySelector('.ink-lv').textContent.includes(String(P.level))&&txt.includes(P.hp+' / '+max)&&txt.includes('64%')&&txt.includes('41%')&&txt.includes((100*P.xp/t.leaderOf(P).xpNeed()).toFixed(1)+'%'),'it shows your level, health ('+P.hp+' / '+max+'), stamina, morale and experience');
-  const lv=rect(h.querySelector('.ink-lv'));ok(Math.abs(lv.width-lv.height)<1&&getComputedStyle(h.querySelector('.ink-lv')).borderRadius==='50%','your level in a round ring');
+  ok(h.querySelector('.ink-lv img').getAttribute('src')===t.flagUrl(P.banner())&&txt.includes('Lv '+P.level)&&txt.includes(P.hp+' / '+max)&&txt.includes('64%')&&txt.includes('41%')&&txt.includes((100*P.xp/t.leaderOf(P).xpNeed()).toFixed(1)+'%'),'it shows your army\'s flag, your level, health ('+P.hp+' / '+max+'), stamina, morale and experience');
+  const lv=rect(h.querySelector('.ink-lv'));ok(Math.abs(lv.width-lv.height)<1&&getComputedStyle(h.querySelector('.ink-lv')).borderRadius==='50%','your army\'s flag in a round ring');
   const q=rect(document.getElementById('qtrack'));ok(q.top>=rect(h).bottom-1,'the quests below the card, not under it ('+Math.round(q.top)+' / '+Math.round(rect(h).bottom)+')');
   h.click();t.frame();ok(scr.classList.contains('party-open')&&shown(document.getElementById('stats'))&&h.getAttribute('aria-expanded')==='true','a tap on it opens the party\'s details');
   h.click();t.frame();ok(!scr.classList.contains('party-open'),'and another closes them')}

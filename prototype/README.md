@@ -607,6 +607,18 @@ her health; `bandFitness()` yours, with its parts; red under 50%), **Morale** (`
 byname; a band name from `BAND_FORMS` and `BAND_WORDS`), at most `NAMING.max` (24) characters, trimmed; renamed from the card. Kept
 as `P.name` and `P.band` only once chosen (none stored otherwise, so the W7 save is unchanged); put into HTML through `htmlText`.
 
+**Your army's flag** (2026-11-24, the owner: "Change level to army flag, add army flag customization at the start and use it
+everywhere for player faction"; `data/names.js` `ARMY_FLAG`, `ui/names.js` `armyFlag`, `facDev`, `applyArmyFlag`, `flagFields`,
+`flagUrl`; `tests/armyflag.js`). A field colour (10) and a device (8: crown, star and the new sword, tower, sun, moon, key and chevron
+in `gfx/sprites.js` `BANNER_DEV`), chosen on the New game page under the names (the flag as it will fly beside the choices, each device
+shown on the chosen colour) and changed later in the Names window (now Names and flag). Kept as `P.flag` only when not the Free
+Banner's gold and crown (`ARMY_FLAG.def`), so a game that keeps it saves as before and the W7 fingerprint holds. Put in force as a game
+starts or loads (`session.js` `resetSession`, `nameStart`) and when saved: its colour becomes `FACS.player.col`, so the land you hold,
+your holdings, parties, caravans and patrols take it (`landVer` bumped for the maps), and `facDev('player')` puts its device on every
+banner of yours that had the crown: your band (`P.banner()`, so the flag men on the march and in battle carry it), your holdings
+(`structures.js` `holdingFlag`), outposts, the realm flag in windows (`window.js` `facFlag`), the loading screen, your tourney arena.
+The hero card in the ink look shows the flag in its ring, your level beside your rank. Battle sides keep their colours (yours blue).
+
 ## Gender and pronouns (2026-11-01)
 
 Every named person is a he or a she (`core/pronouns.js`; the owner: "the people in the world should have gender").

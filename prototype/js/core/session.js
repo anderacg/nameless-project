@@ -25,6 +25,7 @@ function resetSession(savedPlayer){
   gameSession.reset(savedPlayer);B=null;fieldDone();bandits=[];bbar.hidden=true;BATTLE_MOOD=null;
   const messages=$('#log');if(messages)messages.textContent='';
   setSpeed(G.speed);pauseUI();
+  if(typeof applyArmyFlag==='function')applyArmyFlag();// (your army's flag, the saved game's or the Free Banner's: ui/names.js)
 }
 
 /* the world a new game or a load wants, made as steps into a world of its own (doc/WORLD_DESIGN.md §5.2, §15.2.1), done(r) given

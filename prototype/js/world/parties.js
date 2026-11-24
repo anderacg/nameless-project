@@ -160,7 +160,7 @@ class PlayerParty extends Party{
   get faction(){return 'player'}
   power(){return partyPower()}
   look(){return{col:'#3d74d6',rider:mountDef()?mountDef().col:'',dir:this.dir||1,moving:this.tx!=null,seed:5,label:'',labelCol:'#fff'}}
-  banner(){return{k:'banner',col:FACS.player.col,dev:'crown'}}
+  banner(){return{k:'banner',col:FACS.player.col,dev:facDev('player')}}// (your army's flag: ui/names.js)
   headY(){if(WORLD_BATTLE.on)return Math.round(this.y)+3-16+figTop(this.look(),this);const m=mountDef();return Math.round(this.y)+3-16+opaqueBox(partySprite('#e8b94a',m?m.col:'',0))[1]}
   /* your numbers (their older names in state.js and combat.js are aliases of these). P is your band and your hero's record at
      once: here, the band's size and room, what it eats and how far it sees; then your hero's disciplines with everything that

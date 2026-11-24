@@ -24,7 +24,7 @@ class Outpost extends Site{
   get band(){return OUTPOST.lair.kinds.includes(this.owner)?this.owner:null}
   ownerName(){const f=this.realm,b=this.band;return f==='player'?'yours':f?'the '+FACS[f].n:b?LAIR_SAY[b].toLowerCase():''}
   col(){const f=this.realm,b=this.band;return f?FACS[f].col:b?(b==='goblins'?GOBLINS.col:BAND_FLAG[b]||BAND_FLAG.bandits):OUTPOST_ART.rag}
-  banner(){const f=this.realm,b=this.band;return f?{k:'banner',col:FACS[f].col,dev:f==='player'?'crown':f}:b?{k:'rag',col:this.col(),dev:'skull'}:null}
+  banner(){const f=this.realm,b=this.band;return f?{k:'banner',col:FACS[f].col,dev:facDev(f)}:b?{k:'rag',col:this.col(),dev:'skull'}:null}
   flag(){return this.banner()||{k:'rag',col:OUTPOST_ART.rag,dev:null}}
   // (yours to keep: your realm's, or your employer's)
   get ours(){const f=this.realm;return !!f&&(f==='player'||f===P.fac)}
@@ -355,7 +355,7 @@ function ladderSprite(h,lean,seed){const key=h+'|'+lean+'|'+(seed%5);let c=LADDE
    realm's colours with its device, a rope's tassel at an end; ragged, no one's) and, level 2 and 3, a watchtower or a stone tower
    (buildmodels.js) beside it in its realm's builders' style; ax, ay: the pole's foot. One picture a look */
 const OUTPOST_PICS=new Map();
-function outpostSprite(s){const f=s.realm,col=f||s.band?s.col():null,dev=f==='player'?'crown':f||(s.band?'skull':null),key=(col||'-')+(dev||'')+s.lv+s.seed%3+(s.broken?'b':'');let c=OUTPOST_PICS.get(key);if(c)return c;
+function outpostSprite(s){const f=s.realm,col=f||s.band?s.col():null,dev=f?facDev(f):s.band?'skull':null,key=(col||'-')+(dev||'')+s.lv+s.seed%3+(s.broken?'b':'');let c=OUTPOST_PICS.get(key);if(c)return c;
   const A=OUTPOST_ART,W=22,H=40,g=pgrid(W,H),p=(x,y,c)=>pset(g,x,y,c),St=A.stone,I=A.iron,G=PPAL.gold;
   // (the plinth: three steps, each lit along its top, its right side in shade, mortar between its blocks)
   for(const [x0,w,y0,h] of [[3,16,36,4],[5,12,33,3],[7,8,30,3]])for(let y=y0;y<y0+h;y++)for(let x=x0;x<x0+w;x++)p(x,y,y===y0?St[0]:x>=x0+w-2?St[2]:(x+y*3)%5===0?St[2]:St[1]);

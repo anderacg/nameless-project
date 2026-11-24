@@ -74,10 +74,11 @@ class InkHud{
     const st=P.heroStats(),max=Math.max(1,Math.round(st.hp)),hp=Math.round(P.hp==null?max:Math.min(max,P.hp)),need=leaderOf(P).xpNeed(),xp=Math.max(0,Math.min(100,100*P.xp/Math.max(1,need)));
     const sta=Math.round(P.bsta),mor=Math.round(P.morale);
     const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'"><b>'+label+'</b><i><em style="width:'+Math.max(0,Math.min(100,v))+'%"></em><small>'+txt+'</small></i></span>';
-    const html='<span class="ink-lv" aria-hidden="true"><small>LV</small>'+P.level+'</span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small>'+htmlText(rankName())+'</small></span>'+
+    // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; your level beside your rank)
+    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small>'+htmlText(rankName())+' · Lv '+P.level+'</small></span>'+
       bar('hp','HP',100*hp/max,hp+' / '+max,hp<max*.35)+bar('sta','STA',sta,sta+'%',sta<SUPPLY.tired)+bar('mor','MOR',mor,mor+'%',mor<30)+
       '<span class="ink-bar xp"><b>EXP</b><i><em style="width:'+xp+'%"></em></i><small>'+xp.toFixed(1)+'%</small></span></span>';
-    setHtml(this.hero,html);this.hero.setAttribute('aria-label','Your hero, level '+P.level+': health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%. Party status');
+    setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero, level '+P.level+': health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%. Party status');
     this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')));
     // (one quest shown, the tracked one, and how many more on its tag: ink-hud.css)
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}

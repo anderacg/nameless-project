@@ -17,11 +17,9 @@
    showRail(o, key) shows it in the panel; drawn again with the same key, the content keeps its scroll (the rail keeps its own
    while it lists the same: the same label) ---------- */
 const RAIL_KEYS='1234567890';
-// a realm's flag: the map's own (structures.js flagSprite: its banner, its device; yours the crown, none a grey one), cut to its
-// pixels and kept by realm
-const FAC_FLAGS=new Map();
-function facFlag(f,size){let src=FAC_FLAGS.get(f);if(!src){const s=flagSprite({k:'banner',col:FACS[f]?FACS[f].col:'#98a0ba',dev:f==='player'?'crown':FACS[f]?f:null},0),q=opaqueBox(s);
-    src=mkc(q[2]-q[0]+1,q[3]-q[1]+1,g=>g.drawImage(s,-q[0],-q[1])).toDataURL();FAC_FLAGS.set(f,src)}
+// a realm's flag: the map's own (structures.js flagSprite: its banner, its device; yours your army's flag, ui/names.js; none a grey
+// one), cut to its pixels (names.js flagUrl)
+function facFlag(f,size){const src=flagUrl({k:'banner',col:FACS[f]?FACS[f].col:'#98a0ba',dev:FACS[f]?facDev(f):null});
   return '<img class="gico gflag" src="'+src+'" width="'+size+'" height="'+size+'" alt="">'}
 function railWindow(o){
   const h=o.head,item=(x,i)=>'<button class="rail-i'+(x.on?' on':'')+(x.dim?' dim':'')+'" type="button" data-act="'+x.act+'" data-arg="'+x.arg+'"'+(i<RAIL_KEYS.length?' data-key="'+RAIL_KEYS[i]+'"':'')+

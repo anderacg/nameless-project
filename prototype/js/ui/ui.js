@@ -183,7 +183,7 @@ function showTitle(screen){
   // (two pages (the owner, 2026-11-07: "the character creation may split between portrait and background"): your hero (race, names,
   // face), then your past; Next keeps what you chose, the past's Back brings you to your hero again)
   if(G.menu==='new')return showPanel('<div class="top"><h2>New game</h2><span class="muted">1 of 2, Your hero</span></div><div class="lab">Choose your race</div><div class="tabs" role="group" aria-label="Race">'+Object.keys(RACES).map(r=>'<button class="btn sm'+(G.race===r?' on':'')+'" type="button" data-act="race" data-arg="'+r+'" aria-pressed="'+(G.race===r)+'">'+RACES[r].n+'</button>').join('')+'</div><p class="muted">'+RACES[G.race].d+' Troops of your own race cost 15% less to hire.</p>'+
-    '<div class="lab">Name your hero and your band, or leave them for later</div>'+nameFields(NEW_NAMES)+// (ui/names.js)
+    '<div class="lab">Name your hero and your band and raise your army\'s flag, or leave them for later</div>'+nameFields(NEW_NAMES)+// (ui/names.js)
     (typeof Faces!=='undefined'&&Faces.ok()?'<div class="lab">Your face, by your race, a man or a woman as your hero is</div>'+Faces.maker(G.race,NEW_NAMES.gender):'')+// (ui/faces.js)
     nav(['menu','main','Back'],['menu','past','Next, your past']));
   if(G.menu==='past')return showPanel('<div class="top"><h2>New game</h2><span class="muted">2 of 2, Your past, '+RACES[G.race].n+(NEW_NAMES.hero?', '+htmlText(cleanName(NEW_NAMES.hero)):'')+'</span></div>'+
