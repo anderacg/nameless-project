@@ -61,8 +61,9 @@ function showRaid(t){
   showPanel('<div class="top"><h2>Raiding '+t.name+'</h2><span class="muted">'+Math.round(r.t/RAID_TIME*100)+'% plundered</span></div><p>Your band is emptying barns and driving off the herds. Stay close until it is done, or take what you have and go. '+cap1(holderN(t))+(t.owner?' may send help.':' fight for their homes.')+'</p>'+
     '<div class="btns"><button class="btn primary" type="button" data-act="sg-wait">Keep raiding</button><button class="btn" type="button" data-act="sg-stopraid">Stop and leave with what you have</button></div>');
 }
-// arriving at a holding: its gates, a siege or a blockade
-function approachHolding(t){Discovery.meet(t);if(foeAt(t))openSiege(t);else if(closedNow(t))showBlockade(t);else{const g=Gates.admits(t);if(!g.ok)return Gates.showGate(t,g);G.lastTown=t;enterTown(t)}}// (a gate that will not have you yet: world/gates.js)
+// arriving at a holding: its gates, a siege or a blockade; k: at which of its places (world/holdspots.js: a shop's building, or 'keep'
+// its centre, as arriving there is while its places stand on the map, HOLD_SPOTS.on)
+function approachHolding(t,k=HOLD_SPOTS.on?'keep':null){Discovery.meet(t);if(foeAt(t))openSiege(t);else if(closedNow(t))showBlockade(t);else{const g=Gates.admits(t);if(!g.ok)return Gates.showGate(t,g);enterTown(t,k)}}// (a gate that will not have you yet: world/gates.js)
 function showSiege(msg){
   const t=G.bes;if(myRaid(t))return showRaid(t);const f=FACS[t.owner],s=mySiege(t),village=!walled(t),def=siegeDefenders(t),lv=siegeLv(t),ep=rating(def.list,lv),pp=partyPower(),r=ep/Math.max(1,pp);
   const threat=r<.6?'<span class="good">Easy</span>':r<1?'<span class="gold">Even</span>':r<1.5?'<span class="bad">Risky</span>':'<span class="bad">Deadly</span>';

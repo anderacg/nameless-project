@@ -554,7 +554,8 @@ const siegeBody=t=>PLACES.siege.body(t);
    pressed */
 const TOWN_WINDOW_ACTS={
   qty:arg=>{G.town.qty=Math.max(1,Math.min(QTY_MAX,Math.floor(+arg)||1))},
-  tab:arg=>{G.town.tab=arg==='home'?null:arg;G.town.bld=null;G.town.direct=false;G.town.greet=null;G.town.news=null},
+  // (a building's window, walked to on the map (G.town.only: world/holdspots.js): its own page is its home, no overview behind it)
+  tab:arg=>{G.town.tab=arg==='home'?G.town.only||null:arg;G.town.bld=null;G.town.direct=false;G.town.greet=null;G.town.news=null},
   bld:arg=>{G.town.tab='fief';G.town.bld=arg;G.town.direct=false;G.town.greet=null}
 };
 function townAct(a,arg,t){
@@ -570,7 +571,7 @@ function townAct(a,arg,t){
 // place has: the tavern)
 function townPlace(t,tab){
   if(!tab)return null;
-  const p=PLACES[tab]||PLACES.tavern;if(outsideWalls(t)&&p.id!=='trade')return null;
+  const p=PLACES[tab]||PLACES.tavern;if(outsideWalls(t)&&p.id!=='trade'||!townShows(t,p.id))return null;
   return p.opens(t)?p:null;
 }
 function renderTown(){
@@ -582,4 +583,8 @@ function renderTown(){
 }
 // (a quest to report here: straight to the Notices, Back to the overview; else the overview; the crier's proclamations that
 // have reached it: news.js proclaimAt)
-function enterTown(t){companyRules.cancel();G.lastTown=t;P.tx=null;G.town={ref:t,tab:P.quests.some(q=>canReportAt(q,t)&&questReady(q))?'jobs':null};G.mode='town';companyRules.visit(t);log('You enter '+t.name+'.');proclaimAt(t);questArrive(t);renderTown()}
+// k (world/holdspots.js): walked to one of its places on the map, that place alone (G.town.only); to its centre ('keep'), the rest of
+// them (G.town.except); none, all of them. Its entry logged once while you stay at it
+function enterTown(t,k){companyRules.cancel();const was=G.lastTown===t&&G.mode!=='town';G.lastTown=t;P.tx=null;G.town={ref:t,tab:P.quests.some(q=>canReportAt(q,t)&&questReady(q))?'jobs':null};
+  if(k==='keep')G.town.except=HoldSpots.shops(t);else if(k){G.town.only=k;G.town.tab=k}
+  G.mode='town';companyRules.visit(t);if(!was)log('You enter '+t.name+'.');proclaimAt(t);questArrive(t);renderTown()}

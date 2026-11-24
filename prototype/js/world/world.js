@@ -51,7 +51,8 @@ const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRe
 function pickAt(wx,wy){
   const V=vis(),S=yourSight(V);let marker=null,md=Infinity;
   // An overlaid service badge wins over the people or props beneath it; overlapping padding uses the nearer badge center.
-  if(typeof CampSpots!=='undefined')for(const o of CampSpots.all()){const b=o.box;if(!b||!o.here()||!CampSpots.shown(o.site)||wx<b[0]||wx>=b[2]||wy<b[1]||wy>=b[3]||!S.sees(o.x,o.y,1.2))continue;
+  const badges=[...(typeof CampSpots!=='undefined'?CampSpots.all().filter(o=>CampSpots.shown(o.site)):[]),...(typeof HoldSpots!=='undefined'?HoldSpots.all().filter(o=>HoldSpots.shown(o.t)):[])];// (a camp's, a holding's: world/holdspots.js)
+  for(const o of badges){const b=o.box;if(!b||!o.here()||wx<b[0]||wx>=b[2]||wy<b[1]||wy>=b[3]||!S.sees(o.x,o.y,1.2))continue;
     const d=Math.hypot(wx-(b[0]+b[2])/2,wy-(b[1]+b[3])/2);if(d<md){marker=o;md=d}}
   if(marker)return marker;
   const c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&S.sees(o.x,o.y,1.2))c.push([d,o])};
