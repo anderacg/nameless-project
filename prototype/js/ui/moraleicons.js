@@ -181,7 +181,7 @@ function iconLayout(rt){
 }
 function drawUnitIcons(){
   const sel=selGroups(),blink=Math.floor(B.t*3)%2,K=unitIconScale(),S=UICON.s,now=performance.now()/1000,rt=B.iconRT?Math.min(.25,now-B.iconRT):0;B.iconRT=now;
-  for(const it of iconLayout(rt)){const {g,m,mo,st,x,y}=it;
+  const items=iconLayout(rt);for(const it of items){const {g,m,mo,st,x,y}=it;
     const team=SIDE[sideKey(B.groups[g])].plate,wav=mo&&mo.state==='wavering'&&blink;
     const hov=B.iconHov===g,edge=sel.includes(g)?'#ffd25a':wav?'#ffa040':hov?'#f4efe0':'#0a0c12',fade=it.under?ICON_FAN.under:1;
     ctx.save();ctx.translate(x,y);ctx.scale(K,K);ctx.globalAlpha=(mo&&(mo.state==='routing'||mo.state==='shattered')?.6:1)*fade;
@@ -194,6 +194,7 @@ function drawUnitIcons(){
     // what is wrong with it, beside it (two to a column)
     st.forEach((k,i)=>{const bx=S+2+Math.floor(i/2)*10,by=(i%2)*10;uiCanvasBadge(ctx,k,bx,by,9,BADGE_RIM[k]||'#c4a365');});
     ctx.restore()}
+  EnemyDifficulty.battle(items);
 }
 /* the fog's ghosts (battlefog.js fogGhosts): where an enemy group was last seen, its icon greyed, fading over FOG.ghost s, a
    faint dashed ring on the ground under it; drawn on the screen as the icons, but no icon of B.icons (nothing to click) */

@@ -295,3 +295,39 @@ const WUI_DROP={px:['..#..','.###.','.###.','#####','#####','#####','.###.'],dx:
 function wuiDropPic(k){const key='w'+k;let c=WUIP.get(key);if(c)return c;
  c=uiIndicatorCanvas('water',9,11,'#a8b9ad',k/WUI_DROP.px.length);c.k=.25;c.cx=4.5;c.tip=10;WUIP.set(key,c);return c}
 function wuiFilling(cam){if(!SKINS.on)return;const D=WUI_DROP,c=wuiDropPic(Math.round(SKINS.share*D.px.length));wuiPut(c,Math.round(wuiX(P.x,cam))+D.dx,Math.round(wuiY(P.y,cam))-D.dy,c.cx,c.tip)}
+
+/* Enemy stars: visible nearby threats or a chosen animal, in native screen size above flags. */
+const ENEMY_DIFFICULTY={near:90,fade:.35,max:8,size:9,gap:2,colors:['#a8c58a','#e0c77d','#eea367','#e88075']};
+class EnemyDifficulty{
+  static anchors=new Map();
+  static anchor(o,x,y){const old=this.anchors.get(o);if(!old||y<old.y)this.anchors.set(o,{x,y})}
+  static worldAnchor(o,cam){const a=this.anchors.get(o);if(a)return{x:a.x-cam.x,top:a.y-cam.y};return wuiTargetAt(o,cam)}
+  static states=new Map();static ratings=new Map();static scene=null;static powerAt=-Infinity;static mine=1;
+  static company(now){if(now-this.powerAt>.4||now<this.powerAt){this.mine=Math.max(1,partyPower());this.powerAt=now}return this.mine}
+  static reset(scene){if(this.scene!==scene){this.states.clear();this.ratings.clear();this.scene=scene}}
+  static alpha(key,on,now){let s=this.states.get(key);if(!s){if(!on)return 0;this.states.set(key,s={a:1,t:now})}const dt=Math.max(0,Math.min(.1,now-s.t));s.t=now;s.a=clamp(s.a+(on?1:-1)*dt/ENEMY_DIFFICULTY.fade,0,1);if(!s.a)this.states.delete(key);return s.a}
+  static rating(owner,now,mine,make){let r=this.ratings.get(owner);if(!r||now-r.at>.4||r.mine!==mine){r={...MonsterRegions.threat(make(),mine),at:now,mine};this.ratings.set(owner,r)}return r}
+  static objects(){return [...bandits,...W.lords,...W.patrols,...W.monsters]}
+  static focus(){return G.chase||G.follow||(G.mouse.type==='mouse'&&G.mouse.in?WUI.hp.o:null)}
+  static worldEntries(cam,now,objects=this.objects()){
+    this.reset(null);const V=vis(),focus=this.focus(),owner=focus instanceof WorldFigure?focus.owner:focus,mine=this.company(now),seen=new Set(),out=[];
+    for(const o of objects){if(o.dead||o.here?.()===false||wuiKind(o)!=='foe'||typeof o.power!=='function'||Math.hypot(o.x-P.x,o.y-P.y)>V+ENEMY_DIFFICULTY.near||!o.inView(V))continue;
+      seen.add(o);const chosen=owner===o,near=Math.hypot(o.x-P.x,o.y-P.y)<=ENEMY_DIFFICULTY.near,a=this.alpha(o,chosen||near,now);if(a)out.push({o,a,chosen,...MonsterRegions.threat(o.power(),mine)})}
+    if(focus instanceof WorldFigure&&focus.index!=null&&focus.wild&&focus.here()&&focus.inView(V)){seen.add(focus);out.push({o:focus,a:this.alpha(focus,true,now),chosen:true,...MonsterRegions.threat(0,mine)})}
+    for(const o of this.states.keys())if(!seen.has(o)){this.states.delete(o);this.ratings.delete(o)}
+    return out.sort((a,b)=>Number(b.chosen)-Number(a.chosen)||Math.hypot(a.o.x-P.x,a.o.y-P.y)-Math.hypot(b.o.x-P.x,b.o.y-P.y)).slice(0,ENEMY_DIFFICULTY.max);
+  }
+  static drawAt(x,y,risk,a,k){const C=ENEMY_DIFFICULTY,w=4*C.size+3*C.gap;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.globalAlpha=a;ctx.lineJoin='round';ctx.lineWidth=1;
+    for(let i=0;i<4;i++){const cx=-w/2+C.size/2+i*(C.size+C.gap),cy=-C.size/2;ctx.beginPath();for(let p=0;p<10;p++){const angle=-Math.PI/2+p*Math.PI/5,r=p%2?C.size*.23:C.size/2,px=cx+Math.cos(angle)*r,py=cy+Math.sin(angle)*r;if(p)ctx.lineTo(px,py);else ctx.moveTo(px,py)}ctx.closePath();ctx.fillStyle=i<=risk?C.colors[risk]:'#302a22';ctx.strokeStyle=i<=risk?'#ead8aa':'#8b7959';ctx.fill();ctx.stroke()}ctx.restore()}
+  static world(cam){if(G.mode!=='world'||B?.world)return;const now=performance.now()/1000,k=VW/(cv.clientWidth||VW);
+    for(const e of this.worldEntries(cam,now)){const p=this.worldAnchor(e.o,cam);this.drawAt(p.x,p.top-5*k,e.risk,e.a,k)}
+  }
+  static battle(items){this.reset(B);const now=performance.now()/1000,mine=this.company(now),seen=new Set(),armies=new Map(),target=B.worldTarget||battleTargetFeedback.target(selGroups());
+    for(const it of items){if(!it.m.length||!battleEnemy(0,it.m[0]))continue;const wild=it.m[0].s.wildlife;if(wild)continue;const owner=armySource(it.m[0].sourceArmy)||B.groups[it.g],old=armies.get(owner);if(old){old.units.push(...it.m);if(it.y<old.it.y)old.it=it}else armies.set(owner,{it,units:it.m.slice()})}
+    const k=BVW/(cv.clientWidth||BVW),scale=B.world?.scale||1;let n=0;
+    for(const [owner,{it,units}] of armies){seen.add(owner);const chosen=B.iconHov===it.g||units.includes(target),near=!!B.hero&&Math.hypot(it.cx-B.hero.x,it.cy-B.hero.y)<=ENEMY_DIFFICULTY.near*scale,a=this.alpha(owner,chosen||near,now);if(!a||n++>=ENEMY_DIFFICULTY.max)continue;
+      const d=this.rating(owner,now,mine,()=>units.reduce((s,u)=>s+power([u.type])*lvPow(u.lv||1)*clamp(u.hp/Math.max(1,u.s.hp*FIELD_HP),0,1),0));this.drawAt(it.x+UICON.s*unitIconScale()/2,it.y-FLAG.top*unitIconScale()-5*k,d.risk,a,k)}
+    if(target?.s.wildlife&&target.hp>0&&!target.left&&seenBy(0,target)){const p=fromField({x:target.x,y:target.y-iconLift(target)-fxFig(target)*(B.world?WORLD_BATTLE.sprite:1)});this.drawAt(p.x,p.y-5*k,0,1,k)}
+    for(const o of this.states.keys())if(!seen.has(o)){this.states.delete(o);this.ratings.delete(o)}
+  }
+}

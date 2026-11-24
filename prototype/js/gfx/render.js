@@ -143,7 +143,7 @@ function drawBanners(cam){const now=performance.now(),still=reducedMotion(),mine
   for(const q of BANNERQ){const LQ=q.lift??liftAt(q.o.x,q.o.y);if(LQ){ctx.save();ctx.translate(0,-LQ);try{drawBanner1(q,cam,now,still)}finally{ctx.restore()}}else drawBanner1(q,cam,now,still)}
   BANNERQ=[]}
 // (one banner, a marker or a label: drawBanners)
-function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);ctx.drawImage(r.s,r.x,r.y,r.s.width/4,r.s.height/4);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
+function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))return;const m=q.marker,r=bandMarkerAt(q.o,m,cam);EnemyDifficulty.anchor(q.o,r.x+cam.x+r.s.width/8,r.top+cam.y-(q.lift??liftAt(q.o.x,q.o.y)));ctx.drawImage(r.s,r.x,r.y,r.s.width/4,r.s.height/4);const n=q.o.fighters??q.o.n;if(n>1&&DEV.on)txt(String(n),r.x+4,r.y-3,m.col,'center');return}// (its count: dev mode only, ui/ui.js PREFS.dev)
     // (a party's or caravan's label, its count (a band's chief and level with it): dev mode only, ui/ui.js PREFS.dev)
     if(q.o instanceof WorldObject){if(q.label&&DEV.on){const t=armyTagAt(q.o,null,cam);txt(q.label[0],t.x,t.y,q.label[1],'center')}return}
     // (at the lab's scale where the scene has fine px: bannerFine, its pole's foot where the banner's stands)
@@ -298,7 +298,7 @@ function drawWorld(){
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
-  WorldFlags.begin(cam);
+  WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();
   try{
   viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
@@ -383,6 +383,7 @@ function drawWorld(){
   drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
+  drawSafe(()=>EnemyDifficulty.world(cam));
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   ctx.restore();
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the

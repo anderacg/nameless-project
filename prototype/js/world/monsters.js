@@ -73,15 +73,14 @@ class MonsterRegions{
   static birth(id,x,y,r){const M=MONSTERS[id],area=this.at(x,y),m=asMonster({id,x,y,hx:x,hy:y,lv:this.level(area,r),n:this.count(id,area.tier,r.int(M.count[0],M.count[1])),t:0,a:0,cool:0});
     if(wolfAlphaAt(m))m.alpha=1;const breed=area.tier>0&&breedAt(id,x,y,habitatAt(x,y));if(breed)m.breed=breed;W.monsters.push(m);return m;
   }
+  static threat(foes,mine=partyPower()){let risk=0;for(const edge of MONSTER_REGIONS.risk)if(foes/Math.max(1,mine)>=edge)risk++;return{risk,stars:risk+1,word:MONSTER_REGIONS.words[risk]}}
   static forecast(x,y){const area=this.at(x,y),tags=habitatAt(x,y),powers=[];
     for(const [id,M] of Object.entries(MONSTERS))if(this.allows(id,area)&&this.where(id,area).some(w=>tags.includes(w))){
       const n=this.count(id,area.tier,Math.round((M.count[0]+M.count[1])/2));powers.push(rating(Array(n).fill(M.unit),(area.lo+area.hi)/2));
     }
     powers.sort((a,b)=>a-b);let foes=powers.length?powers[Math.floor((powers.length-1)*.75)]:0,nearby=null;const V=vis();
     for(const m of W.monsters||[])if(!m.dead&&m.n>0&&Math.hypot(m.x-x,m.y-y)<=V&&m.inView?.(V)){const p=m.power();if(p>foes){foes=p;nearby=monOf(m).n}}
-    const ratio=foes/Math.max(1,partyPower());let risk=0;
-    for(const edge of MONSTER_REGIONS.risk)if(ratio>=edge)risk++;
-    return{...area,risk,word:MONSTER_REGIONS.words[risk],nearby};
+    return{...area,...this.threat(foes),nearby};
   }
 }
 function spawnMonster(initial){

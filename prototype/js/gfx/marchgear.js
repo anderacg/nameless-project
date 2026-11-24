@@ -66,7 +66,7 @@ function torchSprite(skin,f,lean){const on=FLAMES.on,key=(on?'fT'+(lean|0)+',':'
    marchSprite's bare body); back(s, bx, by) before his body, front(s, bx, by) after it, in drawMarcher's frame (s his sprite, bx,
    by its corner) */
 class MarchKit{
-  of(u,o,x,y,sx){this.u=u;this.x=x;this.y=y;this.sx=sx;this.flag=null;this.torch=0;this.bare=false;this.r=null;const G=MARCH_GEAR,m=G.cull;
+  of(u,o,x,y,sx){this.owner=o;this.u=u;this.x=x;this.y=y;this.sx=sx;this.flag=null;this.torch=0;this.bare=false;this.r=null;const G=MARCH_GEAR,m=G.cull;
     if(!(G.flags||G.torches)||x<-m||y<-m||x>VW+m||y>VH+m)return this;const A=MARCH_ARMIES.get(o),r=A&&marchRoles(A).get(u);if(!r)return this;this.r=r;
     if(r.flag&&G.flags){const b=o.banner?.();if(b&&typeof b==='object'){this.flag=b;this.bare=!!r.pole}}
     if(r.torch&&G.torches&&Clock.isNight)this.torch=Math.min(1,Clock.darkness()/G.fade);return this}
@@ -75,9 +75,10 @@ class MarchKit{
   // (the same flags as in battle (the owner, 2026-11-07: "the same sprites", "check the flags"): the battle's back pole and banner
   // (battleBackFlag); a flag man's own spear drawn as in battle, a doll's hold and BATTLE_BANNER.pole longer, its cloth under its
   // head (clothSprite, poleTip))
-  back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=battleBackFlag(this.flag,this.wave());ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
+  note(c,x,y){if(WDEPTH.ghosting)return;const d=VS>1?subOf(this.u):[0,0],b=WorldGround.bridge(this.u.x,this.u.y);EnemyDifficulty.anchor(this.owner,Math.floor(G.cam.x)+this.x+this.sx*(x+c.width/2)+d[0]+(b?.[0]||0),Math.floor(G.cam.y)+this.y+Math.abs(this.sx)*y-liftAt(this.u.x,this.u.y)+d[1]+(b?.[1]||0))}
+  back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=battleBackFlag(this.flag,this.wave());ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay);this.note(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
   front(s,bx,by){
-    if(this.bare&&s.hand){const c=poleFlagSprite(this.r.pole,this.flag,this.r.kit.skin,this.wave());ctx.drawImage(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R)}
+    if(this.bare&&s.hand){const c=poleFlagSprite(this.r.pole,this.flag,this.r.kit.skin,this.wave());ctx.drawImage(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R);this.note(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R)}
     // (its torch: as it burns, its frame by the clock and his id (fire.js fireFrameAt), its flame trailing back as he walks; its
     // light at the flame's foot, with its pool on the ground at his feet (g))
     if(this.torch>0&&s.free){const on=FLAMES.on,c=on?torchSprite(this.r.kit.skin,fireFrameAt(fireTime(),this.u.id),marchWalks(this.u)?-FLAMES.lean:0):torchSprite(this.r.kit.skin,Math.floor(performance.now()/120+this.u.id)%2),a=ctx.globalAlpha,hx=bx+s.free[0],hy=by+s.free[1];

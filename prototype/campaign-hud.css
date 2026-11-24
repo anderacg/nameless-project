@@ -209,14 +209,7 @@ svg [role="button"],svg [role="button"]:focus-visible{outline:none!important;fil
  :where(button,.btn,[role="button"],input[type="button"],input[type="submit"]):is(:active,.ui-clicked){translate:none!important}
 }
 
-/* Local monster forecast: geographic pips, company-relative colour, shared forged materials. */
-.campaign-danger{--danger-col:#9dbd83;position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--e-t) + 82px);display:none;align-items:center;gap:8px;width:190px;padding:8px 10px;border:7px solid transparent;border-image:var(--campaign-frame) 176/9px;background:var(--campaign-surface);background-clip:padding-box;box-shadow:0 4px 8px #0006;pointer-events:auto;color:var(--hud-ink);font-family:var(--hud-font)}
-.campaign-danger[data-risk="1"]{--danger-col:#dbc77d}.campaign-danger[data-risk="2"]{--danger-col:#e9a45f}.campaign-danger[data-risk="3"]{--danger-col:#e37d72}
-.danger-crest{display:grid;place-items:center;flex:none;width:34px;height:38px;border:1px solid var(--danger-col);border-radius:50% 50% 45% 45%;background:#17130eaa;color:var(--danger-col)}
-.danger-copy{display:flex;flex-direction:column;gap:3px;min-width:0}.danger-copy strong{font-size:12px}.danger-copy small{font-size:10px;color:var(--hud-muted)}.danger-copy b{font-size:10px;color:var(--danger-col)}
 .danger-stars{display:flex;gap:3px;margin-top:1px}.danger-star{display:block;flex:none;fill:#302b22;stroke:#88734e;stroke-width:1.2;stroke-linejoin:round}.danger-star.lit{fill:var(--danger-col);stroke:#dfcf9c;filter:drop-shadow(0 0 2px color-mix(in srgb,var(--danger-col),transparent 65%))}
-.campaign-world .campaign-danger{display:flex}
-.mobile-world .campaign-danger{left:var(--e-l);transform:none;top:var(--e-t);width:min(190px,calc(100% - 160px));min-width:130px;gap:5px;padding:6px;border-width:5px}.mobile-world .danger-crest{width:25px;height:31px}.mobile-world .danger-crest .gico{width:22px;height:22px}.mobile-world .danger-copy strong{font-size:11px}.mobile-world .danger-copy small,.mobile-world .danger-copy b{font-size:9px}
 
 /* Compact road guide, in the same forged frame as the world HUD. */
 #screen.campaign-world #qtrack .qt-road{width:min(100%,180px);padding:0 5px;border:3px solid transparent;border-image:var(--campaign-frame) 176/6px;border-radius:0;background:var(--campaign-surface);box-shadow:none}
@@ -226,3 +219,5 @@ svg [role="button"],svg [role="button"]:focus-visible{outline:none!important;fil
 #screen.campaign-world #qtrack .qt-road .gico{width:14px;height:14px;vertical-align:middle}
 #screen.campaign-world #qtrack .qt-road .qt-road-more{color:#d8ba77;font-size:18px;line-height:18px}
 #screen.campaign-world:not(.mobile-world) #qtrack .qt-road{align-self:flex-end}
+
+.fm-danger{display:flex;flex-direction:column;gap:4px;margin-bottom:6px}.fm-danger small{font-size:inherit;line-height:1.3;color:var(--fg-2)}
