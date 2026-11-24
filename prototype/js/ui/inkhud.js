@@ -5,7 +5,7 @@
    with thinner border"): one warm tone (dark see-through panels, cream words, gold), every frame
    in the game a thin band of gold (a faint grain, no rust) with rounded corners and no black line (the forged rim's place in campaign-hud.css and
    game-panels.css: --campaign-frame, --ui-rim; each framed thing's corners rounded to it, its fill no longer showing square past
-   them), round buttons, your level and the minimap in a ring of the same gold, and on a phone your hero's card top left (your level,
+   them), round buttons, your army's flag and the minimap in a ring of the same gold, and on a phone your army's card top left (its flag,
    health, stamina, morale, experience). Its look is ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK.
    on: the look (Settings → Interface look); frame: the frame's picture (px across; slice, the part of each edge a border shows, as the
    forged rim's 176; band, the gold's width in it; its golds; rust and spots, its blotches (none now); pits and pit, its faint grain); ring: a round button's ring (px across, its
@@ -67,7 +67,7 @@ class InkHud{
     g.lineWidth=4;g.strokeStyle=F.edge;g.beginPath();rr(2);g.stroke();g.beginPath();rr(F.band-2);g.stroke();
     return c;
   }
-  // a ring of the same gold for round things (px across, its band, its seed): the buttons, your level, the minimap
+  // a ring of the same gold for round things (px across, its band, its seed): the buttons, your army's flag, the minimap
   ring(px,band,seed){
     const F=INK.frame,c=document.createElement('canvas');c.width=c.height=px;const g=c.getContext('2d'),m=px/2,r0=m-1,r1=m-1-band,rnd=inkRand(INK.seed+seed);
     const ring=()=>{g.beginPath();g.arc(m,m,r0,0,2*Math.PI);g.arc(m,m,r1,0,2*Math.PI,true)};
@@ -93,8 +93,9 @@ class InkHud{
     for(const t of [0,.25,.5,.75]){const a=ang(t),q=ri+(ro-ri)*.45;g.beginPath();g.moveTo(m+Math.cos(a)*ri,m+Math.sin(a)*ri);g.lineTo(m+Math.cos(a)*q,m+Math.sin(a)*q);g.stroke()}
   }
   // your army's card on a phone's map (the owner, 2026-11-24: "make the top left ui panel smaller and more compact. Make gold, food, water
-  // integrated with army info"): its flag, its name and your level; health over stamina and morale, each its number inside; your gold,
-  // food and drink; experience a thread along its foot; the old status strip's conditions behind its tap
+  // integrated with army info"): its flag and its name; health over stamina and morale, each its number inside; your gold,
+  // food and drink; experience a thread along its foot (your level in the Hero window: "Remove level from army"); the old status
+  // strip's conditions behind its tap
   update(S){
     const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.day.hidden=this.dial.hidden=this.hour.hidden=!on;if(!on)return;
     const st=P.heroStats(),max=Math.max(1,Math.round(st.hp)),hp=Math.round(P.hp==null?max:Math.min(max,P.hp)),need=leaderOf(P).xpNeed(),xp=Math.max(0,Math.min(100,100*P.xp/Math.max(1,need)));
@@ -102,12 +103,12 @@ class InkHud{
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d',pct=v=>Math.max(0,Math.min(100,v));
     const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'" title="'+label+' '+txt+'"><em style="width:'+pct(v)+'%"></em><small><b>'+label+'</b>'+txt+'</small></span>';
     const res=(ic,n,v,low)=>'<span class="'+(low?'low':'')+'" title="'+n+'">'+icon(ic,12)+'<b>'+v+'</b></span>';
-    // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; your level by your band's name)
-    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small>Lv '+P.level+'</small></span>'+
+    // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; no level on it: "Remove level from army")
+    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong></span>'+
       bar('hp','HP',100*hp/max,hp+'/'+max,hp<max*.35)+'<span class="ink-pair">'+bar('sta','STA',sta,sta+'%',sta<SUPPLY.tired)+bar('mor','MOR',mor,mor+'%',mor<30)+'</span>'+
       '<span class="ink-res">'+res('gold','Gold',P.gold.toLocaleString('en'))+res('food','Food',days(S.foodDays),S.foodDays<1)+res('mug','Drink',days(S.drinkDays),S.drinkDays<1)+'</span></span>'+
       '<span class="ink-xp" title="Experience '+xp.toFixed(1)+'%"><em style="width:'+xp+'%"></em></span>';
-    setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero, level '+P.level+': health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%; gold '+P.gold+', food '+days(S.foodDays)+', drink '+days(S.drinkDays)+'. Party status');
+    setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero\'s health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%; gold '+P.gold+', food '+days(S.foodDays)+', drink '+days(S.drinkDays)+'. Party status');
     // (the quests and the party's details start under the card, however tall it stands)
     this.screen.style.setProperty('--ink-hero-h',this.hero.offsetHeight+'px');
     this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')));

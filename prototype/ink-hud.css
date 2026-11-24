@@ -6,7 +6,7 @@
    else (--campaign-frame, --ui-rim), so the battle's bars, the windows and the desktop HUD wear the same gold.
      1. tokens      one warm tone: dark see-through panels, cream words, gold; the gold frame as one border
      2. frames      every framed thing: its frame's middle tiled, so its grain runs on along a long side; no black hairlines
-     3. hero        your army's card (a phone's map, top left), compact: its flag, name and level, health, stamina, morale, gold,
+     3. hero        your army's card (a phone's map, top left), compact: its flag and name, health, stamina, morale, gold,
                     food and drink, experience
      4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
      5. dock        the round buttons (bottom right), their names at their feet; the speed and map choices
@@ -40,7 +40,7 @@
 
 /* ---------- 3. hero ---------- */
 /* (compact, the owner, 2026-11-24: "make the top left ui panel smaller and more compact. Make gold, food, water integrated with army
-   info": the flag, the name and level; health over stamina and morale, each its number inside; gold, food and drink; experience a
+   info": the flag and the name (no level: "Remove level from army"); health over stamina and morale, each its number inside; gold, food and drink; experience a
    thread along its foot) */
 .ink-hero,.ink-day,.ink-dial,.ink-hour{display:none}
 .screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(212px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:6px;padding:0 4px 3px 0;
@@ -50,7 +50,6 @@
 .ink-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .ink-name{display:flex;align-items:baseline;gap:5px;min-width:0}
 .ink-name strong{flex:1;min-width:0;font:700 12px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--ink-out)}
-.ink-name small{flex:none;font:700 10px var(--font);color:var(--ink-gold)}
 .ink-bar{position:relative;display:block;height:10px;border:1px solid rgba(125,88,36,.7);border-radius:3px;background:#120e09;overflow:hidden}
 .ink-bar>em{display:block;height:100%}
 .ink-bar>small{position:absolute;inset:0 4px;display:flex;justify-content:space-between;align-items:center;font:700 8px/1 var(--font);color:#fff8e6;text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
