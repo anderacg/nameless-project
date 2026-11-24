@@ -36,6 +36,10 @@ function lvBox(){const el=$('#lgroup');if(!el)return;const n=typeof treePending=
   el.innerHTML=n?'<button class="lvup" type="button" title="'+what+' to spend (K)" aria-label="'+what+' to spend">'+icon('skills',22)+'<b>+'+n+'</b><small>Skill point'+(n>1?'s':'')+'</small></button>':''}
 {const g=document.getElementById('lgroup');if(g)g.addEventListener('click',e=>{if(!e.target.closest('.lvup'))return;if(G.mode==='skills')return;const t=treePending()[0];
   if(t)G.skTree=t;openSkills('talents')})}
+// the day as its parts: the sky's icon (the weather's, else the sun or the moon), its weather's effects, the day, its season, its time,
+// its weather (world/weather.js); the top bar's line (#wday) and the ink look's plate under the minimap (ui/inkhud.js)
+function dayParts(){const w=WEATHER.on?ambWeather():null,K=w&&WEATHER.kinds[w],sun=icon(darkness()>.3?'moon':'sun',16);
+  return{sky:K&&w!=='clear'?icon('wx_'+w,16):sun,tip:K?'Weather: '+Weather.name(w)+', travel ×'+K.speed+', sight ×'+K.sight:'',day:'Day '+G.day,season:K?Weather.season().n:'',time:timeOfDay(),weather:K?Weather.name(w):''}}
 function updateHUD(force){
   lvBox();
   const el=$('#stats');if(!el)return;const cnt=partySize(),cap=partyCap(),S=supplyNow(),F=bandFitness(),fp=Math.round(F.pct),mo=Math.round(P.morale),lh=landHold(P.x,P.y),sp=bandPace();
@@ -67,8 +71,8 @@ function updateHUD(force){
       return '<div class="pc-line" title="Where you are">'+icon('region',12)+'<span>'+regionAt(P.x,P.y).name+', <span title="'+htmlText(tip)+'">'+htmlText(main)+part+'</span>, '})()+'<span style="color:'+(lh?landCol(lh.owner):'#9a958a')+'">'+landName(P.x,P.y)+'</span></span></div>'+
     '<div class="pc-line" title="Renown and whom you serve">'+icon('renown',12)+'<span>'+P.renown+'</span>'+icon('banner',12)+'<span'+(P.fac?' style="color:'+FACS[P.fac].col+'"':'')+'>'+(P.fac?FACS[P.fac].n:'Independent')+'</span></div>');
   // (the day, its season and its time; the weather where you are by it, its icon in the sun's or moon's place: world/weather.js)
-  const d=$('#wday');if(d){const w=WEATHER.on?ambWeather():null,K=w&&WEATHER.kinds[w],sky=icon(darkness()>.3?'moon':'sun',16);
-    setHtml(d,(K?'<i class="wx" title="Weather: '+Weather.name(w)+', travel ×'+K.speed+', sight ×'+K.sight+'">'+(w==='clear'?sky:icon('wx_'+w,16))+'</i>':sky)+'<span>Day '+G.day+(K?', '+Weather.season().n:'')+', '+timeOfDay()+(K?', '+Weather.name(w):'')+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>')}
+  const d=$('#wday');if(d){const D=dayParts();
+    setHtml(d,(D.tip?'<i class="wx" title="'+D.tip+'">'+D.sky+'</i>':D.sky)+'<span>'+[D.day,D.season,D.time,D.weather].filter(Boolean).join(', ')+'</span><b'+(G.paused?'':' class="off"')+'>Paused</b>')}
   window.mobileWorldHud?.update(fp,mo,Math.round(P.bsta));
   window.campaignHud?.update(S,cnt);
   const cb=$('#campBtn');if(cb){cb.classList.toggle('on',!!P.camp);cb.setAttribute('aria-pressed',String(!!P.camp));cb.disabled=!!P.camp?.pack;cb.setAttribute('aria-busy',String(!!P.camp?.pack));cb.title=P.camp?.pack?'Packing camp: '+Math.ceil(campPackLeft()*60)+' game minutes':'Camp and recovery · Z: make / break camp'}

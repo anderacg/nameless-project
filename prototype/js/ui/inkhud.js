@@ -8,10 +8,10 @@
    health, stamina, morale, experience). Its look is ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK.
    on: the look (Settings → Interface look); frame: the frame's picture (px across; slice, the part of each edge a border shows, as the
    forged rim's 176; band, the gold's width in it; its golds, the rust and its pits); ring: a round button's ring (px across, its
-   band); rim: the minimap's ring, a share of its radius */
+   band); rim: the minimap's ring, a share of its radius; dayLap: how far the day's plate rises over the minimap's foot, px */
 const INK={on:true,seed:7,
   frame:{px:512,slice:176,band:70,gilt:['#f1d48c','#d2a24c','#a8762e'],edge:'#7d5824',rust:['rgba(146,74,26,.68)','rgba(98,50,18,.6)','rgba(112,128,80,.34)'],spots:420,pits:1400},
-  ring:{px:96,band:8},rim:{share:.13}};
+  ring:{px:96,band:8},rim:{share:.13},dayLap:12};
 // (a small seeded stream for the art, so the rust lies the same way each time: never the game's dice)
 const inkRand=s=>()=>(s=(s*1103515245+12345)>>>0)/4294967296;
 class InkHud{
@@ -21,7 +21,9 @@ class InkHud{
     // (the click kept from the page: the phone HUD shuts its drawers on a click outside it, input.js MobileWorldHud)
     this.hero.addEventListener('click',e=>{e.stopPropagation();document.getElementById('partyToggle')?.click();this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')))});
     this.purse=document.createElement('div');this.purse.className='ink-purse';this.purse.hidden=true;
-    const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.purse);
+    // (the day on a plate hung from the minimap, the owner, 2026-11-24: "can you make the day and time integrated with the mini map?")
+    this.day=document.createElement('div');this.day.className='ink-day';this.day.hidden=true;this.day.setAttribute('role','status');
+    const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.purse);layer.appendChild(this.day);
     this.frameUrl='url('+this.frame().toDataURL()+')';
     const root=document.documentElement.style;root.setProperty('--ink-frame',this.frameUrl);root.setProperty('--ink-ring','url('+this.ring(INK.ring.px,INK.ring.band,11).toDataURL()+')');
     root.setProperty('--ink-rim','url('+this.ring(256,256/2*INK.rim.share,23).toDataURL()+')');
@@ -70,7 +72,7 @@ class InkHud{
   }
   // your hero's card on a phone's map, and your purse under the minimap; the old status strip's conditions behind the card's tap
   update(S){
-    const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.purse.hidden=!on;if(!on)return;
+    const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.purse.hidden=this.day.hidden=!on;if(!on)return;
     const st=P.heroStats(),max=Math.max(1,Math.round(st.hp)),hp=Math.round(P.hp==null?max:Math.min(max,P.hp)),need=leaderOf(P).xpNeed(),xp=Math.max(0,Math.min(100,100*P.xp/Math.max(1,need)));
     const sta=Math.round(P.bsta),mor=Math.round(P.morale);
     const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'"><b>'+label+'</b><i><em style="width:'+Math.max(0,Math.min(100,v))+'%"></em><small>'+txt+'</small></i></span>';
@@ -84,9 +86,14 @@ class InkHud{
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
     setHtml(this.purse,'<span title="Gold">'+icon('gold',14)+'<b>'+P.gold.toLocaleString('en')+'</b></span><span class="'+(S.foodDays<1?'low':'')+'" title="Food">'+icon('food',14)+'<b>'+days(S.foodDays)+'</b></span><span class="'+(S.drinkDays<1?'low':'')+'" title="Drink">'+icon('mug',14)+'<b>'+days(S.drinkDays)+'</b></span>');
-    // (the purse beside the minimap where it clears your hero's card, else under it: a phone held upright)
-    const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect(),hr=this.hero.getBoundingClientRect(),beside=r.left-8-this.purse.offsetWidth>=hr.right+6;
-    this.purse.style.top=(beside?r.top:r.bottom+6)-host.top+'px';this.purse.style.right=host.right-(beside?r.left-8:r.right)+'px';
+    // (the day: the sky's icon in a ring, the day and its season over its time and weather, on a plate across the minimap's foot)
+    const D=dayParts(),line=D.day+(D.season?' · '+D.season:''),sub=D.time+(D.weather?' · '+D.weather:'');
+    setHtml(this.day,'<span class="ink-sky" title="'+htmlText(D.tip||D.time)+'">'+D.sky+'</span><span class="ink-date"><b>'+line+'</b><small>'+sub+(G.paused?' · Paused':'')+'</small></span>');this.day.setAttribute('aria-label',line+', '+sub);
+    const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect(),hr=this.hero.getBoundingClientRect();
+    // (centred under it, but never past its right side: the minimap stands at the screen's edge and the plate is the wider)
+    this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';const dr=this.day.getBoundingClientRect();
+    // (the purse beside the minimap where it clears your hero's card, else under the day: a phone held upright)
+    const beside=r.left-8-this.purse.offsetWidth>=hr.right+6;this.purse.style.top=(beside?r.top:dr.bottom+6)-host.top+'px';this.purse.style.right=host.right-(beside?r.left-8:r.right)+'px';
   }
 }
 window.inkHud=document.getElementById('screen')?new InkHud(document.getElementById('screen')):null;

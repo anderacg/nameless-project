@@ -36,9 +36,13 @@ Kit.suite(({ok,info})=>{
   ok(round.length===bs.length,'the buttons are round ('+round.length+' of '+bs.length+')');
   const dl=document.querySelector('#mapToggle .dl');ok(rect(dl).width>8&&rect(dl).bottom>rect(document.getElementById('mapToggle')).bottom+2,'their names at their feet');
   ok(rect(window.mobileWorldHud.root).height<=52,'the bottom row as low as before ('+rect(window.mobileWorldHud.root).height+' px)')}
+ // (the day on a plate across the minimap's foot, the owner: "make the day and time integrated with the mini map"; the bottom row the buttons only)
+ {const d=ink.day,dr=rect(d),mr=rect(window.campaignHud.mobileMini),D=t.dayParts();
+  ok(shown(d)&&d.textContent.includes(D.day)&&d.textContent.includes(D.time)&&dr.top<mr.bottom&&dr.bottom>mr.bottom&&dr.right<=mr.right+1&&dr.left<mr.left+mr.width/2,'the day, its season, time and weather on a plate across the minimap\'s foot ('+d.textContent+')');
+  ok(!shown(document.querySelector('.mwh-status')),'no day strip by the buttons')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
- ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
+ ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!shown(ink.day)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
  t.prefSet('inklook',true);t.frame();ok(scr.classList.contains('ink')&&shown(ink.hero),'and Ink again');
  ok(!ERR.length,'no runtime errors');
 });

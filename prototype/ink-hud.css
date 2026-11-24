@@ -8,9 +8,9 @@
      2. frames      every framed thing: its frame's middle tiled, so the rust runs on along a long side; no black hairlines
      3. hero        your hero's card (a phone's map, top left): your army's flag in a gold ring, health, stamina, morale, experience
      4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
-     5. dock        the round buttons (bottom right), their names at their feet; the day (bottom left); the speed and map choices
-     6. minimap     round, in a rusted gold ring, N at its top; your purse beside it
-     7. messages    the log over the day, the party's details under the card
+     5. dock        the round buttons (bottom right), their names at their feet; the speed and map choices
+     6. minimap     round, in a rusted gold ring, N at its top; the day on a plate across its foot; your purse beside it
+     7. messages    the log bottom left, the party's details under the card
    ===================================================================================================================== */
 
 /* ---------- 1. tokens ---------- */
@@ -29,15 +29,15 @@
 /* (the frame's middle tiled, not stretched: its rust repeats to fit, never smeared along a long side: inkhud.js frame) */
 .screen.ink *{border-image-repeat:round!important}
 /* (the gold frame on the ink's own panels, their corners as round as its) */
-.screen.ink :is(.ink-hero,.ink-purse>span),.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
-.screen.ink.campaign-world.mobile-world :is(.mwh-status,.mwh-speeds,.mwh-map),.screen.ink.campaign-world.mobile-world #stats{
+.screen.ink :is(.ink-hero,.ink-purse>span,.ink-day),.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
+.screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map),.screen.ink.campaign-world.mobile-world #stats{
   border:8px solid transparent;border-image:var(--ink-frame) 176/11px round;border-radius:11px;background:var(--ink-panel);box-shadow:0 2px 6px rgba(0,0,0,.35)}
 /* (no black hairline inside the game's plates: a faint gold one; every framed thing's corners rounded to its gold: inkhud.js corners) */
 .screen.ink{--plate:inset 0 0 0 1px rgba(226,189,104,.16);--plate-sm:inset 0 0 0 1px rgba(226,189,104,.14);--lift:0 2px 3px rgba(0,0,0,.3)}
 
 
 /* ---------- 3. hero ---------- */
-.ink-hero,.ink-purse{display:none}
+.ink-hero,.ink-purse,.ink-day{display:none}
 .screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(250px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
   color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
 .ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
@@ -83,9 +83,9 @@
 .screen.ink.mobile-world .qtrack .qt-pop:nth-last-child(n+2){display:none}
 
 /* ---------- 5. dock ---------- */
-.screen.ink.campaign-world.mobile-world .mobile-world-hud{display:flex;flex-direction:row;align-items:flex-end;justify-content:space-between;gap:8px}
-.screen.ink.campaign-world.mobile-world .mwh-status{container-type:normal;flex:none;width:auto;min-height:0;padding:2px 8px 2px 2px}
-.screen.ink.campaign-world.mobile-world .mwh-status .wday{font:700 11px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
+.screen.ink.campaign-world.mobile-world .mobile-world-hud{display:flex;flex-direction:row;align-items:flex-end;justify-content:flex-end;gap:8px}
+/* (the day is on the minimap now, section 6: the strip that held it hidden, its line still kept up for the forged look) */
+.screen.ink.campaign-world.mobile-world .mwh-status{display:none}
 .screen.ink.campaign-world.mobile-world #partyToggle{display:none}
 .screen.ink.campaign-world.mobile-world .mwh-dock{gap:8px;padding:0;border:0;background:none}
 .screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:7px}
@@ -103,6 +103,9 @@
 .screen.ink .campaign-mobile-survey canvas{inset:auto;left:50%;top:50%;width:auto;height:calc(100% - 2*var(--phone-map-rim,8px));transform:translate(-50%,-50%)}
 .screen.ink .campaign-mobile-survey::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--ink-rim) center/100% 100% no-repeat;pointer-events:none}
 .screen.ink .campaign-mobile-survey::before{content:'N';position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:1;font:800 10px var(--font);color:#2a1d0c;pointer-events:none}
+.screen.ink.mobile-world .ink-day:not([hidden]){position:absolute;display:flex;align-items:center;gap:6px;padding:0 9px 0 0;transform:translateX(-50%);white-space:nowrap;pointer-events:none;z-index:3;color:var(--ink-fg)}
+.ink-sky{flex:none;display:grid;place-items:center;width:26px;height:26px;margin:-3px 0 -3px -3px;border-radius:50%;background:var(--ink-btn)}.ink-sky .gico{width:15px;height:15px}
+.ink-date{display:flex;flex-direction:column;line-height:1.1}.ink-date b{font:700 11px var(--font);text-shadow:var(--ink-out)}.ink-date small{font:10px var(--font);color:var(--ink-gold-fg)}
 .screen.ink.mobile-world .ink-purse:not([hidden]){position:absolute;display:flex;flex-direction:column;align-items:flex-end;gap:2px;pointer-events:none;z-index:2}
 .ink-purse>span{display:flex;align-items:center;gap:5px;padding:0 6px 0 0;font:700 12px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
 .ink-purse>span:first-child b{color:var(--ink-gold)}.ink-purse>span.low b{color:var(--ink-red)}
@@ -110,13 +113,11 @@
 /* ---------- 7. messages ---------- */
 .screen.ink .toasts div{border:0;border-left:3px solid var(--ink-gold-deep);border-radius:0;background:rgba(23,19,14,.74);box-shadow:none;color:var(--ink-fg-2);font-size:12px}
 .screen.ink .toasts div.good{border-left-color:var(--meter-hi,#9cc06a)}.screen.ink .toasts div.bad{border-left-color:var(--ink-red)}.screen.ink .toasts div.gold{border-left-color:var(--ink-gold)}
-/* (the log's lines on the bottom row, between the day and the buttons, clear of the quest cards over the day) */
-.screen.ink.mobile-world .toasts{left:calc(var(--e-l) + 250px);bottom:calc(var(--e-b) + 2px);width:min(34%,290px)}
+/* (the log's lines in the bottom-left corner, beside the buttons, clear of the quest cards) */
+.screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + 2px);width:min(46%,380px)}
 .screen.ink.campaign-world.mobile-world #stats{top:calc(var(--e-t) + 84px);bottom:auto;right:auto;width:300px;max-height:calc(100% - var(--e-t) - 84px - var(--e-b) - var(--mobile-hud-height,60px) - 12px);background:var(--ink-panel-hi)}
-/* (a phone held upright: the day over the buttons, each on its own row, the buttons at the right; the log's lines over both) */
+/* (a phone held upright: the log's lines over the buttons) */
 @media (max-width:600px){
-  .screen.ink.campaign-world.mobile-world .mobile-world-hud{flex-direction:column;align-items:flex-start;gap:6px}
-  .screen.ink.campaign-world.mobile-world .mwh-dock{align-self:flex-end;flex:none}
   .screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 10px);width:min(80%,360px)}
 }
 /* (the narrowest: the hero's card without his rank, so his band's name keeps its room) */
