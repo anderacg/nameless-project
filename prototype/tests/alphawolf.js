@@ -36,9 +36,9 @@ Kit.suite(({ok,info})=>{const t=T;Kit.begin('soldier');const PX=t.PX,K=t.WOLF_AL
   K.chance=0;ok(!t.wolfAlphaAt(make()),'zero chance produces ordinary packs');K.chance=1;ok(t.wolfAlphaAt(make())&&!t.wolfAlphaAt(make({n:1}))&&!t.wolfAlphaAt({id:'bear',n:5}),'only multi-wolf packs can receive one leader');
  }finally{K.chance=chance;Math.random=random}
  ok(selected>150&&selected<350,'alpha presence is occasional and deterministic: '+selected+' / 1000 lairs');
- const weights=Object.fromEntries(Object.entries(t.MONSTERS).map(([k,v])=>[k,v.w]));
- try{for(const [k,M]of Object.entries(t.MONSTERS))M.w=k==='wolf'?1:0;K.chance=1;const before=t.W.monsters.length;for(let i=0;i<4&&t.W.monsters.length===before;i++)t.spawnMonster(true);const born=t.W.monsters.slice(before);ok(born.length>0&&born.every(m=>m.id==='wolf'&&m.alpha===1&&m.troops.filter(k=>k===K.unit).length===1),'the production spawn path assigns a single alpha at birth');}
- finally{for(const[k,w]of Object.entries(weights))t.MONSTERS[k].w=w;K.chance=chance}
+ const areaAt=t.MonsterRegions.at,weights=Object.fromEntries(Object.entries(t.MONSTERS).map(([k,v])=>[k,v.w]));
+ try{t.MonsterRegions.at=()=>({tier:2,lo:2,hi:4});for(const [k,M]of Object.entries(t.MONSTERS))M.w=k==='wolf'?1:0;K.chance=1;const before=t.W.monsters.length;for(let i=0;i<4&&t.W.monsters.length===before;i++)t.spawnMonster(true);const born=t.W.monsters.slice(before);ok(born.length>0&&born.every(m=>m.id==='wolf'&&m.alpha===1&&m.troops.filter(k=>k===K.unit).length===1),'the production spawn path assigns a single alpha at birth in eligible wilderness');}
+ finally{t.MonsterRegions.at=areaAt;for(const[k,w]of Object.entries(weights))t.MONSTERS[k].w=w;K.chance=chance}
  t.startMonster(m);ok(t.G.enc.list.filter(k=>k===K.unit).length===1&&t.G.enc.list.length===5&&document.getElementById('panel').textContent.includes('Alpha Wolf'),'encounters include and display the alpha alongside its pack');t.G.enc=null;t.G.mode='world';t.hidePanel();
  ok(t.monsterXp(m,[K.unit,'wolf','wolf'])===K.xp+20,'slaying an alpha grants its own XP');const pelts=t.invCount('mat','pelt');t.monsterLoot(m,[K.unit,'wolf']);ok(t.invCount('mat','pelt')===pelts+2,'alpha wolves still yield wolf pelts');
  const L=t.lookOf('orc_wolf',0,false,0),art=PX.mountArt('wolf',-1,{C:t.pal('wolf'),M:t.pal('wool')});ok(art.g.w===40&&art.g.h===36&&art.riderX===8,'riders use larger alpha wolves with a centered saddle');
