@@ -26,13 +26,12 @@ class InkHud{
     this.hero=document.createElement('button');this.hero.type='button';this.hero.className='ink-hero';this.hero.hidden=true;this.hero.setAttribute('aria-controls','stats');
     // (the click kept from the page: the phone HUD shuts its drawers on a click outside it, input.js MobileWorldHud)
     this.hero.addEventListener('click',e=>{e.stopPropagation();document.getElementById('partyToggle')?.click();this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')))});
-    this.purse=document.createElement('div');this.purse.className='ink-purse';this.purse.hidden=true;
     // (the day in a line under the minimap, the owner, 2026-11-24: "can you make the day and time integrated with the mini map?")
     this.day=document.createElement('div');this.day.className='ink-day';this.day.hidden=true;this.day.setAttribute('role','status');
     // (the sky's icon at the hour on the dial: the bar's own, the sun, the moon or the weather's, the owner: "Why dont you use icon from the bar?")
     this.hour=document.createElement('span');this.hour.className='ink-hour';this.hour.hidden=true;
     this.dial=document.createElement('canvas');this.dial.className='ink-dial';this.dial.hidden=true;this.dial.setAttribute('aria-hidden','true');
-    const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.purse);layer.appendChild(this.dial);layer.appendChild(this.hour);layer.appendChild(this.day);
+    const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.dial);layer.appendChild(this.hour);layer.appendChild(this.day);
     this.frameUrl='url('+this.frame().toDataURL()+')';
     const root=document.documentElement.style;root.setProperty('--ink-frame',this.frameUrl);root.setProperty('--ink-ring','url('+this.ring(INK.ring.px,INK.ring.band,11).toDataURL()+')');
     root.setProperty('--ink-rim','url('+this.ring(256,256/2*INK.rim.share,23).toDataURL()+')');
@@ -93,34 +92,37 @@ class InkHud{
     g.strokeStyle=A.line;g.lineWidth=w;for(const q of [ro,ri]){g.beginPath();g.arc(m,m,q,0,2*Math.PI);g.stroke()}
     for(const t of [0,.25,.5,.75]){const a=ang(t),q=ri+(ro-ri)*.45;g.beginPath();g.moveTo(m+Math.cos(a)*ri,m+Math.sin(a)*ri);g.lineTo(m+Math.cos(a)*q,m+Math.sin(a)*q);g.stroke()}
   }
-  // your hero's card on a phone's map, and your purse under the minimap; the old status strip's conditions behind the card's tap
+  // your army's card on a phone's map (the owner, 2026-11-24: "make the top left ui panel smaller and more compact. Make gold, food, water
+  // integrated with army info"): its flag, its name and your level; health over stamina and morale, each its number inside; your gold,
+  // food and drink; experience a thread along its foot; the old status strip's conditions behind its tap
   update(S){
-    const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.purse.hidden=this.day.hidden=this.dial.hidden=this.hour.hidden=!on;if(!on)return;
+    const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.day.hidden=this.dial.hidden=this.hour.hidden=!on;if(!on)return;
     const st=P.heroStats(),max=Math.max(1,Math.round(st.hp)),hp=Math.round(P.hp==null?max:Math.min(max,P.hp)),need=leaderOf(P).xpNeed(),xp=Math.max(0,Math.min(100,100*P.xp/Math.max(1,need)));
     const sta=Math.round(P.bsta),mor=Math.round(P.morale);
-    const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'"><b>'+label+'</b><i><em style="width:'+Math.max(0,Math.min(100,v))+'%"></em><small>'+txt+'</small></i></span>';
-    // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; your level beside your rank)
-    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small><span class="ink-rank">'+htmlText(rankName())+' · </span>Lv '+P.level+'</small></span>'+
-      bar('hp','HP',100*hp/max,hp+' / '+max,hp<max*.35)+bar('sta','STA',sta,sta+'%',sta<SUPPLY.tired)+bar('mor','MOR',mor,mor+'%',mor<30)+
-      '<span class="ink-bar xp"><b>EXP</b><i><em style="width:'+xp+'%"></em></i><small>'+xp.toFixed(1)+'%</small></span></span>';
-    setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero, level '+P.level+': health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%. Party status');
+    const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d',pct=v=>Math.max(0,Math.min(100,v));
+    const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'" title="'+label+' '+txt+'"><em style="width:'+pct(v)+'%"></em><small><b>'+label+'</b>'+txt+'</small></span>';
+    const res=(ic,n,v,low)=>'<span class="'+(low?'low':'')+'" title="'+n+'">'+icon(ic,12)+'<b>'+v+'</b></span>';
+    // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; your level by your band's name)
+    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small>Lv '+P.level+'</small></span>'+
+      bar('hp','HP',100*hp/max,hp+'/'+max,hp<max*.35)+'<span class="ink-pair">'+bar('sta','STA',sta,sta+'%',sta<SUPPLY.tired)+bar('mor','MOR',mor,mor+'%',mor<30)+'</span>'+
+      '<span class="ink-res">'+res('gold','Gold',P.gold.toLocaleString('en'))+res('food','Food',days(S.foodDays),S.foodDays<1)+res('mug','Drink',days(S.drinkDays),S.drinkDays<1)+'</span></span>'+
+      '<span class="ink-xp" title="Experience '+xp.toFixed(1)+'%"><em style="width:'+xp+'%"></em></span>';
+    setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero, level '+P.level+': health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%; gold '+P.gold+', food '+days(S.foodDays)+', drink '+days(S.drinkDays)+'. Party status');
+    // (the quests and the party's details start under the card, however tall it stands)
+    this.screen.style.setProperty('--ink-hero-h',this.hero.offsetHeight+'px');
     this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')));
     // (one quest shown, the tracked one, and how many more on its tag: ink-hud.css)
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}
-    const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
-    setHtml(this.purse,'<span title="Gold">'+icon('gold',14)+'<b>'+P.gold.toLocaleString('en')+'</b></span><span class="'+(S.foodDays<1?'low':'')+'" title="Food">'+icon('food',14)+'<b>'+days(S.foodDays)+'</b></span><span class="'+(S.drinkDays<1?'low':'')+'" title="Drink">'+icon('mug',14)+'<b>'+days(S.drinkDays)+'</b></span>');
     // (the day in one short line under the minimap, the owner: "Remove that bar and show only compact below text": its day, its season,
     //  its weather; its time is the dial's)
     const D=dayParts(),line=[D.day,D.season,D.weather].filter(Boolean).join(' · ');
     setHtml(this.day,htmlText(line));this.day.setAttribute('aria-label',line+', '+D.time);this.day.title=D.tip||D.time;setHtml(this.hour,D.sky);this.hour.title=D.time;
-    const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect(),hr=this.hero.getBoundingClientRect();
+    const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect();
     // (the day and night round its rim, laid over it; drawn again as the hour moves on)
     Object.assign(this.dial.style,{left:r.left-host.left+'px',top:r.top-host.top+'px',width:r.width+'px',height:r.height+'px'});this.dialDraw(r.width);
     {const A=INK.dial,ro=r.width/2-A.rim*r.width,rc=ro-A.band*r.width/2,a=Math.PI+Clock.frac*2*Math.PI;this.hour.style.left=r.left+r.width/2+Math.cos(a)*rc-host.left+'px';this.hour.style.top=r.top+r.height/2+Math.sin(a)*rc-host.top+'px'}
     // (centred under it, but never past its right side: the minimap stands at the screen's edge and the line can be the wider)
-    this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';const dr=this.day.getBoundingClientRect();
-    // (the purse beside the minimap where it clears your hero's card, else under the day: a phone held upright)
-    const beside=r.left-8-this.purse.offsetWidth>=hr.right+6;this.purse.style.top=(beside?r.top:dr.bottom+6)-host.top+'px';this.purse.style.right=host.right-(beside?r.left-8:r.right)+'px';
+    this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';
   }
 }
 window.inkHud=document.getElementById('screen')?new InkHud(document.getElementById('screen')):null;
