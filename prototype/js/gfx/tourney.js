@@ -41,7 +41,7 @@ class TourneyArena{
     this.top=A.ring[0];this.bot=A.ring[1];this.cv=null;this.crowd=new TourneyCrowd(this)}
   // (a holding's options: its culture's walls, its climate's sand, its lord's banner, its peoples in the stands; none: the Vale's)
   static optsOf(h){if(!h)return{};const own=h.owner&&FACS[h.owner],seed=[...String(h.name)].reduce((a,c)=>Math.imul(a,31)+c.charCodeAt(0)|0,7)>>>0;
-    return{culture:holdingCulture(h),climate:climAt(h.x,h.y),col:own?own.col:FACS.player.col,dev:h.owner==='player'||!own?'star':h.owner,races:(h.races||[]).filter(r=>RACE_LOOK[r]).slice(0,3),seed:seed%100000+1}}
+    return{culture:holdingCulture(h),climate:climAt(h.x,h.y),col:own?own.col:FACS.player.col,dev:h.owner==='player'?facDev('player'):!own?'star':h.owner,races:(h.races||[]).filter(r=>RACE_LOOK[r]).slice(0,3),seed:seed%100000+1}}
   // the arena of a battle (its opts): opts.arena (its options, or true), else a tournament's with the arena on; null: the open field
   static forBattle(opts){const a=opts.arena;if(!a&&!(opts.tournament&&TOURNEY_ARENA.on))return null;
     return new TourneyArena(Object.assign(TourneyArena.optsOf(G.town&&G.town.ref),typeof a==='object'?a:{}))}

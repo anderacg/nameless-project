@@ -311,7 +311,9 @@ const BANNER={w:16,h:24,top:4,foot:22,trade:10,cloth:{banner:[13,9],rag:[11,9],p
 const BAND_FLAG={bandits:'#8a2a2a',raiders:'#b07a38',bog:'#4e6a3a'};
 const BANNER_DEV={vale:['..w..','..w..','wwwww','..x..','..x..'],karn:['wwwww','wwwww','..x..','..x..','..x..'],sylvan:['..w..','.www.','wwwww','.www.','..x..'],
   horde:['w...w','.w.w.','..x..','.w.w.','w...w'],salt:['..w..','wwwww','..w..','w.w.w','.www.'],crown:['.....','w.w.w','wwwww','wxwxw','.....'],
-  star:['.....','..w..','.www.','..w..','.....'],skull:['.www.','wxwxw','.www.','.w.w.','.....'],coin:['ww','wx'],lantern:['.g.','gfg','gfg','.g.']};
+  star:['.....','..w..','.www.','..w..','.....'],
+  sword:['..w..','..w..','..w..','wwwww','..x..'],tower:['w.w.w','wwwww','.www.','.wxw.','.www.'],sun:['w.w.w','.www.','wwxww','.www.','w.w.w'],
+  moon:['..ww.','.w...','.w...','.w...','..ww.'],key:['.ww..','w..w.','.ww..','..w..','..ww.'],chevron:['.....','..w..','.w.w.','w...w','.....'],skull:['.www.','wxwxw','.www.','.w.w.','.....'],coin:['ww','wx'],lantern:['.g.','gfg','gfg','.g.']};
 /* a banner's cloth by s(x, y, colour): its first column at x0 (by the pole), the rest out to dir (1: to the right, -1: to the left,
    trailing back from a man facing right), its top row at top; its size by its shape from sizes (BANNER.cloth, BATTLE_BANNER.cloth),
    its folds and its fly's wave by o (fold, fly; notch: how deep a swallow tail is cut, 3 columns else): the field in its ramp, lit by its folds, each shape's own outline (a swallow tail's

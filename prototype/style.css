@@ -556,6 +556,15 @@ body:has(.overlay:not([hidden])) .discover{visibility:hidden}
 .fm-tint{display:flex;align-items:center;gap:5px;font-size:var(--fs-sm);color:var(--muted)}
 .fm-tint input{width:34px;height:28px;padding:0;border:1px solid var(--line-2);border-radius:4px;background:var(--shade);cursor:pointer}
 @media (max-height:430px){.fm-side{flex-basis:100px;width:100px}.fm-portrait{width:100px;height:100px}}
+/* (your army's flag: the flag as it flies, its field's colours, its devices each on that field: names.js flagFields) */
+.nm-flag{display:flex;align-items:center;gap:12px;max-width:640px;margin:2px 0 8px}
+.nm-flag-pic{flex:none;width:56px;height:56px;object-fit:contain;image-rendering:pixelated}
+.nm-flag-pick{display:grid;gap:5px;min-width:0}.nm-flag-lab{font-size:var(--fs-sm);color:var(--muted)}
+.nm-swatches,.nm-devices{display:flex;flex-wrap:wrap;gap:5px}
+.nm-swatch,.nm-dev{width:var(--tap);height:var(--tap);padding:3px;border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:pointer}
+.nm-swatch{border-radius:50%;background:var(--sw);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.nm-dev{background:var(--field)}.nm-dev img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+.nm-swatch.on,.nm-dev.on{border-color:var(--trim-hi);box-shadow:0 0 0 2px var(--trim-hi)}
 .nm-win{display:grid;gap:10px}.nm-win .nm-fields{grid-template-columns:minmax(0,1fr);max-width:520px;margin:0}
 /* the Hero window's own bars (character.js): your hero's health, stamina (the band's) and mana */
 .hvit{display:grid;gap:3px;margin-bottom:4px;max-width:420px}

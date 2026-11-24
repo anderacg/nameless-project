@@ -254,7 +254,7 @@ function worldMiniRect(){const campaign=window.campaignHud?.miniRect();if(campai
    the full map. Its picture: a box x as wide round the view, made again when the view leaves it, the realms change (landVer) or,
    at most each refresh ms, what you have seen in it does. Its face drawn afresh at most each world ms on the map (battle ms in a fight),
    the last one put up between (the owner, 2026-11-16: "The game performance lags on mobile"). on false: the whole map as before (WorldArt.mini and its dark) */
-const MINIMAP={on:true,opacity:.4,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
+const MINIMAP={on:true,opacity:.4,inkOpacity:.82,tiles:96,over:3,box:2,refresh:1000,battle:100,world:100,icon:.26,iconMin:3,view:'rgba(59,38,18,.55)',you:'#a3241a',ring:'#f3e2b8',ink:'#3b1a0e',edge:'rgba(70,44,18,.5)'};
 // what the minimap shows (its rectangle, worldMiniRect, and s its px a tile; ox, oy its top left tile, tw x th tiles of it),
 // round the screen's middle (cam: G.cam)
 function worldMiniView(cam=G.cam){const r=worldMiniRect();if(!MINIMAP.on)return{...r,ox:0,oy:0,tw:MW,th:MH};
@@ -417,7 +417,8 @@ function drawMiniMap(V){const M=MINIMAP,zk=MAPZOOM.k(),v=worldMiniView(),{x:mx,y
   g.drawImage(pic.cv,v.ox-pic.x,v.oy-pic.y,v.tw,v.th,mx,my,mw,mh);
   // (the paper's grain, fixed to the land as it scrolls, and its darkened edge)
   const pat=g.createPattern(fmGrain(),'repeat');pat.setTransform(new DOMMatrix([zk,0,0,zk,mx-v.ox*MS,my-v.oy*MS]));g.fillStyle=pat;g.fillRect(mx,my,mw,mh);g.drawImage(miniEdge(mw,mh),mx,my);
-  g.save();g.globalCompositeOperation='destination-in';g.globalAlpha=M.opacity;g.fillStyle='#000';g.fillRect(mx,my,mw,mh);g.restore();
+  g.save();g.globalCompositeOperation='destination-in';g.globalAlpha=typeof INK!=='undefined'&&INK.on&&window.campaignHud?.phone?M.inkOpacity:M.opacity;// (the ink look's round minimap on a phone: paper, the world faint under it; ui/inkhud.js)
+  g.fillStyle='#000';g.fillRect(mx,my,mw,mh);g.restore();
   // (the holdings' walls and fences you have seen: each ring's outline, world/townwalls.js)
   g.lineWidth=.6*u;for(const t of TOWNS){const r=TownWall.of(t);if(!r||!r.parts.some(q=>seenTile(q.x,q.y)))continue;g.strokeStyle=TownWall.mapCol(t);g.beginPath();TownWall.outline(r).forEach(([x,y],k)=>{const px=mx+(x+.5-v.ox)*MS,py=my+(y+.5-v.oy)*MS;if(k)g.lineTo(px,py);else g.moveTo(px,py)});g.closePath();g.stroke()}
   if(B?.world&&OPEN_FIGHT.ring){const a=B.world;g.save();g.strokeStyle='#bd873c';g.lineWidth=Math.max(.7*u,1/K);g.setLineDash([3*u,2*u]);g.beginPath();g.arc(X(a.x),Y(a.y),a.r/TILE*MS,0,Math.PI*2);g.stroke();g.restore()}
