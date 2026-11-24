@@ -1,18 +1,19 @@
 'use strict';
 /* The ink look (the owner, 2026-11-24, with a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like this?",
    then "Can you remove the outer frame? ... ensure that all ui sharing the same color tone? I want a frame to be golden and ..." and
-   "why I see black border and look squared, golden rusted"): one warm tone (dark see-through panels, cream words, gold), every frame
-   in the game a band of rusted gold with rounded corners and no black line (the forged rim's place in campaign-hud.css and
+   "why I see black border and look squared, golden rusted", then "The rust seems a bit too much ... just make it like a golden frame
+   with thinner border"): one warm tone (dark see-through panels, cream words, gold), every frame
+   in the game a thin band of gold (a faint grain, no rust) with rounded corners and no black line (the forged rim's place in campaign-hud.css and
    game-panels.css: --campaign-frame, --ui-rim; each framed thing's corners rounded to it, its fill no longer showing square past
    them), round buttons, your level and the minimap in a ring of the same gold, and on a phone your hero's card top left (your level,
    health, stamina, morale, experience). Its look is ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK.
    on: the look (Settings → Interface look); frame: the frame's picture (px across; slice, the part of each edge a border shows, as the
-   forged rim's 176; band, the gold's width in it; its golds, the rust and its pits); ring: a round button's ring (px across, its
+   forged rim's 176; band, the gold's width in it; its golds; rust and spots, its blotches (none now); pits and pit, its faint grain); ring: a round button's ring (px across, its
    band); rim: the minimap's ring, a share of its radius; dayLap: how far the day's plate rises over the minimap's foot, px */
 const INK={on:true,seed:7,
-  frame:{px:512,slice:176,band:70,gilt:['#f1d48c','#d2a24c','#a8762e'],edge:'#7d5824',rust:['rgba(146,74,26,.68)','rgba(98,50,18,.6)','rgba(112,128,80,.34)'],spots:420,pits:1400},
-  ring:{px:96,band:8},rim:{share:.13},dayLap:12};
-// (a small seeded stream for the art, so the rust lies the same way each time: never the game's dice)
+  frame:{px:512,slice:176,band:40,gilt:['#f4da94','#d6a84e','#a87a30'],edge:'#7d5824',rust:['rgba(146,74,26,.68)','rgba(98,50,18,.6)','rgba(112,128,80,.34)'],spots:0,pits:500,pit:['rgba(120,80,28,.22)','rgba(255,242,196,.3)']},
+  ring:{px:96,band:5},rim:{share:.075},dayLap:12};
+// (a small seeded stream for the art, so the gold's grain lies the same way each time: never the game's dice)
 const inkRand=s=>()=>(s=(s*1103515245+12345)>>>0)/4294967296;
 class InkHud{
   constructor(screen){
@@ -42,11 +43,11 @@ class InkHud{
     for(const sh of document.styleSheets){let rs;try{rs=sh.cssRules}catch(e){continue}if(rs)each(rs,'')}
     const el=document.createElement('style');el.id='ink-corners';el.textContent=out.join('\n');document.head.appendChild(el);this.cornerRules=out.length;
   }
-  // rust on gold, clipped to the band: blotches of rust and a little green, then pits; the band lit along its outer side, deepened along its inner
+  // the gold's surface, clipped to the band: blotches of rust and a little green (spots: none now), then its faint grain (pits); the band lit along its outer side, deepened along its inner
   rust(g,n,rnd){const F=INK.frame;for(let i=0;i<F.spots;i++){const x=rnd()*n,y=rnd()*n,r=5+rnd()*rnd()*28,col=F.rust[rnd()<.12?2:rnd()<.55?0:1],gr=g.createRadialGradient(x,y,0,x,y,r);
       gr.addColorStop(0,col);gr.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=gr;g.fillRect(x-r,y-r,2*r,2*r)}
-    for(let i=0;i<F.pits;i++){g.fillStyle=rnd()<.6?'rgba(88,48,18,.5)':'rgba(255,238,180,.45)';g.fillRect(rnd()*n,rnd()*n,2+rnd()*2,2)}}
-  // the frame: a band of rusted gold round a rounded square, its corners a quarter circle the slice across; nothing inside it (each
+    for(let i=0;i<F.pits;i++){g.fillStyle=F.pit[rnd()<.6?0:1];g.fillRect(rnd()*n,rnd()*n,2+rnd()*2,2)}}
+  // the frame: a thin band of gold round a rounded square, its corners a quarter circle the slice across; nothing inside it (each
   // framed thing keeps its own fill, clipped to the same round corners: corners)
   frame(){
     const F=INK.frame,n=F.px,S=F.slice,c=document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d'),rnd=inkRand(INK.seed+41);
@@ -59,7 +60,7 @@ class InkHud{
     g.lineWidth=4;g.strokeStyle=F.edge;g.beginPath();rr(2);g.stroke();g.beginPath();rr(F.band-2);g.stroke();
     return c;
   }
-  // a ring of the same rusted gold for round things (px across, its band, its seed): the buttons, your level, the minimap
+  // a ring of the same gold for round things (px across, its band, its seed): the buttons, your level, the minimap
   ring(px,band,seed){
     const F=INK.frame,c=document.createElement('canvas');c.width=c.height=px;const g=c.getContext('2d'),m=px/2,r0=m-1,r1=m-1-band,rnd=inkRand(INK.seed+seed);
     const ring=()=>{g.beginPath();g.arc(m,m,r0,0,2*Math.PI);g.arc(m,m,r1,0,2*Math.PI,true)};
