@@ -2269,3 +2269,6 @@ Enemy difficulty stars (2026-11-24): the changing top-left region card is remove
 Validation: monsterregions 25 and mobilebattlehud 39 checks passed. World portrait, landscape and desktop previews have no horizontal overflow; battle portrait, close zoom, landscape and desktop stars stay 9 CSS pixels. Flag anchors are collected from actual rendering, including ground and bridge placement. The narrow full-map legend preserves readable regional details. No fingerprints were re-recorded.
 
 2026-11-24 validation: monsterregions 47 and alphawolf 25 checks passed. The seeded 60-birth sample contained 23 level-one, 23 level-two, 11 level-three and 3 level-four monsters; all respected local levels, species gates and habitat. Population filled all 60 slots. No fingerprints were re-recorded.
+
+Monster and wildlife icons (2026-11-24): monster world markers and battle flags use a local transparent horned beast-head illustration; hunted wildlife keeps the fur/pelt illustration. Unit cards and army rows share the same distinction. Only presentation changes; flag bounds and picking are unchanged.
+Validation: uiicons, 22 checks passed, including semantic routing, local image loading, transparency, shared world/battle artwork and retained marker bounds. Inspected both icons at 112, 24, 18 and 9 pixels. No fingerprints re-recorded.
