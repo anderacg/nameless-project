@@ -24,7 +24,7 @@ Kit.suite(({ok,info})=>{
  P.hp=Math.round(P.heroStats().hp*.5);P.bsta=64;P.morale=41;P.xp=Math.floor(t.leaderOf(P).xpNeed()*.25);t.updateHUD(true);
  {const h=ink.hero,txt=h.textContent,max=Math.round(P.heroStats().hp);
   ok(shown(h)&&rect(h).top<rect(scr).top+20&&rect(h).left<rect(scr).left+20,'your hero\'s card stands top left');
-  ok(h.querySelector('.ink-lv img').getAttribute('src')===t.flagUrl(P.banner())&&!txt.includes('Lv ')&&txt.includes(P.hp+'/'+max)&&txt.includes('64%')&&txt.includes('41%')&&h.querySelector('.ink-xp').title.includes((100*P.xp/t.leaderOf(P).xpNeed()).toFixed(1)+'%'),'it shows your army\'s flag (no level: "Remove level from army"), health ('+P.hp+'/'+max+'), stamina, morale and experience');
+  ok(h.querySelector('.ink-lv img').getAttribute('src')===t.flagUrl(P.banner())&&!txt.includes('Lv ')&&txt.includes(P.hp+'/'+max)&&txt.includes('64%')&&txt.includes('41%')&&!h.querySelector('.ink-xp'),'it shows your army\'s flag (no level: "Remove level from army"), health ('+P.hp+'/'+max+'), stamina, morale and experience');
   {const S=t.supplyNow(),r=h.querySelector('.ink-res');ok(r&&r.textContent.includes(P.gold.toLocaleString('en'))&&r.querySelectorAll('span').length===3&&!document.querySelector('.ink-purse'),'your gold, food and drink in the card, nowhere else ('+r.textContent+')');
    ok(rect(h).width<=212.5&&rect(h).height<=72,'compact: '+Math.round(rect(h).width)+' x '+Math.round(rect(h).height)+' px')}
   const lv=rect(h.querySelector('.ink-lv'));ok(Math.abs(lv.width-lv.height)<1&&getComputedStyle(h.querySelector('.ink-lv')).borderRadius==='50%','your army\'s flag in a round ring');
