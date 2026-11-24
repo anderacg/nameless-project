@@ -1,7 +1,7 @@
 'use strict';
 window.PHONE=true;// (run in a phone's window, 844 x 390 with touch: tests/run-tests.ps1)
-// The ink look (the owner, 2026-11-24, a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like this?";
-// ui/inkhud.js, ink-hud.css): a torn paper edge round the screen; on a phone's map your hero's card top left (level in a ring, health,
+// The ink look (the owner, 2026-11-24, a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like this?", then "remove
+// the outer frame ... all ui sharing the same color tone ... a frame to be golden and torn out"; ui/inkhud.js, ink-hud.css): every frame a torn gold one; on a phone's map your hero's card top left (level in a ring, health,
 // stamina, morale, experience) that opens the party's details, your purse by a round minimap, round buttons with their names under
 // them; Settings → Interface look: Forged puts every piece back as it was.
 Kit.suite(({ok,info})=>{
@@ -9,9 +9,12 @@ Kit.suite(({ok,info})=>{
  if(!window.mobileWorldHud.media.matches)return ok(false,'the mobile layout is on: this suite needs a phone-sized window ('+innerWidth+' x '+innerHeight+')');
  const scr=document.getElementById('screen'),ink=window.inkHud,rect=e=>e.getBoundingClientRect(),shown=e=>!!e&&!e.hidden&&!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
  ok(t.INK.on&&scr.classList.contains('ink')&&t.prefGet('inklook')===true,'the ink look is on at first');
- // (the paper: drawn at the edge, clear in the middle)
- {const c=ink.edge,g=c.getContext('2d'),a=(x,y)=>g.getImageData(x,y,1,1).data[3];
-  ok(shown(c)&&c.width>0&&a(1,Math.round(c.height/2))>200&&a(Math.round(c.width/2),Math.round(c.height/2))===0&&getComputedStyle(c).pointerEvents==='none','a torn paper edge round the screen, the middle clear and never in the way of a tap ('+c.width+' x '+c.height+')')}
+ // (no frame round the screen; every frame in the game the torn gold one: the forged rim's two names, campaign-hud.css and game-panels.css)
+ {const cs=getComputedStyle(document.getElementById('panel')),bi=getComputedStyle(document.querySelector('.ink-hero')).borderImageSource;
+  ok(!document.querySelector('.ink-edge'),'no frame round the screen');
+  ok(cs.getPropertyValue('--ui-rim').trim()===ink.frameUrl&&getComputedStyle(scr).getPropertyValue('--campaign-frame').trim()===ink.frameUrl&&bi.startsWith('url("data:image/png'),'every frame the torn gold one: the windows\', the HUD\'s and the ink\'s own')
+  const g=document.createElement('canvas'),F=t.INK.frame;g.width=g.height=F.px;const c=g.getContext('2d');c.drawImage(ink.frame(),0,0);const a=(x,y)=>c.getImageData(x,y,1,1).data,mid=F.px/2;
+  const top=[...Array(F.period).keys()].map(i=>a(F.slice+i,Math.round((F.out[0]+F.out[1])/2))[3]>0?1:0).join('');ok(top.includes('0')&&top.includes('1')&&a(mid,F.slice-4)[3]>200,'torn: along its edge gold and gaps by turns; inside it the panel\'s dark ('+top.split('').filter(v=>v==='1').length+' of '+F.period+' px gold at the tear\'s middle depth)')}
  // (the hero's card: his level, health of his most, stamina, morale, his experience to the next level)
  P.hp=Math.round(P.heroStats().hp*.5);P.bsta=64;P.morale=41;P.xp=Math.floor(t.leaderOf(P).xpNeed()*.25);t.updateHUD(true);
  {const h=ink.hero,txt=h.textContent,max=Math.round(P.heroStats().hp);
@@ -31,7 +34,7 @@ Kit.suite(({ok,info})=>{
   ok(rect(window.mobileWorldHud.root).height<=52,'the bottom row as low as before ('+rect(window.mobileWorldHud.root).height+' px)')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
- ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!shown(ink.edge)&&shown(document.getElementById('partyToggle')),'Forged: no card, purse or paper, the party strip back');
+ ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
  t.prefSet('inklook',true);t.frame();ok(scr.classList.contains('ink')&&shown(ink.hero),'and Ink again');
  ok(!ERR.length,'no runtime errors');
 });

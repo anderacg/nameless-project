@@ -1,55 +1,63 @@
 'use strict';
-/* The ink look (the owner, 2026-11-24, with a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like this?"):
-   a torn paper edge round the screen, dark see-through panels in a pale ink rim, round buttons in a brushed ring, a round parchment
-   minimap, and on a phone your hero's card top left (your level in a ring, health, stamina, morale, experience). Its look is
-   ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK, and redrawn only when the screen's size changes.
-   on: the look (Settings → Interface look); edge: the paper's width and how ragged its inner edge is, css px; ring: the brushed ring's
-   picture (px across, its stroke, how much the stroke swells); rim: the minimap's paper rim, a share of its radius */
-const INK={on:true,edge:{w:6,rag:2.6,paper:'#dccfae',fold:'#b6a57c',ink:'#26221c'},ring:{px:96,w:7,swell:.35,ink:'#ece3cb',dark:'#141210'},
-  rim:{share:.13,paper:'#d8caa4',ink:'#3a3226'},seed:7};
-// (a small seeded stream for the art, so the paper tears the same way each time: never the game's dice)
+/* The ink look (the owner, 2026-11-24, with a picture of a hand-inked mobile RPG: "Can we adjust ui to have similar vibe like this?",
+   then "Can you remove the outer frame? ... ensure that all ui sharing the same color tone? I want a frame to be golden and torn out"):
+   one warm tone (dark see-through panels, cream words, gold), every frame in the game a golden band torn along its outer edge (the
+   forged rim's place in campaign-hud.css and game-panels.css: --campaign-frame, --ui-rim), round buttons in a torn gold ring, a round
+   parchment minimap in one, and on a phone your hero's card top left (your level in a ring, health, stamina, morale, experience). Its
+   look is ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK.
+   on: the look (Settings → Interface look); frame: the frame's picture (px across; slice, the part of each edge a border shows, as the
+   forged rim's 176; period, how often a side's tear repeats; out, how far in the tear reaches; gold, where the gold ends; fill, the
+   panel's own dark inside the gold; its golds and inks); ring: a round button's ring (px across, its band, how deep its tear); rim: the
+   minimap's ring, a share of its radius */
+const INK={on:true,seed:7,
+  frame:{px:1024,slice:176,period:672,out:[4,64],gold:84,goldVar:10,fill:'rgba(23,19,14,.86)',gilt:'#c8963a',hi:'#f2d27e',burn:'#4a3010',ink:'#1b130a'},
+  ring:{px:96,band:7,tear:4},rim:{share:.14,tear:5}};
+// (a small seeded stream for the art, so the gold tears the same way each time: never the game's dice)
 const inkRand=s=>()=>(s=(s*1103515245+12345)>>>0)/4294967296;
+// (a tear along a side, 0–1 at t: waves of a few lengths and now and then a deep bite, repeating every p so the tiles of a long side meet)
+function inkTear(seed,p){const rnd=inkRand(seed),w=[1,2,3,5,8].map(k=>[k,rnd()*7,(rnd()*.6+.4)/Math.sqrt(k)]),sum=w.reduce((a,v)=>a+v[2],0),bite=[[3,rnd()*7],[7,rnd()*7]];
+  return t=>{let v=0;for(const [k,ph,a] of w)v+=a*Math.sin(2*Math.PI*k*t/p+ph);let f=.42+.3*v/sum;for(const [k,ph] of bite)f+=.4*Math.pow(Math.abs(Math.sin(Math.PI*k*t/p+ph)),14);return Math.max(0,Math.min(1,f))}}
 class InkHud{
   constructor(screen){
-    INK.on=prefGet('inklook');this.screen=screen;this.edge=document.createElement('canvas');this.edge.className='ink-edge';this.edge.setAttribute('aria-hidden','true');screen.appendChild(this.edge);
+    INK.on=prefGet('inklook');this.screen=screen;
     this.hero=document.createElement('button');this.hero.type='button';this.hero.className='ink-hero';this.hero.hidden=true;this.hero.setAttribute('aria-controls','stats');
     // (the click kept from the page: the phone HUD shuts its drawers on a click outside it, input.js MobileWorldHud)
     this.hero.addEventListener('click',e=>{e.stopPropagation();document.getElementById('partyToggle')?.click();this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')))});
     this.purse=document.createElement('div');this.purse.className='ink-purse';this.purse.hidden=true;
     const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.purse);
-    const root=document.documentElement.style;root.setProperty('--ink-ring','url('+this.ring(INK.ring.ink).toDataURL()+')');root.setProperty('--ink-rim','url('+this.rim().toDataURL()+')');
-    new ResizeObserver(()=>this.paper()).observe(screen);this.apply();
+    this.frameUrl='url('+this.frame().toDataURL()+')';
+    const root=document.documentElement.style;root.setProperty('--ink-frame',this.frameUrl);root.setProperty('--ink-ring','url('+this.ring(INK.ring.px,INK.ring.band,INK.ring.tear,11).toDataURL()+')');
+    root.setProperty('--ink-rim','url('+this.ring(256,256/2*INK.rim.share,INK.rim.tear,23).toDataURL()+')');
+    this.apply();
   }
-  apply(){this.screen.classList.toggle('ink',INK.on);this.edge.hidden=!INK.on;if(INK.on)this.paper()}
-  // the torn paper round the screen: a band of paper, its inner edge torn (a wandering line, a little grit on it), inked along the tear
-  paper(){
-    if(!INK.on)return;const r=this.screen.getBoundingClientRect(),k=Math.min(2,devicePixelRatio||1),W=Math.round(r.width*k),H=Math.round(r.height*k);if(!W||!H||this.edge.width===W&&this.edge.height===H)return;
-    const c=this.edge;c.width=W;c.height=H;const g=c.getContext('2d'),E=INK.edge,rnd=inkRand(INK.seed),pts=[],step=3*k;
-    let d=0;const tear=()=>{d+=(rnd()-.5)*E.rag*.9*k;d*=.82;return E.w*k+d+(rnd()-.5)*E.rag*.6*k};
-    for(let x=0;x<W;x+=step)pts.push([x,tear()]);for(let y=0;y<H;y+=step)pts.push([W-tear(),y]);
-    for(let x=W;x>0;x-=step)pts.push([x,H-tear()]);for(let y=H;y>0;y-=step)pts.push([tear(),y]);
-    g.clearRect(0,0,W,H);g.beginPath();g.rect(0,0,W,H);g.moveTo(pts[0][0],pts[0][1]);for(const [x,y] of pts)g.lineTo(x,y);g.closePath();
-    g.fillStyle=E.paper;g.fill('evenodd');
-    // (its fold: a darker line a little inside the outer edge; then the ink along the tear)
-    g.strokeStyle=E.fold;g.lineWidth=1*k;g.strokeRect(2.5*k,2.5*k,W-5*k,H-5*k);
-    g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(const [x,y] of pts)g.lineTo(x,y);g.closePath();g.strokeStyle=E.ink;g.lineWidth=1.4*k;g.stroke();
-  }
-  // a brushed ring: a stroke that swells and thins round the circle, as a brush laid it, with a dark hairline outside it
-  ring(col){
-    const R=INK.ring,n=R.px,c=document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d'),rnd=inkRand(INK.seed+3),m=n/2,rad=m-R.w/2-2;
-    g.lineCap='round';g.strokeStyle=R.dark;g.lineWidth=R.w+3;g.beginPath();g.arc(m,m,rad,0,7);g.stroke();
-    const N=48;let w=R.w;for(let i=0;i<N;i++){w=Math.max(R.w*(1-R.swell),Math.min(R.w*(1+R.swell),w+(rnd()-.5)*2));const a0=i/N*Math.PI*2,a1=(i+1.15)/N*Math.PI*2;
-      g.strokeStyle=col;g.lineWidth=w;g.beginPath();g.arc(m,m,rad+(rnd()-.5)*.8,a0,a1);g.stroke()}
+  // (on: the screen's class, and the game's two frames swapped for the torn gold one; off: both as the stylesheets have them)
+  apply(){this.screen.classList.toggle('ink',INK.on);for(const v of ['--campaign-frame','--ui-rim'])if(INK.on)this.screen.style.setProperty(v,this.frameUrl);else this.screen.style.removeProperty(v)}
+  // the frame: a band of gold torn along its outer edge (a burnt line on the tear), a dark line on its inner edge, the panel's dark inside
+  // it; each side's tear repeats every period, so a long side, its middle tiled (ink-hud.css: border-image-repeat round), never shows a seam
+  frame(){
+    const F=INK.frame,n=F.px,c=document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d'),rnd=inkRand(INK.seed+41);
+    const tears=[0,1,2,3].map(i=>[inkTear(INK.seed+11+i,F.period),inkTear(INK.seed+31+i,F.period)]);
+    const at=(s,t,d)=>s===0?[t,d]:s===1?[n-d,t]:s===2?[n-t,n-d]:[d,n-t];
+    // (each side from the depth of the deepest tear to as far from its end: its corners cut across, never a sliver to the picture's corner)
+    const loop=fn=>{const pts=[],e=F.out[1];for(let s=0;s<4;s++)for(let t=e;t<=n-e;t+=3)pts.push(at(s,t,fn(s,t)));return pts};
+    const path=(pts,go=true)=>{if(go)g.beginPath();pts.forEach(([x,y],i)=>g[i?'lineTo':'moveTo'](x,y));g.closePath()};
+    const outer=loop((s,t)=>F.out[0]+(F.out[1]-F.out[0])*tears[s][0](t)),inner=loop((s,t)=>F.gold+F.goldVar*(tears[s][1](t)-.5)),shine=loop((s,t)=>F.out[0]+(F.out[1]-F.out[0])*tears[s][0](t)+12);
+    path(inner);g.fillStyle=F.fill;g.fill();
+    g.beginPath();path(outer,false);path(inner,false);g.fillStyle=F.gilt;g.fill('evenodd');
+    g.save();g.beginPath();path(outer,false);path(inner,false);g.clip('evenodd');
+    path(shine);g.strokeStyle=F.hi;g.lineWidth=7;g.globalAlpha=.75;g.stroke();g.globalAlpha=1;
+    for(let i=0;i<3000;i++){const x=rnd()*n,y=rnd()*n;g.fillStyle=rnd()<.5?'rgba(255,236,170,.35)':'rgba(90,55,12,.35)';g.fillRect(x,y,3,3)}g.restore();
+    path(outer);g.strokeStyle=F.burn;g.lineWidth=6;g.stroke();path(inner);g.strokeStyle=F.ink;g.lineWidth=7;g.stroke();
     return c;
   }
-  // the minimap's rim: a ring of paper, torn a little on both edges, inked on its inside
-  rim(){
-    const R=INK.rim,n=256,c=document.createElement('canvas');c.width=c.height=n;const g=c.getContext('2d'),rnd=inkRand(INK.seed+5),m=n/2,band=m*R.share,N=120,rr=[];
-    for(let i=0;i<=N;i++)rr.push([m-1-rnd()*3,m-band+(rnd()-.5)*3]);
-    g.beginPath();for(let i=0;i<=N;i++){const a=i/N*Math.PI*2;g[i?'lineTo':'moveTo'](m+Math.cos(a)*rr[i][0],m+Math.sin(a)*rr[i][0])}
-    for(let i=N;i>=0;i--){const a=i/N*Math.PI*2;g.lineTo(m+Math.cos(a)*rr[i][1],m+Math.sin(a)*rr[i][1])}g.closePath();g.fillStyle=R.paper;g.fill();
-    g.beginPath();for(let i=0;i<=N;i++){const a=i/N*Math.PI*2;g[i?'lineTo':'moveTo'](m+Math.cos(a)*rr[i][1],m+Math.sin(a)*rr[i][1])}g.strokeStyle=R.ink;g.lineWidth=2.5;g.stroke();
-    g.strokeStyle='#8c7c58';g.lineWidth=1;g.beginPath();g.arc(m,m,m-band*.45,0,7);g.stroke();
+  // a ring of the same gold for round things (px across, its band, how deep its outer edge is torn, its seed): the buttons, the minimap
+  ring(px,band,tear,seed){
+    const F=INK.frame,c=document.createElement('canvas');c.width=c.height=px;const g=c.getContext('2d'),m=px/2,T=inkTear(INK.seed+seed,2*Math.PI),N=180;
+    const r0=a=>m-1-tear*T(a),r1=m-1-tear-band,pt=(a,r)=>[m+Math.cos(a)*r,m+Math.sin(a)*r];
+    g.beginPath();for(let i=0;i<=N;i++){const a=i/N*2*Math.PI;g[i?'lineTo':'moveTo'](...pt(a,r0(a)))}g.closePath();g.arc(m,m,r1,0,2*Math.PI,true);g.fillStyle=F.gilt;g.fill();
+    g.save();g.clip();g.strokeStyle=F.hi;g.lineWidth=Math.max(1.5,band*.3);g.globalAlpha=.7;g.beginPath();g.arc(m,m,r1+band*.62,0,2*Math.PI);g.stroke();g.restore();
+    g.beginPath();for(let i=0;i<=N;i++){const a=i/N*2*Math.PI;g[i?'lineTo':'moveTo'](...pt(a,r0(a)))}g.closePath();g.strokeStyle=F.burn;g.lineWidth=Math.max(1.2,px/80);g.stroke();
+    g.beginPath();g.arc(m,m,r1,0,2*Math.PI);g.strokeStyle=F.ink;g.lineWidth=Math.max(1.5,px/60);g.stroke();
     return c;
   }
   // your hero's card on a phone's map, and your purse under the minimap; the old status strip's conditions behind the card's tap
