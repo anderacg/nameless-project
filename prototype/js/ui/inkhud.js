@@ -9,13 +9,14 @@
    health, stamina, morale, gold, food and drink). Its look is ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK.
    on: the look (Settings → Interface look); frame: the frame's picture (px across; slice, the part of each edge a border shows, as the
    forged rim's 176; band, the gold's width in it; its golds; rust and spots, its blotches (none now); pits and pit, its faint grain); ring: a round button's ring (px across, its
-   band); rim: the minimap's ring, a share of its radius; dayLap: how far the day's line rises over the minimap's foot, px (under 0: below it); dial:
+   band); rim: the minimap's ring, a share of its radius; dayLap: how far the day's line rises over the minimap's foot, px (under 0: below it, by the gap); gap: the HUD's one
+   gap, px, as ink-hud.css --ink-gap; dial:
    the day and night round the minimap's rim (the owner, 2026-11-24: "Can you make day and night as a circle integrated with map"):
    where it lies inside the rim and how wide (shares of the minimap's width), its stars, its gold lines, the sky through the day (a share of the day, a colour: dawn at its left,
    noon at its top, dusk at its right, midnight at its foot) */
 const INK={on:true,seed:7,
   frame:{px:512,slice:176,band:40,gilt:['#f4da94','#d6a84e','#a87a30'],edge:'#7d5824',rust:['rgba(146,74,26,.68)','rgba(98,50,18,.6)','rgba(112,128,80,.34)'],spots:0,pits:500,pit:['rgba(120,80,28,.22)','rgba(255,242,196,.3)']},
-  ring:{px:96,band:5},rim:{share:.075},dayLap:-2,
+  ring:{px:96,band:5},rim:{share:.075},gap:6,dayLap:-6,
   dial:{rim:.0375,band:.078,stars:14,line:'#e2bd68',star:'#f4ecd0',
     sky:[[0,'#e48a52'],[.08,'#eeb86a'],[.25,'#f5dc8e'],[.42,'#eeb86a'],[.5,'#d9774a'],[.56,'#4a3e66'],[.63,'#25305a'],[.87,'#1d2748'],[.95,'#3d3a63'],[1,'#e48a52']]}};
 // (a small seeded stream for the art, so the gold's grain lies the same way each time: never the game's dice)
@@ -124,7 +125,7 @@ class InkHud{
     // (centred under it, but never past its right side: the minimap stands at the screen's edge and the line can be the wider)
     this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';
     // (what stands at the right under the day's line: a level's skill points, ink-hud.css .lgroup)
-    this.screen.style.setProperty('--ink-side-top',this.day.getBoundingClientRect().bottom-host.top+6+'px');
+    this.screen.style.setProperty('--ink-side-top',this.day.getBoundingClientRect().bottom-host.top+INK.gap+'px');
   }
 }
 window.inkHud=document.getElementById('screen')?new InkHud(document.getElementById('screen')):null;

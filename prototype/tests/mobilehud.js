@@ -10,9 +10,9 @@ Kit.suite(({ok})=>{
  ok(rect(root).height<=52,'landscape phone HUD fits a single compact row ('+rect(root).height+'px, at most 52)');
  const shared=id=>document.getElementById(id).querySelector('.campaign-command-art');ok(shared('mapToggle')&&shared('charBtn')&&visible(shared('mapToggle'))&&visible(shared('charBtn'))&&shared('mapToggle').getAttribute('viewBox')===shared('mapBtn').getAttribute('viewBox'),'phone Map and Army show the same illustrated artwork as desktop');
  const survey=window.campaignHud.mobileMini,map=t.worldMiniRect(),game=rect(cv),picture=rect(survey.querySelector('canvas')),scale=game.width/t.VW;
- // (the ink look, ui/inkhud.js: the picture cut round, in a circle at the screen's edge, so only its size and its top are kept)
+ // (the ink look, ui/inkhud.js: the picture cut round, in a circle at the screen's edge by the HUD's one gap, so only its size is kept)
  const ink=typeof INK!=='undefined'&&INK.on;
- ok(!survey.hidden&&(ink||Math.abs(picture.left-game.left-map.x*scale)<1)&&Math.abs(picture.top-game.top-map.y*scale)<1&&Math.abs(picture.width-map.w*scale)<1,'painted phone frame preserves the minimap picture size and position'+(ink?' (its size and top: the ink look\'s round map)':''));
+ ok(!survey.hidden&&(ink||Math.abs(picture.left-game.left-map.x*scale)<1&&Math.abs(picture.top-game.top-map.y*scale)<1)&&Math.abs(picture.width-map.w*scale)<1,'painted phone frame preserves the minimap picture size and position'+(ink?' (its size: the ink look\'s round map, at the screen\'s edge with the HUD\'s one gap)':''));
  ok(document.elementFromPoint(picture.left+picture.width/2,picture.top+picture.height/2)===survey,'the phone minimap remains directly clickable');
  survey.click();t.frame();ok(G.mode==='fullmap'&&survey.hidden,'the painted phone minimap opens the full map and hides with the HUD');t.fullMapKey();t.frame();
  const conditions=[...party.querySelectorAll('.campaign-condition')],desktop=document.querySelector('#stats .campaign-condition');ok(conditions.length===3&&conditions.every(e=>e.querySelector('.campaign-condition-art')&&e.querySelector('.campaign-condition-gauge')),'phone fitness, morale and stamina use the shared icon and gauge components');

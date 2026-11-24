@@ -61,6 +61,12 @@ Kit.suite(({ok,info})=>{
  {const h=t.leaderOf(P);h.addXp(h.xpNeed()-(h.xp||0));t.updateHUD(true);const b=document.querySelector('#lgroup .lvup'),br=b&&rect(b),dr=rect(ink.day),sr=rect(scr),tr=rect(document.querySelector('.toasts')),dk=rect(document.querySelector('.mwh-dock'));
   ok(b&&shown(b)&&Math.abs(br.width-br.height)<1&&getComputedStyle(b).borderTopLeftRadius==='50%'&&br.right>sr.right-20&&br.top>=dr.bottom,'a level\'s skill points: a round button at the right under the day ('+(br?[Math.round(br.left),Math.round(br.top)]:'none')+')');
   ok(tr.left<sr.left+20&&tr.bottom>sr.bottom-20&&tr.right<=dk.left,'the log in the bottom-left corner, clear of the buttons')}
+ // (one gap between every two pieces and from the screen's edge, the owner: "make sure they are having the same gap")
+ {const G=parseFloat(getComputedStyle(scr).getPropertyValue('--ink-gap')),sr=rect(scr),R=e=>rect(e),q=[...document.querySelectorAll('#qtrack>div,#qtrack .qt-list')].filter(shown).map(R).sort((a,b)=>a.top-b.top);
+  const col=[R(ink.hero),...q.filter((r,i,a)=>!a.some((o,j)=>j!==i&&o.top<=r.top&&o.bottom>=r.bottom&&o!==r))],gaps=col.slice(1).map((r,i)=>Math.round(r.top-col[i].bottom));
+  const mr=R(window.campaignHud.mobileMini),dk=R(document.querySelector('.mwh-dock')),bs=[...document.querySelectorAll('.mwh-dock>div')].map(R),bg=bs.slice(1).map((r,i)=>Math.round(r.left-bs[i].right));
+  const edges=[R(ink.hero).left-sr.left,R(ink.hero).top-sr.top,sr.right-mr.right,mr.top-sr.top,sr.right-dk.right,sr.bottom-dk.bottom].map(Math.round);
+  ok(G===6&&gaps.every(g=>g===G)&&bg.every(g=>g===G)&&edges.every(e=>e===G)&&Math.round(R(ink.day).top-mr.bottom)===G,'one gap of '+G+' px: the left column ('+gaps+'), the buttons ('+bg+'), the screen\'s edges ('+edges+'), the minimap to its day')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
  ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.day)&&!shown(ink.dial)&&!shown(ink.hour)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card, the forged frames back, the party strip back');
