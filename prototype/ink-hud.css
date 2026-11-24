@@ -9,8 +9,8 @@
      3. hero        your hero's card (a phone's map, top left): your army's flag in a gold ring, health, stamina, morale, experience
      4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
      5. dock        the round buttons (bottom right), their names at their feet; the speed and map choices
-     6. minimap     round, in a thin gold ring, the day and night round its rim (a sun or moon at the hour); the day on a plate
-                    across its foot; your purse beside it
+     6. minimap     round, in a thin gold ring, the day and night round its rim (the bar's sky icon at the hour); the day in one
+                    short line under it; your purse beside it
      7. messages    the log bottom left, the party's details under the card
    ===================================================================================================================== */
 
@@ -30,7 +30,7 @@
 /* (the frame's middle tiled, not stretched: its grain repeats to fit, never smeared along a long side: inkhud.js frame) */
 .screen.ink *{border-image-repeat:round!important}
 /* (the gold frame on the ink's own panels, their corners as round as its) */
-.screen.ink :is(.ink-hero,.ink-purse>span,.ink-day),.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
+.screen.ink :is(.ink-hero,.ink-purse>span),.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
 .screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map),.screen.ink.campaign-world.mobile-world #stats{
   border:6px solid transparent;border-image:var(--ink-frame) 176/8px round;border-radius:8px;background:var(--ink-panel);box-shadow:0 2px 6px rgba(0,0,0,.35)}
 /* (no black hairline inside the game's plates: a faint gold one; every framed thing's corners rounded to its gold: inkhud.js corners) */
@@ -38,7 +38,7 @@
 
 
 /* ---------- 3. hero ---------- */
-.ink-hero,.ink-purse,.ink-day,.ink-dial{display:none}
+.ink-hero,.ink-purse,.ink-day,.ink-dial,.ink-hour{display:none}
 .screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(250px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
   color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
 .ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
@@ -107,9 +107,11 @@
 /* (the north mark over the rim: not with the day and night round it, a phone's map) */
 .screen.ink.mobile-world .campaign-mobile-survey::before{content:none}
 .screen.ink .campaign-mobile-survey::before{content:'N';position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:1;font:800 10px var(--font);color:#2a1d0c;pointer-events:none}
-.screen.ink.mobile-world .ink-day:not([hidden]){position:absolute;display:flex;align-items:center;gap:6px;padding:0 9px 0 0;transform:translateX(-50%);white-space:nowrap;pointer-events:none;z-index:3;color:var(--ink-fg)}
-.ink-sky{flex:none;display:grid;place-items:center;width:26px;height:26px;margin:-3px 0 -3px -3px;border-radius:50%;background:var(--ink-btn)}.ink-sky .gico{width:15px;height:15px}
-.ink-date{display:flex;flex-direction:column;line-height:1.1}.ink-date b{font:700 11px var(--font);text-shadow:var(--ink-out)}.ink-date small{font:10px var(--font);color:var(--ink-gold-fg)}
+.screen.ink.mobile-world .ink-day:not([hidden]){display:block;position:absolute;transform:translateX(-50%);white-space:nowrap;pointer-events:none;z-index:3;
+  font:700 11px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
+/* (the sky's icon at the hour, on the dial: the bar's own, a little glow so it reads on the band) */
+.screen.ink.mobile-world .ink-hour:not([hidden]){display:grid;place-items:center;position:absolute;width:18px;height:18px;transform:translate(-50%,-50%);pointer-events:none;z-index:3;
+  filter:drop-shadow(0 0 2px rgba(18,13,7,.9))}.ink-hour .gico{width:17px;height:17px}
 .screen.ink.mobile-world .ink-purse:not([hidden]){position:absolute;display:flex;flex-direction:column;align-items:flex-end;gap:2px;pointer-events:none;z-index:2}
 .ink-purse>span{display:flex;align-items:center;gap:5px;padding:0 6px 0 0;font:700 12px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
 .ink-purse>span:first-child b{color:var(--ink-gold)}.ink-purse>span.low b{color:var(--ink-red)}

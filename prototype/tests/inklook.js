@@ -36,23 +36,23 @@ Kit.suite(({ok,info})=>{
   ok(round.length===bs.length,'the buttons are round ('+round.length+' of '+bs.length+')');
   const dl=document.querySelector('#mapToggle .dl');ok(rect(dl).width>8&&rect(dl).bottom>rect(document.getElementById('mapToggle')).bottom+2,'their names at their feet');
   ok(rect(window.mobileWorldHud.root).height<=52,'the bottom row as low as before ('+rect(window.mobileWorldHud.root).height+' px)')}
- // (the day on a plate across the minimap's foot, the owner: "make the day and time integrated with the mini map"; the bottom row the buttons only)
- {const d=ink.day,dr=rect(d),mr=rect(window.campaignHud.mobileMini),D=t.dayParts();
-  ok(shown(d)&&d.textContent.includes(D.day)&&d.textContent.includes(D.time)&&dr.top<mr.bottom&&dr.bottom>mr.bottom&&dr.right<=mr.right+1&&dr.left<mr.left+mr.width/2,'the day, its season, time and weather on a plate across the minimap\'s foot ('+d.textContent+')');
-  ok(!shown(document.querySelector('.mwh-status')),'no day strip by the buttons')}
- // (day and night round the minimap's rim, the owner: "make day and night as a circle integrated with map": the sun by day, the moon by
- // night, where the hour stands: dawn left, noon top, dusk right, midnight at its foot)
- {const dl=ink.dial,mr=rect(window.campaignHud.mobileMini),dr=rect(dl),A=t.INK.dial,was=G.clock;
-  ok(shown(dl)&&Math.abs(dr.left-mr.left)<1&&Math.abs(dr.width-mr.width)<1&&Math.abs(dr.top-mr.top)<1,'the dial laid over the minimap\'s rim');
-  // (the sun's middle; the moon's lit side, its middle cut by the crescent's shadow)
-  const at=(f,dx=0,dy=0)=>{G.clock=f*t.DAY;t.updateHUD(true);const n=dl.width,m=n/2,ro=m-A.rim*n,ri=ro-A.band*n,rc=(ro+ri)/2,R=(ro-ri)*A.mark,a=Math.PI+f*2*Math.PI;return dl.getContext('2d').getImageData(Math.round(m+Math.cos(a)*rc+dx*R),Math.round(m+Math.sin(a)*rc+dy*R),1,1).data};
-  const hex=c=>[1,3,5].map(i=>parseInt(c.slice(i,i+2),16)),near=(d,c)=>hex(c).every((v,i)=>Math.abs(v-d[i])<12);
-  const noon=at(.25),night=at(.75,-.6,.35);G.clock=was;t.updateHUD(true);
-  ok(near(noon,A.sun[0])&&near(night,A.moon[0]),'the sun at noon at its top, the moon at midnight at its foot (rgb '+[...noon].slice(0,3)+' / '+[...night].slice(0,3)+')');
-  ok(rect(ink.day).top>=mr.bottom-t.INK.dayLap-1,'the day\'s plate below the dial, the night\'s foot clear')}
+ // (the day in one short line under the minimap (the owner: "Remove that bar and show only compact below text"), no frame; day and night
+ // round its rim (the owner: "make day and night as a circle integrated with map"), the bar's own sky icon at the hour ("Why dont you
+ // use icon from the bar?"): dawn left, noon top, dusk right, midnight at its foot)
+ {const d=ink.day,dr=rect(d),mr=rect(window.campaignHud.mobileMini),D=t.dayParts(),dl=ink.dial,A=t.INK.dial,was=G.clock;
+  ok(shown(d)&&d.textContent.includes(D.day)&&!d.textContent.includes(D.time)&&dr.top>=mr.bottom-1&&dr.right<=mr.right+1&&getComputedStyle(d).borderImageSource==='none'&&getComputedStyle(d).backgroundColor==='rgba(0, 0, 0, 0)','the day in a short line under the minimap, no frame ('+d.textContent+')');
+  ok(!shown(document.querySelector('.mwh-status')),'no day strip by the buttons');
+  const dd=rect(dl);ok(shown(dl)&&Math.abs(dd.left-mr.left)<1&&Math.abs(dd.width-mr.width)<1&&Math.abs(dd.top-mr.top)<1,'the dial laid over the minimap\'s rim');
+  // (as the page has it: the sky's icon put through the page, so the two read alike)
+  const norm=h=>{const e=document.createElement('span');e.innerHTML=h;return e.innerHTML};
+  const at=f=>{G.clock=f*t.DAY;t.updateHUD(true);const h=rect(ink.hour);return{x:(h.left+h.right)/2-(mr.left+mr.width/2),y:(h.top+h.bottom)/2-(mr.top+mr.height/2),html:ink.hour.innerHTML,sky:norm(t.dayParts().sky)}};
+  const noon=at(.25),night=at(.75),dawn=at(0);G.clock=was;t.updateHUD(true);
+  ok(Math.abs(noon.x)<2&&noon.y<-mr.height*.35&&Math.abs(night.x)<2&&night.y>mr.height*.35&&dawn.x<-mr.width*.35,'the hour\'s icon: noon at its top, midnight at its foot, dawn at its left');
+  info('the hour\'s icon at noon and midnight: '+(noon.html===night.html?'the same (the weather\'s)':'the sun\'s, then the moon\'s or the weather\'s'));
+  ok(noon.html===noon.sky&&night.html===night.sky&&!!ink.hour.querySelector('svg'),'the bar\'s own sky icon, the sun\'s by day and the moon\'s or the weather\'s by night')}
  // (Forged: every piece as it was)
  t.prefSet('inklook',false);t.frame();
- ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!shown(ink.day)&&!shown(ink.dial)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
+ ok(!scr.classList.contains('ink')&&!shown(ink.hero)&&!shown(ink.purse)&&!shown(ink.day)&&!shown(ink.dial)&&!shown(ink.hour)&&shown(document.querySelector('.mwh-status'))&&!scr.style.getPropertyValue('--campaign-frame')&&getComputedStyle(document.getElementById('panel')).getPropertyValue('--ui-rim').includes('forged-rim')&&shown(document.getElementById('partyToggle')),'Forged: no card or purse, the forged frames back, the party strip back');
  t.prefSet('inklook',true);t.frame();ok(scr.classList.contains('ink')&&shown(ink.hero),'and Ink again');
  ok(!ERR.length,'no runtime errors');
 });

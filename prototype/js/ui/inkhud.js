@@ -9,15 +9,14 @@
    health, stamina, morale, experience). Its look is ink-hud.css (every rule under .screen.ink); its art is drawn here once, from INK.
    on: the look (Settings → Interface look); frame: the frame's picture (px across; slice, the part of each edge a border shows, as the
    forged rim's 176; band, the gold's width in it; its golds; rust and spots, its blotches (none now); pits and pit, its faint grain); ring: a round button's ring (px across, its
-   band); rim: the minimap's ring, a share of its radius; dayLap: how far the day's plate rises over the minimap's foot, px; dial:
+   band); rim: the minimap's ring, a share of its radius; dayLap: how far the day's line rises over the minimap's foot, px (under 0: below it); dial:
    the day and night round the minimap's rim (the owner, 2026-11-24: "Can you make day and night as a circle integrated with map"):
-   where it lies inside the rim and how wide (shares of the minimap's width), the sun's or moon's size (a share of the band), its
-   stars, its gold lines, the sun's and moon's colours, the sky through the day (a share of the day, a colour: dawn at its left,
+   where it lies inside the rim and how wide (shares of the minimap's width), its stars, its gold lines, the sky through the day (a share of the day, a colour: dawn at its left,
    noon at its top, dusk at its right, midnight at its foot) */
 const INK={on:true,seed:7,
   frame:{px:512,slice:176,band:40,gilt:['#f4da94','#d6a84e','#a87a30'],edge:'#7d5824',rust:['rgba(146,74,26,.68)','rgba(98,50,18,.6)','rgba(112,128,80,.34)'],spots:0,pits:500,pit:['rgba(120,80,28,.22)','rgba(255,242,196,.3)']},
-  ring:{px:96,band:5},rim:{share:.075},dayLap:3,
-  dial:{rim:.0375,band:.078,mark:.8,stars:14,line:'#e2bd68',star:'#f4ecd0',sun:['#ffd45c','#f6c04a','#a8762e'],moon:['#f1ead2','#a99c78'],
+  ring:{px:96,band:5},rim:{share:.075},dayLap:-2,
+  dial:{rim:.0375,band:.078,stars:14,line:'#e2bd68',star:'#f4ecd0',
     sky:[[0,'#e48a52'],[.08,'#eeb86a'],[.25,'#f5dc8e'],[.42,'#eeb86a'],[.5,'#d9774a'],[.56,'#4a3e66'],[.63,'#25305a'],[.87,'#1d2748'],[.95,'#3d3a63'],[1,'#e48a52']]}};
 // (a small seeded stream for the art, so the gold's grain lies the same way each time: never the game's dice)
 const inkRand=s=>()=>(s=(s*1103515245+12345)>>>0)/4294967296;
@@ -28,10 +27,12 @@ class InkHud{
     // (the click kept from the page: the phone HUD shuts its drawers on a click outside it, input.js MobileWorldHud)
     this.hero.addEventListener('click',e=>{e.stopPropagation();document.getElementById('partyToggle')?.click();this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')))});
     this.purse=document.createElement('div');this.purse.className='ink-purse';this.purse.hidden=true;
-    // (the day on a plate hung from the minimap, the owner, 2026-11-24: "can you make the day and time integrated with the mini map?")
+    // (the day in a line under the minimap, the owner, 2026-11-24: "can you make the day and time integrated with the mini map?")
     this.day=document.createElement('div');this.day.className='ink-day';this.day.hidden=true;this.day.setAttribute('role','status');
+    // (the sky's icon at the hour on the dial: the bar's own, the sun, the moon or the weather's, the owner: "Why dont you use icon from the bar?")
+    this.hour=document.createElement('span');this.hour.className='ink-hour';this.hour.hidden=true;
     this.dial=document.createElement('canvas');this.dial.className='ink-dial';this.dial.hidden=true;this.dial.setAttribute('aria-hidden','true');
-    const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.purse);layer.appendChild(this.dial);layer.appendChild(this.day);
+    const layer=screen.querySelector('.hudlayer');layer.appendChild(this.hero);layer.appendChild(this.purse);layer.appendChild(this.dial);layer.appendChild(this.hour);layer.appendChild(this.day);
     this.frameUrl='url('+this.frame().toDataURL()+')';
     const root=document.documentElement.style;root.setProperty('--ink-frame',this.frameUrl);root.setProperty('--ink-ring','url('+this.ring(INK.ring.px,INK.ring.band,11).toDataURL()+')');
     root.setProperty('--ink-rim','url('+this.ring(256,256/2*INK.rim.share,23).toDataURL()+')');
@@ -82,23 +83,19 @@ class InkHud{
   sky(t){const S=INK.dial.sky;let i=1;while(i<S.length-1&&S[i][0]<t)i++;const [a,ca]=S[i-1],[b,cb]=S[i],k=b>a?Math.max(0,Math.min(1,(t-a)/(b-a))):0,h=(c,j)=>parseInt(c.slice(j,j+2),16);
     return 'rgb('+[1,3,5].map(j=>Math.round(h(ca,j)+(h(cb,j)-h(ca,j))*k)).join(',')+')'}
   // the dial: the day's sky round a band inside the minimap's rim (dawn left, noon top, dusk right, midnight at its foot), stars on its
-  // night, gold lines on its edges and at the four quarters, the sun or the moon where the hour stands (core/clock.js Clock.frac);
-  // drawn again only when the hour has moved a two-minute step or the minimap's size changed
+  // night, gold lines on its edges and at the four quarters; drawn again only when the minimap's size changes (the hour's icon rides
+  // over it: update)
   dialDraw(D){
-    const k=Math.min(2,devicePixelRatio||1),n=Math.round(D*k),f=Clock.frac,key=n+':'+Math.round(f*720);if(!n||this.dialKey===key)return;this.dialKey=key;
+    const k=Math.min(2,devicePixelRatio||1),n=Math.round(D*k),key=String(n);if(!n||this.dialKey===key)return;this.dialKey=key;
     const c=this.dial,A=INK.dial;c.width=c.height=n;const g=c.getContext('2d'),m=n/2,ro=m-A.rim*n,ri=ro-A.band*n,rc=(ro+ri)/2,ang=t=>Math.PI+t*2*Math.PI,N=96,w=Math.max(1,k);
     for(let i=0;i<N;i++){const t0=i/N,t1=(i+1)/N;g.beginPath();g.arc(m,m,ro,ang(t0),ang(t1)+.01);g.arc(m,m,ri,ang(t1)+.01,ang(t0),true);g.closePath();g.fillStyle=this.sky((t0+t1)/2);g.fill()}
     const rnd=inkRand(INK.seed+61);g.fillStyle=A.star;for(let i=0;i<A.stars;i++){const t=NIGHT_AT+.06+rnd()*(.88-NIGHT_AT),q=ri+(ro-ri)*(.25+rnd()*.5),a=ang(t);g.fillRect(m+Math.cos(a)*q,m+Math.sin(a)*q,w,w)}
     g.strokeStyle=A.line;g.lineWidth=w;for(const q of [ro,ri]){g.beginPath();g.arc(m,m,q,0,2*Math.PI);g.stroke()}
     for(const t of [0,.25,.5,.75]){const a=ang(t),q=ri+(ro-ri)*.45;g.beginPath();g.moveTo(m+Math.cos(a)*ri,m+Math.sin(a)*ri);g.lineTo(m+Math.cos(a)*q,m+Math.sin(a)*q);g.stroke()}
-    const a=ang(f),x=m+Math.cos(a)*rc,y=m+Math.sin(a)*rc,R=(ro-ri)*A.mark,disc=()=>{g.beginPath();g.arc(x,y,R,0,2*Math.PI)};
-    if(f<NIGHT_AT){g.strokeStyle=A.sun[1];for(let i=0;i<8;i++){const b=i*Math.PI/4;g.beginPath();g.moveTo(x+Math.cos(b)*R*1.1,y+Math.sin(b)*R*1.1);g.lineTo(x+Math.cos(b)*R*1.5,y+Math.sin(b)*R*1.5);g.stroke()}
-      disc();g.fillStyle=A.sun[0];g.fill();g.strokeStyle=A.sun[2];g.stroke()}
-    else{disc();g.fillStyle=A.moon[0];g.fill();g.save();disc();g.clip();g.beginPath();g.arc(x+R*.45,y-R*.3,R*.85,0,2*Math.PI);g.fillStyle=this.sky(f);g.fill();g.restore();disc();g.strokeStyle=A.moon[1];g.stroke()}
   }
   // your hero's card on a phone's map, and your purse under the minimap; the old status strip's conditions behind the card's tap
   update(S){
-    const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.purse.hidden=this.day.hidden=this.dial.hidden=!on;if(!on)return;
+    const on=INK.on&&!!window.campaignHud?.phone;this.hero.hidden=this.purse.hidden=this.day.hidden=this.dial.hidden=this.hour.hidden=!on;if(!on)return;
     const st=P.heroStats(),max=Math.max(1,Math.round(st.hp)),hp=Math.round(P.hp==null?max:Math.min(max,P.hp)),need=leaderOf(P).xpNeed(),xp=Math.max(0,Math.min(100,100*P.xp/Math.max(1,need)));
     const sta=Math.round(P.bsta),mor=Math.round(P.morale);
     const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'"><b>'+label+'</b><i><em style="width:'+Math.max(0,Math.min(100,v))+'%"></em><small>'+txt+'</small></i></span>';
@@ -112,13 +109,15 @@ class InkHud{
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
     setHtml(this.purse,'<span title="Gold">'+icon('gold',14)+'<b>'+P.gold.toLocaleString('en')+'</b></span><span class="'+(S.foodDays<1?'low':'')+'" title="Food">'+icon('food',14)+'<b>'+days(S.foodDays)+'</b></span><span class="'+(S.drinkDays<1?'low':'')+'" title="Drink">'+icon('mug',14)+'<b>'+days(S.drinkDays)+'</b></span>');
-    // (the day: the sky's icon in a ring, the day and its season over its time and weather, on a plate across the minimap's foot)
-    const D=dayParts(),line=D.day+(D.season?' · '+D.season:''),sub=D.time+(D.weather?' · '+D.weather:'');
-    setHtml(this.day,'<span class="ink-sky" title="'+htmlText(D.tip||D.time)+'">'+D.sky+'</span><span class="ink-date"><b>'+line+'</b><small>'+sub+(G.paused?' · Paused':'')+'</small></span>');this.day.setAttribute('aria-label',line+', '+sub);
+    // (the day in one short line under the minimap, the owner: "Remove that bar and show only compact below text": its day, its season,
+    //  its weather; its time is the dial's)
+    const D=dayParts(),line=[D.day,D.season,D.weather].filter(Boolean).join(' · ');
+    setHtml(this.day,htmlText(line));this.day.setAttribute('aria-label',line+', '+D.time);this.day.title=D.tip||D.time;setHtml(this.hour,D.sky);this.hour.title=D.time;
     const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect(),hr=this.hero.getBoundingClientRect();
     // (the day and night round its rim, laid over it; drawn again as the hour moves on)
     Object.assign(this.dial.style,{left:r.left-host.left+'px',top:r.top-host.top+'px',width:r.width+'px',height:r.height+'px'});this.dialDraw(r.width);
-    // (centred under it, but never past its right side: the minimap stands at the screen's edge and the plate is the wider)
+    {const A=INK.dial,ro=r.width/2-A.rim*r.width,rc=ro-A.band*r.width/2,a=Math.PI+Clock.frac*2*Math.PI;this.hour.style.left=r.left+r.width/2+Math.cos(a)*rc-host.left+'px';this.hour.style.top=r.top+r.height/2+Math.sin(a)*rc-host.top+'px'}
+    // (centred under it, but never past its right side: the minimap stands at the screen's edge and the line can be the wider)
     this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';const dr=this.day.getBoundingClientRect();
     // (the purse beside the minimap where it clears your hero's card, else under the day: a phone held upright)
     const beside=r.left-8-this.purse.offsetWidth>=hr.right+6;this.purse.style.top=(beside?r.top:dr.bottom+6)-host.top+'px';this.purse.style.right=host.right-(beside?r.left-8:r.right)+'px';
