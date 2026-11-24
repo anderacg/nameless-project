@@ -38,7 +38,7 @@
 
 /* ---------- 3. hero ---------- */
 .ink-hero,.ink-purse{display:none}
-.screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:250px;display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
+.screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(250px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
   color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
 .ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
   font:800 21px/1 var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
@@ -113,3 +113,11 @@
 /* (the log's lines on the bottom row, between the day and the buttons, clear of the quest cards over the day) */
 .screen.ink.mobile-world .toasts{left:calc(var(--e-l) + 250px);bottom:calc(var(--e-b) + 2px);width:min(34%,290px)}
 .screen.ink.campaign-world.mobile-world #stats{top:calc(var(--e-t) + 84px);bottom:auto;right:auto;width:300px;max-height:calc(100% - var(--e-t) - 84px - var(--e-b) - var(--mobile-hud-height,60px) - 12px);background:var(--ink-panel-hi)}
+/* (a phone held upright: the day over the buttons, each on its own row, the buttons at the right; the log's lines over both) */
+@media (max-width:600px){
+  .screen.ink.campaign-world.mobile-world .mobile-world-hud{flex-direction:column;align-items:flex-start;gap:6px}
+  .screen.ink.campaign-world.mobile-world .mwh-dock{align-self:flex-end;flex:none}
+  .screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 10px);width:min(80%,360px)}
+}
+/* (the narrowest: the hero's card without his rank, so his band's name keeps its room) */
+@media (max-width:400px){.screen.ink.mobile-world .ink-rank{display:none}}

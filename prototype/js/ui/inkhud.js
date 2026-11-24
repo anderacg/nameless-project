@@ -75,7 +75,7 @@ class InkHud{
     const sta=Math.round(P.bsta),mor=Math.round(P.morale);
     const bar=(cls,label,v,txt,low)=>'<span class="ink-bar '+cls+(low?' low':'')+'"><b>'+label+'</b><i><em style="width:'+Math.max(0,Math.min(100,v))+'%"></em><small>'+txt+'</small></i></span>';
     // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; your level beside your rank)
-    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small>'+htmlText(rankName())+' · Lv '+P.level+'</small></span>'+
+    const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong><small><span class="ink-rank">'+htmlText(rankName())+' · </span>Lv '+P.level+'</small></span>'+
       bar('hp','HP',100*hp/max,hp+' / '+max,hp<max*.35)+bar('sta','STA',sta,sta+'%',sta<SUPPLY.tired)+bar('mor','MOR',mor,mor+'%',mor<30)+
       '<span class="ink-bar xp"><b>EXP</b><i><em style="width:'+xp+'%"></em></i><small>'+xp.toFixed(1)+'%</small></span></span>';
     setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero, level '+P.level+': health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%. Party status');
@@ -83,8 +83,10 @@ class InkHud{
     // (one quest shown, the tracked one, and how many more on its tag: ink-hud.css)
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
-    const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect();this.purse.style.top=r.top-host.top+'px';this.purse.style.right=host.right-r.left+8+'px';
     setHtml(this.purse,'<span title="Gold">'+icon('gold',14)+'<b>'+P.gold.toLocaleString('en')+'</b></span><span class="'+(S.foodDays<1?'low':'')+'" title="Food">'+icon('food',14)+'<b>'+days(S.foodDays)+'</b></span><span class="'+(S.drinkDays<1?'low':'')+'" title="Drink">'+icon('mug',14)+'<b>'+days(S.drinkDays)+'</b></span>');
+    // (the purse beside the minimap where it clears your hero's card, else under it: a phone held upright)
+    const m=window.campaignHud.mobileMini,host=m.parentNode.getBoundingClientRect(),r=m.getBoundingClientRect(),hr=this.hero.getBoundingClientRect(),beside=r.left-8-this.purse.offsetWidth>=hr.right+6;
+    this.purse.style.top=(beside?r.top:r.bottom+6)-host.top+'px';this.purse.style.right=host.right-(beside?r.left-8:r.right)+'px';
   }
 }
 window.inkHud=document.getElementById('screen')?new InkHud(document.getElementById('screen')):null;
