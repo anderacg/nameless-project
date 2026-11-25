@@ -38,8 +38,11 @@ try{
  // ---- the band: a bigger garrison, a stronger chieftain, richer plunder
  const h=hid[0],K=B.den,day=Math.floor(G.day/15);
  {const lv=hid.map(s=>s.ld.lv),own=[];for(let k=0;k<30;k++)own.push(h.foes().length-1);
-  ok(h.tune===K&&h.size0===8&&lv.every(v=>v>=K.chief[0]&&v<=K.chief[1])&&own.every(n=>n>=K.foes[0]+day&&n<=K.foes[1]+day)&&h.guess().n===K.size0+day+1,
-   'a hideout\'s garrison '+K.foes.join('-')+' (+1 every 15 days; seen from outside '+K.size0+'), its chieftain level '+K.chief.join('-')+' (here '+Math.min(...lv)+'-'+Math.max(...lv)+')')}
+  // (its people its residents (world/sites.js LAIR_LIFE.hideout: 10-16, the owner, 2026-11-25), its fight and what scouts count them;
+  //  a den in old ruins its garrison rolled at the fight, as ever)
+  const LH=t.LAIR_LIFE.hideout,n=h.life?t.SiteLife.ensure(h).length:0;
+  ok(h.tune===K&&h.size0===8&&lv.every(v=>v>=K.chief[0]&&v<=K.chief[1])&&(h.life?n>=LH.n[0]&&n<=LH.most&&own.every(k=>k===n-1)&&h.guess().n===n:own.every(k=>k>=K.foes[0]+day&&k<=K.foes[1]+day)&&h.guess().n===K.size0+day+1),
+   'a hideout\'s people '+(h.life?n+' (its residents, '+LH.n.join('-')+' at first, '+LH.most+' at most), its fight and the scouts\' count':K.foes.join('-')+' rolled (+1 every 15 days)')+', its chieftain level '+K.chief.join('-')+' (here '+Math.min(...lv)+'-'+Math.max(...lv)+')')}
  {const rnd=Math.random,inv0=P.inv.filter(Boolean).length;let a,b,res1={gold:100},res2={gold:100};
   try{Math.random=()=>0;a=h.plunder(res1);Math.random=()=>.99;b=h.plunder(res2)}finally{Math.random=rnd}
   ok(res1.gold===150&&res2.gold===150&&/Among their plunder/.test(a)&&b===''&&P.inv.filter(Boolean).length===inv0+1&&K.gear===.4,'its plunder: the gold x'+K.gold+' (100 to '+res1.gold+'), and '+K.gear*100+'% another piece of gear past a camp\'s (4 in 5)');

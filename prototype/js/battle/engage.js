@@ -38,13 +38,16 @@ const BANDS={bandits:['Bandits ahead','raiders'],raiders:['Desert raiders','raid
 function makeEnemies(n,camp,band){
   if(band==='goblins')return goblinList(n,camp);
   const a=[];
-  for(let i=0;i<n;i++){const r=Math.random();if(Math.random()<.08){a.push(band==='raiders'||band==='bog'?'orc_shaman':'hedge');continue}
-    // (the band's own men: data/outlaws.js, the orc raiders' and the bog's men orcs as ever, their men of the road outlaws)
-    if(band==='raiders')a.push(r<.4?'orc_thrower':r<.7?outlawOf('militia',r):'orc_grunt');
-    else if(band==='bog')a.push(r<.4?'orc_grunt':r<.7?'orc_thrower':outlawOf('militia',r));
-    else a.push(outlawOf(r<.42?'militia':r<.58?'orc_grunt':r<.8?'archer':'spearman',r))}
+  for(let i=0;i<n;i++){const r=Math.random();a.push(bandMan(band,r,Math.random()))}
   if(camp)a.push('chief');return a;
 }
+// (one of a band's men by two draws r, q in 0-1 (makeEnemies' Math.random; a site's residents' seeded: world/sitelife.js): a hedge
+// wizard or an orc shaman now and then; the band's own men: data/outlaws.js, the orc raiders' and the bog's men orcs as ever, their
+// men of the road outlaws)
+function bandMan(band,r,q){if(q<.08)return band==='raiders'||band==='bog'?'orc_shaman':'hedge';
+  if(band==='raiders')return r<.4?'orc_thrower':r<.7?outlawOf('militia',r):'orc_grunt';
+  if(band==='bog')return r<.4?'orc_grunt':r<.7?'orc_thrower':outlawOf('militia',r);
+  return outlawOf(r<.42?'militia':r<.58?'orc_grunt':r<.8?'archer':'spearman',r)}
 /* reinforcements (the owner, 2026-10-23: armies on neutral or better terms help; the numbers: REINF, data/factions.js). Who
    may help you depends on whom you fight:
    - a common enemy (a band of bandits or raiders, a camp or hideout, a beast, a lair's or a ruin's guardians: no realm's men):

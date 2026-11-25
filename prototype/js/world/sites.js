@@ -393,18 +393,27 @@ class Lair extends Site{
   plunder(res){return ''}
   lootSay(n){return 'about '+(n*4+25)+' gold in their purses, likely a piece of gear (4 in 5)'}
   box(box,camp){camp(this,siteSprite(this))}
-  // (how many live here: a hideout's as scouts would count them (its size0, more as the days go); a bandit camp's its living
-  //  residents, SiteLife's) and their tents (LAIR_TENTS)
-  get people(){return this.size0+Math.floor(G.day/15)}
-  get tents(){const T=LAIR_TENTS;return Math.max(1,Math.min(T.most,Math.ceil(this.people/T.per)))}
-  // the bands sheltering here tonight, as one list (a camp's: BanditCamp)
+  // (who lives here (LAIR_LIFE: a bandit camp's, a hideout's; null where none live, its fighters rolled at the fight); its first
+  //  count, by its seed (its residents' first count: world/sitelife.js ensure), and how many it holds now, filling up as the days go)
+  get life(){return null}
+  lifeBase(){const L=this.life,R=seeded((this.seed||1)*997+71);return L.n[0]+Math.floor(R()*(L.n[1]-L.n[0]+1))}
+  lifeTarget(){const L=this.life;return Math.min(L.most,this.lifeBase()+Math.floor(G.day/L.grow))}
+  // (how many live here: its residents as SiteLife keeps them, read only (none made for the drawing: they are made when you come
+  //  near, SiteLife.ensure), else how many it holds; where none live, as scouts would count them (its size0, more as the days go))
+  get people(){const L=this.life;if(!L)return this.size0+Math.floor(G.day/15);const b=this.residents;
+    return b&&b.people.length?b.people.filter(p=>p.hp>0&&!p.away&&p.fighter!==false).length:this.lifeTarget()}
+  // (their tents: a tent for every LAIR_TENTS.per of them, as many as its layout holds)
+  get tents(){const T=LAIR_TENTS,L=this.life;return Math.max(1,Math.min(L?L.tents:T.most,Math.ceil(this.people/T.per)))}
+  // the bands sheltering here are parties (a save keeps them as plain counts)
+  restore(){if(this.bands)this.bands.forEach(asParty)}
+  // the bands sheltering here tonight, as one list
   sheltering(){return (this.bands||[]).flatMap(b=>b.troops)}
   // everyone you would fight: its own (as scouted, or rolled for a parley) and those sheltering; their power
   all(own){return own.concat(this.sheltering())}
   power(list){return rating(list,chiefLv(this))}
   // from outside: about how many (the middle of what they may be, and the bands sheltering), how strong they look (that many
   // middling raiders and their chieftain, at its level)
-  guess(){const list=Array(this.size0+Math.floor(G.day/15)).fill('militia').concat('chief',this.sheltering());return{n:list.length,pw:this.power(list)}}
+  guess(){const list=Array(this.life?Math.max(0,this.people-1):this.size0+Math.floor(G.day/15)).fill('militia').concat('chief',this.sheltering());return{n:list.length,pw:this.power(list)}}
   spyRoll(){return{list:this.foes()}}
   spyLine(){const l=this.all(this.spied().list);return 'Your scouts crawl back unseen: '+l.length+' of them, power '+this.power(l)+'.'}
   alarm(){log('A sentry shouts: your scouts are seen. They come out for you!','bad');this.fight(false)}
@@ -473,6 +482,13 @@ const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: La
 /* a bandit camp's or a hideout's tents by how many live there (the owner, 2026-11-25: "The bandit camps or hideout should be scale based on
    their population"; Lair tents): a tent for every per of them, at least one, at most most (the hideout's layout holds six) */
 const LAIR_TENTS={per:3,most:6};
+/* who lives at a bandit camp and a hideout (the owner, 2026-11-25: "Hideout should be the same as camp, while camp is smaller around
+   1-6 men, hideout is bigger and more stationed with more population"; world/sitelife.js): its residents, each one a person kept
+   (their wounds, their routines, the raids they ride out on; the bands shelter in both by night). n: how many it starts with
+   (its chieftain one of them), by its seed; grow: days for each one more who joins, to most; tents: as many as its layout holds;
+   ring: where they live round its point [dx, dy, rx, ry] (its fire). A hideout in old ruins, or the goblins' camp, keeps the
+   fighters rolled at the fight */
+const LAIR_LIFE={camp:{n:[1,4],grow:30,most:6,tents:2,ring:[8,0,14,7]},hideout:{n:[10,14],grow:15,most:16,tents:6,ring:[8,-16,18,9]}};
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 // (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
 function hillyAt(tx,ty){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(tx+i,ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
@@ -497,14 +513,18 @@ class Hideout extends Lair{
   get tunnel(){return !!this.lairLook}
   get T(){return this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type]}
   // (a lair its own name: HIDEOUT_LAIR.names)
-  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=(this.tunnel?HIDEOUT_LAIR.names:HIDEOUT_NAMES)[this.band];this.ld=newChief(this.band,this.newLv(),sites)}
+  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=(this.tunnel?HIDEOUT_LAIR.names:HIDEOUT_NAMES)[this.band];this.bands=[];this.ld=newChief(this.band,this.newLv(),sites)}
   newLv(){return rint(...this.tune.chief)}
   get size0(){return this.tune.size0}
-  // its raiders and chieftain (makeEnemies, as startEncounter makes them from n), and the fight with them
-  foes(){return makeEnemies(this.garrison(),true,this.band)}
+  // (its residents: a den's in the wilds; none in old ruins, nor a goblin camp's)
+  get life(){return this.within?null:LAIR_LIFE.hideout}
+  // its raiders and chieftain: its residents (SiteLife), else rolled (makeEnemies, as startEncounter makes them from n); the fight
+  // with them and any bands sheltering here tonight
+  foes(){return this.life?SiteLife.roster(this):makeEnemies(this.garrison(),true,this.band)}
   garrison(){return rint(...this.tune.foes)+Math.floor(G.day/15)}
   // (inside: who goes in with you, battle/interior.js; none chosen, the best of your band)
-  attack(own,inside){const I={inside:inside||Interior.pick()},L=this.keep(own||this.foes());startEncounter({kind:'camp',ref:this,n:L.length-1,list:L,band:this.band,...I})}
+  attack(own,inside){const I={inside:inside||Interior.pick()},L=this.keep(own||this.foes()),bands=this.bands||[];
+    startEncounter({kind:'camp',ref:this,n:L.length-1,list:L.concat(...bands.map(b=>b.troops)),band:this.band,title:this.name+(bands.length?', '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':''),...I})}
   // (its plunder: the gold x tune's, and maybe another piece of gear)
   plunder(res){const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
     return invAdd('gear',id,1)?' Among their plunder: a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>.':' '+BAG_FULL+'. You leave a '+ITEMS[id].n+' behind.'}
@@ -514,14 +534,10 @@ class Hideout extends Lair{
 // a bandit camp: on its fixed spot, in plain sight once you have seen its ground; the roving bands shelter in it by night
 class BanditCamp extends Lair{
   setup(sites){this.name='Bandit camp';this.bands=[];this.ld=newChief('bandits',rint(2,4),sites)}
-  // the bands sheltering here are parties (a save keeps them as plain counts)
-  restore(){if(this.bands)this.bands.forEach(asParty)}
   known(){return seenAt(this.x,this.y)}
   get scoutable(){return false}
   get size0(){return 8}
-  // (its residents as SiteLife keeps them, read only: none made for the drawing (they are made when you come near, SiteLife.ensure);
-  //  none yet, a hideout's reckoning)
-  get people(){const b=this.residents;return b&&b.people.length?b.people.filter(p=>p.hp>0&&!p.away&&p.fighter!==false).length:super.people}
+  get life(){return LAIR_LIFE.camp}
   // its own raiders and chieftain, as campFight makes them (the bands sheltering join at the fight: world.js campFight)
   foes(){return SiteLife.roster(this)}
   attack(own){campFight(this,this.keep(own||this.foes()))}
@@ -536,6 +552,7 @@ class BanditCamp extends Lair{
    shelter in it by night and ride out from it */
 class GoblinCamp extends Hideout{
   get lairLook(){return GOBLINS.warren.on&&this.hilly?'cave':null}
+  get life(){return null}// (its goblins rolled at the fight, as ever: goblinList)
   get T(){return this.tunnel?GOBLINS.warren.T:SITE_TYPES[this.type]}
   get lairCol(){return GOBLINS.warren.banner}
   get tune(){return GOBLINS.camp}
@@ -563,8 +580,8 @@ const SITE_CLASS={camp:BanditCamp,cave:Cave,hideout:Hideout,ruins:Ruins,shrine:S
 // a site of its kind again (from a save)
 const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);s.restore();return s};
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
-// the camps bands shelter in by night (world.js campNear, campEmpty): the bandit camps and the goblins' camps
-const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof GoblinCamp);
+// the camps bands shelter in by night (world.js campNear, campEmpty): the bandit camps, the hideouts (not one in old ruins) and the goblins' camps
+const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof Hideout&&!s.within);
 
 /* placement */
 // the least distance (tiles) between two kinds of site, past siteSpot's gap, never relaxed (the owner's play-test, 2026-10-22:

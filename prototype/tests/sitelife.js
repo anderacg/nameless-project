@@ -19,7 +19,8 @@ Kit.suite(({ok,info})=>{const t=T,P=t.P,G=t.G,W=t.W,L=t.SiteLife,H=t.IndividualH
  t.CampFolk.forget(camp);const C2=t.CampFolk.make(camp),guard2=C2.ppl.find(p=>p.resident.id===id);
  ok(guard2&&guard2.hid&&L.busy(guard2)&&!L.fighters(camp).includes(guard2.resident),'leaving and returning to camp does not resurrect its visible guard');
  ok(C2.ppl.every(p=>p.resident)&&C2.ppl.filter(p=>!p.resident.fighter).every(p=>!L.fighters(camp).includes(p.resident)),'camp routines share persistent people; children and civilians are not silently drafted');
- const den=W.sites.find(s=>s instanceof t.BanditCamp);den.cleared=false;const a=L.ensure(den),old=G.clock;
+ // (a hideout: its people the most (LAIR_LIFE.hideout), enough for a watch, cooks, raiders and a raid; a bandit camp holds 1-6: tests/lairlife.js)
+ const den=W.sites.find(s=>s instanceof t.Hideout&&s.life&&!s.tunnel);den.cleared=false;const a=L.ensure(den),old=G.clock;
  G.clock=t.DAY*.7;L.routines(den,a,.1);
  ok(a.some(p=>p.mode==='watch')&&a.filter(p=>p.role!=='watch').every(p=>p.mode==='sleep'),'a hostile camp has a night watch while its other people sleep');
  G.clock=t.DAY*.2;L.routines(den,a,.1);ok(a.some(p=>p.mode==='cook')&&a.some(p=>p.mode==='train'),'bandit cooks and raiders have daytime routines');

@@ -465,9 +465,9 @@ function lairSprite(s,c){const look=s.lairLook,L=s.lairCol||LAIR_COL,k='lair'+lo
 function siteSprite(s){s=siteOf(s);// (plain data too)
   if(s.type==='rest')return s.picture();// (a resting place: its finest grave's picture, world/lineage.js RestSite)
   if(s.type===OUTPOST_TYPE)return s.sprite();// (a realm's outpost and its tower: world/outposts.js outpostSprite)
-  // a bandit camp: the big camp in its ring of stakes (its spot keeps a hideout's 4 x 4 tiles: lots.js occReserve), a hideout as it
-  // stands; their tents by how many live there (sites.js Lair tents)
-  const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'hideout',c,s.tents);
+  // a bandit camp: the small camp, a tent or two round its fire; a hideout its ring of stakes; their tents by how many live there
+  // (sites.js Lair tents, LAIR_LIFE)
+  const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'bandit',c,s.tents);
   if(SITE_KIND[s.type]&&!s.tunnel)return campSprite(s.seed,s.type,c,s instanceof Lair?s.tents:0);
   if(s.tunnel)return lairSprite(s,c);// (a bandit lair: a tunnel's mouth in the hillside, their banner by it)
   // (its foot on its tile's bottom edge, 8 below the site's point (the tile's middle); a cave's point is its mouth, in front of its
