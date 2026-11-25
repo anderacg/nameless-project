@@ -381,7 +381,8 @@ function drawWorld(){
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   drawPlaques(cam);// (the holdings' bars, over all: structures.js)
   drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
-  drawSafe(()=>HoldSpots.draw(cam));// (the holdings' places near you, over their buildings: world/holdspots.js)
+  drawSafe(()=>HoldSpots.draw(cam));
+  drawSafe(()=>LairSpots.draw(cam));// (a hideout's services while you may deal there: world/lairdeal.js)// (the holdings' places near you, over their buildings: world/holdspots.js)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
   drawSafe(()=>EnemyDifficulty.world(cam));

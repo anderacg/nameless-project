@@ -422,7 +422,7 @@ class Lair extends Site{
   spyLine(){const l=this.all(this.spied().list);return 'Your scouts crawl back unseen: '+l.length+' of them, power '+this.power(l)+'.'}
   alarm(){log('A sentry shouts: your scouts are seen. They come out for you!','bad');this.fight(false)}
   // the fight (mine: you started it, and may still call it off), its own fighters as scouted, or rolled now as walking in did
-  fight(mine,own,inside){G.site=null;G.youAttack=mine;this.attack(own,inside)}
+  fight(mine,own,inside){G.site=null;G.youAttack=mine;this.deal=null;this.attack(own,inside)}
   page(r,step){const s=this,y=s.spied(),g=s.guess(),ld=s.ld,band=LAIR_SAY[s.bandKind];
     if(s.cleared){const h=s.hoardNow,full=h&&(h.gold||h.gear);return{body:'<p>The '+s.T.n.toLowerCase()+' lies empty: cold fires and trampled ground.'+(s.back>G.day?' Others will gather here again in '+Math.max(1,s.back-G.day)+' days.':'')+'</p>'+(full?'<p>Their stash still holds their hoard.</p>':''),
       acts:full?[{icon:'gold',label:'Take their hoard',act:'site-hoard',facts:[h.gold+' gold',h.gear?h.gear+' gear':'no gear'],tip:'Empty their stash before others gather here: their gold and the gear they took on the roads.'}]:[]}}
@@ -432,9 +432,11 @@ class Lair extends Site{
         acts:[{icon:'prisoners',label:'Take them prisoner',act:'site-fate',arg:'cage',facts:[Math.min(n,Math.max(0,prisonCap()-prisonerCount()))+' fit','and their plunder'],why:prisonerCount()>=prisonCap()?'No room for prisoners':''},
           {icon:'troops',label:'Into your band',act:'site-fate',arg:'join',facts:[Math.min(n,Math.max(0,partyRoom()))+' join','morale −'+tb.morale+', honor −'+tb.honorAll],why:partyRoom()<1?'Your band is full':''},
           {icon:'truce',label:'Let them go',act:'site-fate',arg:'free',facts:['disarmed','renown +1']}],close:['site-fate','free','Let them go']}}
+    if(LairDeal.open(s))return LAIR_DEAL.places[step]?LairDeal.page(s,step):LairDeal.home(s);// (you are in to deal: world/lairdeal.js)
     if(step==='parley'){const pw=y?s.power(s.all(y.list)):g.pw,afraid=stance(pw)==='afraid',ch=Math.round(yieldChance({power:()=>pw},'band')*100),tb=tribute(s);
       return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at '+pr(ld).his+' back.</p>'+(s.bandKind==='goblins'?'<p class="muted">'+(goblinTongueSay(true)||'They jabber at you in their own tongue; no one with you understands a word.')+'</p>':''),
         acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:goblinTongueWhy(s.bandKind==='goblins')||(P.gold<tb?'Not enough gold':''),tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
+          LairDeal.can(s)&&{icon:'sack',label:'Come to deal',act:'site-deal',facts:[LairDeal.toll(s)+'g','their fence, men and cage, '+LAIR_DEAL.hours+' hours'],why:P.gold<LairDeal.toll(s)?'Not enough gold':'',tip:'Pay their toll and they let you in to deal: a fence for your loot, men for hire, buyers for your prisoners. Nobody comes for you while you are in.'},
           {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:goblinTongueWhy(s.bandKind==='goblins')||(afraid?'':'They do not fear you: it takes about twice their strength'),tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
         note:'They '+(afraid?'eye your band warily.':'laugh at your band.'),back:['site-tab','home','Back']}}
     const all=y&&s.all(y.list),pw=all?s.power(all):g.pw,lk=looks(pw/Math.max(1,partyPower()));
@@ -445,7 +447,7 @@ class Lair extends Site{
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on '+pr(ld).his+' head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
-  act(a,arg,done){if(super.act(a,arg,done))return true;if(a==='site-hoard'&&this.cleared&&this.hoardNow){done(this.takeHoard());return true}if(this.cleared)return false;const s=this,y=s.spied();
+  act(a,arg,done){if(super.act(a,arg,done))return true;if(a==='site-hoard'&&this.cleared&&this.hoardNow){done(this.takeHoard());return true}if(this.cleared)return false;const s=this,y=s.spied();if(LairDeal.act(s,a,arg,done))return true;
     if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout&&(s.tunnel||s.within)){Interior.show(s);return true}// (a bandit lair, or a den in ruins, is stormed inside: who goes in with you, battle/interior.js)
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
       facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight([null,looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}

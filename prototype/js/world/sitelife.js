@@ -42,7 +42,7 @@ class SiteLife{
     return null}
   // (underground, a lair's people are not seen on the map: no figures, no watch over it)
   static under(s){return !!s.tunnel}
-  static hostile(s){return s instanceof BanditCamp||!!s.band||s.realm&&s.realm!=='player'&&hostileTo(s.realm)}
+  static hostile(s){if(LairDeal.open(s))return false;return s instanceof BanditCamp||!!s.band||s.realm&&s.realm!=='player'&&hostileTo(s.realm)}
   static epoch(s){return s instanceof Outpost?s.owner||'none':s instanceof Lair?'bandits:'+s.back:'folk'}
   static book(s){const owner=this.epoch(s);let b=s.residents;
     if(!b||b.owner!==owner){const next=b?.next||1;b=s.residents={owner,next,slots:s.pop||0,x:s.x,y:s.y,people:[]};this.active.delete(s);this.forces.delete(s)}
