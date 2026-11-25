@@ -174,7 +174,7 @@ class SiteLife{
     if(!s||s.cleared||this.book(s).owner!==b.residentEpoch){delete b.residentHome;return false}
     if(!night&&Clock.hours()<b.returnAt)return false;b.waylay=null;b.corpse=null;
     const dd=Math.hypot(b.x-s.x,b.y-s.y);if(dd>12){Router.travel(b,s,sp)||walk(b,s.x-b.x,s.y-b.y,Math.min(dd,sp));return true}
-    this.settleRaid(s,b,true);if(b.picket)this.alarm(s);bandits=bandits.filter(o=>o!==b);return true;
+    this.settleRaid(s,b,true);if(b.picket)this.alarm(s);else if(s.addHoard)s.addHoard();bandits=bandits.filter(o=>o!==b);return true;
   }
   static settleRaid(s,b,returned=false){const counts=countsOf(b&&!b.gone?b.troops:[]),people=this.book(s).people.filter(p=>b.residentIds.includes(p.id));
     for(const p of people){if(p.hp<=0)continue;if(!(counts[p.type]>0)){p.hp=0;p.away=false;p.mode='dead';continue}counts[p.type]--;
@@ -183,7 +183,10 @@ class SiteLife{
   static hour(){for(const s of W.sites||[]){if(!s.residents||this.inBattle(s))continue;
     const raids=bandits.filter(b=>b.residentHome===s.i);for(const b of raids)this.settleRaid(s,b);
     for(const p of s.residents.people){if(p.away&&!raids.some(b=>b.residentIds.includes(p.id))){p.hp=0;p.away=false;p.mode='dead'}if(p.hp>0&&!p.away)p.hp=Math.min(p.max,p.hp+p.max*SITE_LIFE.heal)}
-    this.grow(s);this.raid(s)}}
+    this.found(s);this.grow(s);this.raid(s)}}
+  // (a hideout's stash found bare (Hideout atStash: taken unseen): by day, LAIR_HOARD.find hours on at the earliest, the camp roused)
+  static found(s){const b=s.residents,t=b.robbed;if(t==null||Clock.hours()-t<LAIR_HOARD.find||Clock.frac<ENCAMP.day.dawn||Clock.frac>=ENCAMP.day.dusk)return;
+    delete b.robbed;this.alarm(s);if(Math.hypot(P.x-s.x,P.y-s.y)<LAIR_HOARD.near)log('A cry goes up at the '+s.name+': their stash is found bare. The camp is roused.','bad')}
   // (a bandit camp or a hideout short of what it holds (its losses, the days' growth: sites.js lifeTarget) takes in one more a day: its
   //  band's man (bandMan) by its seed and the day, at its fire)
   static grow(s){const b=s.residents;if(!s.life||s.cleared||!b||b.owner!==this.epoch(s)||b.grewDay===G.day)return;b.grewDay=G.day;

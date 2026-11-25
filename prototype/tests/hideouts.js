@@ -45,8 +45,11 @@ try{
    'a hideout\'s people '+(h.life?n+' (its residents, '+LH.n.join('-')+' at first, '+LH.most+' at most), its fight and the scouts\' count':K.foes.join('-')+' rolled (+1 every 15 days)')+', its chieftain level '+K.chief.join('-')+' (here '+Math.min(...lv)+'-'+Math.max(...lv)+')')}
  {const rnd=Math.random,inv0=P.inv.filter(Boolean).length;let a,b,res1={gold:100},res2={gold:100};
   try{Math.random=()=>0;a=h.plunder(res1);Math.random=()=>.99;b=h.plunder(res2)}finally{Math.random=rnd}
-  ok(res1.gold===150&&res2.gold===150&&/Among their plunder/.test(a)&&b===''&&P.inv.filter(Boolean).length===inv0+1&&K.gear===.4,'its plunder: the gold x'+K.gold+' (100 to '+res1.gold+'), and '+K.gear*100+'% another piece of gear past a camp\'s (4 in 5)');
-  const n=9,say=h.lootSay(n);ok(new RegExp('about '+Math.round((n*4+25)*K.gold)+' gold').test(say)&&/maybe another/.test(say),'your scouts tell of it: '+say)}
+  // (a den with its stash (world/sites.js LAIR_HOARD, 2026-11-25): its purses only on the win, its hoard in the stash (tests/lairlife.js))
+  if(h.hoardNow){ok(res1.gold===100&&res2.gold===100&&/stash/.test(a)&&P.inv.filter(Boolean).length===inv0,'its plunder: their purses only (100), the hoard left in their stash');
+   const n=9,say=h.lootSay(n);ok(new RegExp('about '+(n*4+25)+' gold in their purses').test(say)&&/hoard in their stash/.test(say),'your scouts tell of it: '+say)}
+  else{ok(res1.gold===150&&res2.gold===150&&/Among their plunder/.test(a)&&b===''&&P.inv.filter(Boolean).length===inv0+1&&K.gear===.4,'its plunder: the gold x'+K.gold+' (100 to '+res1.gold+'), and '+K.gear*100+'% another piece of gear past a camp\'s (4 in 5)');
+   const n=9,say=h.lootSay(n);ok(new RegExp('about '+Math.round((n*4+25)*K.gold)+' gold').test(say)&&/maybe another/.test(say),'your scouts tell of it: '+say)}}
  // (cleared, it comes back in 10 days with a chieftain as strong)
  {const back=G.day;h.cleared=true;h.back=back;h.day();ok(!h.cleared&&h.ld.lv>=K.chief[0]+Math.floor(back/30)&&h.ld.lv<=K.chief[1]+Math.floor(back/30)&&t.SITE_TYPES.hideout.respawn===10,'it fills again after '+t.SITE_TYPES.hideout.respawn+' days, its new chieftain level '+h.ld.lv)}
  // ---- bandits in searched ruins: as a hideout was, not one draw more

@@ -2,7 +2,8 @@
 // Who lives at a bandit camp and a hideout (the owner, 2026-11-25: "Hideout should be the same as camp, while camp is smaller around 1-6
 // men, hideout is bigger and more stationed with more population"; world/sites.js LAIR_LIFE, Lair life; world/sitelife.js): both have
 // residents of their own; a camp 1 to 6, a hideout 10 to 16, filling up as the days go and taking in one a day after its losses; the
-// bands shelter in both by night and join a fight there; a lair's people stay underground; a camp a tent or two, a hideout up to six.
+// bands shelter in both by night and join a fight there; a lair's people stay underground; a camp a tent or two, a hideout up to six;
+// a hideout's hoard in its stash (LAIR_HOARD).
 Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,SL=t.SiteLife,LL=t.LAIR_LIFE;window.requestAnimationFrame=()=>0;Kit.begin('soldier',1);G.paused=true;
  const C=t.W.sites.filter(s=>s instanceof t.BanditCamp),H=t.W.sites.filter(s=>s instanceof t.Hideout&&!(s instanceof t.GoblinCamp)&&!s.within),Gb=t.W.sites.filter(s=>s instanceof t.GoblinCamp);
  ok(C.length>0&&H.length>0,'bandit camps ('+C.length+') and hideouts ('+H.length+')');
@@ -53,11 +54,39 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,SL=t.SiteLife,LL=t.LAIR_LIFE;windo
    ok(SL.roused(h)&&up.every(p=>!p.away&&p.hp>0),'if they get away, they are back at its fire and the camp is roused')}
   finally{window.startEncounter=se;window.hiddenAt=hid;G.clock=gc;if(h.residents)h.residents.alarm=null}}
  // (a stronghold: a hideout of 14 or more, by its first count or grown to it; a second lookout, a gate over its way in, its watch at all three)
- {const SS=SP.strong,strong=open.filter(h=>h.tier),dens=open.filter(h=>!h.tier);info('strongholds '+strong.length+', dens '+dens.length);
-  ok(open.every(h=>!!h.tier===h.lifeBase()>=SS.at),'a hideout that starts with '+SS.at+' or more is a stronghold ('+strong.length+' of '+open.length+')');
+ {const SS=SP.strong,strong=open.filter(h=>h.grade),dens=open.filter(h=>!h.grade);info('strongholds '+strong.length+', dens '+dens.length);
+  ok(open.every(h=>!!h.grade===h.lifeBase()>=SS.at),'a hideout that starts with '+SS.at+' or more is a stronghold ('+strong.length+' of '+open.length+')');
   ok(strong.every(h=>h.layout().some(q=>q.k==='look2')&&h.layout().some(q=>q.k==='gate')&&h.T.n===SS.n)&&dens.every(h=>!h.layout().some(q=>q.k==='look2'||q.k==='gate')),'a stronghold has a second lookout and a gate; a den neither');
-  const d=dens.find(h=>h.layout().length>=4);if(d){const gd=G.day,b=SL.ensure(d)&&d.residents;let n=0;try{G.day=400;while(!d.tier&&n++<20){G.day++;SL.grow(d)}}finally{G.day=gd}
-   const L=d.layout(),gate=L.find(q=>q.k==='gate');ok(d.built===1&&d.tier===1&&gate&&L.some(q=>q.k==='look2')&&b.people.filter(p=>p.hp>0).length>=SS.at,'a den grown to '+SS.at+' becomes a stronghold, its places laid again ('+L.map(q=>q.k).join('+')+')');
+  const d=dens.find(h=>h.layout().length>=4);if(d){const gd=G.day,b=SL.ensure(d)&&d.residents;let n=0;try{G.day=400;while(!d.grade&&n++<20){G.day++;SL.grow(d)}}finally{G.day=gd}
+   const L=d.layout(),gate=L.find(q=>q.k==='gate');ok(d.built===1&&d.grade===1&&gate&&L.some(q=>q.k==='look2')&&b.people.filter(p=>p.hp>0).length>=SS.at,'a den grown to '+SS.at+' becomes a stronghold, its places laid again ('+L.map(q=>q.k).join('+')+')');
    const posts=new Set(SL.ensure(d).map(p=>{const q=SL.post(d,p,'watch');return Math.round(q.x)+','+Math.round(q.y)}));ok(posts.size>=3,'its watch keeps its lookouts and its gate ('+posts.size+' posts)');
    ok(t.WorldArt.ensure().tramples.some(r=>Math.abs(r[0]-gate.x)<1&&Math.abs(r[1]-(gate.y-8))<1),'the ground under its new places worn in the map\'s plan again')}}
+ // (its hoard in its stash: by its seed and people, more as its raiders come home; won, only their purses; yours while it lies empty;
+ //  taken unseen at night, found bare by day and the camp roused; seen at it, they come for you; paid off, they take it; a new band a new one)
+ {const HL=t.LAIR_HOARD,hs=open.filter(h=>h.stashAt()),h=hs[0],se=window.startEncounter,gc=G.clock,hid=window.hiddenAt,px=P.x,py=P.y,pg=P.gold,gd=G.day;let got=null;
+  ok(hs.length&&lairs.every(h=>!h.stashAt()&&!h.hoardNow)&&C.every(s=>!s.hoardNow),'a hideout in the open has its stash; a lair and a camp none ('+hs.length+' of '+open.length+')');
+  ok(hs.every(h=>{const o=h.hoardNow,b=HL.per*h.lifeBase();return o.gold>=HL.gold[0]+b&&o.gold<=HL.gold[1]+b&&o.gear>=HL.gear[0]&&o.gear<=HL.gear[1]}),'its hoard by its seed and its people ('+hs.map(h=>h.hoardSay()).join('; ')+')');
+  try{window.hiddenAt=()=>false;window.startEncounter=e=>{got=e};
+   const men=SL.ensure(h),g0=h.hoardNow.gold;for(const p of men){p.away=false;p.hp=p.max}const raiders=men.filter(p=>p.role==='raider').slice(0,2);for(const p of raiders)p.away=true;
+   const rb=t.asParty({kind:h.bandKind,x:h.x,y:h.y,list:raiders.map(p=>p.type),residentHome:h.i,residentEpoch:h.residents.owner,residentIds:raiders.map(p=>p.id),returnAt:0,t:1,a:0,idle:false,cool:4,ld:null});t.bandits.push(rb);
+   SL.returnRaid(rb,1,true);ok(h.hoardNow.gold>g0&&!t.bandits.includes(rb),'its raiders home, its hoard grows ('+g0+' → '+h.hoardNow.gold+' gold)');
+   // (won: their purses only, the hoard named, left in the stash)
+   const res={gold:40},note=h.plunder(res);ok(res.gold===40&&/stash/.test(note)&&h.hoardNow.gold>0,'won, only their purses: the hoard left in their stash ('+note.trim()+')');
+   // (at night, all asleep, you unseen at the stash: yours; by day it is found bare and the camp roused)
+   const q=h.stashAt();h.residents.alarm=null;G.clock=t.DAY*.9;for(const p of men){p.mode='sleep';p.x=SL.centre(h).x;p.y=SL.centre(h).y}P.x=q.x;P.y=q.y;
+   const want=h.hoardNow.gold;P.gold=0;h.seen=true;const spot=t.Stashes.all().find(o=>o.h===h);
+   ok(spot&&spot.here()&&t.worldObjects().includes(spot)&&Math.hypot(spot.x-q.x,spot.y-q.y)<1,'its stash on the map, at its place, to click');
+   got=null;spot.meet();ok(!got&&P.gold>=want&&!h.hoardNow.gold&&!h.hoardNow.gear&&h.residents.robbed!=null&&!SL.roused(h),'at night, none awake to see: their hoard yours unseen ('+P.gold+' gold), the camp none the wiser');
+   ok(!spot.here(),'the stash bare, no more to click');
+   G.day++;G.clock=t.DAY*.3;SL.found(h);ok(SL.roused(h)&&h.residents.robbed==null,'by day the stash is found bare: the camp roused');
+   // (seen at it: they come for you)
+   h.residents.alarm=null;h.hoard=null;h.hoardNow;G.clock=t.DAY*.4;const w=men.find(p=>p.hp>0&&!p.away);w.mode='rest';w.x=q.x+6;w.y=q.y;got=null;
+   spot.meet();ok(got&&got.ref===h&&SL.roused(h)&&h.hoardNow.gold>0,'seen at their stash, they come for you, the hoard still theirs');
+   // (cleared: yours from the stash or its page; paid off, gone with them; a new band, a new hoard)
+   G.site=null;G.mode='world';h.cleared=true;const g1=h.hoardNow.gold;P.gold=0;const pg2=h.page(null,null);
+   ok(pg2.acts.some(a=>a.act==='site-hoard'),'cleared, its page offers their hoard');
+   spot.meet();ok(P.gold>=g1&&!h.hoardNow.gold,'cleared, the hoard yours from the stash ('+P.gold+' gold)');
+   h.hoard=null;h.emptyStash();ok(h.hoardNow.gold===0,'paid off, they ride away with their hoard');
+   h.returned();ok(h.hoardNow.gold>0,'a new band gathered, a new hoard');h.cleared=false}
+  finally{window.startEncounter=se;window.hiddenAt=hid;G.clock=gc;G.day=gd;P.x=px;P.y=py;P.gold=pg;if(h&&h.residents){h.residents.alarm=null;delete h.residents.robbed}}}
  ok(!ERR.length,'no runtime errors')});

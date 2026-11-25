@@ -121,8 +121,8 @@ try{
     t.onEscape();ok(q('#panel.paged')&&G.site===c&&!G.enc,'Back: the page again, no fight');
     t.act('site-ask');q('.nav [data-nav="close"]').click();ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.join()===all.join()&&G.enc.mine,'Confirm: the camp fight, against exactly what your scouts saw ('+G.enc.list.length+')');t.act('flee')}
   // unscouted, Attack is the very fight walking in made: the same rolls, the same foes
-  {world();const sd=4711,r0=Math.random;Math.random=t.seeded(sd);const want=t.makeEnemies(t.rint(7,9)+Math.floor(G.day/15),true).join();P.x=c.x;P.y=c.y+6;t.enterSite(c);Math.random=t.seeded(sd);t.act('site-attack');Math.random=r0;
-    ok(G.enc&&G.enc.list.join()===want,'unscouted, Attack rolls the same fight as walking in did (its raiders and chieftain as before: '+G.enc.list.length+' foes)');t.act('flee')}
+  {world();const sd=4711,r0=Math.random;Math.random=t.seeded(sd);const want=c.life?c.all(c.keep(c.foes())).join():t.makeEnemies(t.rint(7,9)+Math.floor(G.day/15),true).join();P.x=c.x;P.y=c.y+6;t.enterSite(c);Math.random=t.seeded(sd);t.act('site-attack');Math.random=r0;
+    ok(G.enc&&G.enc.list.join()===want,'unscouted, Attack is the same fight as walking in ('+(c.life?'its residents':'its raiders and chieftain rolled as before')+': '+G.enc.list.length+' foes)');t.act('flee')}
   // seen: they come out for you
   {world();t.enterSite(c);lucky('site-scout',null,.999);ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&!G.enc.mine&&!G.site,'Scout, seen: they come out for you, a fight you did not start');t.act('flee')}
   // Parley: pay them off; make them yield (only if they fear you); they refuse and fight
