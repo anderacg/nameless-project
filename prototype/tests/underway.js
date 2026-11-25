@@ -13,7 +13,8 @@ Kit.suite(({ok})=>{
   const b=r.getBoundingClientRect();ok(b.height<=40,'one line ('+Math.round(b.height)+' px high)');
   // (the owner, 2026-11-01: "the ui is a bit off") just under the minimap's frame (UW_FRAME round its map), its edges the frame's
   {const c=t.cv.getBoundingClientRect(),m=t.worldMiniRect(),k=c.width/t.VW,f=t.UW_FRAME,e=el().getBoundingClientRect(),fb=c.top+(m.y+m.h+f)*k,fl=c.left+(m.x-f)*k,fr=c.left+(m.x+m.w+f)*k;
-   ok(e.top>=fb&&e.top-fb<=8&&Math.abs(e.right-fr)<2,'just under the frame of the minimap, at its right edge ('+[e.top,fb,e.right,fr].map(Math.round)+')');
+   const dl=t.INK.on&&t.inkHud&&!t.inkHud.day.hidden?t.inkHud.day.getBoundingClientRect():null,top=dl?Math.max(fb,dl.bottom):fb;// (in the ink look, under the day's line under the minimap: ui/inkhud.js)
+   ok(e.top>=top&&e.top-top<=8&&Math.abs(e.right-fr)<2,'just under the frame of the minimap'+(dl?' and the day\'s line under it':'')+', at its right edge ('+[e.top,top,e.right,fr].map(Math.round)+')');
    ok(fr-fl<t.UW_MIN||Math.abs(e.left-fl)<2,'as wide as the frame: its left edge the same ('+[e.left,fl].map(Math.round)+')')}
   press('stay');ok(!P.stay&&!row('stay'),'Leave: you leave, the line goes')}
  // ======== the rest, each its line and way out

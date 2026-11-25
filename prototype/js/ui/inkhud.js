@@ -125,7 +125,9 @@ class InkHud{
     // (centred under it, but never past its right side: the minimap stands at the screen's edge and the line can be the wider)
     this.day.style.left=Math.min(r.left+r.width/2,r.right-this.day.offsetWidth/2)-host.left+'px';this.day.style.top=r.bottom-host.top-INK.dayLap+'px';
     // (what stands at the right under the day's line: a level's skill points, ink-hud.css .lgroup)
-    this.screen.style.setProperty('--ink-side-top',this.day.getBoundingClientRect().bottom-host.top+INK.gap+'px');
+    // (under the box of what your band is doing, when it shows: ui/underway.js)
+    const uw=document.getElementById('underway'),below=uw&&!uw.hidden?uw.getBoundingClientRect().bottom:this.day.getBoundingClientRect().bottom;
+    this.screen.style.setProperty('--ink-side-top',below-host.top+INK.gap+'px');
   }
 }
 window.inkHud=document.getElementById('screen')?new InkHud(document.getElementById('screen')):null;
