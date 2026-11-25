@@ -38,4 +38,18 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,SL=t.SiteLife,LL=t.LAIR_LIFE;windo
  const plan=t.WorldArt.ensure();ok(lay.every(L=>L.every(q=>plan.tramples.some(r=>Math.abs(r[0]-q.x)<1&&Math.abs(r[1]-(q.y-8))<1))),'their ground worn bare in the map\'s plan');
  const hh=open[0],watch=SL.ensure(hh).find(p=>p.role==='watch'),lk=hh.layout().find(q=>q.k==='look'),post=SL.post(hh,watch,'watch');
  ok(post&&Math.hypot(post.x-lk.x,post.y-lk.y)<10,'its watch keeps to its lookout');
+ // (the lookout: its man sees further; anyone seeing you rouses the camp, none of it asleep; its men taken alone while it sleeps)
+ {const h=open.find(h=>{const q=SL.lookOf(h),C=SL.centre(h);return q&&Math.hypot(q.x-C.x,q.y-C.y)>t.SITE_LIFE.shout})||open[0],q=SL.lookOf(h),men=SL.ensure(h),w=men.find(p=>p.role==='watch'),gc=G.clock,se=window.startEncounter,hid=window.hiddenAt;let got=null;
+  try{window.hiddenAt=()=>false;w.hp=w.max;G.clock=t.DAY*.3;w.mode='watch';w.x=q.x;w.y=q.y+4;const d=t.SITE_LIFE.sight*1.3,o={x:w.x+d,y:w.y};const far=SL.detects(h,w,o);w.x=o.x-d;w.y=o.y+20;const low=SL.detects(h,w,o);w.x=q.x;w.y=q.y+4;
+   ok(SL.atLook(h,w)&&far&&!low,'a man up at its lookout sees further ('+Math.round(d)+' px: '+far+'; off it: '+low+')');
+   h.residents.alarm=null;G.clock=t.DAY*.7;SL.routines(h,men,.1);const slept=men.some(p=>p.mode==='sleep');SL.alarm(h);for(const p of men)p.goal=null;SL.routines(h,men,.1);
+   ok(slept&&SL.roused(h)&&!men.some(p=>p.mode==='sleep'),'seen, the camp is roused: none of it sleeps');
+   ok(!SL.picket(h,w),'roused, its lookout cannot be taken alone');h.residents.alarm=null;
+   window.startEncounter=e=>{got=e};for(const p of men){p.away=false;p.mode=p.role==='watch'?'watch':'sleep'}w.x=q.x;w.y=q.y+4;const up=men.filter(p=>p.hp>0&&SL.atLook(h,p));
+   const took=SL.picket(h,w),band=t.bandits.find(b=>b.residentHome===h.i&&b.picket);
+   ok(took&&got&&got.kind==='party'&&band&&band.residentIds.length===up.length&&men.filter(p=>p.away).length===up.length&&!SL.roused(h),'unseen, its lookout\'s men ('+up.length+') come down to you alone, the camp asleep');
+   t.bandits.splice(t.bandits.indexOf(band),1);SL.hour();ok(up.every(p=>p.hp<=0)&&!SL.roused(h),'beaten, they are gone and the camp none the wiser');
+   for(const p of up){p.hp=p.max;p.mode='watch';p.away=false;p.x=q.x;p.y=q.y+4}SL.picket(h,w);const b2=t.bandits.find(b=>b.residentHome===h.i&&b.picket);b2.x=h.x;b2.y=h.y;b2.returnAt=0;SL.returnRaid(b2,1,true);
+   ok(SL.roused(h)&&up.every(p=>!p.away&&p.hp>0),'if they get away, they are back at its fire and the camp is roused')}
+  finally{window.startEncounter=se;window.hiddenAt=hid;G.clock=gc;if(h.residents)h.residents.alarm=null}}
  ok(!ERR.length,'no runtime errors')});

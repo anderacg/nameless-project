@@ -1,6 +1,9 @@
 'use strict';
 /* A site's residents own their wounds and routine positions. Combat borrows those people, never an extra decorative watch. */
-const SITE_LIFE={near:600,scan:.7,sight:85,night:.65,shout:45,wake:2.5,leash:120,raid:3,raidHours:5,heal:.08};
+/* look: how much further a man up at a hideout's lookout sees (sites.js Hideout layout); alarm: hours a camp stays roused once anyone
+   of it has seen you (no one sleeps; in a fight there all are awake); picket: the lookout's men, taken on alone while unseen, how long
+   (hours) before those who get away are back at their camp (the owner, 2026-11-25: the hideout's places, step 3) */
+const SITE_LIFE={near:600,scan:.7,sight:85,night:.65,shout:45,wake:2.5,leash:120,raid:3,raidHours:5,heal:.08,look:1.8,alarm:1,picket:.5};
 class ResidentForce extends Party{
   constructor(site){super();this.residentSite=site;this.tc={};this.refresh()}
   refresh(){const s=this.residentSite;this.x=s.x;this.y=s.y;this.kind=s.band||s.bandKind||'bandits';this.fac=s.realm||null;this.name=s.name+' defenders';this.troops=SiteLife.fighters(s).map(p=>p.type);return this}
@@ -19,7 +22,7 @@ class ResidentFigure extends WorldObject{
   here(){return W.sites.includes(this.site)&&!!this.site.residents?.people.includes(this.person)&&!this.site.cleared&&this.person.hp>0&&!this.person.away&&!SiteLife.inBattle(this.site)}
   inView(V){return this.here()&&this.person.mode!=='sleep'&&yourSight(V).sees(this.x,this.y,1.2)}
   pick(at){if(this.inView(at.V))at.add(this,6,4)}
-  meet(){if(!this.here())return false;if(!SiteLife.hostile(this.site))return this.site.meet();G.residentTarget={site:this.site.i,id:this.person.id};const started=SiteLife.engage(this.site);if(!started)G.residentTarget=null;return started}
+  meet(){if(!this.here())return false;if(!SiteLife.hostile(this.site))return this.site.meet();if(SiteLife.picket(this.site,this.person))return true;G.residentTarget={site:this.site.i,id:this.person.id};const started=SiteLife.engage(this.site);if(!started)G.residentTarget=null;return started}
   tip(){return '<b>'+htmlText(this.person.name)+'</b><small>'+htmlText(this.site.name)+' · '+htmlText(this.person.mode||'guard')+'</small><span class="act">Click: '+(SiteLife.hostile(this.site)?'attack this individual':'approach')+'</span>'}
 }
 class SiteLife{
@@ -83,10 +86,10 @@ class SiteLife{
       if(scan&&!this.inBattle(s)&&!this.under(s))this.defend(s);
     }
   }
-  static routines(s,people,d){const night=Clock.frac>=ENCAMP.day.dusk||Clock.frac<ENCAMP.day.dawn;
+  static routines(s,people,d){const night=Clock.frac>=ENCAMP.day.dusk||Clock.frac<ENCAMP.day.dawn,up=this.roused(s);
     const patrol=s instanceof Outpost?OutpostWatch.of.get(s)?.men:[];
     for(const p of people){if(patrol?.includes(p))continue;p.walking=false;if(p.hp<=0||p.away)continue;
-      const watch=p.role==='watch',mode=watch?'watch':night?'sleep':p.role==='cook'?'cook':p.role==='chief'?'rest':'train';p.mode=mode;
+      const watch=p.role==='watch',mode=watch?'watch':night&&!up?'sleep':p.role==='cook'?'cook':p.role==='chief'?'rest':'train';p.mode=mode;
       if(p.waiting>0){p.waiting-=d;continue}
       if(!p.goal){p.beat=(p.beat+1)%4;const a=(p.beat+(p.id%8)/8)*Math.PI/2,r=watch?30:mode==='sleep'?4:12,C=this.centre(s);p.goal=this.post(s,p,mode)||{x:C.x+Math.cos(a)*r,y:C.y+Math.sin(a)*r*.5};
         if(s instanceof Outpost){const S=[...s.posts(),s.door(p.id%3,3)];p.goal=S[(p.beat+p.id)%S.length];p.route=s.around(p,p.goal)}
@@ -96,12 +99,26 @@ class SiteLife{
       else if(p.route?.length)p.route.shift();else{p.goal=null;p.waiting=mode==='watch'?2:5}
     }
   }
-  static detects(s,p,o){if(p.hp<=0||p.away||p.mode==='sleep')return false;const r=SITE_LIFE.sight*(Clock.frac>=ENCAMP.day.dusk?SITE_LIFE.night:1)*(hiddenAt(o.x,o.y)?.6:1);
+  static detects(s,p,o){if(p.hp<=0||p.away||p.mode==='sleep')return false;const r=SITE_LIFE.sight*(Clock.frac>=ENCAMP.day.dusk?SITE_LIFE.night:1)*(hiddenAt(o.x,o.y)?.6:1)*(this.atLook(s,p)?SITE_LIFE.look:1);
     return Math.hypot(p.x-o.x,p.y-o.y)<r}
+  // (a hideout's lookout, and whether p stands up at it)
+  static lookOf(s){return(s.layout?s.layout():[]).find(q=>q.k==='look')||null}
+  static atLook(s,p){const q=this.lookOf(s);return !!q&&Math.hypot(p.x-q.x,p.y-q.y-4)<12}
+  // (roused: someone of it saw you within SITE_LIFE.alarm hours; alarm: rouse it now)
+  static roused(s){const b=s.residents;return !!b&&b.alarm!=null&&Clock.hours()-b.alarm<SITE_LIFE.alarm}
+  static alarm(s){this.book(s).alarm=Clock.hours()}
+  /* taking a hideout's lookout alone (a ResidentFigure met: its man up at the lookout): while the camp is not roused and its fire is
+     beyond a shout of the lookout, its men there come down to you as a party of their own (a raid's: residentHome, their ids), the
+     rest of the camp none the wiser; beaten, they are gone (SiteLife.hour: away with no party left); those who get away are back at
+     its fire within SITE_LIFE.picket hours, and the camp is roused */
+  static picket(s,p){const q=this.lookOf(s);if(!q||!this.atLook(s,p)||this.roused(s))return false;const C=this.centre(s);if(Math.hypot(q.x-C.x,q.y-C.y)<=SITE_LIFE.shout)return false;
+    const men=this.fighters(s).filter(m=>this.atLook(s,m));if(!men.length)return false;const book=this.book(s);
+    const b=asParty({kind:s.bandKind,x:p.x,y:p.y,list:men.map(m=>m.type),residentHome:s.i,residentEpoch:book.owner,residentIds:men.map(m=>m.id),returnAt:Clock.hours()+SITE_LIFE.picket,picket:true,t:1,a:0,idle:true,cool:0,ld:null});
+    for(const m of men)m.away=true;bandits.push(b);startEncounter({kind:'party',ref:b,list:b.troops.slice(),mine:true,title:'The lookout of the '+s.name});return true}
   static defend(s){if(G.modal||!B&&(G.enc||G.encCool>0))return;
     const residents=this.fighters(s);if(!residents.length)return;
     if(!B){const sight=yourSight();if(!residents.some(p=>sight.sees(p.x,p.y,1.2)))return}
-    if(this.hostile(s)){const army=MARCH_ARMIES.get(P),targets=army&&!army.idle?army.units.filter(u=>!u.dead):[P];if(!P.stay&&!P.inside&&residents.some(p=>targets.some(o=>this.detects(s,p,o)))&&!B){this.engage(s);return}}
+    if(this.hostile(s)){const army=MARCH_ARMIES.get(P),targets=army&&!army.idle?army.units.filter(u=>!u.dead):[P];if(!P.stay&&!P.inside&&residents.some(p=>targets.some(o=>this.detects(s,p,o)))&&!B){this.alarm(s);this.engage(s);return}}
     const force=this.force(s),foes=[...bandits,...W.monsters.map(asMonster).filter(m=>MONSTERS[m.id]?.aggro),...W.lords,...W.patrols].filter(o=>!o.gone&&!o.dead&&!o.inside&&!o.fight&&!o.qid&&armyRelation(force,o)<0);
     const foe=foes.find(o=>Math.hypot(o.x-s.x,o.y-s.y)<SITE_LIFE.leash&&residents.some(p=>this.detects(s,p,o)));if(!foe)return;
     if(B?.world){if(B.world.inside(B.world.field(s),12)&&B.world.participants.has(foe))B.world.join(force,0);return}
@@ -121,7 +138,7 @@ class SiteLife{
       const tower=u.grp.endsWith('_tower'),at=area.constrain(area.field(p),16);if(!tower){u.x=at.x;u.y=at.y}
       const old=b.groups[u.grp],id='resident_'+s.i+'_'+p.id,g=new BattleControl(id,u.team,{player:false,ally:u.team===0,foe:u.team!==0,post:true,resident:true,role:old.role,type:u.type,name:p.name,ax:u.x,ay:u.y});
       if(tower){old.post=true;u.residentHome={x:u.x,y:u.y}}else{u.grp=id;b.groups[id]=g;u.residentHome=area.field(p.home)}
-      u.residentAwake=p.mode!=='sleep';u.residentHidden=!u.residentAwake;u.residentAlarm=null;
+      u.residentAwake=p.mode!=='sleep'||this.roused(s);u.residentHidden=!u.residentAwake;u.residentAlarm=null;
     }
     if(!changed)return;for(const id of Object.keys(b.groups))if(!b.units.some(u=>u.grp===id))delete b.groups[id];
     if(b.sides)for(const r of b.sides.records){const members=b.units.filter(u=>u.sourceArmy===r.force||armySource(u.sourceArmy)===r.owner||r.owner===P&&b.groups[u.grp]?.player);if(members.length)r.groups=[...new Set(members.map(u=>u.grp))]}
@@ -155,7 +172,7 @@ class SiteLife{
     if(!s||s.cleared||this.book(s).owner!==b.residentEpoch){delete b.residentHome;return false}
     if(!night&&Clock.hours()<b.returnAt)return false;b.waylay=null;b.corpse=null;
     const dd=Math.hypot(b.x-s.x,b.y-s.y);if(dd>12){Router.travel(b,s,sp)||walk(b,s.x-b.x,s.y-b.y,Math.min(dd,sp));return true}
-    this.settleRaid(s,b,true);bandits=bandits.filter(o=>o!==b);return true;
+    this.settleRaid(s,b,true);if(b.picket)this.alarm(s);bandits=bandits.filter(o=>o!==b);return true;
   }
   static settleRaid(s,b,returned=false){const counts=countsOf(b&&!b.gone?b.troops:[]),people=this.book(s).people.filter(p=>b.residentIds.includes(p.id));
     for(const p of people){if(p.hp<=0)continue;if(!(counts[p.type]>0)){p.hp=0;p.away=false;p.mode='dead';continue}counts[p.type]--;
