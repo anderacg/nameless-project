@@ -37,6 +37,13 @@ const campFoot=type=>CAMP_FOOT[type]||(CAMP_FOOT[type]=(c=>[(8-c.ax)/TILE,1-c.ay
 // open ground round a camp: its own tiles open ground, the ring round them open or road, nothing built on any
 function campClear(type,tx,ty){const [x0,y0,w,h]=campFoot(type);
   for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++){const t=tAt(tx+i,ty+j),own=i>=x0&&i<x0+w&&j>=y0&&j<y0+h;if(occAt(tx+i,ty+j)||t!==T_OPEN&&(own||t!==T_ROAD))return false}return true}
+/* a site's picture, or one of its places', into the scene (Site draw, Hideout's places): pic() its picture, drawn k of its size about
+   (x, y) (its foot 8 below), at its own size made finer (drawFine), its yard under it (made finer with it: structures.js buildFine),
+   its shadow; its fire and flag (flagOf()) at their own; dim() (cleared): faded, no fire, no flag */
+function siteEnt(ents,cam,pic,x,y,ly,k,dim,flagOf,seed){const sp0=pic();
+  ents.push({st:true,x,y,ly,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(x-cam.x-sp0.ax*k),Math.round(y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=pic(),X=Math.round(x-cam.x-sp.ax*k),Y=Math.round(y-cam.y+8-sp.ay*k),d=dim();
+    if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);
+    if(d)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!d)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!d)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,seed);if(sp.flag&&!d)drawFlag(flagOf(),X+sp.flag[0]*k,Y+sp.flag[1]*k,seed);ctx.globalAlpha=1}})}
 const unusedName=(list,sites)=>{const free=list.filter(n=>!sites.some(o=>o.name===n));return free.length?free[rint(0,free.length-1)]:list[rint(0,list.length-1)]};
 
 // scouting a cave, a camp or a hideout (Site scout): the chance your scouts get a close look unseen: Scouting and Agility, the
@@ -137,12 +144,9 @@ class Site extends WorldObject{
   // drawn once you know of it (as you last saw it, outside your sight: a building, render.js drawWorld), no words (its name in its tip); dotted
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
-  draw(ents,cam,V){if(!this.inView(V))return;const s=this;
-    // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
-    //  its fire and flag at their own; lifted by the land at its foot, as a building is at its front (ly), a cave at its mouth)
-    const sp0=siteSprite(s),k=siteK(s);ents.push({st:true,x:s.x,y:s.y,ly:s.type==='cave'?s.y:s.y+7,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
-      if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);// (its yard made finer with it: structures.js buildFine)
-if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
+  // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point; lifted by the land at its foot, as a
+  //  building is at its front, a cave at its mouth: siteEnt)
+  draw(ents,cam,V){if(!this.inView(V))return;const s=this;siteEnt(ents,cam,()=>siteSprite(s),s.x,s.y,s.type==='cave'?s.y:s.y+7,siteK(s),()=>s.cleared,()=>s.flag(),s.seed)}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?', empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)
@@ -488,6 +492,14 @@ const LAIR_TENTS={per:3,most:6};
    (its chieftain one of them), by its seed; grow: days for each one more who joins, to most; tents: as many as its layout holds;
    ring: where they live round its point [dx, dy, rx, ry] (its fire). A hideout in old ruins, or the goblins' camp, keeps the
    fighters rolled at the fight */
+/* a hideout spread over its ground as a little holding of its own (the owner, 2026-11-25: "Can hideout spread more? Not just a fixed
+   space, just like a mini holding for bandit factions with smaller area"; Hideout layout): round its stockade its places, each on
+   its own two by two tiles of open ground r tiles from it (between the two), gap tiles apart: its lookout on the highest of them, its
+   pen, its cage and its stash (kinds: their pictures, engine/buildmodels.js); worn ground under them and paths to them (gfx/worldart.js
+   worldArtPlan: yard, path). Its people keep to them (world/sitelife.js post). A hideout dug in (a lair), or in old ruins, has none */
+const LAIR_SPREAD={on:true,places:['look','pen','cage','stash'],r:[3,6],gap:1,kinds:{look:'banditlook',pen:'banditpen',cage:'banditcage',stash:'banditstash'},
+  yard:{r:[30,22],amt:.45,clear:[36,30]},place:{r:[14,10],amt:.5,clear:[18,15]},path:{r:3,amt:.4,step:5}};
+const LAIR_LAYOUT=new WeakMap();
 const LAIR_LIFE={camp:{n:[1,4],grow:30,most:6,tents:2,ring:[8,0,14,7]},hideout:{n:[10,14],grow:15,most:16,tents:6,ring:[8,-16,18,9]}};
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 // (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
@@ -518,6 +530,21 @@ class Hideout extends Lair{
   get size0(){return this.tune.size0}
   // (its residents: a den's in the wilds; none in old ruins, nor a goblin camp's)
   get life(){return this.within?null:LAIR_LIFE.hideout}
+  // its places round its stockade (LAIR_SPREAD): [{k, tx, ty (the left of its two columns, the lower of its two rows), x, y (its point:
+  // its foot 8 below)}], worked out from the land once (the same in a painter worker: no draw, nothing saved); none for a lair
+  layout(){const SP=LAIR_SPREAD;if(!SP.on||!this.life||this.tunnel||this instanceof GoblinCamp)return [];let L=LAIR_LAYOUT.get(this);if(L)return L;L=[];
+    const [x0,y0,w,h]=campFoot('hideout'),busy=new Set(),key=(x,y)=>x+','+y,LV=WM.lv||(WM.lv=reliefOf(WM));
+    for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++)busy.add(key(this.tx+i,this.ty+j));
+    const free=(tx,ty)=>{for(let j=-1;j<=0;j++)for(let i=0;i<=1;i++){const x=tx+i,y=ty+j;if(busy.has(key(x,y))||tAt(x,y)!==T_OPEN||occAt(x,y))return false}return true};
+    const cand=[];for(let dy=-SP.r[1];dy<=SP.r[1];dy++)for(let dx=-SP.r[1];dx<=SP.r[1];dx++){const d=Math.hypot(dx,dy);if(d>=SP.r[0]&&d<=SP.r[1])cand.push({tx:this.tx+dx,ty:this.ty+dy,d})}
+    SP.places.forEach((k,n)=>{let best=null,bs=-1e9;for(const c of cand){if(!free(c.tx,c.ty))continue;const lv=LV[Math.max(0,Math.min(MH-1,c.ty))*MW+Math.max(0,Math.min(MW-1,c.tx))],
+        sc=(k==='look'?lv*4-c.d*.2:-Math.abs(c.d-SP.r[0]-1))+hash(c.tx,c.ty,this.seed*7+n)*1.5;if(sc>bs){bs=sc;best=c}}
+      if(!best)return;L.push({k,tx:best.tx,ty:best.ty,x:(best.tx+1)*TILE,y:(best.ty+.5)*TILE});
+      for(let j=-1-SP.gap;j<=SP.gap;j++)for(let i=-SP.gap;i<=1+SP.gap;i++)busy.add(key(best.tx+i,best.ty+j))});
+    LAIR_LAYOUT.set(this,L);return L}
+  // its stockade, then its places (structures.js lairPlaceSprite), each lifted by the land at its own foot
+  draw(ents,cam,V){super.draw(ents,cam,V);if(!this.inView(V))return;const s=this,k=siteK(s);
+    for(const q of this.layout())siteEnt(ents,cam,()=>lairPlaceSprite(s,q.k),q.x,q.y,q.y+7,k,()=>s.cleared,()=>s.flag(),s.seed+q.tx)}
   // its raiders and chieftain: its residents (SiteLife), else rolled (makeEnemies, as startEncounter makes them from n); the fight
   // with them and any bands sheltering here tonight
   foes(){return this.life?SiteLife.roster(this):makeEnemies(this.garrison(),true,this.band)}

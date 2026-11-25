@@ -59,6 +59,12 @@ function worldArtPlan(){
   // (nor along a holding's walls or fence: their line and a tile either side, so they stand clear of the woods, world/townwalls.js)
   for(const t of TOWNS)TownWall.clearOf(t,mark);
   for(const c of CAMP_SPOTS){tramples.push([c.x+8,c.y+4,14,7,.5]);blob(c.x+8,c.y-8,34,34)}
+  // (a hideout's ground (world/sites.js Hideout layout, LAIR_SPREAD): its yard round its stockade, each place's, the paths out to them
+  //  worn; nothing grows on them)
+  if(typeof W!=='undefined')for(const s of W.sites||[]){if(!(s instanceof Hideout))continue;const L=s.layout();if(!L.length)continue;const SP=LAIR_SPREAD,cx=s.x+8,cy=s.y-24;
+    tramples.push([cx,cy,SP.yard.r[0],SP.yard.r[1],SP.yard.amt]);blob(cx,cy,SP.yard.clear[0],SP.yard.clear[1]);
+    for(const q of L){const qx=q.x,qy=q.y-8,n=Math.max(1,Math.round(Math.hypot(qx-cx,qy-cy)/SP.path.step));tramples.push([qx,qy,SP.place.r[0],SP.place.r[1],SP.place.amt]);blob(qx,qy,SP.place.clear[0],SP.place.clear[1]);
+      for(let i=1;i<n;i++){const x=Math.round(cx+(qx-cx)*i/n),y=Math.round(cy+(qy-cy)*i/n);tramples.push([x,y,SP.path.r,SP.path.r,SP.path.amt]);blob(x,y,SP.path.r+1,SP.path.r+1)}}}
   for(const t of TOWNS){const sp=bldSpots(t);for(const k in sp){const p=sp[k];if(k==='lumber'||k==='mine')tramples.push([p.x,p.y+3,9,5,.4])}}
   const P={clear,dep,tramples};
   P.cover={desert:coverOf('desert'),swamp:coverOf('swamp'),frost:snowCover()};P.snow=P.cover.frost;

@@ -26,4 +26,16 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,SL=t.SiteLife,LL=t.LAIR_LIFE;windo
  const lair=H.find(s=>s.tunnel);if(lair){SL.active.set(lair,SL.ensure(lair));P.x=lair.x;P.y=lair.y+20;ok(!SL.visible().some(p=>SL.ensure(lair).includes(p))&&SL.under(lair),'a lair\'s people stay underground, out of sight');SL.active.delete(lair)}
  // (their tents: a camp's one or two, a hideout's up to six)
  ok(C.every(s=>s.tents>=1&&s.tents<=2)&&H.every(s=>s.tents>=Math.ceil(10/3)&&s.tents<=6),'a camp a tent or two, a hideout four to six');
+ // (a hideout spread over its ground: its places round its stockade, each on its own open ground, none on another; none for a lair;
+ //  their ground worn bare in the map's plan; its watch up at its lookout)
+ const open=H.filter(h=>!h.tunnel),lairs=H.filter(h=>h.tunnel),SP=t.LAIR_SPREAD;
+ const lay=open.map(h=>h.layout()),tiles=q=>[[0,-1],[1,-1],[0,0],[1,0]].map(([i,j])=>[q.tx+i,q.ty+j]);
+ info('places: '+lay.map(L=>L.map(q=>q.k).join('+')).join(', '));
+ ok(open.length&&lay.every(L=>L.length>=3&&L.some(q=>q.k==='look')),'each hideout in the open has its places round it, its lookout among them');
+ ok(lairs.every(h=>!h.layout().length),'a lair dug in has none');
+ ok(open.every((h,n)=>lay[n].every(q=>{const d=Math.hypot(q.tx-h.tx,q.ty-h.ty);return d>=SP.r[0]&&d<=SP.r[1]&&tiles(q).every(([x,y])=>t.tAt(x,y)===t.T_OPEN)})),'each on open ground '+SP.r.join('-')+' tiles from its stockade');
+ ok(lay.every(L=>L.every((q,i)=>L.every((o,j)=>i===j||Math.abs(q.tx-o.tx)>1+SP.gap||Math.abs(q.ty-o.ty)>1+SP.gap))),'none on another');
+ const plan=t.WorldArt.ensure();ok(lay.every(L=>L.every(q=>plan.tramples.some(r=>Math.abs(r[0]-q.x)<1&&Math.abs(r[1]-(q.y-8))<1))),'their ground worn bare in the map\'s plan');
+ const hh=open[0],watch=SL.ensure(hh).find(p=>p.role==='watch'),lk=hh.layout().find(q=>q.k==='look'),post=SL.post(hh,watch,'watch');
+ ok(post&&Math.hypot(post.x-lk.x,post.y-lk.y)<10,'its watch keeps to its lookout');
  ok(!ERR.length,'no runtime errors')});

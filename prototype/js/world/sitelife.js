@@ -30,6 +30,12 @@ class SiteLife{
   static managed(s){return s instanceof Encampment||s instanceof Outpost||s instanceof Lair&&!!s.life}
   // (where a bandit camp's or a hideout's people live: round its fire, LAIR_LIFE ring; else under its point)
   static centre(s){const L=s.life;return L?{x:s.x+L.ring[0],y:s.y+L.ring[1],rx:L.ring[2],ry:L.ring[3]}:{x:s.x,y:s.y+13,rx:22,ry:10}}
+  // (a hideout's people at its places (sites.js Hideout layout): the watch up at its lookout, the raiders by turns at its pen, its cage,
+  //  its stash; null: round its fire)
+  static post(s,p,mode){const L=s.layout?s.layout():[];if(!L.length)return null;
+    if(mode==='watch'){const q=L.find(q=>q.k==='look')||L[0];return{x:q.x+((p.id%3)-1)*4,y:q.y+4}}
+    if(mode==='train'&&p.beat%2){const q=L[(p.id+p.beat)%L.length];return{x:q.x+((p.id%3)-1)*5,y:q.y+5}}
+    return null}
   // (underground, a lair's people are not seen on the map: no figures, no watch over it)
   static under(s){return !!s.tunnel}
   static hostile(s){return s instanceof BanditCamp||!!s.band||s.realm&&s.realm!=='player'&&hostileTo(s.realm)}
@@ -82,7 +88,7 @@ class SiteLife{
     for(const p of people){if(patrol?.includes(p))continue;p.walking=false;if(p.hp<=0||p.away)continue;
       const watch=p.role==='watch',mode=watch?'watch':night?'sleep':p.role==='cook'?'cook':p.role==='chief'?'rest':'train';p.mode=mode;
       if(p.waiting>0){p.waiting-=d;continue}
-      if(!p.goal){p.beat=(p.beat+1)%4;const a=(p.beat+(p.id%8)/8)*Math.PI/2,r=watch?30:mode==='sleep'?4:12,C=this.centre(s);p.goal={x:C.x+Math.cos(a)*r,y:C.y+Math.sin(a)*r*.5};
+      if(!p.goal){p.beat=(p.beat+1)%4;const a=(p.beat+(p.id%8)/8)*Math.PI/2,r=watch?30:mode==='sleep'?4:12,C=this.centre(s);p.goal=this.post(s,p,mode)||{x:C.x+Math.cos(a)*r,y:C.y+Math.sin(a)*r*.5};
         if(s instanceof Outpost){const S=[...s.posts(),s.door(p.id%3,3)];p.goal=S[(p.beat+p.id)%S.length];p.route=s.around(p,p.goal)}
       }
       const q=p.route?.[0]||p.goal,dx=q.x-p.x,dy=q.y-p.y,dd=Math.hypot(dx,dy),step=Math.min(dd,footStep('walk',d));

@@ -456,6 +456,10 @@ function campSprite(i,kind,c,tents){c=c||'grass';const k='camp'+i+(kind||'')+c+(
 // (a bandit lair: a cave's outcrop round its mouth, or a timbered tunnel's head (sites.js Hideout lairLook), bones before it and the band's banner on a pole, on its tile as a hideout stands;
 // the banner the band's (lairCol: [cloth, its shade]; a goblin warren's green), else the bandits' red)
 const LAIR_COL=['#8a2a22','#5a1a16'];
+// (a hideout's place round it (sites.js Hideout layout, LAIR_SPREAD): its own little picture, two tiles square, its foot at its
+// tiles' bottom edge, in the climate where it stands)
+function lairPlaceSprite(s,k){const q=s.layout().find(o=>o.k===k),c=climAt(q.x,q.y),key='lairp'+k+s.seed+c;if(spr[key])return spr[key];
+  const mk=d=>PX.clusterModel({kind:LAIR_SPREAD.kinds[k],seed:s.seed*13+k.length,env:c,snow:c==='frost'?1:0,detail:d}),m=mk(1);return spr[key]=siteCanvas(m,m.cell/2,m.cell,mk)}
 function lairSprite(s,c){const look=s.lairLook,L=s.lairCol||LAIR_COL,k='lair'+look+s.seed+c+L[0];if(spr[k])return spr[k];
   const mk=d=>PX.buildingModel({type:look==='cave'?'cave':'minehead',seed:s.seed,env:c,snow:c==='frost'?1:0,detail:d}),m=mk(1);
   // (its banner on a pole and the bones before it, drawn over the model at its own size)

@@ -81,7 +81,7 @@
       crane:[32,0],ruins:[32,0],cave:[32,0],
       tavern:[64,0],church:[64,0],longhouse:[64,4],keep:[64,0],gatehouse:[64,0],village:[64,0],citadel:[64,0]},
     clusters:{row:64,yard:64,farmstead:64,smithy:64,inn:64,chapel:64,market:64,mill:64,lumber:64,mine:64,quarry:64,fishery:64,pasture:64,brewery:64,granary:64,workshop:64,
-      quarter:128,camp:32,travelers:32,hideout:64,townhall:64,fort:64}};
+      quarter:128,camp:32,travelers:32,hideout:64,townhall:64,fort:64,banditlook:32,banditpen:32,banditcage:32,banditstash:32}};
   /* the shared proportions (W4): a storey's walls (px: the door's 9 and its lintel's 3, then 7 a storey up), a roof's rise by its
      span (about 45°: never taller than the walls but on a church or in the frost); plans about square, their depth at least three
      quarters of their width (the side views as wide as the front), but for the long and thin (PX.MODEL_LONG: the side its gable) */
@@ -571,7 +571,21 @@
     // (its tents by how many live there (spec.tents, 1-6; three when not said): HIDE_TENTS, their places inside the stakes)
     hideout:{role:'camp',flag:true,make:C=>{for(const at of HIDE_TENTS[Math.max(1,Math.min(6,C.spec.tents||3))])piece(C,'tent',at,0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
-    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}}
+    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}},
+    // a hideout's places round it (the owner, 2026-11-25: a hideout spread "like a mini holding for bandit factions"; prototype
+    // world/sites.js Hideout layout): its lookout (a plank platform on log posts, a rail of stakes round it, its flag), its pen (a
+    // fence of stakes, a haystack, a trough), its cage (a roofed cage of stakes) and its stash (a wagon, crates, barrels, sacks)
+    banditlook:{role:'camp',flag:true,make:C=>{const Q=C.Q;for(const [a,b] of [[-6,-5],[4,-5],[-6,3],[4,3]])Q.parts.push({k:'box',name:'p'+a+b,u:[a,a+2],v:[b,b+2],z:[0,13],wall:'log',top:true,topMat:'logend'});
+      for(let z=2;z<12;z+=3)Q.parts.push({k:'box',name:'ld'+z,u:[-1,1],v:[5,6],z:[z,z+1],wall:'log',top:true,topMat:'logend'});
+      Q.parts.push({k:'box',name:'pl',u:[-7,7],v:[-6,6],z:[13,14],wall:'plank',top:true});
+      for(const [n,u,v] of [['rN',[-7,7],[-6,-5]],['rW',[-7,-6],[-6,6]],['rE',[6,7],[-6,6]]])Q.parts.push({k:'box',name:n,u,v,z:[14,17],wall:'stakes',top:true,topMat:'log'});P(C,'logs',[-10,10])}},
+    banditpen:{role:'camp',make:C=>{const Q=C.Q;for(const [n,u,v] of [['fN',[-13,13],[-10,-9]],['fW',[-13,-12],[-10,9]],['fE',[12,13],[-10,9]],['fS0',[-13,-3],[8,9]],['fS1',[3,13],[8,9]]])Q.parts.push({k:'box',name:n,u,v,z:[0,5],wall:'stakes',top:true,topMat:'log'});
+      piece(C,'haystack',[-5,-3],0);P(C,'trough',[5,2])}},
+    banditcage:{role:'camp',make:C=>{const Q=C.Q;Q.parts.push({k:'box',name:'fl',u:[-7,7],v:[-5,5],z:[0,1],wall:'plank',top:true});
+      for(let u=-7;u<7;u+=2)for(const v of [-5,4])Q.parts.push({k:'box',name:'b'+u+v,u:[u,u+1],v:[v,v+1],z:[1,10],wall:'log',top:true,topMat:'logend'});
+      for(let v=-3;v<4;v+=2)for(const u of [-7,6])Q.parts.push({k:'box',name:'c'+u+v,u:[u,u+1],v:[v,v+1],z:[1,10],wall:'log',top:true,topMat:'logend'});
+      Q.parts.push({k:'box',name:'rf',u:[-8,8],v:[-6,6],z:[10,11],wall:'plank',top:true});P(C,'logs',[9,9])}},
+    banditstash:{role:'camp',make:C=>{piece(C,'wagon',[-4,-3],0);piece(C,'crates',[9,6],0);piece(C,'barrels',[-11,8],0);P(C,'sacks',[4,10])}}
   };
   // (a hideout's tents by their number: three as it always stood; more, a second row between them and the fire, six four along the back)
   const HIDE_TENTS={1:[[0,-14]],2:[[-12,-18],[12,-18]],3:[[-16,-20],[16,-20],[0,-12]],4:[[-17,-20],[0,-21],[17,-20],[-12,-5]],5:[[-17,-20],[0,-21],[17,-20],[-12,-5],[12,-5]],6:[[-21,-20],[-7,-21],[7,-21],[21,-20],[-12,-5],[12,-5]]};
