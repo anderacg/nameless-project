@@ -112,7 +112,8 @@ function drawMarcherAt(u,o,cam){
   const act=marchAct(u);MARCH_UP.set(u,act.dy);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
-  const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true),bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
+  const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true);IndividualHealth.anchor(u,x,y-IndividualHealth.top(s)*k);// (his health squares over his head as drawn)
+  const bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
   // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px, eased between its bands: wadeCut; worldterrain.js
   //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))

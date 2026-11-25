@@ -13,9 +13,13 @@
    flag's spear by the weapon it stands for, [the weapon it is drawn as, its length] (the flags themselves the battle's:
    BATTLE_BANNER); brand: the torch held [angle (degrees: 0 forward, -90 up), haft px]; light: its light's reach (px); fade: the
    darkness by which a torch is fully lit (it fades in as night falls, out before dawn); flutter: a flag's waves a second as he
-   walks; cull: px past the screen's edge a man still shows his */
+   walks; cull: px past the screen's edge a man still shows his; banner: the map's flags against the battle's (BATTLE_BANNER), smaller
+   and flown higher (the owner, 2026-11-25: "flag on unit seems too big or it draw over the unit"): a spear's cloth (cloth, each shape's
+   [w, h]: a banner 10 x 7, its device whole), its spear pole px longer; a back flag's pole (back: h px) and a realm's hung banner (hang:
+   7 x 8, its device inside the trim), so the cloth flies clear of his head */
 const MARCH_GEAR={flags:true,torches:true,flag:.2,torch:.2,pole:{spear:['spear',15],pike:['pike',18],javelin:['javelin',14],lance:['spear',18]},
-  brand:[-104,5],light:14,fade:.25,flutter:3,cull:40};
+  brand:[-104,5],light:14,fade:.25,flutter:3,cull:40,
+  banner:{cloth:{banner:[10,7],rag:[9,7],pennant:[9,6],trade:[7,4]},pole:11,back:{h:25,up:3},hang:{on:true,w:7,h:8,bar:3}}};
 // (a marcher id's hash: his rank in his group)
 const marchHash=id=>{let h=Math.imul((id|0)^0x5bd1e995,0x9e3779b1);h^=h>>>15;h=Math.imul(h,0x85ebca6b);return(h^h>>>13)>>>0};
 // (of a group's n men, the share s: rounded, one at least)
@@ -48,7 +52,7 @@ const MARCH_FLAGS=new Map();
 // head (poleTip); round his hand at the middle (R), as a weapon's: on the map (MarchKit) and in the army screen's previews alike
 function poleFlagSprite(k,b,skin,f){const [kind]=MARCH_GEAR.pole[k]||['spear'],doll=DOLL_FIGS.on,deg=doll?HOLD_DOLL.pole.march:WPN_REST[kind]??-90,i=((Math.round(deg/360*WEAPON_STEPS))%WEAPON_STEPS+WEAPON_STEPS)%WEAPON_STEPS,
     key='fp'+kind+i+(doll?1:0)+b.k+b.col+b.dev+skin+f;let c=MARCH_FLAGS.get(key);if(c)return c;
-  const w=weaponSprite(kind,'blue',skin,i,WPN[kind][0]+BATTLE_BANNER.pole,doll),[tx,ty]=poleTip(w),l=Math.hypot(tx,ty)||1,q=Math.max(0,l-2)/l,cl=clothSprite(b,f),R=w.R+cl.width+cl.height;
+  const w=weaponSprite(kind,'blue',skin,i,WPN[kind][0]+MARCH_BANNER.pole,doll),[tx,ty]=poleTip(w),l=Math.hypot(tx,ty)||1,q=Math.max(0,l-2)/l,cl=clothSprite(b,f,MARCH_BANNER),R=w.R+cl.width+cl.height;
   c=mkc(2*R+1,2*R+1,g=>{g.drawImage(w,R-w.R,R-w.R);g.drawImage(cl,Math.round(R+tx*q)-cl.ax,Math.round(R+ty*q)-cl.ay)});c.R=R;MARCH_FLAGS.set(key,c);return c}
 // a torch in his free hand: a short haft at MARCH_GEAR.brand's angle (a pixel line, its corners filled, as weapons.js drawBlade's),
 // its pitch-wrapped head, the flame over it: as it burns (fire.js: frame f of FLAMES.frames, unoutlined, its tips trailing lean px
@@ -76,7 +80,7 @@ class MarchKit{
   // (battleBackFlag); a flag man's own spear drawn as in battle, a doll's hold and BATTLE_BANNER.pole longer, its cloth under its
   // head (clothSprite, poleTip))
   note(c,x,y){if(WDEPTH.ghosting)return;const d=VS>1?subOf(this.u):[0,0],b=WorldGround.bridge(this.u.x,this.u.y);EnemyDifficulty.anchor(this.owner,Math.floor(G.cam.x)+this.x+this.sx*(x+c.width/2)+d[0]+(b?.[0]||0),Math.floor(G.cam.y)+this.y+Math.abs(this.sx)*y-liftAt(this.u.x,this.u.y)+d[1]+(b?.[1]||0))}
-  back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=battleBackFlag(this.flag,this.wave());ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay);this.note(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
+  back(s,bx,by){if(!this.flag||this.bare||!s.back)return;const c=battleBackFlag(this.flag,this.wave(),MARCH_BANNER);ctx.drawImage(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay);this.note(c,bx+s.back[0]-c.ax,by+s.back[1]-c.ay)}
   front(s,bx,by){
     if(this.bare&&s.hand){const c=poleFlagSprite(this.r.pole,this.flag,this.r.kit.skin,this.wave());ctx.drawImage(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R);this.note(c,bx+s.hand[0]-c.R,by+s.hand[1]-c.R)}
     // (its torch: as it burns, its frame by the clock and his id (fire.js fireFrameAt), its flame trailing back as he walks; its
@@ -110,13 +114,16 @@ function battleFlag(u){if(!MARCH_GEAR.flags||!B||u.hero||u.comp||u.leader)return
    from the pole, plain cloth after it, its fly waving (fly) and its swallow tail cut (notch) only past it; the back banner 9 x 11
    (was 7 x 10), a field's pixel each side of its device inside the trim */
 const BATTLE_BANNER={cloth:{banner:[13,9],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:8,notch:3,dev:2,back:{h:22,up:3},pole:7,hang:{on:true,w:9,h:11,bar:3}};
-// (a flag's cloth alone, hung from (ax, ay) by its first column, trailing back to the left: a spear's in battle)
-function clothSprite(b,f){const key='fc'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;const Q=BATTLE_BANNER,[cw,ch]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+2,ch+4);
+// (the map's: the battle's with MARCH_GEAR.banner's sizes)
+const MARCH_BANNER={...BATTLE_BANNER,...MARCH_GEAR.banner,id:'m'};
+// (a flag's cloth alone, hung from (ax, ay) by its first column, trailing back to the left: a spear's in battle; Q its sizes, the
+// battle's unless said (the map's: MARCH_BANNER))
+function clothSprite(b,f,Q=BATTLE_BANNER){const key='fc'+b.k+b.col+b.dev+f+(Q.id||'');let c=MARCH_FLAGS.get(key);if(c)return c;const [cw,ch]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+2,ch+4);
   bannerCloth((x,y,c)=>pset(g,x,y,c),cw,2,b,f,Q.cloth,-1,Q);g.edge=true;poutline(g);c=pcanvas(g);c.ax=cw+1;c.ay=2;MARCH_FLAGS.set(key,c);return c}
 // (a flag at his back in battle: a tall pole up from under his shoulders, a gilt knob atop, the banner hung under it; ax, ay: the
 // shoulders' point)
-function battleBackFlag(b,f){if(b.k==='banner'&&BATTLE_BANNER.hang.on)return hangBackFlag(b,f);const key='fB'+b.k+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
-  const Q=BATTLE_BANNER,{h,up}=Q.back,[cw]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+3,h+4),x=cw+1,W=PPAL.wood;
+function battleBackFlag(b,f,Q=BATTLE_BANNER){if(b.k==='banner'&&Q.hang.on)return hangBackFlag(b,f,Q);const key='fB'+b.k+b.col+b.dev+f+(Q.id||'');let c=MARCH_FLAGS.get(key);if(c)return c;
+  const {h,up}=Q.back,[cw]=Q.cloth[b.k]||Q.cloth.banner,g=pgrid(cw+3,h+4),x=cw+1,W=PPAL.wood;
   for(let y=2;y<=h+1;y++)pset(g,x,y,W[y>h-2?2:1]);pset(g,x,1,PPAL.gold[1]);pset(g,x,0,PPAL.gold[0]);bannerCloth((X,Y,c)=>pset(g,X,Y,c),x-1,3,b,f,Q.cloth,-1,Q);
   g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}
 /* (a realm's banner at his back hung as the group flags are (the owner, 2026-11-10: "do this kind of flag for a faction flag on units
@@ -124,8 +131,8 @@ function battleBackFlag(b,f){if(b.k==='banner'&&BATTLE_BANNER.hang.on)return han
    to the cloth's side with a gold knob at its end, the cloth hung under it, taller than wide (hang: w, h), a gold trim at its sides
    and foot, the realm's device in its middle ringed in its deepest shade, a gold fringe under it; its foot and fringe swung a px as
    he moves (f). A rag, a pennant, a trade flag as before; ax, ay: the shoulders' point) */
-function hangBackFlag(b,f){const key='fH'+b.col+b.dev+f;let c=MARCH_FLAGS.get(key);if(c)return c;
-  const Q=BATTLE_BANNER,{h,up}=Q.back,{w:cw,h:ch,bar}=Q.hang,g=pgrid(cw+4,h+4),x=cw+2,W=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),s=(X,Y,col)=>pset(g,X,Y,col);
+function hangBackFlag(b,f,Q=BATTLE_BANNER){const key='fH'+b.col+b.dev+f+(Q.id||'');let c=MARCH_FLAGS.get(key);if(c)return c;
+  const {h,up}=Q.back,{w:cw,h:ch,bar}=Q.hang,g=pgrid(cw+4,h+4),x=cw+2,W=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),s=(X,Y,col)=>pset(g,X,Y,col);
   for(let y=2;y<=h+1;y++)s(x,y,W[y>h-2?2:1]);s(x,1,G[1]);s(x,0,G[0]);
   for(let X=x-cw-1;X<x;X++)s(X,bar,W[1]);s(x-cw-1,bar,G[1]);
   const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;

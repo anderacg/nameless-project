@@ -296,7 +296,9 @@ function wuiDropPic(k){const key='w'+k;let c=WUIP.get(key);if(c)return c;
  c=uiIndicatorCanvas('water',9,11,'#a8b9ad',k/WUI_DROP.px.length);c.k=.25;c.cx=4.5;c.tip=10;WUIP.set(key,c);return c}
 function wuiFilling(cam){if(!SKINS.on)return;const D=WUI_DROP,c=wuiDropPic(Math.round(SKINS.share*D.px.length));wuiPut(c,Math.round(wuiX(P.x,cam))+D.dx,Math.round(wuiY(P.y,cam))-D.dy,c.cx,c.tip)}
 
-/* Enemy stars: visible nearby threats or a chosen animal, in native screen size above flags. */
+/* Enemy stars: every threat in your sight (the owner, 2026-11-25: "The enemy stars should be draw on the world map": they were only
+   those within near px of you, or one hovered, which a phone never does), nearest first, max of them; or a chosen animal; in native
+   screen size above flags. near: past your sight's edge a foe still counts */
 const ENEMY_DIFFICULTY={near:90,fade:.35,max:8,size:9,gap:2,colors:['#a8c58a','#e0c77d','#eea367','#e88075']};
 class EnemyDifficulty{
   static anchors=new Map();
@@ -312,7 +314,7 @@ class EnemyDifficulty{
   static worldEntries(cam,now,objects=this.objects()){
     this.reset(null);const V=vis(),focus=this.focus(),owner=focus instanceof WorldFigure?focus.owner:focus,mine=this.company(now),seen=new Set(),out=[];
     for(const o of objects){if(o.dead||o.here?.()===false||wuiKind(o)!=='foe'||typeof o.power!=='function'||Math.hypot(o.x-P.x,o.y-P.y)>V+ENEMY_DIFFICULTY.near||!o.inView(V))continue;
-      seen.add(o);const chosen=owner===o,near=Math.hypot(o.x-P.x,o.y-P.y)<=ENEMY_DIFFICULTY.near,a=this.alpha(o,chosen||near,now);if(a)out.push({o,a,chosen,...MonsterRegions.threat(o.power(),mine)})}
+      seen.add(o);const chosen=owner===o,a=this.alpha(o,true,now);if(a)out.push({o,a,chosen,...MonsterRegions.threat(o.power(),mine)})}
     if(focus instanceof WorldFigure&&focus.index!=null&&focus.wild&&focus.here()&&focus.inView(V)){seen.add(focus);out.push({o:focus,a:this.alpha(focus,true,now),chosen:true,...MonsterRegions.threat(0,mine)})}
     for(const o of this.states.keys())if(!seen.has(o)){this.states.delete(o);this.ratings.delete(o)}
     return out.sort((a,b)=>Number(b.chosen)-Number(a.chosen)||Math.hypot(a.o.x-P.x,a.o.y-P.y)-Math.hypot(b.o.x-P.x,b.o.y-P.y)).slice(0,ENEMY_DIFFICULTY.max);

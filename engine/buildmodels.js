@@ -9,7 +9,8 @@
 //     households, marks ...) and type, people, culture, facing, gateX. Cached by its spec (the snow overlay a third of an amount at
 //     a time inside it).
 //   PX.objectModel(spec): the same for the 16 px objects (PX.MODEL_OBJECTS): alone (a well in a square) or as a cluster's dressing.
-//   PX.clusterModel({kind, culture, people, seed, yaw, env, snow}) -> the same for a cell of several buildings and objects
+//   PX.clusterModel({kind, culture, people, seed, yaw, env, snow, tents}) -> the same for a cell of several buildings and objects
+//     (tents: a hideout's, by how many live there, 1-6; a camp's 1 or 2)
 //     (PX.CLUSTER_MODELS): a town row, a hamlet's yard, a farmstead, a smithy yard, an inn with its stable, a chapel and its
 //     graveyard, a market, a mill, a lumber camp, a mine, a quarry, a fishery, a pasture, a brewery, a granary yard, a workshop
 //     yard (64), a town quarter (128); the camps: a bandits' camp and travellers (32), a hideout (64), tents and wagons round a fire
@@ -80,7 +81,7 @@
       crane:[32,0],ruins:[32,0],cave:[32,0],
       tavern:[64,0],church:[64,0],longhouse:[64,4],keep:[64,0],gatehouse:[64,0],village:[64,0],citadel:[64,0]},
     clusters:{row:64,yard:64,farmstead:64,smithy:64,inn:64,chapel:64,market:64,mill:64,lumber:64,mine:64,quarry:64,fishery:64,pasture:64,brewery:64,granary:64,workshop:64,
-      quarter:128,camp:32,travelers:32,hideout:64,townhall:64,fort:64}};
+      quarter:128,camp:32,travelers:32,hideout:64,townhall:64,fort:64,banditlook:32,banditpen:32,banditcage:32,banditstash:32,banditgate:32}};
   /* the shared proportions (W4): a storey's walls (px: the door's 9 and its lintel's 3, then 7 a storey up), a roof's rise by its
      span (about 45°: never taller than the walls but on a church or in the frost); plans about square, their depth at least three
      quarters of their width (the side views as wide as the front), but for the long and thin (PX.MODEL_LONG: the side its gable) */
@@ -486,7 +487,7 @@
     const s=Q.spec();s.yaw=o.yaw;s.fitYaws=FRONT.includes(type)?[0]:[0,2,4,6];s.snow=SNOW(spec);s.role=s.role||(Q.dwellings[0]&&Q.dwellings[0].role)||null;return s};
   // the cache: a model a spec (its snow overlay a third of an amount at a time inside it)
   // (detail: drawn that many times finer, the same building (model.js PX.model); a model of its own in the cache)
-  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital,s.detail>1?s.detail|0:1]);
+  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital,s.detail>1?s.detail|0:1,s.tents|0]);
   const fine=(s,spec)=>{if(spec.detail>1)s.detail=spec.detail|0;return s};
   function cached(k,spec,make){const id=key(k,spec);let m=CACHE.get(id);if(!m){m=make();CACHE.set(id,m)}const a=SNOW(spec);
     return a?Object.assign({},m,{snow:PX.modelSeason(m,'snow',a)}):Object.assign({},m,{snow:null})}
@@ -565,11 +566,33 @@
       piece(C,'well',[0,14],0);piece(C,'cart',[-18,24],0);piece(C,'barrels',[20,24],0);P(C,'bench',[-6,30],1);C.Q.parts.push({k:'bed',name:'g1',u:[-60,-40],v:[-28,-18]},{k:'bed',name:'g2',u:[30,58],v:[-28,-18]})}},
     // camps: a bandits' camp (32: one or two tents round a fire, crates or a barrel, a log to sit on), a hideout (64: three tents and
     // their gear round the fire in a ring of spiked stakes, its way in at the front) and travellers (32: a tent, their wagon, the fire)
-    camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-8:0,two?-10:-11],0);if(two)piece(C,'tent',[8,0],0);fire(C,[two?-5:0,two?9:8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-14,3]:[10,7]);P(C,'logs',two?[-12,12]:[-8,12],0,1)}},
-    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-12],0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
+    camp:{role:'camp',make:C=>{const two=C.spec.tents?C.spec.tents>1:C.d.chance(.5);// (its tents: spec.tents (1 or 2: a bandit camp's by its people), else by chance)
+      piece(C,'tent',[two?-8:0,two?-10:-11],0);if(two)piece(C,'tent',[8,0],0);fire(C,[two?-5:0,two?9:8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-14,3]:[10,7]);P(C,'logs',two?[-12,12]:[-8,12],0,1)}},
+    // (its tents by how many live there (spec.tents, 1-6; three when not said): HIDE_TENTS, their places inside the stakes)
+    hideout:{role:'camp',flag:true,make:C=>{for(const at of HIDE_TENTS[Math.max(1,Math.min(6,C.spec.tents||3))])piece(C,'tent',at,0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
-    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}}
+    travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}},
+    // a hideout's places round it (the owner, 2026-11-25: a hideout spread "like a mini holding for bandit factions"; prototype
+    // world/sites.js Hideout layout): its lookout (a plank platform on log posts, a rail of stakes round it, its flag), its pen (a
+    // fence of stakes, a haystack, a trough), its cage (a roofed cage of stakes) and its stash (a wagon, crates, barrels, sacks)
+    banditlook:{role:'camp',flag:true,make:C=>{const Q=C.Q;for(const [a,b] of [[-6,-5],[4,-5],[-6,3],[4,3]])Q.parts.push({k:'box',name:'p'+a+b,u:[a,a+2],v:[b,b+2],z:[0,13],wall:'log',top:true,topMat:'logend'});
+      for(let z=2;z<12;z+=3)Q.parts.push({k:'box',name:'ld'+z,u:[-1,1],v:[5,6],z:[z,z+1],wall:'log',top:true,topMat:'logend'});
+      Q.parts.push({k:'box',name:'pl',u:[-7,7],v:[-6,6],z:[13,14],wall:'plank',top:true});
+      for(const [n,u,v] of [['rN',[-7,7],[-6,-5]],['rW',[-7,-6],[-6,6]],['rE',[6,7],[-6,6]]])Q.parts.push({k:'box',name:n,u,v,z:[14,17],wall:'stakes',top:true,topMat:'log'});P(C,'logs',[-10,10])}},
+    banditpen:{role:'camp',make:C=>{const Q=C.Q;for(const [n,u,v] of [['fN',[-13,13],[-10,-9]],['fW',[-13,-12],[-10,9]],['fE',[12,13],[-10,9]],['fS0',[-13,-3],[8,9]],['fS1',[3,13],[8,9]]])Q.parts.push({k:'box',name:n,u,v,z:[0,5],wall:'stakes',top:true,topMat:'log'});
+      piece(C,'haystack',[-5,-3],0);P(C,'trough',[5,2])}},
+    banditcage:{role:'camp',make:C=>{const Q=C.Q;Q.parts.push({k:'box',name:'fl',u:[-7,7],v:[-5,5],z:[0,1],wall:'plank',top:true});
+      for(let u=-7;u<7;u+=2)for(const v of [-5,4])Q.parts.push({k:'box',name:'b'+u+v,u:[u,u+1],v:[v,v+1],z:[1,10],wall:'log',top:true,topMat:'logend'});
+      for(let v=-3;v<4;v+=2)for(const u of [-7,6])Q.parts.push({k:'box',name:'c'+u+v,u:[u,u+1],v:[v,v+1],z:[1,10],wall:'log',top:true,topMat:'logend'});
+      Q.parts.push({k:'box',name:'rf',u:[-8,8],v:[-6,6],z:[10,11],wall:'plank',top:true});P(C,'logs',[9,9])}},
+    // a stronghold's gate over its stockade's way in: two log posts, a beam across, a plank platform on it, a rail of stakes, its flag
+    banditgate:{role:'camp',flag:true,make:C=>{const Q=C.Q;for(const a of [-9,7])Q.parts.push({k:'box',name:'g'+a,u:[a,a+2],v:[-1,1],z:[0,16],wall:'log',top:true,topMat:'logend'});
+      Q.parts.push({k:'box',name:'gb',u:[-9,9],v:[-1,1],z:[13,15],wall:'log',top:true,topMat:'logend'});Q.parts.push({k:'box',name:'gp',u:[-9,9],v:[-3,3],z:[15,16],wall:'plank',top:true});
+      for(const [n,u,v] of [['gN',[-9,9],[-3,-2]],['gS',[-9,9],[2,3]]])Q.parts.push({k:'box',name:n,u,v,z:[16,18],wall:'stakes',top:true,topMat:'log'})}},
+    banditstash:{role:'camp',make:C=>{piece(C,'wagon',[-4,-3],0);piece(C,'crates',[9,6],0);piece(C,'barrels',[-11,8],0);P(C,'sacks',[4,10])}}
   };
+  // (a hideout's tents by their number: three as it always stood; more, a second row between them and the fire, six four along the back)
+  const HIDE_TENTS={1:[[0,-14]],2:[[-12,-18],[12,-18]],3:[[-16,-20],[16,-20],[0,-12]],4:[[-17,-20],[0,-21],[17,-20],[-12,-5]],5:[[-17,-20],[0,-21],[17,-20],[-12,-5],[12,-5]],6:[[-21,-20],[-7,-21],[7,-21],[21,-20],[-12,-5],[12,-5]]};
   // the clusters whose look is the country's
   const RURAL_CL=['yard','farmstead','mill','lumber','mine','quarry','fishery','pasture','granary'];
   // a cluster's layout: its culture's (clusters: (C, base)), else the generic

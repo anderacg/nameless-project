@@ -37,6 +37,13 @@ const campFoot=type=>CAMP_FOOT[type]||(CAMP_FOOT[type]=(c=>[(8-c.ax)/TILE,1-c.ay
 // open ground round a camp: its own tiles open ground, the ring round them open or road, nothing built on any
 function campClear(type,tx,ty){const [x0,y0,w,h]=campFoot(type);
   for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++){const t=tAt(tx+i,ty+j),own=i>=x0&&i<x0+w&&j>=y0&&j<y0+h;if(occAt(tx+i,ty+j)||t!==T_OPEN&&(own||t!==T_ROAD))return false}return true}
+/* a site's picture, or one of its places', into the scene (Site draw, Hideout's places): pic() its picture, drawn k of its size about
+   (x, y) (its foot 8 below), at its own size made finer (drawFine), its yard under it (made finer with it: structures.js buildFine),
+   its shadow; its fire and flag (flagOf()) at their own; dim() (cleared): faded, no fire, no flag */
+function siteEnt(ents,cam,pic,x,y,ly,k,dim,flagOf,seed){const sp0=pic();
+  ents.push({st:true,x,y,ly,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(x-cam.x-sp0.ax*k),Math.round(y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=pic(),X=Math.round(x-cam.x-sp.ax*k),Y=Math.round(y-cam.y+8-sp.ay*k),d=dim();
+    if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);
+    if(d)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!d)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!d)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,seed);if(sp.flag&&!d)drawFlag(flagOf(),X+sp.flag[0]*k,Y+sp.flag[1]*k,seed);ctx.globalAlpha=1}})}
 const unusedName=(list,sites)=>{const free=list.filter(n=>!sites.some(o=>o.name===n));return free.length?free[rint(0,free.length-1)]:list[rint(0,list.length-1)]};
 
 // scouting a cave, a camp or a hideout (Site scout): the chance your scouts get a close look unseen: Scouting and Agility, the
@@ -137,12 +144,9 @@ class Site extends WorldObject{
   // drawn once you know of it (as you last saw it, outside your sight: a building, render.js drawWorld), no words (its name in its tip); dotted
   // on the minimap in its kind's colour (grey, cleared)
   inView(V){return this.known()}
-  draw(ents,cam,V){if(!this.inView(V))return;const s=this;
-    // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point, at its own size made finer (drawFine);
-    //  its fire and flag at their own; lifted by the land at its foot, as a building is at its front (ly), a cave at its mouth)
-    const sp0=siteSprite(s),k=siteK(s);ents.push({st:true,x:s.x,y:s.y,ly:s.type==='cave'?s.y:s.y+7,sh:sp0.sh?[scaledPic(sp0.sh,k),Math.round(s.x-cam.x-sp0.ax*k),Math.round(s.y-cam.y+8-sp0.ay*k)]:null,f:()=>{const sp=siteSprite(s),X=Math.round(s.x-cam.x-sp.ax*k),Y=Math.round(s.y-cam.y+8-sp.ay*k);
-      if(sp.gr)ctx.drawImage(sp._fg&&sp._fr===sceneRes()*Math.round(k)?sp._fg:sp.gr,X,Y,sp.gr.width*k,sp.gr.height*k);// (its yard made finer with it: structures.js buildFine)
-if(s.cleared)ctx.globalAlpha=.5;drawFine(sp,X,Y,k);if(!s.cleared)depthPic(scaledPic(sp,k),X,Y);if(sp.fire&&!s.cleared)drawFire(X+sp.fire[0]*k,Y+sp.fire[1]*k,s.seed);if(sp.flag&&!s.cleared)drawFlag(s.flag(),X+sp.flag[0]*k,Y+sp.flag[1]*k,s.seed);ctx.globalAlpha=1;}})}
+  // (at WORLD_VIEW.house, as the holdings' buildings: its picture k of its size about its point; lifted by the land at its foot, as a
+  //  building is at its front, a cave at its mouth: siteEnt)
+  draw(ents,cam,V){if(!this.inView(V))return;const s=this;siteEnt(ents,cam,()=>siteSprite(s),s.x,s.y,s.type==='cave'?s.y:s.y+7,siteK(s),()=>s.cleared,()=>s.flag(),s.seed)}
   mapDot(V){return this.known()?[this.cleared?'#555':this.T.col,2]:null}
   tip(){return '<b>'+Discovery.nameOf(this)+'</b>'+(this.cleared?'':chiefTip(this))+'<small>'+this.T.n+(this.cleared?', empty for now':'')+'</small><span class="act">Click: go there</span>'}
   // a job to clear it (quests.js)
@@ -384,7 +388,7 @@ class Lair extends Site{
   get scouts(){return true}
   get emptyPage(){return true}
   get bandKind(){return this.band||'bandits'}
-  returned(){this.ld=newChief(this.bandKind,this.newLv()+Math.floor(G.day/30))}
+  returned(){this.ld=newChief(this.bandKind,this.newLv()+Math.floor(G.day/30));this.hoard=null}
   // whether band b may shelter here by night (world.js campNear): a bandit camp takes any band but goblins
   shelters(b){return b.kind!=='goblins'}
   // a new chieftain's level (before the days add theirs); its plunder past every camp's (engage.js ON_WIN camp): none, a line
@@ -393,30 +397,46 @@ class Lair extends Site{
   plunder(res){return ''}
   lootSay(n){return 'about '+(n*4+25)+' gold in their purses, likely a piece of gear (4 in 5)'}
   box(box,camp){camp(this,siteSprite(this))}
-  // the bands sheltering here tonight, as one list (a camp's: BanditCamp)
+  // (who lives here (LAIR_LIFE: a bandit camp's, a hideout's; null where none live, its fighters rolled at the fight); its first
+  //  count, by its seed (its residents' first count: world/sitelife.js ensure), and how many it holds now, filling up as the days go)
+  get life(){return null}
+  lifeBase(){const L=this.life,R=seeded((this.seed||1)*997+71);return L.n[0]+Math.floor(R()*(L.n[1]-L.n[0]+1))}
+  lifeTarget(){const L=this.life;return Math.min(L.most,this.lifeBase()+Math.floor(G.day/L.grow))}
+  // (how many live here: its residents as SiteLife keeps them, read only (none made for the drawing: they are made when you come
+  //  near, SiteLife.ensure), else how many it holds; where none live, as scouts would count them (its size0, more as the days go))
+  get people(){const L=this.life;if(!L)return this.size0+Math.floor(G.day/15);const b=this.residents;
+    return b&&b.people.length?b.people.filter(p=>p.hp>0&&!p.away&&p.fighter!==false).length:this.lifeTarget()}
+  // (their tents: a tent for every LAIR_TENTS.per of them, as many as its layout holds)
+  get tents(){const T=LAIR_TENTS,L=this.life;return Math.max(1,Math.min(L?L.tents:T.most,Math.ceil(this.people/T.per)))}
+  // the bands sheltering here are parties (a save keeps them as plain counts)
+  restore(){if(this.bands)this.bands.forEach(asParty)}
+  // the bands sheltering here tonight, as one list
   sheltering(){return (this.bands||[]).flatMap(b=>b.troops)}
   // everyone you would fight: its own (as scouted, or rolled for a parley) and those sheltering; their power
   all(own){return own.concat(this.sheltering())}
   power(list){return rating(list,chiefLv(this))}
   // from outside: about how many (the middle of what they may be, and the bands sheltering), how strong they look (that many
   // middling raiders and their chieftain, at its level)
-  guess(){const list=Array(this.size0+Math.floor(G.day/15)).fill('militia').concat('chief',this.sheltering());return{n:list.length,pw:this.power(list)}}
+  guess(){const list=Array(this.life?Math.max(0,this.people-1):this.size0+Math.floor(G.day/15)).fill('militia').concat('chief',this.sheltering());return{n:list.length,pw:this.power(list)}}
   spyRoll(){return{list:this.foes()}}
   spyLine(){const l=this.all(this.spied().list);return 'Your scouts crawl back unseen: '+l.length+' of them, power '+this.power(l)+'.'}
   alarm(){log('A sentry shouts: your scouts are seen. They come out for you!','bad');this.fight(false)}
   // the fight (mine: you started it, and may still call it off), its own fighters as scouted, or rolled now as walking in did
-  fight(mine,own,inside){G.site=null;G.youAttack=mine;this.attack(own,inside)}
+  fight(mine,own,inside){G.site=null;G.youAttack=mine;this.deal=null;this.attack(own,inside)}
   page(r,step){const s=this,y=s.spied(),g=s.guess(),ld=s.ld,band=LAIR_SAY[s.bandKind];
-    if(s.cleared)return{body:'<p>The '+s.T.n.toLowerCase()+' lies empty: cold fires and trampled ground.'+(s.back>G.day?' Others will gather here again in '+Math.max(1,s.back-G.day)+' days.':'')+'</p>'};
+    if(s.cleared){const h=s.hoardNow,full=h&&(h.gold||h.gear);return{body:'<p>The '+s.T.n.toLowerCase()+' lies empty: cold fires and trampled ground.'+(s.back>G.day?' Others will gather here again in '+Math.max(1,s.back-G.day)+' days.':'')+'</p>'+(full?'<p>Their stash still holds their hoard.</p>':''),
+      acts:full?[{icon:'gold',label:'Take their hoard',act:'site-hoard',facts:[h.gold+' gold',h.gear?h.gear+' gear':'no gear'],tip:'Empty their stash before others gather here: their gold and the gear they took on the roads.'}]:[]}}
     const yl=G.siteSpy&&G.siteSpy.s===s&&G.siteSpy.yielded;
     if(step==='yield'&&yl){const n=yl.length,tb=CONDUCT.takeBrigands;
       return{title:'They yield',msg:'',body:'<p>They throw down their weapons'+(ld?', '+ld.name+' with them':'')+'. What becomes of them?</p><p class="muted">Brigands in your ranks lower morale and every realm’s opinion of you. Setting them free is merciful, but the roads stay dangerous.</p>',
         acts:[{icon:'prisoners',label:'Take them prisoner',act:'site-fate',arg:'cage',facts:[Math.min(n,Math.max(0,prisonCap()-prisonerCount()))+' fit','and their plunder'],why:prisonerCount()>=prisonCap()?'No room for prisoners':''},
           {icon:'troops',label:'Into your band',act:'site-fate',arg:'join',facts:[Math.min(n,Math.max(0,partyRoom()))+' join','morale −'+tb.morale+', honor −'+tb.honorAll],why:partyRoom()<1?'Your band is full':''},
           {icon:'truce',label:'Let them go',act:'site-fate',arg:'free',facts:['disarmed','renown +1']}],close:['site-fate','free','Let them go']}}
+    if(LairDeal.open(s))return LAIR_DEAL.places[step]?LairDeal.page(s,step):LairDeal.home(s);// (you are in to deal: world/lairdeal.js)
     if(step==='parley'){const pw=y?s.power(s.all(y.list)):g.pw,afraid=stance(pw)==='afraid',ch=Math.round(yieldChance({power:()=>pw},'band')*100),tb=tribute(s);
       return{title:'Parley',body:'<p>You ride up with a white rag on a spear. '+(ld?ld.name+' steps out':'Their chieftain steps out')+' to hear you, '+roughly(g.n)+' at '+pr(ld).his+' back.</p>'+(s.bandKind==='goblins'?'<p class="muted">'+(goblinTongueSay(true)||'They jabber at you in their own tongue; no one with you understands a word.')+'</p>':''),
         acts:[{icon:'gold',label:'Pay them to go',act:'site-pay',facts:[tb+'g','they break camp'],why:goblinTongueWhy(s.bandKind==='goblins')||(P.gold<tb?'Not enough gold':''),tip:'Buy them off: '+tb+' gold and they break camp and ride away, any bands sheltering with them. No fight, no loot, no bounty; the place lies empty for a while.'},
+          LairDeal.can(s)&&{icon:'sack',label:'Come to deal',act:'site-deal',facts:[LairDeal.toll(s)+'g','their fence, men and cage, '+LAIR_DEAL.hours+' hours'],why:P.gold<LairDeal.toll(s)?'Not enough gold':'',tip:'Pay their toll and they let you in to deal: a fence for your loot, men for hire, buyers for your prisoners. Nobody comes for you while you are in.'},
           {icon:'prisoners',label:'Demand surrender',act:'site-yield',facts:[afraid?insight(['they might yield, or not',oddsWord(ch/100)+' they yield',ch+'% they yield'],'know the odds'):'they do not fear you','else they fight'],why:goblinTongueWhy(s.bandKind==='goblins')||(afraid?'':'They do not fear you: it takes about twice their strength'),tip:'Call on them to yield, as a cornered band would. If they do, you choose their fate: prisoners, recruits or let go. If not, they fight.'}],
         note:'They '+(afraid?'eye your band warily.':'laugh at your band.'),back:['site-tab','home','Back']}}
     const all=y&&s.all(y.list),pw=all?s.power(all):g.pw,lk=looks(pw/Math.max(1,partyPower()));
@@ -427,7 +447,7 @@ class Lair extends Site{
         '<ul class="tnotes"><li>Led by '+(ld?chiefLabel(ld)+', '+bountyOf(ld)+' gold on '+pr(ld).his+' head':'a chieftain')+'.</li><li>Talk of plunder piled in the tents.</li></ul>'),
       acts:[s.scoutDeed(),{icon:'attack',label:'Attack',act:'site-ask',facts:[y?'power '+pw+' vs '+partyPower():insight(['what waits inside: unknown',lk[0].replace('They look ',''),'power about '+pw+' vs '+partyPower()],'know their strength')],tip:'Storm it: its fighters, its chieftain and any band sheltering there. It asks you first.'},
         {icon:'truce',label:'Parley',act:'site-tab',arg:'parley',facts:['pay them off','or make them yield'],tip:'Talk: pay them to break camp, or, if they fear you, demand their surrender.'}]}}
-  act(a,arg,done){if(super.act(a,arg,done))return true;if(this.cleared)return false;const s=this,y=s.spied();
+  act(a,arg,done){if(super.act(a,arg,done))return true;if(a==='site-hoard'&&this.cleared&&this.hoardNow){done(this.takeHoard());return true}if(this.cleared)return false;const s=this,y=s.spied();if(LairDeal.act(s,a,arg,done))return true;
     if(a==='site-ask'&&INTERIOR.on&&s instanceof Hideout&&(s.tunnel||s.within)){Interior.show(s);return true}// (a bandit lair, or a den in ruins, is stormed inside: who goes in with you, battle/interior.js)
     if(a==='site-ask'){const g=s.guess(),all=y&&s.all(y.list);railConfirm({title:'Attack the '+s.T.n.toLowerCase()+'?',sub:s.name,text:'You storm it: '+(all?all.length+' fighters':roughly(g.n)+' of them, as far as you can tell')+', their chieftain at their head.',
       facts:[all?'Power '+s.power(all)+' vs your '+partyPower():insight([null,looks(g.pw/Math.max(1,partyPower()))[0],'Power about '+g.pw+' vs your '+partyPower()],'know their strength'),'You may still call it off before the first blow'],confirm:['site-attack',null,'Attack'],back:['site-tab','home','Back']});return true}
@@ -466,6 +486,33 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
 // (a bandit lair: the share of hideouts that are (salt: its hash's), the hills or peaks within r tiles of it that make its mouth a cave; its type's words)
 const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
 const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: Lair worn, keep)
+/* a bandit camp's or a hideout's tents by how many live there (the owner, 2026-11-25: "The bandit camps or hideout should be scale based on
+   their population"; Lair tents): a tent for every per of them, at least one, at most most (the hideout's layout holds six) */
+const LAIR_TENTS={per:3,most:6};
+/* who lives at a bandit camp and a hideout (the owner, 2026-11-25: "Hideout should be the same as camp, while camp is smaller around
+   1-6 men, hideout is bigger and more stationed with more population"; world/sitelife.js): its residents, each one a person kept
+   (their wounds, their routines, the raids they ride out on; the bands shelter in both by night). n: how many it starts with
+   (its chieftain one of them), by its seed; grow: days for each one more who joins, to most; tents: as many as its layout holds;
+   ring: where they live round its point [dx, dy, rx, ry] (its fire). A hideout in old ruins, or the goblins' camp, keeps the
+   fighters rolled at the fight */
+/* a hideout spread over its ground as a little holding of its own (the owner, 2026-11-25: "Can hideout spread more? Not just a fixed
+   space, just like a mini holding for bandit factions with smaller area"; Hideout layout): round its stockade its places, each on
+   its own two by two tiles of open ground r tiles from it (between the two), gap tiles apart: its lookout on the highest of them, its
+   pen, its cage and its stash (kinds: their pictures, engine/buildmodels.js); worn ground under them and paths to them (gfx/worldart.js
+   worldArtPlan: yard, path). Its people keep to them (world/sitelife.js post). A hideout dug in (a lair), or in old ruins, has none */
+/* strong: a hideout of at least at people (its first count, or grown to it: Hideout grade, built) a stronghold (n): a second lookout
+   (places) and a gate over its stockade's way in (gate: its point off the hideout's); its places kept should it lose men */
+const LAIR_SPREAD={on:true,places:['look','pen','cage','stash'],r:[3,6],gap:1,kinds:{look:'banditlook',look2:'banditlook',pen:'banditpen',cage:'banditcage',stash:'banditstash',gate:'banditgate'},
+  strong:{at:14,places:['look2'],gate:[8,1],n:'Bandit stronghold'},
+  yard:{r:[30,22],amt:.45,clear:[36,30]},place:{r:[14,10],amt:.5,clear:[18,15]},path:{r:3,amt:.4,step:5}};
+const LAIR_LAYOUT=new WeakMap();
+/* a hideout's hoard (the owner, 2026-11-25: the stash holding the real plunder; Hideout hoardNow, takeHoard, atStash; StashSpot): its
+   gold and pieces of gear in its stash (LAIR_SPREAD's place), its first by its seed (gold, gear) and its people (per a head), more
+   as its raiders come home (raid: gold, the chance of a piece), at most most. Beaten, they have only their purses on them; the
+   hoard is yours while the place lies empty. Taken while they are there: unseen by any of them awake, yours, found gone by day
+   (find: hours after, at the earliest; the camp roused); seen, they come for you. Paid off, they take it with them */
+const LAIR_HOARD={on:true,gold:[40,90],per:6,gear:[1,2],raid:{gold:[15,40],gear:.3},most:{gold:800,gear:6},find:1,near:600};
+const LAIR_LIFE={camp:{n:[1,4],grow:30,most:6,tents:2,ring:[8,0,14,7]},hideout:{n:[10,14],grow:15,most:16,tents:6,ring:[8,-16,18,9]}};
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 // (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
 function hillyAt(tx,ty){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(tx+i,ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
@@ -490,28 +537,80 @@ class Hideout extends Lair{
   get tunnel(){return !!this.lairLook}
   get T(){return this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type]}
   // (a lair its own name: HIDEOUT_LAIR.names)
-  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=(this.tunnel?HIDEOUT_LAIR.names:HIDEOUT_NAMES)[this.band];this.ld=newChief(this.band,this.newLv(),sites)}
+  setup(sites,clim){this.band=clim==='desert'?'raiders':clim==='swamp'?'bog':'bandits';this.name=(this.tunnel?HIDEOUT_LAIR.names:HIDEOUT_NAMES)[this.band];this.bands=[];this.ld=newChief(this.band,this.newLv(),sites)}
   newLv(){return rint(...this.tune.chief)}
   get size0(){return this.tune.size0}
-  // its raiders and chieftain (makeEnemies, as startEncounter makes them from n), and the fight with them
-  foes(){return makeEnemies(this.garrison(),true,this.band)}
+  // (its residents: a den's in the wilds; none in old ruins, nor a goblin camp's)
+  get life(){return this.within?null:LAIR_LIFE.hideout}
+  // (its grade: 1 a stronghold, by its first count (its seed) or once it grew to LAIR_SPREAD.strong.at (built, kept with it))
+  get grade(){return this.built||this.life&&!this.tunnel&&this.lifeBase()>=LAIR_SPREAD.strong.at?1:0}
+  get T(){const t=this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type];return this.grade&&!this.tunnel?{...t,n:LAIR_SPREAD.strong.n}:t}
+  // (grown to a stronghold's count: built one, its places laid again and the ground under them painted again)
+  strengthen(){if(this.grade||!this.life||this.tunnel)return;const b=this.residents;if(!b||b.people.filter(p=>p.hp>0).length<LAIR_SPREAD.strong.at)return;
+    this.built=1;LAIR_LAYOUT.delete(this);if(typeof WorldArt!=='undefined')WorldArt.invalidate({x:this.tx-8,y:this.ty-8,w:17,h:17});
+    if(this.known())log('The '+this.name+' has grown into a stronghold: a second lookout, a gate over its way in.','bad')}
+  // (its stash (LAIR_HOARD): the place of its hoard; none for a lair, a den in ruins, or one its ground had no room for)
+  stashAt(){return LAIR_HOARD.on&&this.life&&!this.tunnel?this.layout().find(q=>q.k==='stash')||null:null}
+  // (its hoard {gold, gear}: made by its seed and its people the first time it is asked, again for each band that takes it)
+  get hoardNow(){if(!this.stashAt())return null;if(!this.hoard){const H=LAIR_HOARD,R=seeded((this.seed||1)*983+(this.back|0)*7+11);
+    this.hoard={gold:H.gold[0]+Math.floor(R()*(H.gold[1]-H.gold[0]+1))+H.per*this.lifeBase(),gear:H.gear[0]+Math.floor(R()*(H.gear[1]-H.gear[0]+1))}}return this.hoard}
+  // (its raiders home: what they took on the road into the hoard, by its seed and the day)
+  addHoard(){const h=this.hoardNow;if(!h)return;const H=LAIR_HOARD,R=seeded((this.seed||1)*977+G.day*31+(h.gold|0));
+    h.gold=Math.min(H.most.gold,h.gold+H.raid.gold[0]+Math.floor(R()*(H.raid.gold[1]-H.raid.gold[0]+1)));if(R()<H.raid.gear)h.gear=Math.min(H.most.gear,h.gear+1)}
+  // (what is in it, in words)
+  hoardSay(h=this.hoardNow){return h.gold+' gold'+(h.gear?' and '+h.gear+' piece'+(h.gear>1?'s':'')+' of gear':'')}
+  // (its hoard into your purse and your bag (your Looting's share, as a fight's spoils), the stash bare; a line)
+  takeHoard(){const h=this.hoardNow;if(!h||!h.gold&&!h.gear)return 'Their stash is bare.';const g=Math.round(h.gold*(1+tm('loot'))),got=[];let left=0;
+    P.gold+=g;for(let i=0;i<h.gear;i++){const id=randomGear(0,gearTop());if(invAdd('gear',id,1))got.push('<span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>');else left++}
+    this.hoard={gold:0,gear:0};return 'You empty their stash: '+g+' gold'+(got.length?', '+got.join(', '):'')+'.'+(left?' '+BAG_FULL+': you leave '+left+' behind.':'')}
+  // (they ride off with it: paid to go)
+  emptyStash(){if(this.stashAt())this.hoard={gold:0,gear:0}}
+  /* (you at its stash (StashSpot met): empty, its hoard yours; while they are there, yours if none of them awake sees you (SiteLife
+     detects: the night, your cover, a man up at the lookout), found gone by day and the camp roused (SiteLife.hour); seen, they come) */
+  atStash(){const h=this.hoardNow;if(!h)return false;if(!h.gold&&!h.gear){log('Their stash is bare.');return true}
+    if(this.cleared){log(this.takeHoard(),'good');updateHUD(true);return true}
+    const eye=SiteLife.fighters(this).find(p=>SiteLife.detects(this,p,P));
+    if(eye){log('A shout goes up: you are seen at their stash! They come for you.','bad');SiteLife.alarm(this);this.fight(false);return true}
+    const m=this.takeHoard();this.residents.robbed=Clock.hours();log(m.replace('You empty','Unseen, you empty'),'good');updateHUD(true);return true}
+  // its places round its stockade (LAIR_SPREAD): [{k, tx, ty (the left of its two columns, the lower of its two rows), x, y (its point:
+  // its foot 8 below)}], worked out from the land once (the same in a painter worker: no draw, nothing saved); none for a lair
+  layout(){const SP=LAIR_SPREAD;if(!SP.on||!this.life||this.tunnel||this instanceof GoblinCamp)return [];let L=LAIR_LAYOUT.get(this);if(L)return L;L=[];
+    const [x0,y0,w,h]=campFoot('hideout'),busy=new Set(),key=(x,y)=>x+','+y,LV=WM.lv||(WM.lv=reliefOf(WM));
+    for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++)busy.add(key(this.tx+i,this.ty+j));
+    const free=(tx,ty)=>{for(let j=-1;j<=0;j++)for(let i=0;i<=1;i++){const x=tx+i,y=ty+j;if(busy.has(key(x,y))||tAt(x,y)!==T_OPEN||occAt(x,y))return false}return true};
+    const cand=[];for(let dy=-SP.r[1];dy<=SP.r[1];dy++)for(let dx=-SP.r[1];dx<=SP.r[1];dx++){const d=Math.hypot(dx,dy);if(d>=SP.r[0]&&d<=SP.r[1])cand.push({tx:this.tx+dx,ty:this.ty+dy,d})}
+    const strong=this.grade>0;SP.places.concat(strong?SP.strong.places:[]).forEach((k,n)=>{let best=null,bs=-1e9;for(const c of cand){if(!free(c.tx,c.ty))continue;const lv=LV[Math.max(0,Math.min(MH-1,c.ty))*MW+Math.max(0,Math.min(MW-1,c.tx))],
+        sc=(k.startsWith('look')?lv*4-c.d*.2:-Math.abs(c.d-SP.r[0]-1))+hash(c.tx,c.ty,this.seed*7+n)*1.5;if(sc>bs){bs=sc;best=c}}
+      if(!best)return;L.push({k,tx:best.tx,ty:best.ty,x:(best.tx+1)*TILE,y:(best.ty+.5)*TILE});
+      for(let j=-1-SP.gap;j<=SP.gap;j++)for(let i=-SP.gap;i<=1+SP.gap;i++)busy.add(key(best.tx+i,best.ty+j))});
+    // (a stronghold's gate over its stockade's way in)
+    if(strong){const x=this.x+SP.strong.gate[0],y=this.y+SP.strong.gate[1];L.push({k:'gate',tx:Math.floor(x/TILE)-1,ty:Math.floor(y/TILE),x,y})}
+    LAIR_LAYOUT.set(this,L);return L}
+  // its stockade, then its places (structures.js lairPlaceSprite), each lifted by the land at its own foot
+  draw(ents,cam,V){super.draw(ents,cam,V);if(!this.inView(V))return;const s=this,k=siteK(s);
+    for(const q of this.layout())siteEnt(ents,cam,()=>lairPlaceSprite(s,q.k),q.x,q.y,q.y+7,k,()=>s.cleared,()=>s.flag(),s.seed+q.tx)}
+  // its raiders and chieftain: its residents (SiteLife), else rolled (makeEnemies, as startEncounter makes them from n); the fight
+  // with them and any bands sheltering here tonight
+  foes(){return this.life?SiteLife.roster(this):makeEnemies(this.garrison(),true,this.band)}
   garrison(){return rint(...this.tune.foes)+Math.floor(G.day/15)}
   // (inside: who goes in with you, battle/interior.js; none chosen, the best of your band)
-  attack(own,inside){const I={inside:inside||Interior.pick()},L=this.keep(own||this.foes());startEncounter({kind:'camp',ref:this,n:L.length-1,list:L,band:this.band,...I})}
+  attack(own,inside){const I={inside:inside||Interior.pick()},L=this.keep(own||this.foes()),bands=this.bands||[];
+    startEncounter({kind:'camp',ref:this,n:L.length-1,list:L.concat(...bands.map(b=>b.troops)),band:this.band,title:this.name+(bands.length?', '+bands.length+' band'+(bands.length>1?'s':'')+' sheltering inside':''),...I})}
   // (its plunder: the gold x tune's, and maybe another piece of gear)
-  plunder(res){const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
+  plunder(res){if(this.hoardNow)return ' Their hoard is not on them: it lies in their stash ('+this.hoardSay()+'). Take it while the place lies empty.';
+    const T=this.tune;res.gold=Math.round(res.gold*T.gold);if(!T.gear||Math.random()>=T.gear)return '';const id=randomGear(0,gearTop());
     return invAdd('gear',id,1)?' Among their plunder: a <span style="color:'+RARITY[ITEMS[id].r]+'">'+ITEMS[id].n+'</span>.':' '+BAG_FULL+'. You leave a '+ITEMS[id].n+' behind.'}
-  lootSay(n){const T=this.tune;return T.gold===1&&!T.gear?super.lootSay(n):'about '+Math.round((n*4+25)*T.gold)+' gold in their plunder, likely a piece of gear (4 in 5) and maybe another'}
+  lootSay(n){if(this.hoardNow)return 'about '+(n*4+25)+' gold in their purses, likely a piece of gear (4 in 5); their hoard in their stash';
+    const T=this.tune;return T.gold===1&&!T.gear?super.lootSay(n):'about '+Math.round((n*4+25)*T.gold)+' gold in their plunder, likely a piece of gear (4 in 5) and maybe another'}
   get clearJob(){return true}
 }
 // a bandit camp: on its fixed spot, in plain sight once you have seen its ground; the roving bands shelter in it by night
 class BanditCamp extends Lair{
   setup(sites){this.name='Bandit camp';this.bands=[];this.ld=newChief('bandits',rint(2,4),sites)}
-  // the bands sheltering here are parties (a save keeps them as plain counts)
-  restore(){if(this.bands)this.bands.forEach(asParty)}
   known(){return seenAt(this.x,this.y)}
   get scoutable(){return false}
   get size0(){return 8}
+  get life(){return LAIR_LIFE.camp}
   // its own raiders and chieftain, as campFight makes them (the bands sheltering join at the fight: world.js campFight)
   foes(){return SiteLife.roster(this)}
   attack(own){campFight(this,this.keep(own||this.foes()))}
@@ -519,6 +618,21 @@ class BanditCamp extends Lair{
   tip(){return '<b>Bandit camp</b>'+(this.cleared?'':chiefTip(this))+'<small>'+(this.cleared?'Cleared':'Its bands shelter here by night')+'</small>'+(this.cleared?'':'<span class="act">Click: ride up to it</span>')}
 }
 
+/* a hideout's stash on the map (LAIR_HOARD; Hideout atStash): clicked, you go to it: cleared, you take its hoard; else you try to take
+   it unseen. Shown while its hideout is known and the stash holds something (Stashes.all: one kept a hideout) */
+class StashSpot extends WorldObject{
+  constructor(h){super();this.h=h;const q=h.stashAt();this.x=q.x;this.y=q.y}
+  get mapKind(){return 'stash'}
+  here(){const h=W.sites.includes(this.h)&&this.h.known()&&this.h.hoardNow;return !!h&&(h.gold>0||h.gear>0)}
+  get meetsAnyTime(){return true}
+  inView(V){return this.h.inView(V)}
+  pick(at){if(this.here())at.add(this,14,6)}
+  meet(){this.h.atStash()}
+  get label(){return 'Stash of the '+this.h.name}
+  tip(){return '<b>Their stash</b><small>'+this.h.name+'</small><span class="act">Click: '+(this.h.cleared?'take their hoard':'try to take it unseen')+'</span>'}
+}
+const Stashes={of:new WeakMap(),
+  all(){const L=[];for(const s of W.sites||[]){if(!(s instanceof Hideout)||!s.known())continue;const q=s.stashAt();if(!q)continue;let o=this.of.get(s);if(!o){o=new StashSpot(s);this.of.set(s,o)}o.x=q.x;o.y=q.y;L.push(o)}return L}};
 /* a goblin camp (data/goblins.js GOBLINS): a hideout of the goblins' own, on the same wild land, never a timbered tunnel; the Ashgor
    Horde's yurts in a ring of stakes (structures.js SITE_CULTURE); or, among hills (hilly: the owner, 2026-11-08, "add goblin warrens
    near hills"), a warren, its mouth a cave in the hillside, stormed inside as a bandit lair is (battle/interior.js; GOBLINS.warren).
@@ -526,6 +640,7 @@ class BanditCamp extends Lair{
    shelter in it by night and ride out from it */
 class GoblinCamp extends Hideout{
   get lairLook(){return GOBLINS.warren.on&&this.hilly?'cave':null}
+  get life(){return null}// (its goblins rolled at the fight, as ever: goblinList)
   get T(){return this.tunnel?GOBLINS.warren.T:SITE_TYPES[this.type]}
   get lairCol(){return GOBLINS.warren.banner}
   get tune(){return GOBLINS.camp}
@@ -553,8 +668,8 @@ const SITE_CLASS={camp:BanditCamp,cave:Cave,hideout:Hideout,ruins:Ruins,shrine:S
 // a site of its kind again (from a save)
 const siteOf=s=>{if(s instanceof Site)return s;Object.setPrototypeOf(s,SITE_CLASS[s.type].prototype);s.restore();return s};
 const camps=()=>W.sites.filter(s=>s instanceof BanditCamp);
-// the camps bands shelter in by night (world.js campNear, campEmpty): the bandit camps and the goblins' camps
-const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof GoblinCamp);
+// the camps bands shelter in by night (world.js campNear, campEmpty): the bandit camps, the hideouts (not one in old ruins) and the goblins' camps
+const nightCamps=()=>W.sites.filter(s=>s instanceof BanditCamp||s instanceof Hideout&&!s.within);
 
 /* placement */
 // the least distance (tiles) between two kinds of site, past siteSpot's gap, never relaxed (the owner's play-test, 2026-10-22:

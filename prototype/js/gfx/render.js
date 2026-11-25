@@ -298,7 +298,7 @@ function drawWorld(){
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
-  WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();
+  WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();IndividualHealth.anchors.clear();
   try{
   viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
   WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
@@ -381,6 +381,8 @@ function drawWorld(){
   // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
   drawPlaques(cam);// (the holdings' bars, over all: structures.js)
   drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
+  drawSafe(()=>HoldSpots.draw(cam));
+  drawSafe(()=>LairSpots.draw(cam));// (a hideout's services while you may deal there: world/lairdeal.js)// (the holdings' places near you, over their buildings: world/holdspots.js)
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
   drawSafe(()=>EnemyDifficulty.world(cam));

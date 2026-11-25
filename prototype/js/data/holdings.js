@@ -52,4 +52,12 @@ const HOLDING_TYPES={
     tabs:['recruit','stores','smith','stable','jobs'],hires:['melee','shield','ranged','horse'],train:true,
     mounts:['any','town','castle','local'],fort:true,smoke:3}
 };
-
+/* a holding's places on the map (the owner, 2026-11-24: "Make holding have the same mechanic as camp where the shop and market should
+   be interact at estate or certain buildings"; world/holdspots.js): on: the badges (off: a holding's window holds all its places, as
+   before); near: how close to its centre (world px) they show; shops: the places with a building of their own, in the order they take
+   the houses nearest its centre; at: the estate whose building a shop stands in where that estate is built; keep: its centre's badge's
+   name by kind (the rest of its places); ico: each badge's picture (ui/icons.js); up: how high over its building's foot a badge stands
+   (px); css, gap, tap: the badges' size, the gap between two, a finger's slack round each (screen px, as a camp's) */
+const HOLD_SPOTS={on:true,near:170,shops:['trade','smith','tavern','stable','recruit'],at:{trade:'market',smith:'smithy'},
+  keep:{hamlet:'Yard',village:'Green',town:'Town hall',city:'Citadel',fort:'Fort',castle:'Keep'},
+  ico:{trade:'stall',smith:'anvil',tavern:'mug',stable:'shoe',recruit:'recruit',keep:'crown'},up:{lot:18,centre:28},css:22,gap:3,tap:5};

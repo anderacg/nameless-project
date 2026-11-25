@@ -42,7 +42,7 @@ Kit.suite(({ok,info})=>{
   const s=Wr[0];ok(s&&t.lairSprite(s,'grass')&&s.lairCol===GB.warren.banner,'its banner by its mouth the goblins\u2019 green')}
  {const s=C.find(s=>!s.tunnel)||C[0],c=t.climAt(s.x,s.y),m=t.PX.clusterModel({kind:'hideout',culture:'ashgor',seed:s.seed*131+7,env:c,snow:c==='frost'?1:0}),sp=t.siteSprite(s),hd=t.campSprite(s.seed,'hideout',c);
   const px=v=>v.getContext('2d').getImageData(0,0,v.width,v.height).data,same=(a,b)=>{const x=px(a),y=px(b);if(x.length!==y.length)return false;for(let i=0;i<x.length;i++)if(x[i]!==y[i])return false;return true};
-  ok(m.culture==='ashgor'&&t.SITE_CULTURE.goblins==='ashgor'&&sp===t.campSprite(s.seed,'goblins',c)&&!same(sp,hd),'a camp is drawn as the Ashgor Horde builds (its yurts in a ring of stakes), not as a bandit hideout')}
+  ok(m.culture==='ashgor'&&t.SITE_CULTURE.goblins==='ashgor'&&sp===t.campSprite(s.seed,'goblins',c,s.tents)&&!same(sp,hd),'a camp is drawn as the Ashgor Horde builds (its yurts in a ring of stakes), not as a bandit hideout')}
  ok(t.nightCamps().filter(s=>s instanceof t.GoblinCamp).length===C.length&&t.camps().every(s=>s instanceof t.BanditCamp),'the camps bands shelter in by night count the goblins\', the bandit camps stay the bandits\'');
  // ---- the warbands: out round their camps, bigger than a bandit band
  const B0=bands(),of=b=>C.find(s=>s.i===b.camp);

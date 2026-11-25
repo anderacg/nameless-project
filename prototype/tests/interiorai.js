@@ -35,7 +35,8 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;
  const camps=[W.sites.find(s=>s instanceof t.GoblinCamp&&!s.cleared),W.sites.find(s=>s instanceof t.Hideout&&!s.tunnel&&!s.within&&!(s instanceof t.GoblinCamp)&&!s.cleared)].filter(Boolean);
  const cr=camps.map(c=>fight(()=>{Kit.world();Kit.goTo(c.x,c.y+30);if(c.fight)c.fight(true);else{c.enter();t.act('site-ask');t.act('site-attack')}t.act('fight')},40));
  info('camps ('+camps.map(c=>c.name).join(', ')+'): strayed before roused '+cr.map(r=>r.strayed).join(', ')+', held '+cr.map(r=>r.held).join(', ')+', contact '+cr.map(r=>r.contact==null?'-':r.contact.toFixed(0)).join(', '));
- ok(camps.length===2&&cr.every(r=>r.ok&&!r.strayed&&r.held&&r.contact!=null),'a goblin camp and a bandit hideout\'s tents, fought outside: their men at their tents till roused, and met');
+ // (a hideout's people are its residents (world/sitelife.js): their own posts and sleep, the bandit camp's rules (tests/sitelife.js); met)
+ ok(camps.length===2&&cr.every((r,i)=>r.ok&&r.contact!=null&&(t.SiteLife.managed(camps[i])||!r.strayed&&r.held)),'a goblin camp and a bandit hideout\'s tents, fought outside: their men at their tents till roused, and met');
  {const r=t.partyRoster(P);r.add('hum_levy',8);r.add('hum_spear',4)}
  const h=t.TOWNS.find(z=>z.owner&&z.walled&&z.walled()&&t.wallOf(z)>=2);t.Timed.of(P,'hostile').extend(h.owner,60);
  const siege=()=>fight(()=>{Kit.world();Kit.goTo(h.x,h.y+60);P.siege={town:h.name,days:t.RAM_DAYS};G.bes=h;G.mode='besiege';t.startAssault(h,'siege')},55);

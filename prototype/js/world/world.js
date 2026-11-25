@@ -43,7 +43,7 @@ const REACH=14;
 // holding then its built estates, the parties (lords, bands, patrols, your companions'), the beasts, the sites, the herds, the
 // caravans, the refugees, the encounters on the road, the workers, the hunters out, the camps' and the holdings' people, the ships (never clicked), then the fights (none picked: a click on a party in one meets
 // it, interact). Not you.
-const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...Hunters.seen(),...CampFolk.all(),...SiteLife.figures(),...CampSpots.all(),...TownFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list,...Carcass.list];
+const worldObjects=()=>[...TOWNS.flatMap(t=>[t,...t.estates()]),...W.parties,...W.monsters.map(asMonster),...W.sites,...Stashes.all(),...LairSpots.all(),...W.critters.map(asHerd),...W.caravans,...W.refugees.map(asRefugees),...roadList(),...W.folk.map(asWorker),...Hunters.seen(),...CampFolk.all(),...SiteLife.figures(),...CampSpots.all(),...TownFolk.all(),...W.ships.map(asShip),...W.fights.map(asFight),...Remains.list,...Carcass.list];
 // a thing on the map made one of its kind if it is still plain data (new, from a save or a test), by its fields: a herd (crit),
 // refugees (rf), an encounter on the road (rd), a worker (folk), a ship (its path over the water), a beast (a MONSTERS kind). Parties are made theirs by asParty
 const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRefugees(o):o.rd?asRoadEnc(o):o.folk?asWorker(o):o.path?asShip(o):MONSTERS[o.id]&&!o.type?asMonster(o):o;
@@ -51,7 +51,8 @@ const asWorldObject=o=>!o||o instanceof WorldObject?o:o.crit?asHerd(o):o.rf?asRe
 function pickAt(wx,wy){
   const V=vis(),S=yourSight(V);let marker=null,md=Infinity;
   // An overlaid service badge wins over the people or props beneath it; overlapping padding uses the nearer badge center.
-  if(typeof CampSpots!=='undefined')for(const o of CampSpots.all()){const b=o.box;if(!b||!o.here()||!CampSpots.shown(o.site)||wx<b[0]||wx>=b[2]||wy<b[1]||wy>=b[3]||!S.sees(o.x,o.y,1.2))continue;
+  const badges=[...(typeof CampSpots!=='undefined'?CampSpots.all().filter(o=>CampSpots.shown(o.site)):[]),...(typeof HoldSpots!=='undefined'?HoldSpots.all().filter(o=>HoldSpots.shown(o.t)):[]),...(typeof LairSpots!=='undefined'?LairSpots.all().filter(o=>LairSpots.shown(o.s)):[])];// (a camp's, a holding's: world/holdspots.js)
+  for(const o of badges){const b=o.box;if(!b||!o.here()||wx<b[0]||wx>=b[2]||wy<b[1]||wy>=b[3]||!S.sees(o.x,o.y,1.2))continue;
     const d=Math.hypot(wx-(b[0]+b[2])/2,wy-(b[1]+b[3])/2);if(d<md){marker=o;md=d}}
   if(marker)return marker;
   const c=[],add=(o,r,dy)=>{const d=Math.hypot(o.x-wx,o.y-(dy||0)-wy);if(d<r&&S.sees(o.x,o.y,1.2))c.push([d,o])};

@@ -100,7 +100,7 @@ try{
  {const c=t.camps()[0];ok(t.camps().length===t.CAMP_SPOTS.length&&t.camps().every(x=>t.CAMP_SPOTS.some(p=>p.tx===x.tx&&p.ty===x.ty))&&t.objKind(c)==='site'&&/Bandit camp/.test(t.tipFor(c)),'the '+t.CAMP_SPOTS.length+' bandit camps are sites on their spots, with their own tooltip');
   G.mode='world';G.modal=false;t.hidePanel();G.encCool=0;G.enc=null;c.cleared=false;c.bands=[t.asParty({x:c.x,y:c.y,n:3,kind:'bandits',list:['militia','militia','militia'],t:0,a:0,cool:0})];t.enterSite(c);
   ok(G.mode==='site'&&!G.enc,'clicked, one opens its page');t.act('site-attack');
-  ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.includes('chief')&&G.enc.list.length>=10,'Attack means fighting its chieftain, its raiders and the band sheltering there ('+(G.enc&&G.enc.list.length)+')');t.act('flee');
+  const own=t.SiteLife.ensure(c).length;ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.includes('chief')&&G.enc.list.length===own+3,'Attack means fighting its chieftain, its raiders ('+own+', a bandit camp\'s 1-6) and the band sheltering there ('+(G.enc&&G.enc.list.length)+')');t.act('flee');
   t.clearPlace(c,10);ok(c.cleared&&t.pickAt(c.x,c.y-12)!==c,'cleared, it lies empty ('+c.cleared+')');G.day=c.back;t.siteDay();ok(!c.cleared,'and its raiders are back after 10 days ('+c.cleared+' day '+G.day+' back '+c.back+')')}
  // ---- a bandit camp or hideout clicked opens its page (sites.js Lair, window.js PageScreen): what you can see from
  // outside, vague; Scout (once a visit) for the truth; Attack (it asks first: the fight as walking in made it); Parley (pay them
@@ -121,13 +121,13 @@ try{
     t.onEscape();ok(q('#panel.paged')&&G.site===c&&!G.enc,'Back: the page again, no fight');
     t.act('site-ask');q('.nav [data-nav="close"]').click();ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&G.enc.list.join()===all.join()&&G.enc.mine,'Confirm: the camp fight, against exactly what your scouts saw ('+G.enc.list.length+')');t.act('flee')}
   // unscouted, Attack is the very fight walking in made: the same rolls, the same foes
-  {world();const sd=4711,r0=Math.random;Math.random=t.seeded(sd);const want=t.makeEnemies(t.rint(7,9)+Math.floor(G.day/15),true).join();P.x=c.x;P.y=c.y+6;t.enterSite(c);Math.random=t.seeded(sd);t.act('site-attack');Math.random=r0;
-    ok(G.enc&&G.enc.list.join()===want,'unscouted, Attack rolls the same fight as walking in did (its raiders and chieftain as before: '+G.enc.list.length+' foes)');t.act('flee')}
+  {world();const sd=4711,r0=Math.random;Math.random=t.seeded(sd);const want=c.life?c.all(c.keep(c.foes())).join():t.makeEnemies(t.rint(7,9)+Math.floor(G.day/15),true).join();P.x=c.x;P.y=c.y+6;t.enterSite(c);Math.random=t.seeded(sd);t.act('site-attack');Math.random=r0;
+    ok(G.enc&&G.enc.list.join()===want,'unscouted, Attack is the same fight as walking in ('+(c.life?'its residents':'its raiders and chieftain rolled as before')+': '+G.enc.list.length+' foes)');t.act('flee')}
   // seen: they come out for you
   {world();t.enterSite(c);lucky('site-scout',null,.999);ok(G.enc&&G.enc.kind==='camp'&&G.enc.ref===c&&!G.enc.mine&&!G.site,'Scout, seen: they come out for you, a fight you did not start');t.act('flee')}
   // Parley: pay them off; make them yield (only if they fear you); they refuse and fight
-  {world();t.enterSite(c);t.act('site-tab','parley');const tb=t.tribute(c),ks=qa('.rwbody .rkact');
-    ok(q('.rwin h2').textContent==='Parley'&&ks.map(b=>b.dataset.act).join()==='site-pay,site-yield'&&ks[1].disabled&&/do not fear/.test(ks[1].title)&&new RegExp(tb+'g').test(ks[0].textContent)&&q('.nav [data-nav="back"]').dataset.act==='site-tab','Parley: pay '+tb+'g to break camp; no surrender while they do not fear you; Back');
+  {world();t.enterSite(c);t.act('site-tab','parley');const tb=t.tribute(c),ks=qa('.rwbody .rkact'),afraid=t.stance(c.guess().pw)==='afraid';
+    ok(q('.rwin h2').textContent==='Parley'&&ks.map(b=>b.dataset.act).join()==='site-pay,site-yield'&&ks[1].disabled===!afraid&&(afraid||/do not fear/.test(ks[1].title))&&new RegExp(tb+'g').test(ks[0].textContent)&&q('.nav [data-nav="back"]').dataset.act==='site-tab','Parley: pay '+tb+'g to break camp; no surrender while they do not fear you (they '+(afraid?'do':'do not')+'); Back');
     const g0=P.gold;t.act('site-pay');ok(P.gold===g0-tb&&c.cleared&&!c.ld&&G.mode==='site'&&/lies empty/.test(panel())&&/ridden off/.test(panel()),'paid: they break camp and ride off, the camp empty');
     t.act('site-leave');ok(G.mode==='world'&&!G.site,'Leave: the map')}
   {c.cleared=false;c.returned();c.bands=[];world();P.troops={hum_knight:40,hum_long:30};P.sk.scout.lv=5*PROF.per;t.enterSite(c);t.act('site-tab','parley');const y=q('.rkact[data-act="site-yield"]');P.sk.scout.lv=3*PROF.per;ok(y&&!y.disabled&&/% they yield/.test(y.textContent),'with a band that frightens them, Demand surrender ('+y.querySelector('small').textContent+')');

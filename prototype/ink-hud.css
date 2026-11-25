@@ -6,12 +6,13 @@
    else (--campaign-frame, --ui-rim), so the battle's bars, the windows and the desktop HUD wear the same gold.
      1. tokens      one warm tone: dark see-through panels, cream words, gold; the gold frame as one border
      2. frames      every framed thing: its frame's middle tiled, so its grain runs on along a long side; no black hairlines
-     3. hero        your hero's card (a phone's map, top left): your army's flag in a gold ring, health, stamina, morale, experience
+     3. hero        your army's card (a phone's map, top left), compact: its flag and name, health, stamina, morale, gold,
+                    food and drink
      4. quests      the quest cards under it: the gold frame, a gold Quest tag, the title cream, what to do next in gold
      5. dock        the round buttons (bottom right), their names at their feet; the speed and map choices
      6. minimap     round, in a thin gold ring, the day and night round its rim (the bar's sky icon at the hour); the day in one
-                    short line under it; your purse beside it
-     7. messages    the log bottom left, the party's details under the card
+                    short line under it
+     7. messages    the log bottom left, a level's skill points at the right, the party's details under the card
    ===================================================================================================================== */
 
 /* ---------- 1. tokens ---------- */
@@ -20,6 +21,8 @@
   --ink-panel:rgba(23,19,14,.86); --ink-panel-hi:rgba(30,24,17,.93);
   --ink-gold:#e2bd68; --ink-gold-deep:#6b4f20; --ink-gold-fg:#f0d79a; --ink-red:#d8664f;
   --ink-fg:#f3ead6; --ink-fg-2:#cbbd9e;
+  /* (one gap between every two pieces of the HUD, and from the screen's edge: the owner, 2026-11-24, "make sure they are having the same gap") */
+  --ink-gap:6px;
   /* (cream words on the map: an outline all round, so they read over grass, snow and water alike) */
   --ink-out:0 1px 0 #120d07,0 -1px 0 #120d07,1px 0 0 #120d07,-1px 0 0 #120d07,1px 1px 1px #120d07;
   --ink-btn:var(--ink-ring) center/100% 100% no-repeat,radial-gradient(circle,#2e251a 0,#18130d 62%,#110d09 100%);
@@ -30,7 +33,7 @@
 /* (the frame's middle tiled, not stretched: its grain repeats to fit, never smeared along a long side: inkhud.js frame) */
 .screen.ink *{border-image-repeat:round!important}
 /* (the gold frame on the ink's own panels, their corners as round as its) */
-.screen.ink :is(.ink-hero,.ink-purse>span),.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
+.screen.ink .ink-hero,.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road,
 .screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map),.screen.ink.campaign-world.mobile-world #stats{
   border:6px solid transparent;border-image:var(--ink-frame) 176/8px round;border-radius:8px;background:var(--ink-panel);box-shadow:0 2px 6px rgba(0,0,0,.35)}
 /* (no black hairline inside the game's plates: a faint gold one; every framed thing's corners rounded to its gold: inkhud.js corners) */
@@ -38,32 +41,31 @@
 
 
 /* ---------- 3. hero ---------- */
-.ink-hero,.ink-purse,.ink-day,.ink-dial,.ink-hour{display:none}
-.screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(250px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:8px;padding:0 6px 1px 0;
-  color:var(--ink-fg);font:12px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
-.ink-lv{flex:none;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn);
-  font:800 21px/1 var(--font);color:var(--ink-fg);text-shadow:var(--ink-out)}
-.ink-lv img{width:30px;height:30px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 1px 0 #120d07)}
+/* (compact, the owner, 2026-11-24: "make the top left ui panel smaller and more compact. Make gold, food, water integrated with army
+   info": the flag and the name (no level: "Remove level from army"); health over stamina and morale, each its number inside; gold, food and drink; no experience
+   thread: "Remove that") */
+.ink-hero,.ink-day,.ink-dial,.ink-hour{display:none}
+.screen.ink.mobile-world .ink-hero:not([hidden]){position:absolute;top:var(--e-t);left:var(--e-l);width:min(212px,calc(100% - 150px - var(--e-l) - var(--e-r)));display:flex;align-items:center;gap:6px;padding:3px 4px 2px 0;
+  color:var(--ink-fg);font:11px var(--font);text-align:left;pointer-events:auto;z-index:14;cursor:pointer}
+.ink-lv{flex:none;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--ink-btn)}
+.ink-lv img{width:24px;height:24px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 1px 0 #120d07)}
 .ink-who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.ink-name{display:flex;align-items:baseline;gap:6px;min-width:0}
-.ink-name strong{font:700 13px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--ink-out)}
-.ink-name small{margin-left:auto;flex:none;font:11px var(--font);color:var(--ink-fg-2)}
-.ink-bar{display:grid;grid-template-columns:27px minmax(0,1fr);align-items:center;column-gap:4px}
-.ink-bar>b{font:800 9px var(--font);letter-spacing:.03em}
-.ink-bar>i{position:relative;display:block;height:11px;border:1px solid rgba(125,88,36,.7);border-radius:3px;background:#120e09;overflow:hidden}
-.ink-bar>i>em{display:block;height:100%;border-radius:2px}
-.ink-bar>i>small{position:absolute;right:4px;top:0;font:700 9px/9px var(--font);color:#fff8e6;text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
+.ink-name{display:flex;align-items:baseline;gap:5px;min-width:0}
+.ink-name strong{flex:1;min-width:0;font:700 12px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:var(--ink-out)}
+.ink-bar{position:relative;display:block;height:10px;border:1px solid rgba(125,88,36,.7);border-radius:3px;background:#120e09;overflow:hidden}
+.ink-bar>em{display:block;height:100%}
+.ink-bar>small{position:absolute;inset:0 4px;display:flex;justify-content:space-between;align-items:center;font:700 8px/1 var(--font);color:#fff8e6;text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
+.ink-bar>small>b{font-weight:800;letter-spacing:.03em;opacity:.9}
+.ink-pair{display:grid;grid-template-columns:1fr 1fr;gap:3px}
 /* (health red, stamina gold, morale the green of the game's own meters: style.css --meter-face) */
-.ink-bar.hp>b{color:#ec8b78}.ink-bar.hp em{background:linear-gradient(#e2735f,#9a3324)}
-.ink-bar.sta>b{color:var(--ink-gold)}.ink-bar.sta em{background:linear-gradient(#f2cf6e,#b07d27)}
-.ink-bar.mor>b{color:#b9d58c}.ink-bar.mor em{background:var(--meter-face)}
-.ink-bar.low>i>em{background:linear-gradient(#ee8a6c,#a8402c)}
-.ink-bar.xp{grid-template-columns:27px minmax(0,1fr) auto;margin-top:1px}.ink-bar.xp>b{color:var(--ink-gold-fg)}
-.ink-bar.xp>i{height:5px;border-radius:3px}.ink-bar.xp em{background:linear-gradient(#f6dc94,#c0913a)}
-.ink-bar.xp>small{font:700 9px var(--font);color:var(--ink-fg-2);font-variant-numeric:tabular-nums}
+.ink-bar.hp em{background:linear-gradient(#e2735f,#9a3324)}.ink-bar.sta em{background:linear-gradient(#f2cf6e,#b07d27)}.ink-bar.mor em{background:var(--meter-face)}
+.ink-bar.low>em{background:linear-gradient(#ee8a6c,#a8402c)}
+.ink-res{display:flex;gap:8px;margin-top:1px;font:700 11px/1 var(--font);text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
+.ink-res>span{display:flex;align-items:center;gap:3px;min-width:0;white-space:nowrap}.ink-res .gico{width:12px;height:12px;flex:none}
+.ink-res>span:first-child b{color:var(--ink-gold)}.ink-res>span.low b{color:var(--ink-red)}
 
 /* ---------- 4. quests ---------- */
-.screen.ink.mobile-world .qtrack{top:calc(var(--e-t) + 84px)}
+.screen.ink.mobile-world .qtrack{top:calc(var(--e-t) + var(--ink-hero-h,64px) + var(--ink-gap))}
 .screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road{color:var(--ink-fg);text-shadow:none}
 .screen.ink.mobile-world .qtrack .qt-list:not(.qt-road){padding:2px 4px 3px}
 .screen.ink.mobile-world .qtrack .qt-head{display:inline-block;margin:0 0 3px;padding:1px 7px;border-radius:3px;background:var(--ink-gold-deep);color:var(--ink-gold-fg);font:700 10px var(--font);letter-spacing:.04em;text-transform:none}
@@ -77,6 +79,27 @@
 .screen.ink.mobile-world .qtrack .qt-pop .btn{border:1.5px solid var(--ink-gold);border-image:none;border-radius:3px;background:linear-gradient(#7a5a24,#4a3514);color:var(--ink-fg);box-shadow:none}
 .screen.ink.mobile-world .qtrack .qt-pop .qt-bar{border-radius:3px;background:#120e09}.screen.ink.mobile-world .qtrack .qt-pop .qt-bar>*{background:var(--ink-gold)}
 .screen.ink.mobile-world .qtrack .qt-x{color:var(--ink-fg-2)}
+/* (compact, as the army card is, the owner, 2026-11-24: "Make quest tracking and cool down panel even smaller and compact": as wide as
+   the card, each line one line (cut short with …), small type; the new-quest card one row (its title, Track, ×) over a thread of
+   a bar that runs down while it shows) */
+.screen.ink.mobile-world .qtrack{width:min(212px,calc(100% - 150px - var(--e-l) - var(--e-r)));gap:var(--ink-gap)}
+.screen.ink.mobile-world .qtrack :is(.qt-list,.qt-pops,.qt-pop),#screen.ink.campaign-world.mobile-world #qtrack .qt-road{width:100%;box-sizing:border-box}
+.screen.ink.mobile-world .qtrack .qt-list:not(.qt-road){padding:0 3px 1px}
+.screen.ink.mobile-world .qtrack .qt-head{display:block;width:fit-content;margin:3px 0 1px 3px;padding:0 5px;font-size:9px;line-height:13px}
+.screen.ink.mobile-world .qtrack .qt-row{padding:1px 3px 2px;min-height:0}
+.screen.ink.mobile-world .qtrack .qt-row :is(b,small,em){display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen.ink.mobile-world .qtrack .qt-row b{font-size:12px}.screen.ink.mobile-world .qtrack .qt-row small{font-size:10px;line-height:1.25}
+.screen.ink.mobile-world .qtrack .qt-row em{font:10px/1.25 var(--font);font-style:normal;color:var(--ink-fg-2)}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road{padding:0 3px}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row{min-height:24px;padding:0 3px;column-gap:5px}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row b{font-size:11px}
+#screen.ink.campaign-world.mobile-world #qtrack .qt-road .qt-row small{font-size:9px}
+.screen.ink.mobile-world .qtrack .qt-pop{display:grid;grid-template-columns:minmax(0,1fr) auto 16px;align-items:center;column-gap:5px;padding:1px 3px 3px 5px;position:relative}
+.screen.ink.mobile-world .qtrack .qt-pop>b{margin:0;font:700 11px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-btns{margin:0}
+.screen.ink.mobile-world .qtrack .qt-pop .btn.sm{min-height:22px;height:22px;padding:0 8px;font-size:11px}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-x{position:static;order:3;width:16px;height:22px;min-height:0;padding:0;font-size:14px;line-height:1}
+.screen.ink.mobile-world .qtrack .qt-pop .qt-bar{position:absolute;left:6px;right:6px;bottom:1px;height:2px;margin:0}
 /* (one quest on a phone, the tracked one (else the first), the rest counted on the tag, as the owner's picture has it: inkhud.js) */
 .screen.ink.mobile-world .qtrack .qt-list:has(.qt-row.on) .qt-row:not(.on),.screen.ink.mobile-world .qtrack .qt-list:not(.qt-road):not(:has(.qt-row.on)) .qt-row:nth-of-type(n+2){display:none}
 .screen.ink.mobile-world .qtrack .qt-head[data-more]:not([data-more=""])::after{content:attr(data-more);margin-left:8px;padding:0 6px;border-radius:3px;background:rgba(226,189,104,.2);color:var(--ink-gold-fg);font-weight:700}
@@ -88,19 +111,24 @@
 /* (the day is on the minimap now, section 6: the strip that held it hidden, its line still kept up for the forged look) */
 .screen.ink.campaign-world.mobile-world .mwh-status{display:none}
 .screen.ink.campaign-world.mobile-world #partyToggle{display:none}
-.screen.ink.campaign-world.mobile-world .mwh-dock{gap:8px;padding:0;border:0;background:none}
-.screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:7px}
+.screen.ink.campaign-world.mobile-world .mwh-dock{gap:var(--ink-gap);padding:0;border:0;background:none}
+.screen.ink.campaign-world.mobile-world .mwh-dock>div{position:relative;padding-bottom:var(--ink-gap)}
 /* (round always: the frames' rounded corners, inkhud.js corners, are for the framed rest) */
 .screen.ink.campaign-world.mobile-world .mwh-dock :is(button,#speedToggle){width:44px;min-width:44px;height:44px;min-height:44px;padding:0;border:0;border-image:none;border-radius:50%!important;background:var(--ink-btn);color:var(--ink-fg);box-shadow:0 2px 4px rgba(0,0,0,.45)}
 #screen.ink.campaign-world.mobile-world .mwh-dock :is(button[aria-expanded="true"],button.on,button[aria-pressed="true"]),#screen.ink.campaign-world.mobile-world #speedToggle[aria-expanded="true"]{color:var(--ink-fg);background:var(--ink-btn-on)}
 .screen.ink.campaign-world.mobile-world .mwh-dock #speedToggle strong{font:800 12px var(--font);text-shadow:var(--ink-out)}
-.screen.ink.campaign-world.mobile-world .mobile-world-hud .dbtn .dl{position:absolute;left:50%;bottom:-8px;width:auto;height:auto;margin:0;padding:0;clip-path:none;overflow:visible;transform:translateX(-50%);
-  font:700 10px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);white-space:nowrap}
+/* (every round button's name on a small dark tag across its ring's foot, as the owner's picture has its "Mount": the pause's Pause or
+   Play, the speed's Speed, then Map, Army, Menu; the tags' feet at the screen's edge by the HUD's one gap, "What about text at bottom
+   right?") */
+.screen.ink.campaign-world.mobile-world .mwh-dock :is(#pause,#speedToggle){position:relative}
+.screen.ink.campaign-world.mobile-world :is(.mwh-dock .dbtn .dl,.mwh-dock #speedToggle small),.screen.ink.campaign-world.mobile-world .mwh-dock #pause::after{position:absolute;left:50%;bottom:calc(-1*var(--ink-gap));display:block;width:auto;height:auto;margin:0;padding:0 5px;
+  clip-path:none;overflow:visible;transform:translateX(-50%);border:1px solid rgba(226,189,104,.55);border-radius:6px;background:var(--ink-panel-hi);font:700 9px/11px var(--font);color:var(--ink-fg);text-shadow:none;white-space:nowrap}
+.screen.ink.campaign-world.mobile-world .mwh-dock #pause::after{content:'Pause'}.screen.ink.campaign-world.mobile-world .mwh-dock #pause.on::after{content:'Play'}
 .screen.ink.campaign-world.mobile-world .mwh-dock .dbtn{position:relative}
 .screen.ink.campaign-world.mobile-world :is(.mwh-speeds,.mwh-map) button:not(.mwh-dock button){border:1.5px solid var(--ink-gold-deep);border-image:none;border-radius:3px;background:var(--ink-panel-hi);color:var(--ink-fg)}
 
 /* ---------- 6. minimap ---------- */
-.screen.ink .campaign-mobile-survey{left:auto!important;right:var(--e-r);width:auto!important;aspect-ratio:1;border:0;border-image:none;border-radius:50%!important;overflow:hidden;background:none;box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.screen.ink .campaign-mobile-survey{left:auto!important;right:var(--e-r);top:var(--e-t)!important;width:auto!important;aspect-ratio:1;border:0;border-image:none;border-radius:50%!important;overflow:hidden;background:none;box-shadow:0 3px 8px rgba(0,0,0,.5)}
 .screen.ink .campaign-mobile-survey canvas{inset:auto;left:50%;top:50%;width:auto;height:calc(100% - 2*var(--phone-map-rim,8px));transform:translate(-50%,-50%)}
 .screen.ink .campaign-mobile-survey::after{content:'';position:absolute;inset:0;border-radius:50%;background:var(--ink-rim) center/100% 100% no-repeat;pointer-events:none}
 .screen.ink.mobile-world .ink-dial:not([hidden]){display:block;position:absolute;pointer-events:none;z-index:2}
@@ -112,19 +140,27 @@
 /* (the sky's icon at the hour, on the dial: the bar's own, a little glow so it reads on the band) */
 .screen.ink.mobile-world .ink-hour:not([hidden]){display:grid;place-items:center;position:absolute;width:18px;height:18px;transform:translate(-50%,-50%);pointer-events:none;z-index:3;
   filter:drop-shadow(0 0 2px rgba(18,13,7,.9))}.ink-hour .gico{width:17px;height:17px}
-.screen.ink.mobile-world .ink-purse:not([hidden]){position:absolute;display:flex;flex-direction:column;align-items:flex-end;gap:2px;pointer-events:none;z-index:2}
-.ink-purse>span{display:flex;align-items:center;gap:5px;padding:0 6px 0 0;font:700 12px var(--font);color:var(--ink-fg);text-shadow:var(--ink-out);font-variant-numeric:tabular-nums}
-.ink-purse>span:first-child b{color:var(--ink-gold)}.ink-purse>span.low b{color:var(--ink-red)}
 
 /* ---------- 7. messages ---------- */
+/* (a level's skill points, the owner, 2026-11-24: "Change that and move it to the right side": a round button in the gold ring as the
+   others are, at the right under the day's line, its count on a gold tab, its name at its feet, a slow glow till they are spent;
+   the log's lines keep the bottom-left corner: "Make log fit in bottom left") */
+.screen.ink.mobile-world .lgroup{left:auto;right:var(--e-r);top:var(--ink-side-top,170px);bottom:auto;z-index:4}
+.screen.ink.mobile-world .lvup{position:relative;width:44px;height:44px;margin:0 auto 12px;border:0;border-radius:50%;background:var(--ink-btn);box-shadow:0 2px 4px rgba(0,0,0,.45);
+  color:var(--ink-gold);animation:ink-lvup 1.6s ease-in-out infinite}
+.screen.ink.mobile-world .lvup .gico{width:22px;height:22px}
+.screen.ink.mobile-world .lvup>b{position:absolute;top:-3px;right:-3px;min-width:18px;padding:1px 4px;border-radius:9px;background:linear-gradient(#f2cf6e,#b07d27);color:#2a1c08;font:800 10px/12px var(--font);text-align:center}
+.screen.ink.mobile-world .lvup>small{position:absolute;left:50%;bottom:-13px;transform:translateX(-50%);white-space:nowrap;font:700 10px var(--font);letter-spacing:0;text-transform:none;color:var(--ink-fg);text-shadow:var(--ink-out)}
+@keyframes ink-lvup{0%,100%{box-shadow:0 2px 4px rgba(0,0,0,.45),0 0 0 0 rgba(242,207,110,0)}50%{box-shadow:0 2px 4px rgba(0,0,0,.45),0 0 12px 4px rgba(242,207,110,.7)}}
+@media (prefers-reduced-motion:reduce){.screen.ink.mobile-world .lvup{animation:none}}
+.screen.ink.mobile-world[data-mode="world"] .hudlayer:has(.lgroup:not([hidden])) .toasts{left:var(--e-l)}
 .screen.ink .toasts div{border:0;border-left:3px solid var(--ink-gold-deep);border-radius:0;background:rgba(23,19,14,.74);box-shadow:none;color:var(--ink-fg-2);font-size:12px}
 .screen.ink .toasts div.good{border-left-color:var(--meter-hi,#9cc06a)}.screen.ink .toasts div.bad{border-left-color:var(--ink-red)}.screen.ink .toasts div.gold{border-left-color:var(--ink-gold)}
 /* (the log's lines in the bottom-left corner, beside the buttons, clear of the quest cards) */
-.screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + 2px);width:min(46%,380px)}
-.screen.ink.campaign-world.mobile-world #stats{top:calc(var(--e-t) + 84px);bottom:auto;right:auto;width:300px;max-height:calc(100% - var(--e-t) - 84px - var(--e-b) - var(--mobile-hud-height,60px) - 12px);background:var(--ink-panel-hi)}
+.screen.ink.mobile-world .toasts{left:var(--e-l);bottom:var(--e-b);width:min(46%,380px,calc(100% - 290px))}
+.screen.ink.mobile-world .toasts div{padding:3px 8px;font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.screen.ink.campaign-world.mobile-world #stats{top:calc(var(--e-t) + var(--ink-hero-h,64px) + var(--ink-gap));bottom:auto;right:auto;width:300px;max-height:calc(100% - var(--e-t) - var(--ink-hero-h,64px) - var(--ink-gap) - var(--e-b) - var(--mobile-hud-height,60px) - 12px);background:var(--ink-panel-hi)}
 /* (a phone held upright: the log's lines over the buttons) */
 @media (max-width:600px){
-  .screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + 10px);width:min(80%,360px)}
+  .screen.ink.mobile-world .toasts{left:var(--e-l);bottom:calc(var(--e-b) + var(--mobile-hud-height,108px) + var(--ink-gap));width:min(80%,360px)}
 }
-/* (the narrowest: the hero's card without his rank, so his band's name keeps its room) */
-@media (max-width:400px){.screen.ink.mobile-world .ink-rank{display:none}}

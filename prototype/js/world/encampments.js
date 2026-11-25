@@ -319,6 +319,26 @@ class CampSpot extends WorldObject{
   get label(){return CampSpots.name(this.site,this.k)}
   tip(){return '<b>'+this.label+'</b><small>'+this.site.name+'</small><span class="act">Click: go to it</span>'}
 }
+/* badges over places on the map at the screen's own size (a camp's services; a holding's places: world/holdspots.js): each over its
+   spot (a: x, y, up), its foot there, a thin stalk down to it; one on another moved aside; one on your hero over his head. Each one's
+   box, in the ground's px with a finger's slack (I.tap), kept on it (o.box) for a tap (world.js pickAt), none for one not drawn;
+   I: css (its size), gap, tap; name(o): its picture (ui/icons.js) */
+const MapBadges={
+  draw(items,cam,I,name){const m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=sc/dpr,V=vis(),S=yourSight(V),put=[];
+    for(const {o,a} of items){o.box=null;o.x=a.x;o.y=a.y;if(!S.sees(a.x,a.y,1.2))continue;
+      const lf=typeof liftAt==='function'?liftAt(a.x,a.y):0,wx=a.x-cam.x,wy=a.y-a.up-lf-cam.y;put.push({o,a,lf,cx:(m.a*wx+m.c*wy+m.e)/dpr,cy:(m.b*wx+m.d*wy+m.f)/dpr})}
+    if(!put.length)return;const w=I.css,h=I.css,hx=(m.a*(P.x-cam.x)+m.e)/dpr,hy=(m.d*(P.y-(typeof liftAt==='function'?liftAt(P.x,P.y):0)-cam.y)+m.f)/dpr,hw=8*k,hh=24*k;
+    // (their places on the screen: each over its spot, its foot there; one on another moved aside; one on your hero over his head)
+    put.sort((p,q)=>p.cx-q.cx);for(let i=0;i<put.length;i++){const p=put[i];p.x0=p.cx-w/2;p.y0=p.cy-h;
+      if(Math.abs(p.cx-hx)<w/2+hw+I.gap&&p.y0<hy&&p.y0+h>hy-hh)p.y0=hy-hh-h-I.gap;
+      for(let j=0;j<i;j++){const q=put[j];if(p.x0<q.x0+w+I.gap&&p.x0+w+I.gap>q.x0&&p.y0<q.y0+h+I.gap&&p.y0+h+I.gap>q.y0)p.x0=q.x0+w+I.gap}}
+    for(const p of put){const nm=name(p.o);if(!uiMarkerReady(nm))continue;
+      const T=I.tap,gx=x=>(x*dpr-m.e)/m.a+cam.x,gy=y=>(y*dpr-m.f)/m.d+cam.y+p.lf;p.o.box=[gx(p.x0-T),gy(p.y0-T),gx(p.x0+w+T),gy(p.y0+h+T)];
+      ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
+      // (a thin stalk down to what it stands at)
+      ctx.fillStyle='rgba(30,24,16,.75)';ctx.fillRect(Math.round(p.x0+w/2-1),Math.round(p.y0+h),2,Math.max(0,Math.round(p.cy-p.y0-h)));
+      ctx.translate(Math.round(p.x0),Math.round(p.y0));campBadge(ctx,nm,w,h);ctx.restore()}}
+};
 const CampSpots={
   of:new Map(),
   // (a camp's services as its places() offers them, without making their pages: trade with goods, hire with sellswords or volunteers)
@@ -334,21 +354,10 @@ const CampSpots={
   all(){const out=[];for(const L of this.of.values())out.push(...L);return out},
   // each frame: the camps near you, their badges laid out on the screen, then drawn (render.js drawWorld, over the land and its
   // people); their boxes kept for a tap (pickAt), none for one not drawn
-  draw(cam){const I=ENCAMP.icons,m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=sc/dpr,V=vis(),S=yourSight(V),put=[];
+  draw(cam){
     for(const [s,L] of this.of){if(!W.sites.includes(s)||!this.shown(s)){for(const o of L)o.box=null;if(!W.sites.includes(s))this.of.delete(s)}}
-    for(const s of W.sites){if(!this.shown(s))continue;for(const o of this.list(s)){o.box=null;const a=this.anchor(s,o.k);o.x=a.x;o.y=a.y;if(!S.sees(a.x,a.y,1.2))continue;
-      const lf=typeof liftAt==='function'?liftAt(a.x,a.y):0,wx=a.x-cam.x,wy=a.y-a.up-lf-cam.y;put.push({o,a,lf,cx:(m.a*wx+m.c*wy+m.e)/dpr,cy:(m.b*wx+m.d*wy+m.f)/dpr})}}
-    if(!put.length)return;const w=I.css,h=I.css,hx=(m.a*(P.x-cam.x)+m.e)/dpr,hy=(m.d*(P.y-(typeof liftAt==='function'?liftAt(P.x,P.y):0)-cam.y)+m.f)/dpr,hw=8*k,hh=24*k;
-    // (their places on the screen: each over its spot, its foot there; one on another moved aside; one on your hero over his head)
-    put.sort((p,q)=>p.cx-q.cx);for(let i=0;i<put.length;i++){const p=put[i];p.x0=p.cx-w/2;p.y0=p.cy-h;
-      if(Math.abs(p.cx-hx)<w/2+hw+I.gap&&p.y0<hy&&p.y0+h>hy-hh)p.y0=hy-hh-h-I.gap;
-      for(let j=0;j<i;j++){const q=put[j];if(p.x0<q.x0+w+I.gap&&p.x0+w+I.gap>q.x0&&p.y0<q.y0+h+I.gap&&p.y0+h+I.gap>q.y0)p.x0=q.x0+w+I.gap}}
-    for(const p of put){const name=I.ico[p.o.k];if(!uiMarkerReady(name))continue;
-      const T=I.tap,gx=x=>(x*dpr-m.e)/m.a+cam.x,gy=y=>(y*dpr-m.f)/m.d+cam.y+p.lf;p.o.box=[gx(p.x0-T),gy(p.y0-T),gx(p.x0+w+T),gy(p.y0+h+T)];
-      ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
-      // (a thin stalk down to what it stands at)
-      ctx.fillStyle='rgba(30,24,16,.75)';ctx.fillRect(Math.round(p.x0+w/2-1),Math.round(p.y0+h),2,Math.max(0,Math.round(p.cy-p.y0-h)));
-      ctx.translate(Math.round(p.x0),Math.round(p.y0));campBadge(ctx,name,w,h);ctx.restore()}}
+    const items=[];for(const s of W.sites){if(!this.shown(s))continue;for(const o of this.list(s))items.push({o,a:this.anchor(s,o.k)})}
+    MapBadges.draw(items,cam,ENCAMP.icons,o=>ENCAMP.icons.ico[o.k])}
 };
 // Shared painted artwork; recruitment retains a readable plus rather than becoming a Rally symbol.
 const campBadge=(g,name,w,h)=>uiCanvasMarker(g,name,w,h,name==='recruit');

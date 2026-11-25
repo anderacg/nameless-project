@@ -91,7 +91,7 @@ function parleyAct(a,arg){
    if you take them prisoner; they do not, and it is the fight. Either way the place is empty for a while, as if beaten (lairGone) */
 const tribute=s=>12*s.guess().n;
 function lairGone(s,gone){worldEmit('site:cleared',{site:s});if(gone)(s.bands||[]).forEach(b=>{worldEmit('band:beaten',{band:b});chiefEscapes(b.ld)});else campEmpty(s);s.bands=[];clearPlace(s,SITE_TYPES[s.type].respawn)}
-function lairPay(s){const g=tribute(s);if(P.gold<g)return '';P.gold-=g;chiefEscapes(s.ld);s.ld=null;lairGone(s,false);
+function lairPay(s){const g=tribute(s);if(P.gold<g)return '';P.gold-=g;chiefEscapes(s.ld);s.ld=null;if(s.emptyStash)s.emptyStash();lairGone(s,false);
   return 'You pay '+g+' gold. By nightfall they have broken camp and ridden off; the '+s.T.n.toLowerCase()+' lies empty.'}
 // (their power as you know it: as your scouts saw it, else as they look (Lair guess), the same the parley shows. They yield: their
 // fate is yours (G.siteSpy.yielded: everyone there, their own as scouted or rolled now); they refuse: the fight, with the same)

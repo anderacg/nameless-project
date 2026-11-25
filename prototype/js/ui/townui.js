@@ -11,7 +11,9 @@
 // on its overview)
 // (outside its walls, refused at its gate: its market alone, world/gates.js)
 const outsideWalls=t=>!!(G.town&&G.town.ref===t&&G.town.outside);
-const townPlaces=t=>Object.values(PLACES).filter(p=>p.rail&&p.at(t)&&(!outsideWalls(t)||p.id==='trade')).map(p=>p.id);
+// (walked to one of its places on the map, that place alone; to its centre, the rest: world/holdspots.js, town.js enterTown)
+const townShows=(t,id)=>{const T=G.town;return !T||T.ref!==t||(T.only?id===T.only:!(T.except&&T.except.includes(id)))};
+const townPlaces=t=>Object.values(PLACES).filter(p=>p.rail&&p.at(t)&&(!outsideWalls(t)||p.id==='trade')&&townShows(t,p.id)).map(p=>p.id);
 const shut=t=>Place.closed(t);
 // a quest of yours to report here (the Notice board's dot on the rail); the companions waiting in its tavern
 const questHere=t=>P.quests.some(q=>canReportAt(q,t)&&questReady(q));
@@ -103,5 +105,5 @@ function showTown(t,body){
   const close=['leave',null,s.inScene?'Back to the streets':P.stay&&P.stay.town===t.name?'Back to your lodgings':'Leave '+t.label];
   showRail({head:{act:['tab','home'],on:!tab,...townHead(t,hold)},label:hold?'Walls and estates':'Places',items,
     title:bld?bldName(bld):P0&&tab?(hold?'Your holding':P0.n):t.name,sub:tab?t.name+(hold?', '+(bld?'your holding':fiefIncome(t)+' gold a day'):''):cap1(t.label)+(t.owner?' of the '+FACS[t.owner].n:''),gold:true,
-    body:(s.greet?'<p class="gold">'+s.greet+'</p>':'')+body,back:bld?['tab','fief','Back']:tab&&!s.direct?['tab','home','Back']:null,close},'town:'+t.name+':'+(tab||'')+':'+(bld||''));
+    body:(s.greet?'<p class="gold">'+s.greet+'</p>':'')+body,back:bld?['tab','fief','Back']:tab&&!s.direct&&!s.only?['tab','home','Back']:null,close},'town:'+t.name+':'+(tab||'')+':'+(bld||''));
 }

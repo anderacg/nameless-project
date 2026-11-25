@@ -59,6 +59,12 @@ function worldArtPlan(){
   // (nor along a holding's walls or fence: their line and a tile either side, so they stand clear of the woods, world/townwalls.js)
   for(const t of TOWNS)TownWall.clearOf(t,mark);
   for(const c of CAMP_SPOTS){tramples.push([c.x+8,c.y+4,14,7,.5]);blob(c.x+8,c.y-8,34,34)}
+  // (a hideout's ground (world/sites.js Hideout layout, LAIR_SPREAD): its yard round its stockade, each place's, the paths out to them
+  //  worn; nothing grows on them)
+  if(typeof W!=='undefined')for(const s of W.sites||[]){if(!(s instanceof Hideout))continue;const L=s.layout();if(!L.length)continue;const SP=LAIR_SPREAD,cx=s.x+8,cy=s.y-24;
+    tramples.push([cx,cy,SP.yard.r[0],SP.yard.r[1],SP.yard.amt]);blob(cx,cy,SP.yard.clear[0],SP.yard.clear[1]);
+    for(const q of L){const qx=q.x,qy=q.y-8,n=Math.max(1,Math.round(Math.hypot(qx-cx,qy-cy)/SP.path.step));tramples.push([qx,qy,SP.place.r[0],SP.place.r[1],SP.place.amt]);blob(qx,qy,SP.place.clear[0],SP.place.clear[1]);
+      for(let i=1;i<n;i++){const x=Math.round(cx+(qx-cx)*i/n),y=Math.round(cy+(qy-cy)*i/n);tramples.push([x,y,SP.path.r,SP.path.r,SP.path.amt]);blob(x,y,SP.path.r+1,SP.path.r+1)}}}
   for(const t of TOWNS){const sp=bldSpots(t);for(const k in sp){const p=sp[k];if(k==='lumber'||k==='mine')tramples.push([p.x,p.y+3,9,5,.4])}}
   const P={clear,dep,tramples};
   P.cover={desert:coverOf('desert'),swamp:coverOf('swamp'),frost:snowCover()};P.snow=P.cover.frost;
@@ -642,7 +648,7 @@ function* paintSteps(P,X,Y,w,h,g,ox,oy,rec){
   const E=mkcv(w,HE),eg=E.getContext('2d',{willReadFrequently:true});eg.putImageData(img,x0-X,y0-Y,X-x0,Y-y0,w,HE);
   const tx0=Math.max(0,(X>>4)-1),ty0=Math.max(0,(Y>>4)-1),tx1=Math.min(MW-1,((X+w-1)>>4)+1),ty1=Math.min(MH-1,((Y+HE-1)>>4)+1),rr=(col,x,y,w,h)=>{eg.fillStyle=col;eg.fillRect(x,y,w||1,h||1)};
   for(const pass of OVER){yield;eg.save();eg.beginPath();eg.rect(0,0,w,HE);eg.clip();eg.translate(-X,-Y);pass(P,rr,tx0,ty0,tx1,ty1);eg.restore()}
-  yield;yield* terrainChunk(rec,P,eg.getImageData(0,0,w,HE).data,G0,KP,X,Y,w,h,HE,x0,y0,ww,r);
+  yield;yield* (tileGroundOn()?tileChunk:terrainChunk)(rec,P,eg.getImageData(0,0,w,HE).data,G0,KP,X,Y,w,h,HE,x0,y0,ww,r);
   g.save();g.imageSmoothingEnabled=false;g.clearRect(ox,oy,w,h);g.drawImage(rec.fcv,ox,oy,w,h);g.restore();
   rec.ms=performance.now()-t0;
 }
