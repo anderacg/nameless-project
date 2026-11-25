@@ -26,7 +26,7 @@ Kit.suite(({ok,info})=>{
    const foe=t.asMonster({id:'wolf',n:2,lv:1,x:P.x+10,y:P.y,cool:0});foe.inView=()=>true;foe.here=()=>true;foe.power=()=>200;
    D.anchor(foe,30,20);D.anchor(foe,40,25);const anchor=D.worldAnchor(foe,{x:10,y:5});ok(anchor.x===20&&anchor.top===15,'stars use the topmost actually drawn flag or pack badge, including camera offset');D.anchors.clear();
    const near=D.worldEntries(G.cam,10,[foe]);ok(near.length===1&&near[0].stars===t.MonsterRegions.threat(200,100).stars,'nearby visible enemies use their own strength against the company');
-   foe.x=P.x+t.ENEMY_DIFFICULTY.near+10;const fading=D.worldEntries(G.cam,10.1,[foe]);ok(fading.length===1&&fading[0].a<near[0].a,'a visible enemy fades when you leave its proximity');
+   foe.x=P.x+t.ENEMY_DIFFICULTY.near+10;const far=D.worldEntries(G.cam,10.1,[foe]);ok(far.length===1&&far[0].a===1,'an enemy in your sight but not near you still shows its stars (the owner, 2026-11-25: "The enemy stars should be draw on the world map")');
    G.chase=foe;const selected=D.worldEntries(G.cam,10.2,[foe]);ok(selected.length===1&&selected[0].chosen,'a selected enemy remains marked beyond proximity');
    foe.inView=()=>false;ok(!D.worldEntries(G.cam,10.3,[foe]).length&&!D.states.has(foe),'hidden enemies disappear immediately without leaving stars at their location');
    const herd=t.asHerd({crit:true,id:'rabbit',n:4,x:P.x,y:P.y}),unit={x:P.x+5,y:P.y},animal=new t.WorldFigure(herd,unit,0);animal.here=()=>true;animal.inView=()=>true;G.chase=animal;

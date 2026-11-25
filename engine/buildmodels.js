@@ -9,7 +9,8 @@
 //     households, marks ...) and type, people, culture, facing, gateX. Cached by its spec (the snow overlay a third of an amount at
 //     a time inside it).
 //   PX.objectModel(spec): the same for the 16 px objects (PX.MODEL_OBJECTS): alone (a well in a square) or as a cluster's dressing.
-//   PX.clusterModel({kind, culture, people, seed, yaw, env, snow}) -> the same for a cell of several buildings and objects
+//   PX.clusterModel({kind, culture, people, seed, yaw, env, snow, tents}) -> the same for a cell of several buildings and objects
+//     (tents: a hideout's, by how many live there, 1-6)
 //     (PX.CLUSTER_MODELS): a town row, a hamlet's yard, a farmstead, a smithy yard, an inn with its stable, a chapel and its
 //     graveyard, a market, a mill, a lumber camp, a mine, a quarry, a fishery, a pasture, a brewery, a granary yard, a workshop
 //     yard (64), a town quarter (128); the camps: a bandits' camp and travellers (32), a hideout (64), tents and wagons round a fire
@@ -486,7 +487,7 @@
     const s=Q.spec();s.yaw=o.yaw;s.fitYaws=FRONT.includes(type)?[0]:[0,2,4,6];s.snow=SNOW(spec);s.role=s.role||(Q.dwellings[0]&&Q.dwellings[0].role)||null;return s};
   // the cache: a model a spec (its snow overlay a third of an amount at a time inside it)
   // (detail: drawn that many times finer, the same building (model.js PX.model); a model of its own in the cache)
-  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital,s.detail>1?s.detail|0:1]);
+  const CACHE=new Map(),key=(k,s)=>k+JSON.stringify([s.type||s.kind,s.people||s.style,s.culture||'',s.seed|0,s.yaw|0,s.env||'',s.lv|0,s.fort==null?-1:s.fort,!!s.stilts,s.glow||'',!!s.capital,s.detail>1?s.detail|0:1,s.tents|0]);
   const fine=(s,spec)=>{if(spec.detail>1)s.detail=spec.detail|0;return s};
   function cached(k,spec,make){const id=key(k,spec);let m=CACHE.get(id);if(!m){m=make();CACHE.set(id,m)}const a=SNOW(spec);
     return a?Object.assign({},m,{snow:PX.modelSeason(m,'snow',a)}):Object.assign({},m,{snow:null})}
@@ -566,10 +567,13 @@
     // camps: a bandits' camp (32: one or two tents round a fire, crates or a barrel, a log to sit on), a hideout (64: three tents and
     // their gear round the fire in a ring of spiked stakes, its way in at the front) and travellers (32: a tent, their wagon, the fire)
     camp:{role:'camp',make:C=>{const two=C.d.chance(.5);piece(C,'tent',[two?-8:0,two?-10:-11],0);if(two)piece(C,'tent',[8,0],0);fire(C,[two?-5:0,two?9:8]);P(C,C.d.pick(['crate','barrel','sacks']),two?[-14,3]:[10,7]);P(C,'logs',two?[-12,12]:[-8,12],0,1)}},
-    hideout:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-16,-20],0);piece(C,'tent',[16,-20],0);piece(C,'tent',[0,-12],0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
+    // (its tents by how many live there (spec.tents, 1-6; three when not said): HIDE_TENTS, their places inside the stakes)
+    hideout:{role:'camp',flag:true,make:C=>{for(const at of HIDE_TENTS[Math.max(1,Math.min(6,C.spec.tents||3))])piece(C,'tent',at,0);fire(C,[0,9]);piece(C,'crates',[-18,10],0);piece(C,'barrels',[18,8],0);P(C,'logs',[6,14],0,1);
       const e=29,b=27;for(const [n,u,v] of [['pN',[-e,e],[-b-3,-b-1]],['pW',[-e,-e+2],[-b-3,b]],['pE',[e-2,e],[-b-3,b]],['pS0',[-e,-6],[b-2,b]],['pS1',[6,e],[b-2,b]]])C.Q.parts.push({k:'box',name:n,u,v,z:[0,8],wall:'stakes',top:true,topMat:'log'})}},
     travelers:{role:'camp',flag:true,make:C=>{piece(C,'tent',[-6,-12],0);piece(C,'wagon',[8,5],0);fire(C,[-7,10])}}
   };
+  // (a hideout's tents by their number: three as it always stood; more, a second row between them and the fire, six four along the back)
+  const HIDE_TENTS={1:[[0,-14]],2:[[-12,-18],[12,-18]],3:[[-16,-20],[16,-20],[0,-12]],4:[[-17,-20],[0,-21],[17,-20],[-12,-5]],5:[[-17,-20],[0,-21],[17,-20],[-12,-5],[12,-5]],6:[[-21,-20],[-7,-21],[7,-21],[21,-20],[-12,-5],[12,-5]]};
   // the clusters whose look is the country's
   const RURAL_CL=['yard','farmstead','mill','lumber','mine','quarry','fishery','pasture','granary'];
   // a cluster's layout: its culture's (clusters: (C, base)), else the generic

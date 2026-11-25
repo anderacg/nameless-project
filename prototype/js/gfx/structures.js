@@ -450,9 +450,9 @@ function siteCast(cv,own){const N=cv.width,H=cv.height,S=SITE_SHADOW,W=N+S.room[
 function siteCanvas(m,ax,ay,mk,deco){const N=m.cell,cv=mkc(N,N,g=>{g.drawImage(m.img,0,0);if(m.snow)g.drawImage(m.snow.img,0,0);if(deco)deco(g,N)});cv.ax=ax;cv.ay=ay;cv.sh=siteCast(cv,m.shadow);cv.mk=mk;cv.deco=deco;
   cv.gr=siteYard(m,1);
   cv.fire=m.marks&&m.marks.fire||null;cv.flag=m.flag||(cv.fire&&[cv.fire[0]+7,cv.fire[1]+1]);return cv}
-// a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said)
-function campSprite(i,kind,c){c=c||'grass';const k='camp'+i+(kind||'')+c;if(spr[k])return spr[k];
-  const mk=d=>PX.clusterModel({kind:SITE_KIND[kind||'bandit'],culture:SITE_CULTURE[kind],seed:i*131+7,env:c,snow:c==='frost'?1:0,detail:d}),m=mk(1),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell,mk)}
+// a camp of kind (bandit, hideout, travelers) and seed i, in climate c (the grass unless said), n tents (a hideout's: sites.js Lair tents)
+function campSprite(i,kind,c,tents){c=c||'grass';const k='camp'+i+(kind||'')+c+(tents?'t'+tents:'');if(spr[k])return spr[k];
+  const mk=d=>PX.clusterModel({kind:SITE_KIND[kind||'bandit'],culture:SITE_CULTURE[kind],seed:i*131+7,env:c,snow:c==='frost'?1:0,detail:d,tents:tents||0}),m=mk(1),n=m.cell/TILE;return spr[k]=siteCanvas(m,TILE/2+TILE*((n>>1)-1),m.cell,mk)}
 // (a bandit lair: a cave's outcrop round its mouth, or a timbered tunnel's head (sites.js Hideout lairLook), bones before it and the band's banner on a pole, on its tile as a hideout stands;
 // the banner the band's (lairCol: [cloth, its shade]; a goblin warren's green), else the bandits' red)
 const LAIR_COL=['#8a2a22','#5a1a16'];
@@ -465,8 +465,10 @@ function lairSprite(s,c){const look=s.lairLook,L=s.lairCol||LAIR_COL,k='lair'+lo
 function siteSprite(s){s=siteOf(s);// (plain data too)
   if(s.type==='rest')return s.picture();// (a resting place: its finest grave's picture, world/lineage.js RestSite)
   if(s.type===OUTPOST_TYPE)return s.sprite();// (a realm's outpost and its tower: world/outposts.js outpostSprite)
-  const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'bandit',c);// a bandit camp: the big camp, as the siege camp is drawn
-  if(SITE_KIND[s.type]&&!s.tunnel)return campSprite(s.seed,s.type,c);
+  // a bandit camp: the big camp in its ring of stakes (its spot keeps a hideout's 4 x 4 tiles: lots.js occReserve), a hideout as it
+  // stands; their tents by how many live there (sites.js Lair tents)
+  const c=climAt(s.x,s.y);if(s instanceof BanditCamp)return campSprite(s.seed,'hideout',c,s.tents);
+  if(SITE_KIND[s.type]&&!s.tunnel)return campSprite(s.seed,s.type,c,s instanceof Lair?s.tents:0);
   if(s.tunnel)return lairSprite(s,c);// (a bandit lair: a tunnel's mouth in the hillside, their banner by it)
   // (its foot on its tile's bottom edge, 8 below the site's point (the tile's middle); a cave's point is its mouth, in front of its
   // tile (CAVE_MOUTH below the tile's bottom edge). A site of 32 px (a cave, ruins) its middle over its tile's, half a tile over each

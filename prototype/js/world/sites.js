@@ -393,6 +393,10 @@ class Lair extends Site{
   plunder(res){return ''}
   lootSay(n){return 'about '+(n*4+25)+' gold in their purses, likely a piece of gear (4 in 5)'}
   box(box,camp){camp(this,siteSprite(this))}
+  // (how many live here: a hideout's as scouts would count them (its size0, more as the days go); a bandit camp's its living
+  //  residents, SiteLife's) and their tents (LAIR_TENTS)
+  get people(){return this.size0+Math.floor(G.day/15)}
+  get tents(){const T=LAIR_TENTS;return Math.max(1,Math.min(T.most,Math.ceil(this.people/T.per)))}
   // the bands sheltering here tonight, as one list (a camp's: BanditCamp)
   sheltering(){return (this.bands||[]).flatMap(b=>b.troops)}
   // everyone you would fight: its own (as scouted, or rolled for a parley) and those sheltering; their power
@@ -466,6 +470,9 @@ function wildGround(tx,ty){const H=HIDEOUT_PLACE,c=climate[ty*MW+tx];let n=0,r=0
 // (a bandit lair: the share of hideouts that are (salt: its hash's), the hills or peaks within r tiles of it that make its mouth a cave; its type's words)
 const HIDEOUT_LAIR={share:.45,salt:7171,r:3,hills:4,names:{bandits:'Bandit lair',raiders:'Raider tunnels',bog:'Bog raider warren'},T:{n:'Bandit lair',ico:'cave',col:'#e0605a',respawn:10,d:'Bandits and their chieftain, dug in underground, their plunder deep in its tunnels.'}};
 const CAMP_WORN={on:true,days:7};// (a camp's losses kept after you withdrew: Lair worn, keep)
+/* a bandit camp's or a hideout's tents by how many live there (the owner, 2026-11-25: "The bandit camps or hideout should be scale based on
+   their population"; Lair tents): a tent for every per of them, at least one, at most most (the hideout's layout holds six) */
+const LAIR_TENTS={per:3,most:6};
 const HIDEOUT_BAND={den:{size0:8,foes:[7,9],chief:[2,5],gold:1.5,gear:.4},ruin:{size0:6,foes:[5,7],chief:[1,3],gold:1,gear:0}};
 // (hills or peaks within HIDEOUT_LAIR.r tiles of a tile, HIDEOUT_LAIR.hills of them at least: a lair's mouth a cave in the hillside)
 function hillyAt(tx,ty){let n=0;const r=HIDEOUT_LAIR.r;for(let j=-r;j<=r;j++)for(let i=-r;i<=r;i++){const k=tAt(tx+i,ty+j);if(k===T_HILL||k===T_MOUNT)n++}return n>=HIDEOUT_LAIR.hills}
@@ -512,6 +519,9 @@ class BanditCamp extends Lair{
   known(){return seenAt(this.x,this.y)}
   get scoutable(){return false}
   get size0(){return 8}
+  // (its residents as SiteLife keeps them, read only: none made for the drawing (they are made when you come near, SiteLife.ensure);
+  //  none yet, a hideout's reckoning)
+  get people(){const b=this.residents;return b&&b.people.length?b.people.filter(p=>p.hp>0&&!p.away&&p.fighter!==false).length:super.people}
   // its own raiders and chieftain, as campFight makes them (the bands sheltering join at the fight: world.js campFight)
   foes(){return SiteLife.roster(this)}
   attack(own){campFight(this,this.keep(own||this.foes()))}
