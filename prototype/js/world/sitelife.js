@@ -35,8 +35,9 @@ class SiteLife{
   static centre(s){const L=s.life;return L?{x:s.x+L.ring[0],y:s.y+L.ring[1],rx:L.ring[2],ry:L.ring[3]}:{x:s.x,y:s.y+13,rx:22,ry:10}}
   // (a hideout's people at its places (sites.js Hideout layout): the watch up at its lookout, the raiders by turns at its pen, its cage,
   //  its stash; null: round its fire)
-  static post(s,p,mode){const L=s.layout?s.layout():[];if(!L.length)return null;
-    if(mode==='watch'){const q=L.find(q=>q.k==='look')||L[0];return{x:q.x+((p.id%3)-1)*4,y:q.y+4}}
+  static post(s,p,mode){const L=s instanceof Hideout?s.layout():[];if(!L.length)return null;
+    // (a stronghold's watch shared between its lookouts and its gate, by his id)
+    if(mode==='watch'){const W=L.filter(q=>q.k.startsWith('look')||q.k==='gate'),q=W.length?W[p.id%W.length]:L[0];return{x:q.x+((p.id%3)-1)*4,y:q.y+4}}
     if(mode==='train'&&p.beat%2){const q=L[(p.id+p.beat)%L.length];return{x:q.x+((p.id%3)-1)*5,y:q.y+5}}
     return null}
   // (underground, a lair's people are not seen on the map: no figures, no watch over it)
@@ -102,8 +103,9 @@ class SiteLife{
   static detects(s,p,o){if(p.hp<=0||p.away||p.mode==='sleep')return false;const r=SITE_LIFE.sight*(Clock.frac>=ENCAMP.day.dusk?SITE_LIFE.night:1)*(hiddenAt(o.x,o.y)?.6:1)*(this.atLook(s,p)?SITE_LIFE.look:1);
     return Math.hypot(p.x-o.x,p.y-o.y)<r}
   // (a hideout's lookout, and whether p stands up at it)
-  static lookOf(s){return(s.layout?s.layout():[]).find(q=>q.k==='look')||null}
-  static atLook(s,p){const q=this.lookOf(s);return !!q&&Math.hypot(p.x-q.x,p.y-q.y-4)<12}
+  static looks(s){return(s instanceof Hideout?s.layout():[]).filter(q=>q.k.startsWith('look'))}
+  static lookOf(s,p){const L=this.looks(s);if(!p)return L[0]||null;return L.find(q=>Math.hypot(p.x-q.x,p.y-q.y-4)<12)||null}
+  static atLook(s,p){return !!this.lookOf(s,p)}
   // (roused: someone of it saw you within SITE_LIFE.alarm hours; alarm: rouse it now)
   static roused(s){const b=s.residents;return !!b&&b.alarm!=null&&Clock.hours()-b.alarm<SITE_LIFE.alarm}
   static alarm(s){this.book(s).alarm=Clock.hours()}
@@ -111,8 +113,8 @@ class SiteLife{
      beyond a shout of the lookout, its men there come down to you as a party of their own (a raid's: residentHome, their ids), the
      rest of the camp none the wiser; beaten, they are gone (SiteLife.hour: away with no party left); those who get away are back at
      its fire within SITE_LIFE.picket hours, and the camp is roused */
-  static picket(s,p){const q=this.lookOf(s);if(!q||!this.atLook(s,p)||this.roused(s))return false;const C=this.centre(s);if(Math.hypot(q.x-C.x,q.y-C.y)<=SITE_LIFE.shout)return false;
-    const men=this.fighters(s).filter(m=>this.atLook(s,m));if(!men.length)return false;const book=this.book(s);
+  static picket(s,p){const q=this.lookOf(s,p);if(!q||this.roused(s))return false;const C=this.centre(s);if(Math.hypot(q.x-C.x,q.y-C.y)<=SITE_LIFE.shout)return false;
+    const men=this.fighters(s).filter(m=>this.lookOf(s,m)===q);if(!men.length)return false;const book=this.book(s);
     const b=asParty({kind:s.bandKind,x:p.x,y:p.y,list:men.map(m=>m.type),residentHome:s.i,residentEpoch:book.owner,residentIds:men.map(m=>m.id),returnAt:Clock.hours()+SITE_LIFE.picket,picket:true,t:1,a:0,idle:true,cool:0,ld:null});
     for(const m of men)m.away=true;bandits.push(b);startEncounter({kind:'party',ref:b,list:b.troops.slice(),mine:true,title:'The lookout of the '+s.name});return true}
   static defend(s){if(G.modal||!B&&(G.enc||G.encCool>0))return;
@@ -186,7 +188,7 @@ class SiteLife{
   //  band's man (bandMan) by its seed and the day, at its fire)
   static grow(s){const b=s.residents;if(!s.life||s.cleared||!b||b.owner!==this.epoch(s)||b.grewDay===G.day)return;b.grewDay=G.day;
     if(b.people.filter(p=>p.hp>0).length>=s.lifeTarget())return;const R=seeded((s.seed||1)*991+G.day*7),C=this.centre(s);
-    this.person(s,bandMan(s.bandKind,R(),R()),'raider',C.x+(R()-.5)*C.rx,C.y+(R()-.5)*C.ry)}
+    this.person(s,bandMan(s.bandKind,R(),R()),'raider',C.x+(R()-.5)*C.rx,C.y+(R()-.5)*C.ry);if(s.strengthen)s.strengthen()}
 }
 Systems.add({name:'site residents',order:{frame:147.5,hour:45.5},frame:d=>SiteLife.frame(d),hour:()=>SiteLife.hour()});
 onWorld(()=>{SiteLife.active.clear();SiteLife.forces=new WeakMap();SiteLife.timer=0});

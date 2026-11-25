@@ -497,7 +497,10 @@ const LAIR_TENTS={per:3,most:6};
    its own two by two tiles of open ground r tiles from it (between the two), gap tiles apart: its lookout on the highest of them, its
    pen, its cage and its stash (kinds: their pictures, engine/buildmodels.js); worn ground under them and paths to them (gfx/worldart.js
    worldArtPlan: yard, path). Its people keep to them (world/sitelife.js post). A hideout dug in (a lair), or in old ruins, has none */
-const LAIR_SPREAD={on:true,places:['look','pen','cage','stash'],r:[3,6],gap:1,kinds:{look:'banditlook',pen:'banditpen',cage:'banditcage',stash:'banditstash'},
+/* strong: a hideout of at least at people (its first count, or grown to it: Hideout tier, built) a stronghold (n): a second lookout
+   (places) and a gate over its stockade's way in (gate: its point off the hideout's); its places kept should it lose men */
+const LAIR_SPREAD={on:true,places:['look','pen','cage','stash'],r:[3,6],gap:1,kinds:{look:'banditlook',look2:'banditlook',pen:'banditpen',cage:'banditcage',stash:'banditstash',gate:'banditgate'},
+  strong:{at:14,places:['look2'],gate:[8,1],n:'Bandit stronghold'},
   yard:{r:[30,22],amt:.45,clear:[36,30]},place:{r:[14,10],amt:.5,clear:[18,15]},path:{r:3,amt:.4,step:5}};
 const LAIR_LAYOUT=new WeakMap();
 const LAIR_LIFE={camp:{n:[1,4],grow:30,most:6,tents:2,ring:[8,0,14,7]},hideout:{n:[10,14],grow:15,most:16,tents:6,ring:[8,-16,18,9]}};
@@ -532,15 +535,24 @@ class Hideout extends Lair{
   get life(){return this.within?null:LAIR_LIFE.hideout}
   // its places round its stockade (LAIR_SPREAD): [{k, tx, ty (the left of its two columns, the lower of its two rows), x, y (its point:
   // its foot 8 below)}], worked out from the land once (the same in a painter worker: no draw, nothing saved); none for a lair
+  // (its tier: 1 a stronghold, by its first count (its seed) or once it grew to LAIR_SPREAD.strong.at (built, kept with it))
+  get tier(){return this.built||this.life&&!this.tunnel&&this.lifeBase()>=LAIR_SPREAD.strong.at?1:0}
+  get T(){const t=this.tunnel?HIDEOUT_LAIR.T:SITE_TYPES[this.type];return this.tier&&!this.tunnel?{...t,n:LAIR_SPREAD.strong.n}:t}
+  // (grown to a stronghold's count: built one, its places laid again and the ground under them painted again)
+  strengthen(){if(this.tier||!this.life||this.tunnel)return;const b=this.residents;if(!b||b.people.filter(p=>p.hp>0).length<LAIR_SPREAD.strong.at)return;
+    this.built=1;LAIR_LAYOUT.delete(this);if(typeof WorldArt!=='undefined')WorldArt.invalidate({x:this.tx-8,y:this.ty-8,w:17,h:17});
+    if(this.known())log('The '+this.name+' has grown into a stronghold: a second lookout, a gate over its way in.','bad')}
   layout(){const SP=LAIR_SPREAD;if(!SP.on||!this.life||this.tunnel||this instanceof GoblinCamp)return [];let L=LAIR_LAYOUT.get(this);if(L)return L;L=[];
     const [x0,y0,w,h]=campFoot('hideout'),busy=new Set(),key=(x,y)=>x+','+y,LV=WM.lv||(WM.lv=reliefOf(WM));
     for(let j=y0-1;j<=y0+h;j++)for(let i=x0-1;i<=x0+w;i++)busy.add(key(this.tx+i,this.ty+j));
     const free=(tx,ty)=>{for(let j=-1;j<=0;j++)for(let i=0;i<=1;i++){const x=tx+i,y=ty+j;if(busy.has(key(x,y))||tAt(x,y)!==T_OPEN||occAt(x,y))return false}return true};
     const cand=[];for(let dy=-SP.r[1];dy<=SP.r[1];dy++)for(let dx=-SP.r[1];dx<=SP.r[1];dx++){const d=Math.hypot(dx,dy);if(d>=SP.r[0]&&d<=SP.r[1])cand.push({tx:this.tx+dx,ty:this.ty+dy,d})}
-    SP.places.forEach((k,n)=>{let best=null,bs=-1e9;for(const c of cand){if(!free(c.tx,c.ty))continue;const lv=LV[Math.max(0,Math.min(MH-1,c.ty))*MW+Math.max(0,Math.min(MW-1,c.tx))],
-        sc=(k==='look'?lv*4-c.d*.2:-Math.abs(c.d-SP.r[0]-1))+hash(c.tx,c.ty,this.seed*7+n)*1.5;if(sc>bs){bs=sc;best=c}}
+    const strong=this.tier>0;SP.places.concat(strong?SP.strong.places:[]).forEach((k,n)=>{let best=null,bs=-1e9;for(const c of cand){if(!free(c.tx,c.ty))continue;const lv=LV[Math.max(0,Math.min(MH-1,c.ty))*MW+Math.max(0,Math.min(MW-1,c.tx))],
+        sc=(k.startsWith('look')?lv*4-c.d*.2:-Math.abs(c.d-SP.r[0]-1))+hash(c.tx,c.ty,this.seed*7+n)*1.5;if(sc>bs){bs=sc;best=c}}
       if(!best)return;L.push({k,tx:best.tx,ty:best.ty,x:(best.tx+1)*TILE,y:(best.ty+.5)*TILE});
       for(let j=-1-SP.gap;j<=SP.gap;j++)for(let i=-SP.gap;i<=1+SP.gap;i++)busy.add(key(best.tx+i,best.ty+j))});
+    // (a stronghold's gate over its stockade's way in)
+    if(strong){const x=this.x+SP.strong.gate[0],y=this.y+SP.strong.gate[1];L.push({k:'gate',tx:Math.floor(x/TILE)-1,ty:Math.floor(y/TILE),x,y})}
     LAIR_LAYOUT.set(this,L);return L}
   // its stockade, then its places (structures.js lairPlaceSprite), each lifted by the land at its own foot
   draw(ents,cam,V){super.draw(ents,cam,V);if(!this.inView(V))return;const s=this,k=siteK(s);

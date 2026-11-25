@@ -33,11 +33,11 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,SL=t.SiteLife,LL=t.LAIR_LIFE;windo
  info('places: '+lay.map(L=>L.map(q=>q.k).join('+')).join(', '));
  ok(open.length&&lay.every(L=>L.length>=3&&L.some(q=>q.k==='look')),'each hideout in the open has its places round it, its lookout among them');
  ok(lairs.every(h=>!h.layout().length),'a lair dug in has none');
- ok(open.every((h,n)=>lay[n].every(q=>{const d=Math.hypot(q.tx-h.tx,q.ty-h.ty);return d>=SP.r[0]&&d<=SP.r[1]&&tiles(q).every(([x,y])=>t.tAt(x,y)===t.T_OPEN)})),'each on open ground '+SP.r.join('-')+' tiles from its stockade');
+ ok(open.every((h,n)=>lay[n].filter(q=>q.k!=='gate').every(q=>{const d=Math.hypot(q.tx-h.tx,q.ty-h.ty);return d>=SP.r[0]&&d<=SP.r[1]&&tiles(q).every(([x,y])=>t.tAt(x,y)===t.T_OPEN)})),'each on open ground '+SP.r.join('-')+' tiles from its stockade');
  ok(lay.every(L=>L.every((q,i)=>L.every((o,j)=>i===j||Math.abs(q.tx-o.tx)>1+SP.gap||Math.abs(q.ty-o.ty)>1+SP.gap))),'none on another');
  const plan=t.WorldArt.ensure();ok(lay.every(L=>L.every(q=>plan.tramples.some(r=>Math.abs(r[0]-q.x)<1&&Math.abs(r[1]-(q.y-8))<1))),'their ground worn bare in the map\'s plan');
  const hh=open[0],watch=SL.ensure(hh).find(p=>p.role==='watch'),lk=hh.layout().find(q=>q.k==='look'),post=SL.post(hh,watch,'watch');
- ok(post&&Math.hypot(post.x-lk.x,post.y-lk.y)<10,'its watch keeps to its lookout');
+ ok(post&&hh.layout().some(q=>(q.k.startsWith('look')||q.k==='gate')&&Math.hypot(post.x-q.x,post.y-q.y)<10),'its watch keeps to its lookout (a stronghold\'s: its lookouts and its gate)');
  // (the lookout: its man sees further; anyone seeing you rouses the camp, none of it asleep; its men taken alone while it sleeps)
  {const h=open.find(h=>{const q=SL.lookOf(h),C=SL.centre(h);return q&&Math.hypot(q.x-C.x,q.y-C.y)>t.SITE_LIFE.shout})||open[0],q=SL.lookOf(h),men=SL.ensure(h),w=men.find(p=>p.role==='watch'),gc=G.clock,se=window.startEncounter,hid=window.hiddenAt;let got=null;
   try{window.hiddenAt=()=>false;w.hp=w.max;G.clock=t.DAY*.3;w.mode='watch';w.x=q.x;w.y=q.y+4;const d=t.SITE_LIFE.sight*1.3,o={x:w.x+d,y:w.y};const far=SL.detects(h,w,o);w.x=o.x-d;w.y=o.y+20;const low=SL.detects(h,w,o);w.x=q.x;w.y=q.y+4;
@@ -52,4 +52,12 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,SL=t.SiteLife,LL=t.LAIR_LIFE;windo
    for(const p of up){p.hp=p.max;p.mode='watch';p.away=false;p.x=q.x;p.y=q.y+4}SL.picket(h,w);const b2=t.bandits.find(b=>b.residentHome===h.i&&b.picket);b2.x=h.x;b2.y=h.y;b2.returnAt=0;SL.returnRaid(b2,1,true);
    ok(SL.roused(h)&&up.every(p=>!p.away&&p.hp>0),'if they get away, they are back at its fire and the camp is roused')}
   finally{window.startEncounter=se;window.hiddenAt=hid;G.clock=gc;if(h.residents)h.residents.alarm=null}}
+ // (a stronghold: a hideout of 14 or more, by its first count or grown to it; a second lookout, a gate over its way in, its watch at all three)
+ {const SS=SP.strong,strong=open.filter(h=>h.tier),dens=open.filter(h=>!h.tier);info('strongholds '+strong.length+', dens '+dens.length);
+  ok(open.every(h=>!!h.tier===h.lifeBase()>=SS.at),'a hideout that starts with '+SS.at+' or more is a stronghold ('+strong.length+' of '+open.length+')');
+  ok(strong.every(h=>h.layout().some(q=>q.k==='look2')&&h.layout().some(q=>q.k==='gate')&&h.T.n===SS.n)&&dens.every(h=>!h.layout().some(q=>q.k==='look2'||q.k==='gate')),'a stronghold has a second lookout and a gate; a den neither');
+  const d=dens.find(h=>h.layout().length>=4);if(d){const gd=G.day,b=SL.ensure(d)&&d.residents;let n=0;try{G.day=400;while(!d.tier&&n++<20){G.day++;SL.grow(d)}}finally{G.day=gd}
+   const L=d.layout(),gate=L.find(q=>q.k==='gate');ok(d.built===1&&d.tier===1&&gate&&L.some(q=>q.k==='look2')&&b.people.filter(p=>p.hp>0).length>=SS.at,'a den grown to '+SS.at+' becomes a stronghold, its places laid again ('+L.map(q=>q.k).join('+')+')');
+   const posts=new Set(SL.ensure(d).map(p=>{const q=SL.post(d,p,'watch');return Math.round(q.x)+','+Math.round(q.y)}));ok(posts.size>=3,'its watch keeps its lookouts and its gate ('+posts.size+' posts)');
+   ok(t.WorldArt.ensure().tramples.some(r=>Math.abs(r[0]-gate.x)<1&&Math.abs(r[1]-(gate.y-8))<1),'the ground under its new places worn in the map\'s plan again')}}
  ok(!ERR.length,'no runtime errors')});

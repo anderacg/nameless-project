@@ -81,7 +81,7 @@
       crane:[32,0],ruins:[32,0],cave:[32,0],
       tavern:[64,0],church:[64,0],longhouse:[64,4],keep:[64,0],gatehouse:[64,0],village:[64,0],citadel:[64,0]},
     clusters:{row:64,yard:64,farmstead:64,smithy:64,inn:64,chapel:64,market:64,mill:64,lumber:64,mine:64,quarry:64,fishery:64,pasture:64,brewery:64,granary:64,workshop:64,
-      quarter:128,camp:32,travelers:32,hideout:64,townhall:64,fort:64,banditlook:32,banditpen:32,banditcage:32,banditstash:32}};
+      quarter:128,camp:32,travelers:32,hideout:64,townhall:64,fort:64,banditlook:32,banditpen:32,banditcage:32,banditstash:32,banditgate:32}};
   /* the shared proportions (W4): a storey's walls (px: the door's 9 and its lintel's 3, then 7 a storey up), a roof's rise by its
      span (about 45°: never taller than the walls but on a church or in the frost); plans about square, their depth at least three
      quarters of their width (the side views as wide as the front), but for the long and thin (PX.MODEL_LONG: the side its gable) */
@@ -585,6 +585,10 @@
       for(let u=-7;u<7;u+=2)for(const v of [-5,4])Q.parts.push({k:'box',name:'b'+u+v,u:[u,u+1],v:[v,v+1],z:[1,10],wall:'log',top:true,topMat:'logend'});
       for(let v=-3;v<4;v+=2)for(const u of [-7,6])Q.parts.push({k:'box',name:'c'+u+v,u:[u,u+1],v:[v,v+1],z:[1,10],wall:'log',top:true,topMat:'logend'});
       Q.parts.push({k:'box',name:'rf',u:[-8,8],v:[-6,6],z:[10,11],wall:'plank',top:true});P(C,'logs',[9,9])}},
+    // a stronghold's gate over its stockade's way in: two log posts, a beam across, a plank platform on it, a rail of stakes, its flag
+    banditgate:{role:'camp',flag:true,make:C=>{const Q=C.Q;for(const a of [-9,7])Q.parts.push({k:'box',name:'g'+a,u:[a,a+2],v:[-1,1],z:[0,16],wall:'log',top:true,topMat:'logend'});
+      Q.parts.push({k:'box',name:'gb',u:[-9,9],v:[-1,1],z:[13,15],wall:'log',top:true,topMat:'logend'});Q.parts.push({k:'box',name:'gp',u:[-9,9],v:[-3,3],z:[15,16],wall:'plank',top:true});
+      for(const [n,u,v] of [['gN',[-9,9],[-3,-2]],['gS',[-9,9],[2,3]]])Q.parts.push({k:'box',name:n,u,v,z:[16,18],wall:'stakes',top:true,topMat:'log'})}},
     banditstash:{role:'camp',make:C=>{piece(C,'wagon',[-4,-3],0);piece(C,'crates',[9,6],0);piece(C,'barrels',[-11,8],0);P(C,'sacks',[4,10])}}
   };
   // (a hideout's tents by their number: three as it always stood; more, a second row between them and the fire, six four along the back)
