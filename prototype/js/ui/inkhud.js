@@ -108,7 +108,7 @@ class InkHud{
     // (one quest shown, the tracked one, and how many more on its tag: ink-hud.css)
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}
     const days=n=>(n>=10?Math.floor(n):Math.floor(n*10)/10)+'d';
-    setHtml(this.purse,'<span title="Gold">'+icon('gold',14)+'<b>'+P.gold.toLocaleString('en')+'</b></span><span class="'+(S.foodDays<1?'low':'')+'" title="Food">'+icon('food',14)+'<b>'+days(S.foodDays)+'</b></span><span class="'+(S.drinkDays<1?'low':'')+'" title="Drink">'+icon('mug',14)+'<b>'+days(S.drinkDays)+'</b></span>');
+    setHtml(this.purse,'<span title="Gold">'+icon('gold',14)+'<b>'+P.gold.toLocaleString('en')+'</b></span><span class="'+(S.foodDays<1?'low':'')+'" title="Food">'+icon('food',14)+'<b>'+days(S.foodDays)+'</b></span><span class="'+(S.drinkDays<1?'low':'')+'" title="Drink">'+icon('water',14)+'<b>'+days(S.drinkDays)+'</b></span>');
     // (the day in one short line under the minimap, the owner: "Remove that bar and show only compact below text": its day, its season,
     //  its weather; its time is the dial's)
     const D=dayParts(),line=[D.day,D.season,D.weather].filter(Boolean).join(' · ');

@@ -343,7 +343,7 @@ function trainerRows(trs){const gs=partyRoster(P).groups,where=tr=>tr.wander?', 
     '<div class="rec-step">'+(mine.length?mine.map(g=>{const why=lessonWhy(tr,g),p=lessonPrice(tr,g);return '<button class="btn sm" type="button" data-act="trn-lesson" data-arg="'+htmlText(tr.id+'|'+g.id)+'"'+(why?' disabled title="'+htmlText(why)+'"':'')+'>'+groupBadge(g,12)+' Train '+htmlText(armyGroupLabel(g.id))+(p?', '+p+'g':'')+'</button>'}).join(''):'<small class="muted">None of your groups</small>')+'</div></div>'}).join('')+'</div>'}
 class Barracks extends Place{
   constructor(id){
-    super(id,{n:'Barracks',ico:'shield',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
+    super(id,{n:'Barracks',ico:'barracks',verbs:{'rec-tab':'tab',hire:'hire','rec-upgroup':'upgroup',
       ...Object.fromEntries(['amt','pick','unit','refill','refillall','ok','no','info','info-back'].map(v=>['rec-'+v,'desk']))}});
   }
   shut(t){
@@ -390,7 +390,7 @@ definePlace('recruit',Barracks);
    verbs are Choices: greyed, and done, by the same need) */
 class Hall extends Place{
   constructor(id){
-    super(id,{n:'Lord’s hall',short:'Hall',ico:'crown',verbs:{'hall-talk':'talk',contract:'sign','end-contract':'end'}});
+    super(id,{n:'Lord’s hall',short:'Hall',ico:'hall',verbs:{'hall-talk':'talk',contract:'sign','end-contract':'end'}});
     this.signing=new Choice({label:'Sign',need:t=>P.fac?'You serve a realm already':'',run:t=>{P.fac=t.owner;Timed.of(P,'hostile').clear(t.owner);log('You sign on with the '+FACS[t.owner].n+'. Their enemies are now yours.','gold')}});
     this.ending=new Choice({label:'End contract',need:t=>P.fac===t.owner?'':'You do not serve them',run:t=>{P.fac=null;log('You end your contract with the '+FACS[t.owner].n+'.')}});
   }
@@ -424,12 +424,12 @@ const hallBody=t=>PLACES.hall.body(t);
 
 /* the notice board: your quests to report here (its dot on the rail), and the work it offers (quests.js jobsBody; its q-
    actions: questAct). A plain entry, as a new place can be */
-definePlace('jobs',{n:'Notice board',short:'Notices',ico:'scroll',dot:t=>questHere(t),body:t=>jobsBody(t)});
+definePlace('jobs',{n:'Notice board',short:'Notices',ico:'noticeboard',dot:t=>questHere(t),body:t=>jobsBody(t)});
 
 /* the lists: one bout against the town champion (its Enter a Choice: greyed, and done, while you have the fee) */
 class Lists extends Place{
   constructor(id){
-    super(id,{n:'The lists',short:'Lists',ico:'renown',verbs:{tourney:'enter'}});
+    super(id,{n:'The lists',short:'Lists',ico:'tourney',verbs:{tourney:'enter'}});
     this.entry=new Choice({label:'Enter 10g',need:t=>P.gold<10?'Not enough gold':'',run:t=>{P.gold-=10;updateHUD(true);startBattle({enemies:['chief'],tournament:true})}});
   }
   at(t){
@@ -453,7 +453,7 @@ const tourneyBody=t=>PLACES.tourney.body(t);
    st- actions: its own prefix, onAct) */
 class Storehouse extends Place{
   constructor(id){
-    super(id,{n:'Storehouse',short:'Stores',ico:'crate'});
+    super(id,{n:'Storehouse',short:'Stores',ico:'storehouse'});
   }
   body(t){
     ensureEcon(t);const own=t.owner==='player',cap=Math.round(storeCap(t)),gs=Object.keys(GOODS).filter(g=>(t.stock[g]||0)>=1||own&&goodN(g)>0);
@@ -482,7 +482,7 @@ onAct('st-',storesAct);
 definePlace('garrison',{n:'Walls & garrison',short:'Walls',ico:'tower',at:t=>t.T.wallMax>0,body:t=>garrisonBody(t)});
 /* the prison, at every holding (world/prisons.js Prisons, doc/PRISONS_DESIGN.md §5): who is held there, and what you can do for
    them (its verbs pz-); yours or your realm's, your own prisoners and the captives you lock up. A plain entry */
-definePlace('prison',{n:'Prison',ico:'prisoners',at:t=>!!t.owner,dot:t=>Prisons.dot(t),body:t=>Prisons.body(t),handles:a=>a.startsWith('pz-'),act:(a,arg,t)=>Prisons.act(a,arg,t)});
+definePlace('prison',{n:'Prison',ico:'prison',at:t=>!!t.owner,dot:t=>Prisons.dot(t),body:t=>Prisons.body(t),handles:a=>a.startsWith('pz-'),act:(a,arg,t)=>Prisons.act(a,arg,t)});
 
 /* the steward's office, in your own fief: its people, taxes, stores, land and income (siege.js fiefBody), or one of its
    buildings (G.town.bld: townui.js bldBody). Every fief- order (the garrison's, the buildings', the economy's) is its own

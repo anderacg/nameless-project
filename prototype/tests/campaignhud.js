@@ -1,8 +1,8 @@
 'use strict';
-// Live campaign chrome, its control wiring and shared minimap coordinates.
+// Forged campaign chrome (Ink is covered by inklook), its control wiring and shared minimap coordinates.
 // The stopped test loop needs the title layer synchronized explicitly.
 Kit.suite(({ok})=>{
- const t=T;window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);Kit.clear();Kit.world();t.G.paused=true;const home=Kit.goHome('Ashford');t.P.x=home.x+40;t.P.y=home.y+30;t.updateHUD(true);t.frame();t.MainMenu.frame(performance.now());
+ const t=T;window.requestAnimationFrame=()=>0;Kit.begin('soldier',23);t.prefSet('inklook',false);Kit.clear();Kit.world();t.G.paused=true;const home=Kit.goHome('Ashford');t.P.x=home.x+40;t.P.y=home.y+30;t.updateHUD(true);t.frame();t.MainMenu.frame(performance.now());
  const hud=window.campaignHud,screen=document.getElementById('screen'),rect=e=>e.getBoundingClientRect(),visible=e=>!!e.getClientRects().length&&getComputedStyle(e).display!=='none';
  ok(!t.HOLD_PLAQUE.on,'holding banners are hidden by default while their artwork remains available');
  ok(hud&&hud.desktop&&visible(hud.resources),'desktop campaign uses the live resource rail');
@@ -15,7 +15,7 @@ Kit.suite(({ok})=>{
  const regionRect=rect(hud.regionCard),screenRect=rect(screen);ok(Math.abs(regionRect.left+regionRect.width/2-screenRect.left-screenRect.width/2)<1&&getComputedStyle(hud.regionCard).clipPath.startsWith('polygon')&&hud.regionCard.parentNode.classList.contains('campaign-rail')&&regionRect.top<rect(hud.regionCard.parentNode).top&&regionRect.height>rect(hud.regionCard.parentNode).height&&getComputedStyle(hud.regionCard.querySelector('.campaign-region-frame')).borderImageSource===getComputedStyle(hud.company).borderImageSource,'shared-art framed region section is centered and raised above the top bar');
  ok(document.querySelectorAll('.dockrow:not(.sys) .campaign-command-art').length===6,'illustrated command icons survive input initialization');
  t.P.gold=437;t.updateHUD(true);ok(hud.resources.querySelector('b').textContent==='437','gold is read from the current game, not the concept illustration');
- hud.update({...t.supplyNow(),foodDays:3,drinkDays:.5},t.partySize());ok(hud.resources.querySelector('[data-supply="mug"].warn .campaign-resource-alert')?.textContent==='LOW'&&!document.querySelector('.campaign-warning'),'low drink is highlighted directly in the resource bar without a floating warning');
+ hud.update({...t.supplyNow(),foodDays:3,drinkDays:.5},t.partySize());ok(hud.resources.querySelector('[data-supply="water"].warn .campaign-resource-alert')?.textContent==='LOW'&&!document.querySelector('.campaign-warning'),'low drink is highlighted directly in the resource bar without a floating warning');
  hud.update({...t.supplyNow(),foodDays:3,drinkDays:3},t.partySize());ok(!hud.resources.querySelector('.campaign-resource-alert'),'the supply warning clears when provisions are sufficient');t.updateHUD(true);
  const r=t.worldMiniRect(),slot=rect(hud.slot),canvas=rect(document.getElementById('game')),k=canvas.width/t.VW;
  ok(Math.abs(canvas.left+r.x*k-slot.left)<k+1&&Math.abs(canvas.top+r.y*k-slot.top)<k+1,'the canvas minimap aligns with its framed console slot');

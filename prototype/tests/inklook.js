@@ -31,6 +31,7 @@ Kit.suite(({ok,info})=>{
  // (the purse, the round minimap, the round buttons)
  {const m=window.campaignHud.mobileMini,mr=rect(m),pu=ink.purse;
   ok(shown(m)&&Math.abs(mr.width-mr.height)<1&&getComputedStyle(m).borderTopLeftRadius==='50%','the minimap round ('+Math.round(mr.width)+' px)');
+  ok(pu.querySelector('[data-ui-icon="water"]')&&!pu.querySelector('[data-ui-icon="mug"]'),'phone drink needs use the water drop instead of a waterskin or beer mug');
   ok(shown(pu)&&pu.textContent.includes(P.gold.toLocaleString('en'))&&rect(pu).right<=mr.left+1,'your gold, food and drink beside it');
   const bs=['pause','speedToggle','mapToggle','charBtn','menuBtn'].map(id=>document.getElementById(id)),round=bs.filter(b=>{const r=rect(b);return Math.abs(r.width-r.height)<1&&getComputedStyle(b).borderTopLeftRadius==='50%'});
   ok(round.length===bs.length,'the buttons are round ('+round.length+' of '+bs.length+')');

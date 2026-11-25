@@ -471,7 +471,7 @@ function mapRingItems(wx,wy,o,cx,cy){
     followItem(o),
     ground&&{icon:'banner',label:'Travel here',run:()=>worldMove(wx,wy)},
     (ground||P.byRoad)&&{icon:'map',label:'By road',run:()=>roadGo(wx,wy),active:!!P.byRoad},
-    canFill(L)&&{icon:'mug',label:SKINS.on||skinsWant()<=0||skinsEmpty()?'Fill waterskins':SKINS_NONE,active:!!SKINS.on,run:()=>fillSkins()},// (none to fill: said so)
+    canFill(L)&&{icon:'water',label:SKINS.on||skinsWant()<=0||skinsEmpty()?'Fill waterskins':SKINS_NONE,active:!!SKINS.on,run:()=>fillSkins()},// (none to fill: said so)
     goodN('liquor')>0&&{icon:'barrel',label:BAND.liquor?'Water first':'Drink liquor',active:!!BAND.liquor,run:()=>{BAND.liquor=!BAND.liquor;toast(BAND.liquor?'Your band drinks its liquor first: a hard march.':'Your band drinks water first again.');updateHUD(true)}},
     look&&{icon:'eye',label:'Look',run:()=>holdCard(look,cx,cy)}].filter(Boolean)}
 

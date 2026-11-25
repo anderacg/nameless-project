@@ -2272,3 +2272,6 @@ Validation: monsterregions 25 and mobilebattlehud 39 checks passed. World portra
 
 Monster and wildlife icons (2026-11-24): monster world markers and battle flags use a local transparent horned beast-head illustration; hunted wildlife keeps the fur/pelt illustration. Unit cards and army rows share the same distinction. Only presentation changes; flag bounds and picking are unchanged.
 Validation: uiicons, 22 checks passed, including semantic routing, local image loading, transparency, shared world/battle artwork and retained marker bounds. Inspected both icons at 112, 24, 18 and 9 pixels. No fingerprints re-recorded.
+
+Building and supply icons (2026-11-25): a local transparent SVG sheet adds a foaming tavern tankard, water drop, barracks, hall, notice board, storehouse, prison and tournament crest. Town navigation uses the dedicated building artwork. Water needs in the ink HUD, campaign resources, legacy party panel, army condition and refill action use the drop; inventory waterskins keep their leather-container artwork. Tavern and social-drink actions use the beer mug.
+Validation: uiicons 24, inklook 26 and campaignhud 37 checks passed. The campaignhud fixture explicitly selects Forged; inklook exercises the default Ink theme. All new artwork loads locally, retains transparent corners and preserves icon sizing. No fingerprints were re-recorded.
