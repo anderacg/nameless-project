@@ -9,7 +9,7 @@ const DEV_ECON_NEXT={full:'light',light:'off',off:'full'};
 const DEV_TOOLS=[
   ['Cheats',[[()=>'noNeeds '+(CHEAT.noNeeds?'off':'on'),'No needs',()=>CHEAT.noNeeds,'No hunger, thirst, stamina drain, wages or harsh-land tolls'],[()=>'speed '+(CHEAT.speed>1?1:3),'Travel ×3',()=>CHEAT.speed>1],
     [()=>'fog '+(CHEAT.noFog?'on':'off'),'No fog',()=>CHEAT.noFog,'Draw the whole map as it is'],['devmode','Dev marks',()=>DEV.on,'Counts over armies, herds and fights'],['perf','Timings',()=>FRAMEPROF.on,'Frame timings at the top'],
-    [()=>'separate '+(prefGet('copyfield')?'off':'on'),'Separate field',()=>prefGet('copyfield'),'Fights met on the map fought on a field of their own, copied from the map there'],
+    [()=>'separate '+(prefGet('separate')?'off':'on'),'Ring only',()=>prefGet('separate'),'A fight on the map drawn as its ring\'s picture alone, the world round it dark'],
     [()=>'stillground '+(FIGHT_SNAP.on?'off':'on'),'Still ground',()=>FIGHT_SNAP.on,'A fight on the map drawn over a kept copy of its ground (compare with Timings)']]],
   ['Give',[['money 1000','+1000 gold'],['supplies','Food & water'],['heal','Heal all',null,'Health, stamina, the wounded and the sick'],['level','Level up'],['troops','+10 troops']]],
   ['World',[['reveal','Reveal map'],['day','Next day'],['bandits','Bandits near'],['battle','Battle test'],
@@ -72,7 +72,7 @@ const DevConsole={
     if(cmd==='help')return this.help;
     if(cmd==='money'){if(args.length!==1)throw Error('Usage: money 1000 (adds gold; negatives subtract).');const n=this.number(arg),next=P.gold+n;if(!Number.isSafeInteger(n)||!Number.isSafeInteger(next)||next<0)throw Error('Gold must remain a nonnegative safe integer.');P.gold=next;updateHUD(true);return 'Gold: '+P.gold}
     if(cmd==='perf')return FrameProf.toggle(args[0]==null?undefined:args[0]==='on');
-    if(cmd==='separate'){prefSet('copyfield',args[0]==null?!prefGet('copyfield'):args[0]==='on');return prefGet('copyfield')?'Separate field on: a fight met on the map is fought on a field of its own, copied from the map there.':'Separate field off: fights met on the map are fought on the map.'}// (battle/copyfield.js; the owner, 2026-11-26)
+    if(cmd==='separate'){prefSet('separate',args[0]==null?!prefGet('separate'):args[0]==='on');FightSnap.clear();return prefGet('separate')?'Ring only on: a fight on the map is drawn as its ring\'s picture alone.':'Ring only off: a fight on the map is drawn over the whole map.'}// (gfx/render.js RingCut; the owner, 2026-11-26)
     if(cmd==='stillground'){FIGHT_SNAP.on=args[0]==null?!FIGHT_SNAP.on:args[0]==='on';FightSnap.clear();return FIGHT_SNAP.on?'Still ground on: a fight on the map drawn over a kept copy of its ground.':'Still ground off: the whole map drawn every frame in a fight.'}// (render.js FIGHT_SNAP; the owner, 2026-11-26)
     if(cmd==='errors')return LOOP_SEEN.length?LOOP_SEEN.map(x=>'day '+x.day+' '+x.mode+': '+x.k+(x.w?' ('+x.w+')':'')).join('\n'):'No errors this session.';// (main.js loopError)
     if(cmd==='devmode'){prefSet('dev',args[0]==null?!DEV.on:args[0]==='on');return DEV.on?'Dev mode on: counts over armies, herds and fights, the walk badge by you.':'Dev mode off.'}// (ui/ui.js PREFS.dev)// (the frame timings: ui/frameprof.js)

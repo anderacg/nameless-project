@@ -101,8 +101,7 @@ class BattleBystanders{
   }
   finish(){for(const [o,p] of this.entries)if(o.mapKind==='worker')o.moving=p.moving;this.entries.clear();this.navs.clear()}
 }
-/* the world's ground copied into a field's grid (WorldBattleArea#terrain's, a fight on the map; copyfield.js's, a fight on a field of
-   its own): each cell of a W x H field, s field px a world px, its corner at world (x0, y0): its tile's kind (water by its drawn depth,
+/* the world's ground read into a field's grid (WorldBattleArea#terrain's, a fight on the map): each cell of a W x H field, s field px a world px, its corner at world (x0, y0): its tile's kind (water by its drawn depth,
    a ford's shallows wadeable), its height, its climate, a road, the steps of the map's high ground as walls, the buildings' footprints */
 function worldGrid(x0,y0,W,H,s,env){
   const cs=TERRAIN.cs,C=Math.ceil(W/cs),R=Math.ceil(H/cs),N=C*R,T=new BattleTerrain({cs,C,R,kind:new Uint8Array(N),lvl:new Uint8Array(N),up:new Int8Array(N).fill(-1)});

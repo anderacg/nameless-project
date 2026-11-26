@@ -224,6 +224,19 @@ const FightSnap={key:'',at:0,q:null,
   fresh(key,now){return this.live()&&!!this.q&&this.key===key&&now-this.at<FIGHT_SNAP.every*1000},
   keep(key,now,q){if(!this.live()||!WorldArt.ready())return this.clear();this.key=key;this.at=now;this.q=q},
   clear(){this.key='';this.q=null}};
+/* a fight on the map drawn as a cut of the map (the owner, 2026-11-26: "the separated should remain the same map detail just a cut
+   version in the battle ring ... keep all element the same and draw only ring's picture"): while a fight is fought on the map, the
+   map's picture inside its ring only, every element as the map draws it (its ground, woods, water and buildings kept still:
+   FightSnap), whoever moves inside it, its men and its fallen; whoever moves outside it not drawn, nor the fog over the land, and
+   the dark past its edge (pad px past the ring, soft over feather px, in col). The world runs on round it as ever (armies riding
+   in: OPEN_FIGHT, worldbattle.js reinforce). on: PREFS.separate (the developer console's Ring only) */
+const RING_CUT={pad:4,feather:12,col:[12,14,19]};
+const RingCut={
+  on(){return !!B?.world&&!!prefGet('separate')},
+  inside(x,y){const a=B.world;return Math.hypot(x-a.x,y-a.y)<=a.r+RING_CUT.pad+RING_CUT.feather},
+  // (the dark past the ring's edge, over all the map drew)
+  draw(cam){const a=B.world,r=a.r+RING_CUT.pad,x=a.x-cam.x,y=a.y-cam.y,[R,G,Bl]=RING_CUT.col,g=ctx.createRadialGradient(x,y,r,x,y,r+RING_CUT.feather);
+    g.addColorStop(0,'rgba('+R+','+G+','+Bl+',0)');g.addColorStop(1,'rgb('+R+','+G+','+Bl+')');ctx.fillStyle=g;ctx.fillRect(-2,-2,VW+4,VH+4)}};
 let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkg(VW+1,VH+1));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
@@ -314,7 +327,7 @@ function drawWorld(){
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
   // (in a fight on the map: what stands kept from a frame before while it still holds, FightSnap)
-  const now=performance.now(),sk=FightSnap.keyOf(cam,low),snap=FightSnap.fresh(sk,now),fight=FightSnap.live();
+  const now=performance.now(),sk=FightSnap.keyOf(cam,low),snap=FightSnap.fresh(sk,now),fight=FightSnap.live(),cut=RingCut.on();
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
   ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);if(!snap)ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();IndividualHealth.anchors.clear();
@@ -366,7 +379,8 @@ function drawWorld(){
   ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort(byLay),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st&&(!cut||RingCut.inside(e.x,e.y))).sort(byLay),cam);// (in a fight drawn as its ring alone, whoever moves outside it not drawn: RingCut)
+  drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   if(!B?.world){drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))}
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
@@ -375,13 +389,13 @@ function drawWorld(){
   drawSafe(drawEnv,cam,V,1);
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  drawSafe(fogMem,low,cam,V);
+  if(!cut)drawSafe(fogMem,low,cam,V);
   // The geographic sky in native screen pixels (not the low-resolution overlay); in world combat, drawn over actors instead. Seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
   if(!B?.world){const target=ctx;try{ctx=scr;drawSafe(()=>WeatherArt.drawMap())}finally{ctx=target}}
   drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
+  if(!CHEAT.noFog&&!cut)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
@@ -407,6 +421,7 @@ function drawWorld(){
   const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
   drawSafe(()=>EnemyDifficulty.world(cam));
+  if(cut)drawSafe(()=>RingCut.draw(cam));// (a fight drawn as its ring alone: the dark past it)
   wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   ctx.restore();
   // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
