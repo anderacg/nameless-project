@@ -11,6 +11,14 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,A=t.ARMY_FLAG;window.requestAnimationFra
  {const d=document.createElement('div');d.innerHTML=t.flagFields({col:A.cols[1][0],dev:A.devs[2][0]});const sw=d.querySelectorAll('[data-act="nm-col"]'),dv=d.querySelectorAll('[data-act="nm-dev"]');
   ok(sw.length===A.cols.length&&dv.length===A.devs.length&&d.querySelectorAll('.on').length===2,'the choices: '+sw.length+' colours, '+dv.length+' devices, the chosen two marked');
   const pics=new Set([...dv].map(b=>b.querySelector('img').getAttribute('src')));ok(pics.size===A.devs.length&&A.devs.every(([k])=>t.BANNER_DEV[k]),'each device drawn, each its own picture')}
+ // (the owner, 2026-11-26: "Make flag emblem aligned and add more color options and more emblems": each device's drawn part centred,
+ // on its slot of a banner and on the hung banner; the choices each a device alone on its field, not a whole flag)
+ {ok(A.cols.length>=20&&A.devs.length>=20&&new Set(A.cols.map(c=>c[0])).size===A.cols.length,'more choices: '+A.cols.length+' colours, '+A.devs.length+' devices');
+  const mid=(T)=>{const xs=[],ys=[];T.forEach((r,y)=>[...r].forEach((c,x)=>{if(c!=='.'){xs.push(x);ys.push(y)}}));return[(Math.min(...xs)+Math.max(...xs))/2,(Math.min(...ys)+Math.max(...ys))/2]};
+  const off=[];for(const [k] of A.devs){const T=t.BANNER_DEV[k],[mx,my]=mid(T),[dx,dy]=t.devFit(T,9,9);if(Math.abs(dx+mx-4)>.5||Math.abs(dy+my-4)>.5)off.push(k)
+   const Q=t.BATTLE_BANNER.hang,[hx,hy]=t.devFit(T,Q.w,Q.h-1);if(Math.abs(hx+mx-(Q.w-1)/2)>.5||Math.abs(hy+my-(Q.h-2)/2)>.5)off.push(k+' hung')}
+  ok(!off.length,'every device centred, in a box and on the hung banner'+(off.length?': off '+off.join(', '):''));
+  const d=document.createElement('div');d.innerHTML=t.flagFields({col:A.def.col,dev:'wolf'});ok(d.querySelector('[data-arg="wolf"] img').getAttribute('src')===t.deviceUrl(A.def.col,'wolf'),'each choice a device alone on its field')}
  // (chosen on the New game page: the game's flag, everywhere yours shows)
  t.NEW_NAMES.col='#3f66c4';t.NEW_NAMES.dev='sun';Kit.begin('soldier',1);P=t.P;
  ok(P.flag&&P.flag.col==='#3f66c4'&&P.flag.dev==='sun'&&t.NEW_NAMES.col===A.def.col,'chosen on the New game page: the game\'s flag (the page\'s choice cleared for the next)');

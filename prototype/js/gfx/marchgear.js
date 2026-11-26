@@ -113,7 +113,7 @@ function battleFlag(u){if(!MARCH_GEAR.flags||!B||u.hero||u.comp||u.leader)return
    flag not cut the emblem off?", then "May need a bit more area at the end?": a banner 13 x 9 (was 10 x 8), its device dev columns
    from the pole, plain cloth after it, its fly waving (fly) and its swallow tail cut (notch) only past it; the back banner 9 x 11
    (was 7 x 10), a field's pixel each side of its device inside the trim */
-const BATTLE_BANNER={cloth:{banner:[13,9],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:8,notch:3,dev:2,back:{h:22,up:3},pole:7,hang:{on:true,w:9,h:11,bar:3}};
+const BATTLE_BANNER={cloth:{banner:[13,9],rag:[10,8],pennant:[11,7],trade:[7,4]},fold:1.2,fly:8,notch:3,dev:2,back:{h:22,up:3},pole:7,hang:{on:true,w:9,h:12,bar:3}};// (h: an odd count of cloth rows above its trim, so a device sits in its middle)
 // (the map's: the battle's with MARCH_GEAR.banner's sizes)
 const MARCH_BANNER={...BATTLE_BANNER,...MARCH_GEAR.banner,id:'m'};
 // (a flag's cloth alone, hung from (ax, ay) by its first column, trailing back to the left: a spear's in battle; Q its sizes, the
@@ -135,8 +135,8 @@ function hangBackFlag(b,f,Q=BATTLE_BANNER){const key='fH'+b.col+b.dev+f+(Q.id||'
   const {h,up}=Q.back,{w:cw,h:ch,bar}=Q.hang,g=pgrid(cw+4,h+4),x=cw+2,W=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),s=(X,Y,col)=>pset(g,X,Y,col);
   for(let y=2;y<=h+1;y++)s(x,y,W[y>h-2?2:1]);s(x,1,G[1]);s(x,0,G[0]);
   for(let X=x-cw-1;X<x;X++)s(X,bar,W[1]);s(x-cw-1,bar,G[1]);
-  const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;
-  const sw=r=>r>=ch-2?-f:0,dev=new Map();if(T){const i0=(cw-T[0].length)>>1,r0=2;T.forEach((row,y)=>[...row].forEach((q,i)=>{if(q!=='.')dev.set((i0+i)+','+(r0+y),q)}))}
+  const {lum,D}=devInk(b.col),T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;
+  const sw=r=>r>=ch-2?-f:0,dev=new Map();if(T){const [i0,r0]=devFit(T,cw,ch-1);T.forEach((row,y)=>[...row].forEach((q,i)=>{if(q!=='.')dev.set((i0+i)+','+(r0+y),q)}))}
   for(let r=0;r<ch;r++)for(let i=0;i<cw;i++){const k=i+','+r,d=dev.get(k),ring=lum<=.6&&!d&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,e])=>dev.has((i+a)+','+(r+e)));
     s(x0+i+sw(r),y0+r,i===0||i===cw-1||r===ch-1?(r===ch-1||i===cw-1?G[2]:G[1]):d?(d==='x'?D[1]:D[0]):ring?R[3]:R[r===0?0:r>=ch-3?2:1])}
   for(let i=0;i<cw;i+=2)s(x0+i+sw(ch),y0+ch,G[1]);

@@ -638,6 +638,15 @@ banner of yours that had the crown: your band (`P.banner()`, so the flag men on 
 (`structures.js` `holdingFlag`), outposts, the realm flag in windows (`window.js` `facFlag`), the loading screen, your tourney arena.
 The hero card in the ink look shows the flag in its ring, your level beside your rank. Battle sides keep their colours (yours blue).
 
+More choices and centred devices (2026-11-26, the owner: "Make flag emblem aligned and add more color options and more emblems").
+22 field colours and 21 devices (the new: shield, heart, arrow, eye, wolf, eagle, lozenge, flame, horseshoe, ring, paw, axe, bars;
+the key redrawn upright). Each choice is now the device alone on a square of the chosen colour (`sprites.js` `deviceTile`,
+`names.js` `deviceUrl`), not a whole small flag. A device is placed by its drawn part's middle, not its 5 x 5 box (`devFit`), on
+every banner (`bannerCloth`, `render.js` `bannerFine`, `marchgear.js` `hangBackFlag`), so a crown or a star sits as centred as a
+tower; the hung battle banner is a row taller (`BATTLE_BANNER.hang.h` 12) so its device has its middle row. The device's ring is
+left off a light field on the close banner too (`bannerFine`), as on the others; `devInk` gives the device's inks by its field. Fingerprint: W6 changed (bc0bd37f: banners on the map with their devices
+centred); W5, W7, W8 and B2 held.
+
 ## Gender and pronouns (2026-11-01)
 
 Every named person is a he or a she (`core/pronouns.js`; the owner: "the people in the world should have gender").

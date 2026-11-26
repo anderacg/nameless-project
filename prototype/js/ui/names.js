@@ -29,11 +29,13 @@ function applyArmyFlag(){const c=armyFlag().col;if(FACS.player.col===c)return;FA
 // (a banner's picture as an image's src, cut to its pixels: structures.js flagSprite; kept by its look)
 const FLAG_URLS=new Map();
 function flagUrl(b){const k=b.k+b.col+b.dev;let u=FLAG_URLS.get(k);if(!u){const s=flagSprite(b,0),q=opaqueBox(s);u=mkc(q[2]-q[0]+1,q[3]-q[1]+1,g=>g.drawImage(s,-q[0],-q[1])).toDataURL();FLAG_URLS.set(k,u)}return u}
-// (the flag's choices: its field's colours, its devices each on that field, the flag as it will fly beside them)
+// (a device alone on its field, large, centred: the choices' pictures (sprites.js deviceTile), kept by its look)
+function deviceUrl(col,dev){const k='d'+col+dev;let u=FLAG_URLS.get(k);if(!u){u=deviceTile(col,dev).toDataURL();FLAG_URLS.set(k,u)}return u}
+// (the flag's choices: its field's colours, its devices each alone on that field, the flag as it will fly beside them)
 function flagFields(d){const A=ARMY_FLAG,on=(a,b)=>' class="'+a+(b?' on':'')+'" aria-pressed="'+b+'"';
   return '<div class="nm-flag" role="group" aria-label="Army flag"><img class="nm-flag-pic" src="'+flagUrl({k:'banner',col:d.col,dev:d.dev})+'" alt="Your army flag"><div class="nm-flag-pick">'+
     '<span class="nm-flag-lab">Army flag</span><span class="nm-swatches" role="group" aria-label="Field colour">'+A.cols.map(([c,n])=>'<button type="button"'+on('nm-swatch',c===d.col)+' data-act="nm-col" data-arg="'+c+'" style="--sw:'+c+'" title="'+n+'" aria-label="'+n+'"></button>').join('')+'</span>'+
-    '<span class="nm-devices" role="group" aria-label="Device">'+A.devs.map(([k,n])=>'<button type="button"'+on('nm-dev',k===d.dev)+' data-act="nm-dev" data-arg="'+k+'" title="'+n+'" aria-label="'+n+'"><img src="'+flagUrl({k:'banner',col:d.col,dev:k})+'" alt=""></button>').join('')+'</span></div></div>'}
+    '<span class="nm-devices" role="group" aria-label="Device">'+A.devs.map(([k,n])=>'<button type="button"'+on('nm-dev',k===d.dev)+' data-act="nm-dev" data-arg="'+k+'" title="'+n+'" aria-label="'+n+'"><img src="'+deviceUrl(d.col,k)+'" alt=""></button>').join('')+'</span></div></div>'}
 // the names typed on the New game page (kept while you go to the New world screen and back; taken, and cleared, as the game
 // starts); nameDraft: those of the page or window open now
 const NEW_NAMES={hero:'',band:'',gender:'m',col:ARMY_FLAG.def.col,dev:ARMY_FLAG.def.dev};

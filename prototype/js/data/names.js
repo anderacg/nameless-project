@@ -6,10 +6,15 @@
 const NAMING={max:24,band:'The Free Company'};
 /* your army's flag (the owner, 2026-11-24: "add army flag customization at the start and use it everywhere for player faction";
    ui/names.js): its field's colour and its device (gfx/sprites.js BANNER_DEV), chosen on the New game page and in the Names window.
-   def: the Free Banner's as it always was (a game that keeps it stores none); cols and devs: the choices, each with its name */
+   def: the Free Banner's as it always was (a game that keeps it stores none); cols and devs: the choices, each with its name (more of both, the owner,
+   2026-11-26: "add more color options and more emblems") */
 const ARMY_FLAG={def:{col:'#f0d060',dev:'crown'},
-  cols:[['#f0d060','Gold'],['#c23b3b','Crimson'],['#3f66c4','Royal blue'],['#3e8c4a','Forest green'],['#7d4fb0','Purple'],['#2f2b2b','Black'],['#ebe4d2','White'],['#d9782d','Orange'],['#2c8c8c','Teal'],['#7a5232','Brown']],
-  devs:[['crown','Crown'],['star','Star'],['sword','Sword'],['tower','Tower'],['sun','Sun'],['moon','Moon'],['key','Key'],['chevron','Chevron']]};
+  cols:[['#f0d060','Gold'],['#c23b3b','Crimson'],['#3f66c4','Royal blue'],['#3e8c4a','Forest green'],['#7d4fb0','Purple'],['#2f2b2b','Black'],['#ebe4d2','White'],['#d9782d','Orange'],['#2c8c8c','Teal'],['#7a5232','Brown'],
+    ['#253a6e','Navy'],['#6aa6dc','Sky blue'],['#4a3b96','Indigo'],['#6b1e30','Wine'],['#d9809e','Rose'],['#a3482a','Rust'],['#b8862b','Amber'],['#d8c08a','Sand'],
+    ['#6f7a2e','Olive'],['#8fbf3e','Lime'],['#a9afb8','Silver'],['#4a5663','Slate']],
+  devs:[['crown','Crown'],['star','Star'],['sword','Sword'],['tower','Tower'],['sun','Sun'],['moon','Moon'],['key','Key'],['chevron','Chevron'],
+    ['shield','Shield'],['heart','Heart'],['arrow','Arrow'],['eye','Eye'],['wolf','Wolf'],['eagle','Eagle'],['lozenge','Lozenge'],['flame','Flame'],
+    ['horseshoe','Horseshoe'],['ring','Ring'],['paw','Paw'],['axe','Axe'],['bars','Bars']]};
 const BAND_FORMS=['the adj noun','the adj noun','place noun','place adj noun'];
 const BAND_WORDS={
   adj:['Grey','Black','Red','Iron','Free','Silver','Golden','Ashen','Wandering','Broken','Lone','Wild','Crimson','Last'],

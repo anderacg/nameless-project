@@ -172,10 +172,10 @@ function bannerFine(b,f,r){f=f?1:0;const key='bnf'+b.k+b.col+b.dev+f+r;if(spr[ke
       if(b.k==='banner'&&i<cut&&r1===ch-1&&!(i&1))s(x0+i,top+ch+wave(i),G[(i>>1)%2?1:2])}}
   // (the device in the middle of the field, r px a dot of its pattern, ringed in the deepest shade; a pennant's small)
   let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
-  if(T){const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},
-      i0=(trade?1:pen?1:N.dev!=null?N.dev:(c0-T[0].length)>>1)*r,j0=(trade?0:pen?Math.min(2,h0-T.length):(h0-T.length)>>1)*r,dev=new Map();
+  if(T){const {lum,D}=devInk(b.col),C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},F=pen?[0,0]:devFit(T,N.dev!=null?T[0].length:c0,h0),
+      i0=(trade?1:pen?1:(N.dev!=null?N.dev:0)+F[0])*r,j0=(trade?0:pen?Math.min(2,h0-T.length):F[1])*r,dev=new Map();
     T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')for(let v=0;v<r;v++)for(let u=0;u<r;u++)dev.set((i0+x*r+u)+','+(j0+y*r+v),C[c])}));
-    if(!trade)for(const p of dev.keys()){const [i,j]=p.split(',').map(Number);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(j+dj);if(!dev.has(q)&&at.has(q))s(x0+i+di,at.get(q),R[3])}}
+    if(!trade&&lum<=.6)for(const p of dev.keys()){const [i,j]=p.split(',').map(Number);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(j+dj);if(!dev.has(q)&&at.has(q))s(x0+i+di,at.get(q),R[3])}}
     for(const [p,c] of dev){const [i,j]=p.split(',').map(Number);if(at.has(p))s(x0+i,at.get(p),c)}}
   g.edge=true;poutline(g);const c=pcanvas(g);c.px=p0;c.py=foot+1;return spr[key]=c}
 // (a banner planted on a pole, its foot at (x, y) in game px, waving on the clock: bannerFine where the scene has fine px, else the
