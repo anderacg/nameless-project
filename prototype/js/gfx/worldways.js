@@ -29,8 +29,9 @@ function waysOf(P){if(P.ways)return P.ways;
   const curve=(pts,id,big)=>{let p=big?simplify(pts,V.simp*TILE):pts;if(p.length<2)return;
     for(let it=0;it<3;it++){const o=[p[0]];for(let k=0;k+1<p.length;k++){const a=p[k],b=p[k+1];o.push(a.map((v,j)=>j===3?a[3]:v*.75+b[j]*.25),a.map((v,j)=>j===3?b[3]:v*.25+b[j]*.75))}o.push(p[p.length-1]);p=o}
     const n=p.length,k0=X.length;let L=0;
+    // (its meanders by the one-lattice noise, wnoise1: the river's course as it always ran, its crossings' bridges laid to it)
     for(let k=0;k<n;k++){if(k)L+=Math.hypot(p[k][0]-p[k-1][0],p[k][1]-p[k-1][1]);const a=p[Math.max(0,k-1)],b=p[Math.min(n-1,k+1)],dx=b[0]-a[0],dy=b[1]-a[1],l=Math.hypot(dx,dy)||1,
-        f=Math.min(1,k/10,(n-1-k)/10),o=(big?((wnoise2(L/V.meanderL,id*3.7,501)-.5)*2*(.2+.8*wnoise2(L/(V.meanderL*3),id*1.9,502))+(wnoise2(L/(V.meanderL*.35),id*2.3,503)-.5)*.9):(wnoise2(L/26,id*3.7,501)-.5)*2)*Math.max(0,Math.min((big?V.meanderBig:V.meander)*WAY_LP,p[k][5]))*f;
+        f=Math.min(1,k/10,(n-1-k)/10),o=(big?((wnoise1(L/V.meanderL,id*3.7,501)-.5)*2*(.2+.8*wnoise1(L/(V.meanderL*3),id*1.9,502))+(wnoise1(L/(V.meanderL*.35),id*2.3,503)-.5)*.9):(wnoise1(L/26,id*3.7,501)-.5)*2)*Math.max(0,Math.min((big?V.meanderBig:V.meander)*WAY_LP,p[k][5]))*f;
       X.push(p[k][0]-dy/l*o);Y.push(p[k][1]+dx/l*o);HW.push(p[k][2]);LL.push(p[k][3]);DP.push(p[k][4])}
     for(let k=k0;k+1<X.length;k++){SP.push(k);SA.push(X[k],Y[k],X[k+1],Y[k+1],HW[k],HW[k+1])}};
   // (a tile's point: its middle, a river two tiles wide the middle of its 2 x 2)

@@ -312,7 +312,14 @@ const SHORE_RGB=Object.fromEntries(Object.entries(SHORE).map(([k,v])=>[k,v.map(r
 const PEB=[150,148,140],MUD={grass:[96,80,52],frost:[150,156,168],desert:[150,120,72],swamp:[62,54,36]},SEA_FOAM={grass:[200,224,244],frost:[232,242,250],desert:[206,228,244],swamp:[122,154,122]};
 // (a smooth noise: along a line, hs at whole steps eased between; over the plane, the same at the lattice's corners)
 const wnoise=(t,s)=>{const i=Math.floor(t),f=t-i,u=f*f*(3-2*f);return hs(i,s,71)*(1-u)+hs(i+1,s,71)*u};
-const wnoise2=(x,y,s)=>{const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=hs(i,j,s),b=hs(i+1,j,s),c=hs(i,j+1,s),d=hs(i+1,j+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
+const wnoise1=(x,y,s)=>{const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),a=hs(i,j,s),b=hs(i+1,j,s),c=hs(i,j+1,s),d=hs(i+1,j+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
+// (the painter's noise, 0 to 1: two value noises, one on a lattice turned WNOISE.turn radians and shifted, their mean spread back to one's
+//  spread (WNOISE.k): one alone cut at a threshold (a road's patches, the snow's drifts, a climate's edge) left its lattice's squares in
+//  the ground (the owner, 2026-11-25: "Fix the snow ground squares"))
+const WNOISE={turn:.62,k:.7071,shift:[17.31,5.13],seed:977},WN_C=Math.cos(WNOISE.turn),WN_S=Math.sin(WNOISE.turn);
+// (the shapes the plan lays (the water's edge, a ford's, a road's width and wander: wpx, fordAt, roadAt) keep wnoise1, so the land
+//  and water lie where they always did and the bridges laid to them still meet the land; the painter's tones take wnoise2)
+const wnoise2=(x,y,s)=>{const a=wnoise1(x,y,s),b=wnoise1(x*WN_C-y*WN_S+WNOISE.shift[0],x*WN_S+y*WN_C+WNOISE.shift[1],s+WNOISE.seed),n=.5+(a+b-1)*WNOISE.k;return n<0?0:n>1?1:n};
 // the plan's part: the water by tile (wk: 0 land, 1 sea or lake, 2 river, 3 ford (and a road's tile on a river that is no bridge:
 // a ford a road was laid over), 4 a bridge's water, 5 a pond's), the roads' segments (segs:
 // [x0, y0, x1, y1, k] px, from their lines (gateLead, straightOn); k 0 a track, 1 a great road, 2-5 a bridge's ramp: segW; segEst:
@@ -449,7 +456,7 @@ function wpxN(n,x,y){const u=((x&15)+.5)/16-.5,v=((y&15)+.5)/16-.5;
   const qa=(.5-u)*(.5-u)/2,qb=.75-u*u,qc=(.5+u)*(.5+u)/2,m01=n[3],m11=n[4],m21=n[5],r0=qa*n[0]+qb*n[1]+qc*n[2],r1=qa*m01+qb*m11+qc*m21,r2=qa*n[6]+qb*n[7]+qc*n[8];
   const fq=(.5-v)*(.5-v)/2*r0+(.75-v*v)*r1+(.5+v)*(.5+v)/2*r2,ix=u<0?-1:1,iy=v<0?-1:1,au=u<0?-u:u,av=v<0?-v:v;
   const fl=(1-av)*((1-au)*m11+au*(ix<0?m01:m21))+av*((1-au)*n[(iy+1)*3+1]+au*n[(iy+1)*3+ix+1]);
-  const f=fq>fl?fq:fl,wb=WNP?GENART.pond[0]:GENART.wob,ws=WNP?GENART.pond[1]:6,nr=wb/16+1e-9;return f>.5+nr?1:f<.5-nr?0:f+(wnoise2(x/ws,y/ws,27)-.5)*wb/8>.5?1:0}
+  const f=fq>fl?fq:fl,wb=WNP?GENART.pond[0]:GENART.wob,ws=WNP?GENART.pond[1]:6,nr=wb/16+1e-9;return f>.5+nr?1:f<.5-nr?0:f+(wnoise1(x/ws,y/ws,27)-.5)*wb/8>.5?1:0}
 // (each pixel's distance to the edge between water and land, W x H of mask M: 1 px steps, 1.414 diagonal; at most 16. The passes
 //  kept to the 16-px blocks by an edge's (R: those with one in them or in a block beside them); a pixel of any other is 17 px or
 //  more from the edge and stays 16)
@@ -530,7 +537,7 @@ const pgr=(c,v,x,y)=>{const s=1+(v-.5)*GENART.pgrain[0]+(hs(x,y,15)-.5)*2*GENART
 const fordAt=(P,f,x,y)=>{const [ax,ay,bx,by]=P.fords[f-1],vx=bx-ax,vy=by-ay,L=vx*vx+vy*vy,ex=x+.5-ax,ey=y+.5-ay,t=Math.max(0,Math.min(1,(ex*vx+ey*vy)/L)),dx=ex-vx*t,dy=ey-vy*t,F=GENART.ford;
   // (the bar's middle wanders off the line along the way (bend px either way), an S across the river (bend2), back on it at each end)
   const sl=Math.sqrt(L),w=(wnoise(t*sl/16,f*7+2)-.5)*2*F.bend*Math.sin(Math.PI*t)+F.bend2*(f&1?1:-1)*Math.sin(2*Math.PI*t),p=(dx*vy-dy*vx)/sl-w,q=(dx*vx+dy*vy)/sl;
-  return Math.max(0,Math.min(1,(F.w*(1-F.width/2+F.width*wnoise(t*sl/5,f*7))+(wnoise2(x/F.rag[0],y/F.rag[0],f+47)-.5)*F.rag[2]+(wnoise2(x/F.rag[1],y/F.rag[1],f+48)-.5)*F.rag[3]-Math.sqrt(p*p+q*q))/F.soft))};
+  return Math.max(0,Math.min(1,(F.w*(1-F.width/2+F.width*wnoise(t*sl/5,f*7))+(wnoise1(x/F.rag[0],y/F.rag[0],f+47)-.5)*F.rag[2]+(wnoise1(x/F.rag[1],y/F.rag[1],f+48)-.5)*F.rag[3]-Math.sqrt(p*p+q*q))/F.soft))};
 // (how much of a ford f's track lies on pixel (x, y), 0-1: along its line from bank to bank and on up each bank GENART.ford.run px
 //  past the end tile's middle, thinning out there; ford.tw px either side of the line, which wanders a px or so, its edge ragged)
 const fordTrack=(P,f,x,y)=>{const [ax,ay,bx,by]=P.fords[f-1],F=GENART.ford,vx=bx-ax,vy=by-ay,L=Math.sqrt(vx*vx+vy*vy),ex=x+.5-ax,ey=y+.5-ay,s=(ex*vx+ey*vy)/L,out=s<0?-s:s>L?s-L:0;
@@ -554,8 +561,8 @@ function laneW(L,x,y){const u=x/TILE-.5,v=y/TILE-.5,i=Math.floor(u),j=Math.floor
 //  wood.wander px either way; its distance from that line into BD[1])
 const BD=[0,0];
 function segBand(S,k,x,y,wf){const a=S[k],b=S[k+1],vx=S[k+2]-a,vy=S[k+3]-b,g=S[k+4],L=Math.sqrt(vx*vx+vy*vy)||1e-9,ex=x+.5-a,ey=y+.5-b,u=(ex*vx+ey*vy)/L,WD=GENART.wood;
-  const ov=u<0?-u:u>L?u-L:0,sd=(ex*vy-ey*vx)/L-(wnoise2(x/WD.sc,y/WD.sc,62)-.5)*2*WD.wander*wf,dl=Math.sqrt(ov*ov+sd*sd);
-  BD[1]=dl;return BD[0]=(g<2?GENART.road[g]*(.88+.24*wnoise2(x/40,y/40,61))*(1-WD.narrow*wf):segW(g,Math.max(0,Math.min(1,u/L))))-dl}
+  const ov=u<0?-u:u>L?u-L:0,sd=(ex*vy-ey*vx)/L-(wnoise1(x/WD.sc,y/WD.sc,62)-.5)*2*WD.wander*wf,dl=Math.sqrt(ov*ov+sd*sd);
+  BD[1]=dl;return BD[0]=(g<2?GENART.road[g]*(.88+.24*wnoise1(x/40,y/40,61))*(1-WD.narrow*wf):segW(g,Math.max(0,Math.min(1,u/L))))-dl}
 // the ways' band at map pixel (x, y), the roads' from all of them (P.ST, P.SI: each tile's segments) and a ford's track's: how far
 // inside the nearest it lies, px (over 0 its surface; -99 none near), as painted (a lane's narrowed and wandering), whatever window
 // is painted: for the land's nature (a wood's lane, a ford's track through a wood, a brook beside a road)

@@ -472,7 +472,8 @@ select.sel{background:var(--shade);color:var(--fg);border:1px solid var(--line);
 .uw-live{animation:uw-live 1.6s ease-in-out infinite}.uw-row small{color:var(--fg-2)}
 @keyframes uw-live{50%{opacity:.45;transform:translateY(-1px)}}
 @media (prefers-reduced-motion:reduce){.uw-live{animation:none}}
-.screen.mobile-world .underway{max-width:40%}.screen.mobile-world .uw-row{min-height:28px;font-size:var(--fs-xs);gap:4px}.screen.mobile-world .uw-row .btn.sm{min-height:28px;min-width:0;padding:1px 7px;font-size:var(--fs-xs)}
+.screen.mobile-world .underway{max-width:40%}.screen.mobile-world .uw-row{min-height:28px;font-size:var(--fs-xs);gap:4px}.screen.mobile-world .uw-row .btn.sm{min-height:28px;min-width:0;padding:1px 5px;font-size:var(--fs-xs)}
+@media (orientation:portrait){.screen.mobile-world .underway{max-width:46%}}
 .screen.mobile-world .qt-row{min-height:0;padding:2px 4px 3px}
 .screen.mobile-world .qt-pop b{margin-bottom:4px}
 /* (a phone: each note one row, its title beside its buttons; the newest two) */

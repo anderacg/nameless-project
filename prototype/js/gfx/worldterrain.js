@@ -104,18 +104,18 @@ function* terrainChunk(rec,P,F,G,KP,X,Y,w,h,HE,x0,y0,ww,r){
   {const ovf=(tx,ty)=>{tx=Math.max(0,Math.min(MW-1,tx));ty=Math.max(0,Math.min(MH-1,ty));return ow(ty*MW+tx)};
     // (the field a cubic B-spline over the tiles, read at a place warped by noise (shore.warp game px at shore.sc): a lake's or a bay's
     //  shore rounded and wandering, never the tiles' straight runs and diamonds (the owner: "Recheck if there's any weird squared
-    //  look"); bias keeps every water tile's middle water)
+    //  look"); bias keeps every water tile's middle water; by wnoise1, the shapes' noise: the shores where the bridges were laid to them)
     const SH=T.shore;
     // (a px with no open water's tile within the warp's reach and the spline's four tiles is land for sure: skipped before its noise
     //  is read, the same px as before; WN: those tiles counted, a prefix sum over the tiles the window reaches)
     const wt0x=Math.floor((ex0-SH.warp-8)/TS)-1,wt0y=Math.floor((ey0-SH.warp-8)/TS)-1,wtw=Math.floor((ex0+EW+SH.warp-8)/TS)+3-wt0x,wth=Math.floor((ey0+EH+SH.warp-8)/TS)+3-wt0y,WN=new Int32Array((wtw+1)*(wth+1));
     for(let b=0;b<wth;b++)for(let a=0;a<wtw;a++)WN[(b+1)*(wtw+1)+a+1]=(ovf(wt0x+a,wt0y+b)?1:0)+WN[b*(wtw+1)+a+1]+WN[(b+1)*(wtw+1)+a]-WN[b*(wtw+1)+a];
     const wsum=(x0,y0,x1,y1)=>{const s=wtw+1;x0-=wt0x;y0-=wt0y;x1+=1-wt0x;y1+=1-wt0y;return WN[y1*s+x1]-WN[y0*s+x1]-WN[y1*s+x0]+WN[y0*s+x0]};
-    for(let j=0;j<EH;j++){const gy=ey0+j,wy0=Math.floor((gy-SH.warp-8)/TS)-1,wy1=Math.floor((gy+SH.warp-8)/TS)+2;for(let i=0;i<EW;i++){if(!wsum(Math.floor((ex0+i-SH.warp-8)/TS)-1,wy0,Math.floor((ex0+i+SH.warp-8)/TS)+2,wy1))continue;const gx=ex0+i,wx=gx+(wnoise2(gx/SH.sc,gy/SH.sc,573)-.5)*2*SH.warp,wy=gy+(wnoise2(gx/SH.sc,gy/SH.sc,574)-.5)*2*SH.warp,
+    for(let j=0;j<EH;j++){const gy=ey0+j,wy0=Math.floor((gy-SH.warp-8)/TS)-1,wy1=Math.floor((gy+SH.warp-8)/TS)+2;for(let i=0;i<EW;i++){if(!wsum(Math.floor((ex0+i-SH.warp-8)/TS)-1,wy0,Math.floor((ex0+i+SH.warp-8)/TS)+2,wy1))continue;const gx=ex0+i,wx=gx+(wnoise1(gx/SH.sc,gy/SH.sc,573)-.5)*2*SH.warp,wy=gy+(wnoise1(gx/SH.sc,gy/SH.sc,574)-.5)*2*SH.warp,
         u=(wx-8)/TS,v=(wy-8)/TS,tx=Math.floor(u),ty=Math.floor(v),fu=u-tx,fv=v-ty,a=ovf(tx,ty),b=ovf(tx+1,ty),c=ovf(tx,ty+1),d=ovf(tx+1,ty+1);
         let any=a||b||c||d;if(!any)for(let q=-1;q<=2&&!any;q++)for(let p=-1;p<=2;p++)if(ovf(tx+p,ty+q)){any=true;break}if(!any)continue;
         const bx=labBS(fu),by=labBS(fv);let bs=0;for(let q=0;q<4;q++){let rr=0;for(let p=0;p<4;p++)rr+=bx[p]*(ovf(tx+p-1,ty+q-1)?-1:1);bs+=by[q]*rr}
-        const f=bs-SH.bias+(wnoise2(gx/9,gy/9,571)-.5)*.5+(wnoise2(gx/3.5,gy/3.5,572)-.5)*.2;
+        const f=bs-SH.bias+(wnoise1(gx/9,gy/9,571)-.5)*.5+(wnoise1(gx/3.5,gy/3.5,572)-.5)*.2;
         if(f<0){const q=j*EW+i;WAT[q]=1;let lo=1e9;for(const [x,y,o] of [[tx,ty,a],[tx+1,ty,b],[tx,ty+1,c],[tx+1,ty+1,d]])if(o)lo=Math.min(lo,LV[Math.max(0,Math.min(MH-1,y))*MW+Math.max(0,Math.min(MW-1,x))]);WLV[q]=lo}}
       yield}
     const cham=function*(D,src){for(let q=0;q<EW*EH;q++)D[q]=src(q)?0:1e6;

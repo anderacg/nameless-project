@@ -7,8 +7,9 @@
 const UNDERWAY=[
   {k:'stay',on:()=>stayTown(),ico:'house',line:t=>'<b>'+t.name+'</b>, '+(stayFree(t)?'free':stayCost()+'g/day')+(siegeLordsAt(t).length?', <span class="bad">besieged</span>':''),
    title:t=>'Staying in '+t.name+(stayFree(t)?': free, as long as you like':': '+stayCost()+'g a day; your gold lasts until Day '+stayUntil()),btn:['sy-leave','Leave']},
-  {k:'recruit',on:()=>P.recruit&&townBy(P.recruit.town),ico:'recruit',cls:'uw-live',line:t=>'<b>Recruiting</b>, '+t.name+', +'+P.recruit.n,title:t=>P.recruit.n+' joined so far. Volunteers from '+t.name+' join your groups for free, about '+volunteerRate(t).toFixed(1)+' an hour, while you stay or camp on its lands',btn:['uw-vstop','Stop']},
-  {k:'volunteers',on:()=>!P.recruit&&(P.camp||P.stay)&&volunteerTown(),ico:'recruit',line:t=>'<b>Volunteers</b>, '+t.name,title:t=>volunteerWhy(t)||'Its people would join you for free to refill your groups: about '+volunteerRate(t).toFixed(1)+' an hour',btn:['uw-vgo','Recruit'],off:t=>volunteerWhy(t)},
+  {k:'recruit',on:()=>P.recruit&&townBy(P.recruit.town),ico:'recruit',cls:'uw-live',line:t=>'<b>Recruiting</b>'+(stayTown()===t?'':', '+t.name)+', +'+P.recruit.n,title:t=>P.recruit.n+' joined so far. Volunteers from '+t.name+' join your groups for free, about '+volunteerRate(t).toFixed(1)+' an hour, while you stay or camp on its lands',btn:['uw-vstop','Stop']},
+  {k:'volunteers',on:()=>!P.recruit&&(P.camp||P.stay)&&volunteerTown(),ico:'recruit',line:t=>'<b>Volunteers</b>'+(stayTown()===t?'':', '+t.name),// (the town you stay in named once, on its own line above)
+   title:t=>volunteerWhy(t)||'Its people would join you for free to refill your groups: about '+volunteerRate(t).toFixed(1)+' an hour',btn:['uw-vgo','Recruit'],off:t=>volunteerWhy(t)},
   {k:'camp',on:()=>P.camp&&!P.camp.pack,ico:'fire',line:()=>'<b>In camp</b>'+(P.recruit?' '+icon('recruit',12,'gico uw-live')+' <small>recruiting</small>':''),title:()=>'Your band rests: stamina comes back faster and the wounded mend (Z)',btn:['uw-camp','Break']},
   {k:'pack',on:()=>P.camp?.pack,ico:'fire',cls:'uw-live',line:()=>'<b>Packing</b><small>'+Math.ceil(campPackLeft()*60)+' min left</small>',title:()=>'Packing camp '+Math.round(campPackProgress()*100)+'%. Travel resumes when the camp is packed; Cancel stays here.',btn:['uw-pack','Cancel']},
   {k:'pitch',on:()=>!P.camp&&G.pitch,ico:'fire',line:()=>'<b>Making camp</b>',title:()=>'Your band makes for clear ground to camp',btn:['uw-pitch','Stop']},
@@ -23,7 +24,7 @@ const UW={el:null};
 // edges the frame's (the owner, 2026-11-01: "the ui is a bit off"), never narrower than UW_MIN px; clear of a phone's notch)
 const UW_FRAME=2,UW_MIN=168;
 // (no narrower than UW_MIN, nor wider than 40% of a narrow screen: a phone held upright; the minimap as wide, render.js worldMiniRect)
-const uwMin=()=>Math.min(UW_MIN,Math.floor(innerWidth*.4));
+const uwMin=()=>Math.min(UW_MIN,Math.floor(innerWidth*(innerHeight>innerWidth?.46:.4)));// (upright: a little wider, its lines and buttons in it, the owner 2026-11-25: "button inside that are too big to fit")
 function uwPlace(el,host){if(!WM)return;const r=worldMiniRect(),c=cv.getBoundingClientRect(),h=host.getBoundingClientRect(),k=c.width/VW,f=UW_FRAME;
   if(window.campaignHud?.desktop){el.style.top='auto';el.style.bottom='calc(var(--campaign-console) + 20px)';el.style.right='var(--e-r)';el.style.width='260px';return}el.style.bottom='';
   // (in the ink look, under the day's line under the minimap, never over it: ui/inkhud.js)
