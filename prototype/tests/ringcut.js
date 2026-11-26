@@ -1,8 +1,8 @@
 'use strict';
 // A fight on the map drawn as a cut of the map (the owner, 2026-11-26: "the separated should remain the same map detail just a cut
 // version in the battle ring ... keep all element the same and draw only ring's picture"; gfx/render.js RING_CUT, RingCut;
-// PREFS.separate): on by default; its ring's picture as the map draws it, whoever moves outside it not drawn, nor the fog, dark past
-// its edge; off, the whole map as before; the world runs on round it.
+// PREFS.separate): on by default; its ring's picture as the map draws it, every feature of it ("include all feature in separated
+// battle": the fog of what your men do not see, its fires, flags and fish live), whoever moves outside it not drawn, dark past its edge; off, the whole map as before; the world runs on round it.
 Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame=()=>0;Kit.begin('soldier',51);G.paused=false;G.speed=1;t.GUIDE.on=false;W.seen.fill(1);
  ok(t.prefGet('separate')===true,'on by default');
  G.mode='world';G.modal=false;P.troops={hum_levy:12,hum_bow:6};
@@ -15,6 +15,9 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame
  const ow=window.worldOverdraw;let movers=null;window.worldOverdraw=(list,cam)=>{if(!movers)movers=list;return ow(list,cam)};// (the map's movers: its first call a frame; its men's after it, drawBattle)
  try{t.frame();ok(dark(px(far.x,far.y))&&!dark(px(mid.x,mid.y)),'outside the ring dark, inside it the map ('+px(far.x,far.y)+' / '+px(mid.x,mid.y)+')');
   ok(movers&&movers.every(m=>t.RingCut.inside(m.x,m.y)),'whoever moves outside it not drawn ('+(movers?movers.length:0)+' drawn)');
+  // (every feature of a fight on the map in it: the fog of what your men do not see, its ground live, not kept still)
+  {const f0=window.drawWorldFog,m0=window.fogMem;let fog=0,mem=0;window.drawWorldFog=(...a)=>{fog++;return f0(...a)};window.fogMem=(...a)=>{mem++;return m0(...a)};
+   try{t.frame()}finally{window.drawWorldFog=f0;window.fogMem=m0}ok(fog===1&&mem===1&&!t.FightSnap.q,'every feature in it: the fog of what your men do not see, the ground live (fires, flags, fish)')}
   // (off: the whole map, as before)
   t.prefSet('separate',false);t.FightSnap.clear();t.frame();ok(!t.RingCut.on()&&!dark(px(far.x,far.y)),'switched off: the whole map, as before')}
  finally{window.worldOverdraw=ow;t.prefSet('separate',true)}

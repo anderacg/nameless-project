@@ -216,8 +216,10 @@ let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.widt
    again only when the camera or the screen moves, more land becomes known (fog.js seenTick), or every every s (a fire's flame, a
    flag's wave, the tracks); kept only once the painted land in view is all in (WorldArt.ready); no leaping fish (drawEnv's layer 0)
    while it lasts. Its men, the fallen, everyone who moves, the fog, the night and the weather drawn every frame over it. on false:
-   all of it every frame, as ever */
-const FIGHT_SNAP={on:true,every:2};
+   all of it every frame, as ever: off since the ring's cut kept every feature of a fight on the map (the owner, 2026-11-26: "Can you
+   also include all feature in separated battle?": its fires, flags, water and fish live), and it saved little (its drawing 3.7 ms
+   either way, measured) */
+const FIGHT_SNAP={on:false,every:2};
 const FightSnap={key:'',at:0,q:null,
   live(){return FIGHT_SNAP.on&&!!B?.world},
   keyOf(cam,low){return cam.x+'|'+cam.y+'|'+low.width+'|'+low.height+'|'+low.r+'|'+VS+'|'+VW+'|'+VH+'|'+seenTick},
@@ -226,9 +228,9 @@ const FightSnap={key:'',at:0,q:null,
   clear(){this.key='';this.q=null}};
 /* a fight on the map drawn as a cut of the map (the owner, 2026-11-26: "the separated should remain the same map detail just a cut
    version in the battle ring ... keep all element the same and draw only ring's picture"): while a fight is fought on the map, the
-   map's picture inside its ring only, every element as the map draws it (its ground, woods, water and buildings kept still:
-   FightSnap), whoever moves inside it, its men and its fallen; whoever moves outside it not drawn, nor the fog over the land, and
-   the dark past its edge (pad px past the ring, soft over feather px, in col). The world runs on round it as ever (armies riding
+   map's picture inside its ring only, every element and every feature as the map draws it (its ground, woods, water, buildings, its
+   fires, flags and fish, the fog of what your men do not see: the owner, 2026-11-26, "include all feature in separated battle"),
+   whoever moves inside it, its men and its fallen; whoever moves outside it not drawn, and the dark past its edge (pad px past the ring, soft over feather px, in col). The world runs on round it as ever (armies riding
    in: OPEN_FIGHT, worldbattle.js reinforce). on: PREFS.separate (the developer console's Ring only) */
 const RING_CUT={pad:4,feather:12,col:[12,14,19]};
 const RingCut={
@@ -389,13 +391,13 @@ function drawWorld(){
   drawSafe(drawEnv,cam,V,1);
   const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
   try{
-  if(!cut)drawSafe(fogMem,low,cam,V);
+  drawSafe(fogMem,low,cam,V);
   // The geographic sky in native screen pixels (not the low-resolution overlay); in world combat, drawn over actors instead. Seen
   // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
   if(!B?.world){const target=ctx;try{ctx=scr;drawSafe(()=>WeatherArt.drawMap())}finally{ctx=target}}
   drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
   // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  if(!CHEAT.noFog&&!cut)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
+  if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
   }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   // the tile grid and a building being placed lie over the fog
   if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);

@@ -827,8 +827,9 @@ Transfer callers supply the receiving room: player capacity includes companions 
 **A fight drawn as a cut of the map** (2026-11-26, the owner: "the separated should remain the same map detail just a cut version in the
 battle ring ... keep all element the same and draw only ring's picture"; `gfx/render.js` `RING_CUT`, `RingCut`; doc/RING_CUT_DESIGN.md;
 `tests/ringcut.js`). On by default (`PREFS.separate`; the developer console's Ring only, `separate on|off`). A fight on the map draws
-the map's picture inside its ring only, every element as the map draws it (its ground kept still: `FightSnap`), whoever moves inside it,
-its men and its fallen; whoever moves outside it is not drawn, nor the fog over the land, and past its edge the dark. The world runs on
+the map's picture inside its ring only, every element and feature as the map draws it ("include all feature in separated battle":
+the fog of what your men do not see, fires, flags, water and fish live), whoever moves inside it, its men and its fallen; whoever moves
+outside it is not drawn, and past its edge the dark. The still ground (`FIGHT_SNAP`) is off since: it froze them and saved little. The world runs on
 round it as ever. Tried first: a separate field in the field battle's art copied from the map (taken out: it did not look like the map);
 kept from it, `worldbattle.js` `worldGrid` (the map read into a field's grid, out of `WorldBattleArea#terrain`, behaviour kept).
 
