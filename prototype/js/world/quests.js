@@ -33,7 +33,23 @@ function spotNear(t,lo,hi,ok){
    Its category is the Quest shape's own, 'job' (story/quest.js): what it asks of you before it is given (needs: JOB_NEEDS,
    and its giver's trust: QuestShut), unmet, it is locked; given up (abandon), it costs by its size (penalty: QUEST_ABANDON) and
    its giver gives you no work for a while. */
+/* how hard a job looks as it is offered (the owner, 2026-11-26: "Add quest difficulty indicator when giving in the board etc, so
+   player can decide whether its hard or not"; JobQuest danger): a fight's by its foes' power against your band's now (at: the ratios
+   that part its grades); a job with no fight to it by the land it sends you through (MonsterRegions tier, the map's danger stars); none
+   for one with neither. lv: each grade's word; pips: how many of four are lit */
+const QUEST_DANGER={at:[.6,1,1.6],lv:['Easy','Fair','Hard','Deadly'],land:['a quiet land','rough country','wild, beast-haunted land','the deep wilds']};
+// (an army's power as its troops stand: a lord's, a band's)
+const armyRating=o=>o&&o.troops?rating(Array.isArray(o.troops)?o.troops:Object.keys(o.troops).flatMap(k=>Array(o.troops[k]|0).fill(k)),o.lv||1):0;
 class JobQuest extends Quest{
+  // (the fight it asks: its foes' power as known when it is offered, 0 for none; where it sends you, for the land's danger)
+  foePower(){return 0}
+  dangerAt(){const t=this.to&&townBy(this.to);return t?{x:t.x,y:t.y,name:t.name}:null}
+  // ({i: 0 Easy to 3 Deadly, n, by: 'foe' or 'land', r: their power over yours, tip}; null: nothing to tell)
+  danger(){const D=QUEST_DANGER,pw=this.foePower();
+    if(pw>0){const r=pw/Math.max(1,partyPower());let i=0;while(i<D.at.length&&r>=D.at[i])i++;return{i,n:D.lv[i],by:'foe',r,tip:looks(r)[0]+' (power '+Math.round(pw)+' vs your '+partyPower()+')'}}
+    const p=this.dangerAt();if(!p)return null;const i=Math.max(0,Math.min(3,MonsterRegions.at(p.x,p.y).tier|0));return{i,n:D.lv[i],by:'land',tip:'No fight asked of you; the way'+(p.name?' to '+p.name:'')+' runs through '+D.land[i]}}
+  // (its grade as four pips and its word, its reason in the tooltip: ui/noticeboard.js, questFacts)
+  dangerHtml(){const d=this.danger();if(!d)return '';return '<span class="qdanger d'+d.i+'" title="'+htmlText(d.tip)+'">'+'<i></i>'.repeat(4)+'<b>'+d.n+'</b>'+(d.by==='land'?' <small>(the road)</small>':'')+'</span>'}
   // (who at the holding gave it: world/givers.js, by its key; a lord's none)
   get person(){
     return this.who?Givers.byKey(this.who):null;
@@ -296,6 +312,8 @@ function packFor(t,mon,n,lv,qid){
   return o;
 }
 class BountyQuest extends JobQuest{
+  // (its band as told: about n of them, their chieftain at their head)
+  foePower(){return rating(Array(Math.max(0,(this.n||1)-1)).fill('militia').concat('chief'),2)}
   setup(t){
     const b=Troubles.bands(t).find(x=>!x.qid),lair=Troubles.lairs(t)[0];
     if(b){
@@ -400,6 +418,7 @@ class BountyQuest extends JobQuest{
 // beasts at the folds: a pack whose lair lies by the holding's fields (troubles.js packs), the one marked once taken; none, a pack of
 // the land's (where such beasts live: a spot of its habitat by its fields, else none) has moved in. Done when they are slain
 class BeastQuest extends JobQuest{
+  foePower(){return this.mon&&MONSTERS[this.mon]?monPower({id:this.mon,n:this.n||1,lv:this.lv||1,breed:this.breed}):0}
   setup(t){
     const m=Troubles.packs(t).find(x=>!x.qid&&MONSTERS[x.id]);
     if(m){
@@ -489,6 +508,9 @@ class BeastQuest extends JobQuest{
 // a clearance: the nearest lair or camp, marked on your map, while what comes out of it troubles the holding (troubles.js: its
 // bands, or the talk of robberies and raids; a beast's cave, its packs by the fields); done when it is cleared
 class ClearQuest extends JobQuest{
+  // (what holds it, as it looks from outside (Lair guess); a cave's beasts unknown: the land's danger)
+  foePower(){const s=W.sites.find(x=>x.i===this.site);return s&&!s.cleared&&s.guess?s.guess().pw:0}
+  dangerAt(){return W.sites.find(x=>x.i===this.site)||null}
   // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
   needless(){
     return this.gone();
@@ -794,6 +816,7 @@ class TroopsQuest extends JobQuest{
 }
 // a lord's war work: one of the enemy's lords beaten in the field (by you, or yielding to you)
 class LordkillQuest extends JobQuest{
+  foePower(){return armyRating(W.lords.find(o=>o.name===this.target&&!o.dead))}
   // (its need read off the world: passed before it is taken, no work: story/quest.js accept)
   needless(){
     return this.gone();
@@ -1425,7 +1448,8 @@ const rewardText=r=>'<span class="gold">'+r.gold+' gold</span>'+(r.goods&&GOODS[
 function questFacts(q){
   q=Quest.as(q);
   const f=[['Given by',q.givenBy()]],tm=q.timing(),r=q.reportLine(),late=q.earned()<q.reward.gold;
-  const need=q.id==null?q.needs().filter(n=>!n.met&&n.k!=='shut'):[];
+  const need=q.id==null?q.needs().filter(n=>!n.met&&n.k!=='shut'):[],dg=q.id==null&&q.dangerHtml?q.dangerHtml():'';
+  if(dg)f.push(['Danger',dg]);
   if(need.length)f.push(['Requires','<span class="bad">'+need.map(n=>n.what).join(', ')+'</span>']);
   if(q.taken!=null)f.push(['Taken','Day '+q.taken]);
   if(tm)f.push(['Timing',late?'<span class="bad">'+tm+'</span>':tm]);

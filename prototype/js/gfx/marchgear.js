@@ -137,7 +137,7 @@ function hangBackFlag(b,f,Q=BATTLE_BANNER){const key='fH'+b.col+b.dev+f+(Q.id||'
   for(let X=x-cw-1;X<x;X++)s(X,bar,W[1]);s(x-cw-1,bar,G[1]);
   const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(b.col.slice(i,i+2),16)*[.3,.59,.11][k],0)/255,D=lum>.6?['#4a2226','#2a1418']:['#f6eedc','#d0c4a6'],T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;
   const sw=r=>r>=ch-2?-f:0,dev=new Map();if(T){const i0=(cw-T[0].length)>>1,r0=2;T.forEach((row,y)=>[...row].forEach((q,i)=>{if(q!=='.')dev.set((i0+i)+','+(r0+y),q)}))}
-  for(let r=0;r<ch;r++)for(let i=0;i<cw;i++){const k=i+','+r,d=dev.get(k),ring=!d&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,e])=>dev.has((i+a)+','+(r+e)));
+  for(let r=0;r<ch;r++)for(let i=0;i<cw;i++){const k=i+','+r,d=dev.get(k),ring=lum<=.6&&!d&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,e])=>dev.has((i+a)+','+(r+e)));
     s(x0+i+sw(r),y0+r,i===0||i===cw-1||r===ch-1?(r===ch-1||i===cw-1?G[2]:G[1]):d?(d==='x'?D[1]:D[0]):ring?R[3]:R[r===0?0:r>=ch-3?2:1])}
   for(let i=0;i<cw;i+=2)s(x0+i+sw(ch),y0+ch,G[1]);
   g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}

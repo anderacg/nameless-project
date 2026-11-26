@@ -121,6 +121,7 @@ class Legacy{
       for(const h of Houses.list)if(h.grudge&&h.grudge.gen===Legacy.fallen-1){h.grudge.gen=Legacy.fallen;h.grudge.half=true}
       const fh=fh0&&!fh0.gone?fh0:[townBy(this.plot?.at),townBy(home0)].find(t=>t&&!t.gone);if(fh){home=fh;P.home=fh.name;heroAtGate(fh);G.lastTown=fh;P.rep[fh.name]=Math.max(P.rep[fh.name]||0,K.rep)}
       if(heir&&invAdd('gear',heir,1))log('You carry '+ITEMS[heir].n+', that was '+htmlText(old.who)+'’s.','gold','story')}
+    Remains.kitTake();// (what this one sets out with, the keepsake too: never left with their remains, world/death.js)
     hidePanel();
     log(cap1(old.who)+' is dead. '+[...said,qs?'Those who gave them work hear of it: '+qs+' quest'+(qs>1?'s':'')+' left undone.':''].filter(Boolean).join(' '),'bad','story');
     log((P.name?htmlText(P.name):'You')+' set'+(P.name?'s':'')+' out from '+home.name+', '+(kin?'a young '+RACES[P.race].n.toLowerCase()+' just come of age, '+KIN[kin].n.toLowerCase()+' of '+htmlText(old.who)+'.':(/^[aeiou]/i.test(RACES[P.race].n)?'an ':'a ')+RACES[P.race].n.toLowerCase()+' '+b.n.toLowerCase()+', with nothing of theirs.'),'gold','story');

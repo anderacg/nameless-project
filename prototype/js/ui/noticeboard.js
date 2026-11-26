@@ -24,7 +24,7 @@ const NoticeBoard={
     q=Quest.as(q);
     const lock=q.state==='locked',need=lock?q.needs().filter(n=>!n.met).map(n=>n.what).join('; '):'',why=q.causeLine?q.causeLine():'',tm=q.timing(),r=q.reportLine();
     const g=q.person,seal=!!g&&NOTICE.seal.includes(g.role);
-    return '<div class="nb-note'+(lock?' locked':'')+(seal?' sealed':'')+'"'+this.look(i,q.type)+'><div class="nb-kind">'+(NOTICE.kinds[q.type]||'Notice')+'</div><h4>'+htmlText(cap1(q.title.replace(/^(Bounty|Supply run|Beasts at the folds): /,'')))+'</h4>'+
+    return '<div class="nb-note'+(lock?' locked':'')+(seal?' sealed':'')+'"'+this.look(i,q.type)+'><div class="nb-kind">'+(NOTICE.kinds[q.type]||'Notice')+'</div><h4>'+htmlText(cap1(q.title.replace(/^(Bounty|Supply run|Beasts at the folds): /,'')))+'</h4>'+(q.dangerHtml?'<p class="nb-risk">'+q.dangerHtml()+'</p>':'')+
       (why?'<p class="nb-cause">'+htmlText(why)+'</p>':'')+'<p>'+htmlText(q.text)+'</p>'+
       '<p class="nb-pay"><b>For the deed:</b> '+q.rewardLine()+'</p><p class="nb-small">'+[tm,r&&(r.startsWith('At ')?'Return to '+r.slice(3)+' when it is done':r)].filter(Boolean).map(htmlText).join(', ')+'</p>'+
       (lock?'<p class="nb-stamp">Requires '+htmlText(need)+'</p>':'')+

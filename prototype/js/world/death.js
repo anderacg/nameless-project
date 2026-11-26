@@ -194,12 +194,20 @@ defineKind('step','reunion',{cls:ReunionQuest});
    them in the grave ---------- */
 class Remains extends WorldObject{
   static list=[];
+  /* (what you set out with, P.kit: your gold, what you wore and carried, taken as a new game or a new life begins (core/session.js
+     begin, world/legacy.js reborn); dying, only what you gained past it is left with you: one who fell the day they set out leaves
+     nothing (the owner, 2026-11-26: "subtract with the starting gold ... so you can leave nothing since you just start the game and
+     died"). The experience a grave holds is this life's earned already (P.xpEarned)) */
+  static carried(){const out=[];for(const k in P.gear){const id=P.gear[k];if(id)out.push(['gear',id,1])}for(const s of P.inv)if(s)out.push([s.k,s.id,s.n||1]);return out}
+  static kitTake(){P.kit={gold:P.gold||0,items:this.carried()}}
+  // (items less the kit's, kind by kind, as many as it had of each)
+  static pastKit(items){const K=P.kit;if(!K)return items;const left=new Map();for(const [k,id,n] of K.items||[])left.set(k+':'+id,(left.get(k+':'+id)||0)+n);
+    const out=[];for(const [k,id,n] of items){const key=k+':'+id,m=Math.min(n,left.get(key)||0);if(m)left.set(key,left.get(key)-m);if(n-m>0)out.push([k,id,n-m])}return out}
   // (laid where you fell: all you wore and carried, and the share of your gold; your body as the fight on the map drew you falling
   // (corpse, its picture only while the game is open), else your kind lying (type, v): it rots as every body does (BodyRot, fell))
-  static lay(x,y,who){const items=[],cp=B?.world&&B.corpses?.find(c=>c.hero),at=cp?B.world.world(cp):null,ch=typeof charOf==='function'?charOf(P):null;if(at){x=at.x;y=at.y}
-    for(const k in P.gear){const id=P.gear[k];if(id){items.push(['gear',id,1]);P.gear[k]=null}}
-    P.inv=P.inv.map(s=>{if(s)items.push([s.k,s.id,s.n||1]);return null});
-    const gold=Math.floor((P.gold||0)*DEATH.remains.gold);P.gold=0;
+  static lay(x,y,who){const cp=B?.world&&B.corpses?.find(c=>c.hero),at=cp?B.world.world(cp):null,ch=typeof charOf==='function'?charOf(P):null;if(at){x=at.x;y=at.y}
+    const items=this.pastKit(this.carried());for(const k in P.gear)P.gear[k]=null;P.inv=P.inv.map(()=>null);
+    const gold=Math.floor(Math.max(0,(P.gold||0)-(P.kit?.gold||0))*DEATH.remains.gold);P.gold=0;
     const r=asRemains({rm:1,x:Math.round(x),y:Math.round(y),who,day:G.day,fell:G.day+Clock.frac,type:ch?.key||'militia',v:0,face:cp?.face||1,gold,items});if(cp)r.corpse=cp;this.list.push(r);return r}
   get mapKind(){return 'remains'}
   // (a grave or a crypt is met through its resting place, a site: world/lineage.js RestSite; remains not yet buried, as they are)

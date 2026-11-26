@@ -331,7 +331,9 @@ function bannerCloth(s,x0,top,b,f,sizes,dir,o){const R=PX.ramp(b.col),G=PPAL.gol
   let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
   if(T){const i0=trade?1:pen?1:o.dev!=null?o.dev:(cw-T[0].length)>>1,r0=trade?0:pen?Math.min(2,ch-T.length):(ch-T.length)>>1,C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},dev=new Set();
     T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')dev.add((i0+x)+','+(r0+y))}));
-    if(!trade)for(const p of dev){const [i,r]=p.split(',').map(Number);for(const [di,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(r+dr);if(!dev.has(q)&&at.has(q))s(X(i+di),at.get(q),R[3])}}
+    // (a light device ringed in the cloth's deepest shade, to stand off it; a dark one on a light cloth (yours, the Free Banner's gold)
+    //  stands off it as it is: ringed, it read as a dark blot, the owner, 2026-11-26: "Why yellow flag has weird outline emblem")
+    if(!trade&&lum<=.6)for(const p of dev){const [i,r]=p.split(',').map(Number);for(const [di,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(r+dr);if(!dev.has(q)&&at.has(q))s(X(i+di),at.get(q),R[3])}}
     T.forEach((row,y)=>[...row].forEach((c,x)=>{const q=(i0+x)+','+(r0+y);if(c!=='.'&&at.has(q))s(X(i0+x),at.get(q),C[c])}))}}
 function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])return spr[key];
   const N=BANNER,g=pgrid(N.w,N.h),s=(x,y,c)=>pset(g,x,y,c),Wd=PPAL.wood,G=PPAL.gold,trade=b.k==='trade',top=trade?N.trade:N.top,[cw]=N.cloth[b.k]||N.cloth.banner;

@@ -60,10 +60,17 @@ Kit.suite(({ok})=>{
   // ---- dying (phase 2; DEATH.die on, as the game will once a new person is built): your remains, the man-eater's bounty, the
   // chronicle, the Slain page; your remains taken by a band, won back by beating it, or by whoever comes to them
   {setup();X.die=true;const R=t.Remains;R.list=[];const gid=Object.keys(t.ITEMS).find(k=>t.ITEMS[k].slot==='weapon');t.invAdd('gear',gid,1);P.gear.weapon=P.gear.weapon||gid;
+   P.kit=null;// (no kit taken: all of it left, as ever; what you set out with: below)
    const m=wolves(),h0=t.Clock.hours(),g0=P.gold,n0=Object.values(P.gear).filter(Boolean).length+P.inv.filter(Boolean).length,msgs=G.msgs.length;
    const mm=[X.min,X.max];X.min=X.max=0;try{lose(enc(m))}finally{[X.min,X.max]=mm}const r=R.list[0],S=D.slain;// (no chance to live: the roll lost)
    ok(S&&/do not rise again/.test(panel())&&t.Clock.hours()===h0,'a lost roll: you do not rise again (no day passes, no waking)');
    ok(r&&r.gold===Math.floor(g0*X.remains.gold)&&r.items.length===n0&&!P.gold&&!Object.values(P.gear).some(Boolean)&&!P.inv.some(Boolean)&&Math.hypot(r.x-P.x,r.y-P.y)<1,'your remains where you fell: all you wore and carried ('+r.items.length+' things) and '+r.gold+' of your '+g0+' gold');
+   // (what you set out with is never left (the owner, 2026-11-26: "you just start the game and died", leave nothing): only past it)
+   {const gid2=Object.keys(t.ITEMS).filter(k=>t.ITEMS[k].slot==='weapon')[1]||gid;P.gold=60;P.gear.weapon=gid;P.inv.fill(null);t.invAdd('good','grain',4);R.kitTake();
+    const a=R.lay(P.x,P.y,'test');ok(a.gold===0&&!a.items.length,'fallen as they set out: nothing left with them ('+a.gold+' gold, '+a.items.length+' things)');
+    P.gold=60;P.gear.weapon=gid;t.invAdd('good','grain',4);R.kitTake();P.gold=160;t.invAdd('good','grain',3);t.invAdd('gear',gid2,1);
+    const b=R.lay(P.x,P.y,'test'),grain=b.items.find(x=>x[1]==='grain');ok(b.gold===Math.floor(100*X.remains.gold)&&grain&&grain[2]===3&&b.items.some(x=>x[1]===gid2)&&!b.items.some(x=>x[0]==='gear'&&x[1]===gid&&gid!==gid2),'only what they gained past it: '+b.gold+' of the 100 gold more, 3 grain, the piece found');
+    R.list=R.list.filter(o=>o!==a&&o!==b)}
    ok(m.eater&&m.eater.slew===S.who&&m.bounty>0&&t.newsW().items.some(it=>it.k==='maneater'&&it.detail.slew===S.who),'the wolves a man-eater for it ('+D.nameOf(m)+'), a bounty of '+m.bounty+' gold on them, talked of');
    ok(G.msgs.slice(msgs).some(x=>x.kind==='story'&&/fell to/.test(x.m)),'the chronicle keeps it: "'+(G.msgs.slice(msgs).find(x=>/fell to/.test(x.m))||{}).m+'"');
    t.act('cont');ok(G.mode==='dialog'&&/<h2>Slain<\/h2>/.test(panel())&&/Days on the road/.test(panel())&&/data-act="death-load"/.test(panel())&&/data-act="death-void"/.test(panel()),'the Slain page: your life in numbers; its ways out a save, a new life or the void');
