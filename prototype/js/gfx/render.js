@@ -292,6 +292,9 @@ function camFollow(px,py){const F=CAM_FOLLOW,o=F.out,now=performance.now()/1000,
 function drawSafe(f,...a){const c=ctx;c.save();try{f(...a)}catch(e){loopError(e)}finally{c.restore()}}
 // (your siege camp: a camp's model (structures.js campSprite: seed, then one of looks by the holding), dx left and dy down of you)
 const SIEGE_CAMP={seed:77,looks:6,dx:24,dy:2};
+// (the order the movers are drawn in: what lies on the ground first (lay: 0 blood, 1 the fallen: carcasses.js BodyRot.ents, a fight's
+//  fallen below), then everyone standing, each by its feet (the owner, 2026-11-26: "Carcass or dead body is draw over unit"))
+const byLay=(a,b)=>(a.lay??2)-(b.lay??2)||a.y-b.y;
 function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
@@ -345,7 +348,7 @@ function drawWorld(){
   ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
   // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
   // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort((a,b)=>a.y-b.y),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st).sort(byLay),cam);drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   if(!B?.world){drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))}
   // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
   // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
@@ -675,13 +678,13 @@ function drawBattle(){
     // (the overdraw reckons in the map scene's pixels, on the camera's whole pixels as drawWorld keeps the scene (a fraction there
     //  left every pixel of the cover's mask off its grid: no tree drawn over anyone): under that transform, each drawn under the field's own)
     if(B.world){const T=ctx.getTransform(),w=B.world,k=T.a*w.scale,cam={x:Math.floor(G.cam.x),y:Math.floor(G.cam.y)};ctx.save();ctx.setTransform(k,0,0,k,T.e+k*(cam.x-w.x0),T.f+k*(cam.y-w.y0));
-      // (the fallen among them by their feet, just behind one standing where they lie: vfx.js corpseEnts)
+      // (the fallen among them on the ground, under everyone standing (byLay): vfx.js corpseEnts)
       const L=E.map(o=>({y:w.world(o).y,own:!o.kind&&!o.dk&&o.team===0,id:o,f:()=>{ctx.setTransform(T);draw(o)}}));
       // (each lying where he fell, up by its ground's lift as he stood; his blood apart, by its far edge, so the living standing in it are
       //  drawn over it, the owner, 2026-11-18: "The blood is draw above characters")
       for(const c of corpseEnts(camView())){const up=(c.corpse.pool*CORPSE_POOL.top+CORPSE_POOL.pad)*WORLD_BATTLE.sprite,at=f=>()=>{ctx.setTransform(T);ctx.translate(0,-fieldLift(c.x,c.y));drawBody(ctx,c.corpse,c.q,c.k,f)};
-        L.push({y:w.world({x:c.x,y:c.y-up}).y,nf:true,f:at(1)},{y:w.world(c).y,nf:true,f:at(2)})}
-      L.sort((a,b)=>a.y-b.y);
+        L.push({y:w.world({x:c.x,y:c.y-up}).y,lay:0,nf:true,f:at(1)},{y:w.world(c).y,lay:1,nf:true,f:at(2)})}
+      L.sort(byLay);
       try{worldOverdraw(L,cam)}finally{ctx.restore()}}else E.forEach(draw)}
   // (each missile and its shadow up by the lift of the ground under it, as the men it flies between: vfx.js fieldLift)
   for(const a of B.arrows){const Lf=fieldLift(a.x,a.y);if(a.arc){const z=Math.max(0,a.z),ang=Math.atan2(a.vy-a.vz,a.vx),sc=Math.min(1,z/50),kind=missileOf(a);

@@ -35,7 +35,13 @@ Kit.suite(({ok,info})=>{
  {const d=G.day,R=t.BODY_ROT,BR=t.BodyRot,c=C.list[0],at=k=>{G.day=d+k;return BR.stage(c.day)},r=t.asRemains({rm:1,x:P.x,y:P.y,who:'you',day:G.day,fell:c.day,type:'militia',v:0,face:1,gold:0,items:[]});
   ok(at(0)==='fresh'&&at(R.rot+.01)==='rot'&&at(R.bones+.01)==='bones','each lies fresh, rots after '+R.rot+' day, is bones after '+R.bones);
   let bad=null;for(const k of [0,R.rot+.01,R.bones+.01]){G.day=d+k;try{for(const o of [c,r])BR.draw(o,40,40,o===r?r.fell:o.day,g=>o.paint(g),o.beast,1)}catch(e){bad=e.message}}
-  const pic=BR.pics.get(c);ok(!bad&&pic&&pic.w>=6&&BR.BONES.size>=1&&BR.pics.get(r),'drawn at each, the fallen and your remains alike: as they fell, rotted, bones'+(bad?' ('+bad+')':''));
+  const pic=(BR.pics.get(c)||{})[0];ok(!bad&&pic&&pic.w>=6&&BR.BONES.size>=1&&BR.pics.get(r),'drawn at each, the fallen and your remains alike: as they fell, rotted, bones'+(bad?' ('+bad+')':''));
+  // (its blood and its body apart (the owner, 2026-11-26: "Carcass or dead body is draw over unit", "highlight only body not blood"):
+  //  each on the ground under everyone standing, the blood first; the body alone outlined while something is on it)
+  G.day=d;const ents=[];BR.ents(ents,c,{x:0,y:0},c.day,(g,part)=>c.paint(g,part),c.beast,1,true,9);for(const e of ents)e.f();const lay=ents.map(e=>e.lay).join();
+  const fig={y:c.y-4},order=[...ents,fig].sort(t.byLay);
+  ok(lay==='0,1'&&!ents[0].loot&&ents[1].loot&&order[2]===fig,'its blood and its body drawn apart, both under one standing just behind it ('+lay+'), the body alone outlined');
+  const P2=BR.pics.get(c);ok(P2&&P2[2]&&!P2[2].none&&P2[1],'kept as two pictures, its body\'s and its blood\'s'+(P2&&P2[1]&&P2[1].none?' (no blood under it: a plain one)':''));
   G.day=d+R.bones+.01;C.day();ok(C.list.length===2,'as bones they still lie there, picked clean or not');G.day=d+R.gone+.01;C.day();ok(!C.list.length,'gone after '+R.gone+' days');G.day=d}
  // (a quest item the fight gave stays in its window, yours: never left on the fallen to rot)
  {const q=Object.keys(t.QUEST_ITEMS)[0];G.loot={from:t.lootSnap(),pile:[{k:'quest',id:q,n:1,by:'quest:0'},{k:'good',id:'meat',n:2}],capture:false};G.lootView={head:'<h2>x</h2>',next:'cont'};

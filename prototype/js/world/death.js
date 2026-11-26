@@ -225,10 +225,9 @@ class Remains extends WorldObject{
     return [g&&g+' gold',n&&n+' piece'+(n>1?'s':'')].filter(Boolean).join(' and ')}
   // (your body where it lies, as it has rotted (world/carcasses.js BodyRot: as the fallen of every fight do), a glow while anything
   // is on it: your fall as the fight drew it, else your kind lying)
-  paint(g){const c=this.corpse,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;if(c?.sp){g.scale(k,k);g.translate(-c.x,-c.y);drawBody(g,c,1,1)}else BodyRot.plain(g,{type:this.grave&&!ST[this.type]?'militia':this.type||'militia',team:0,v:this.v||0,hero:!this.grave})}// (yours as you were; buried later, a plain man's)
+  paint(g,part){const c=this.corpse,k=(B?.world?1:WORLD_BATTLE.sprite)/WORLD_BATTLE.scale;if(c?.sp){g.scale(k,k);g.translate(-c.x,-c.y);drawBody(g,c,1,1,part)}else if(part!==1)BodyRot.plain(g,{type:this.grave&&!ST[this.type]?'militia':this.type||'militia',team:0,v:this.v||0,hero:!this.grave})}// (yours as you were; buried later, a plain man's)
   draw(ents,cam,V){if(!this.inView(V))return;const r=this;
-    ents.push({x:r.x,y:r.y,nf:1,loot:!r.empty(),f:()=>{const x=r.x-cam.x,y=r.y-cam.y;BodyRot.draw(r,x,y,r.fell??r.day,g=>r.paint(g),false,r.face||1);
-      if(!r.empty())lootGlow(x,y-2,LOOT_GLOW.r,performance.now()/1000,r.x*.13+r.y*.07,WORLD_VIEW.build)}})}
+    BodyRot.ents(ents,r,cam,r.fell??r.day,(g,part)=>r.paint(g,part),false,r.face||1,!r.empty(),LOOT_GLOW.r)}
   // each hour: a band near finds remains not yet picked clean, and carries all of it off (its plunder); never before your eyes
   static hour(){const X=DEATH.remains;
     for(const r of this.list){if(r.empty()||!r.robbable()||!Death.unseenAt(r.x,r.y))continue;const b=bandits.find(o=>!o.dead&&Math.hypot(o.x-r.x,o.y-r.y)<X.seek);if(!b||Math.random()>=X.find)continue;
