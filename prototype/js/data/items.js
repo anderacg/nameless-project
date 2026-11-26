@@ -12,7 +12,7 @@ const ITEM_CATS={
   quiver:{n:'Quiver',tab:'equip',icon:'arrows',col:'#c8b48a',bag:true,route:'bag',sell:true,drop:true},
   mount:{n:'Mount',tab:'equip',icon:'mount',col:'#7a4a2a',bag:true,route:'bag',sell:true,drop:true},
   food:{n:'Food',tab:'supplies',icon:'meat',col:'#c0503a',bag:true,route:'bag',sell:true,drop:true},
-  water:{n:'Water',tab:'supplies',icon:'jug',col:'#6aa8d8',bag:true,route:'bag',sell:true,drop:true},
+  water:{n:'Water',tab:'supplies',icon:'water',col:'#6aa8d8',bag:true,route:'bag',sell:true,drop:true},
   resource:{n:'Resource',tab:'goods',icon:'ingot',col:'#9aa3ad',bag:true,route:'bag',sell:true,drop:true},
   trade:{n:'Trade good',tab:'goods',icon:'bolt',col:'#b05a4a',bag:true,route:'bag',sell:true,drop:true},
   trophy:{n:'Trophy',tab:'trophies',icon:'pelt',col:'#8a6a4a',bag:true,route:'bag',sell:true,drop:true},

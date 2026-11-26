@@ -107,13 +107,14 @@ class InkHud{
     // (your army's flag in the ring, the owner, 2026-11-24: "Change level to army flag"; no level on it: "Remove level from army")
     const html='<span class="ink-lv" aria-hidden="true"><img src="'+flagUrl(P.banner())+'" alt=""></span><span class="ink-who"><span class="ink-name"><strong>'+htmlText(heroName()||bandName())+'</strong></span>'+
       bar('hp','HP',100*hp/max,hp+'/'+max,hp<max*.35)+'<span class="ink-pair">'+bar('sta','STA',sta,sta+'%',sta<SUPPLY.tired)+bar('mor','MOR',mor,mor+'%',mor<30)+'</span>'+
-      '<span class="ink-res">'+res('gold','Gold',P.gold.toLocaleString('en'))+res('food','Food',days(S.foodDays),S.foodDays<1)+res('mug','Drink',days(S.drinkDays),S.drinkDays<1)+'</span></span>';
+      '<span class="ink-res">'+res('gold','Gold',P.gold.toLocaleString('en'))+res('food','Food',days(S.foodDays),S.foodDays<1)+res('water','Drink',days(S.drinkDays),S.drinkDays<1)+'</span></span>';
     setHtml(this.hero,html);this.hero.setAttribute('aria-label',htmlText(bandName())+'. Your hero\'s health '+hp+' of '+max+', stamina '+sta+'%, morale '+mor+'%; gold '+P.gold+', food '+days(S.foodDays)+', drink '+days(S.drinkDays)+'. Party status');
     // (the quests and the party's details start under the card, however tall it stands)
     this.screen.style.setProperty('--ink-hero-h',this.hero.offsetHeight+'px');
     this.hero.setAttribute('aria-expanded',String(this.screen.classList.contains('party-open')));
     // (one quest shown, the tracked one, and how many more on its tag: ink-hud.css)
     const head=document.querySelector('#qtrack .qt-list:not(.qt-road) .qt-head');if(head){const n=head.parentNode.querySelectorAll('.qt-row').length,more=n>1?'+'+(n-1)+' more':'';if(head.dataset.more!==more)head.dataset.more=more}
+
     // (the day in one short line under the minimap, the owner: "Remove that bar and show only compact below text": its day, its season,
     //  its weather; its time is the dial's)
     const D=dayParts(),line=[D.day,D.season,D.weather].filter(Boolean).join(' · ');

@@ -9,7 +9,8 @@ const UI_ICON_SHEETS=[
   ["art/ui/icons-equipment.png",1254,1254],
   ["art/ui/icons-supplies.png",1254,1254],
   ["art/ui/hourglass.svg",100,100],
-  ["art/ui/monster.svg",100,100]
+  ["art/ui/monster.svg",100,100],
+  ["art/ui/building-menu.svg",400,200]
 ];
 const UI_ILLUSTRATIONS={
   fire:[24,19,218,231],
@@ -20,7 +21,15 @@ const UI_ILLUSTRATIONS={
   book:[17,302,234,185],
   gold:[280,296,195,186],
   food:[513,276,224,219],
-  mug:[772,271,198,228],
+  waterskin:[772,271,198,228],
+  mug:[0,0,100,100,7],
+  water:[100,0,100,100,7],
+  barracks:[200,0,100,100,7],
+  hall:[300,0,100,100,7],
+  noticeboard:[0,100,100,100,7],
+  storehouse:[100,100,100,100,7],
+  prison:[200,100,100,100,7],
+  tourney:[300,100,100,100,7],
   crest:[1028,263,194,239],
   fitness:[15,538,229,203],
   morale:[276,518,222,225],
@@ -162,8 +171,8 @@ const UI_ICON_ALIASES={
   helm:"garrison",
   blade:"sword",
   pack:"bag",
-  skin:"mug",
-  skinflat:"mug",
+  skin:"waterskin",
+  skinflat:"waterskin",
   bolt:"clothbolt"
 };
 for(const [name,source] of Object.entries(UI_ICON_ALIASES))UI_ILLUSTRATIONS[name]=UI_ILLUSTRATIONS[source];

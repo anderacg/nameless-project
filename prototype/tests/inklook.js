@@ -25,7 +25,7 @@ Kit.suite(({ok,info})=>{
  {const h=ink.hero,txt=h.textContent,max=Math.round(P.heroStats().hp);
   ok(shown(h)&&rect(h).top<rect(scr).top+20&&rect(h).left<rect(scr).left+20,'your hero\'s card stands top left');
   ok(h.querySelector('.ink-lv img').getAttribute('src')===t.flagUrl(P.banner())&&!txt.includes('Lv ')&&txt.includes(P.hp+'/'+max)&&txt.includes('64%')&&txt.includes('41%')&&!h.querySelector('.ink-xp'),'it shows your army\'s flag (no level: "Remove level from army"), health ('+P.hp+'/'+max+'), stamina, morale and experience');
-  {const S=t.supplyNow(),r=h.querySelector('.ink-res');ok(r&&r.textContent.includes(P.gold.toLocaleString('en'))&&r.querySelectorAll('span').length===3&&!document.querySelector('.ink-purse'),'your gold, food and drink in the card, nowhere else ('+r.textContent+')');
+  {const S=t.supplyNow(),r=h.querySelector('.ink-res');ok(r?.querySelector('[data-ui-icon="water"]')&&!r.querySelector('[data-ui-icon="mug"]'),'phone drink needs use the water drop inside the compact army card');ok(r&&r.textContent.includes(P.gold.toLocaleString('en'))&&r.querySelectorAll('span').length===3&&!document.querySelector('.ink-purse'),'your gold, food and drink in the card, nowhere else ('+r.textContent+')');
    ok(rect(h).width<=212.5&&rect(h).height<=72,'compact: '+Math.round(rect(h).width)+' x '+Math.round(rect(h).height)+' px')}
   const lv=rect(h.querySelector('.ink-lv'));ok(Math.abs(lv.width-lv.height)<1&&getComputedStyle(h.querySelector('.ink-lv')).borderRadius==='50%','your army\'s flag in a round ring');
   const q=rect(document.getElementById('qtrack'));ok(q.top>=rect(h).bottom-1,'the quests below the card, not under it ('+Math.round(q.top)+' / '+Math.round(rect(h).bottom)+')');
@@ -38,6 +38,7 @@ Kit.suite(({ok,info})=>{
  // (the round minimap, the round buttons)
  {const m=window.campaignHud.mobileMini,mr=rect(m);
   ok(shown(m)&&Math.abs(mr.width-mr.height)<1&&getComputedStyle(m).borderTopLeftRadius==='50%','the minimap round ('+Math.round(mr.width)+' px)');
+
   const bs=['pause','speedToggle','mapToggle','charBtn','menuBtn'].map(id=>document.getElementById(id)),round=bs.filter(b=>{const r=rect(b);return Math.abs(r.width-r.height)<1&&getComputedStyle(b).borderTopLeftRadius==='50%'});
   ok(round.length===bs.length,'the buttons are round ('+round.length+' of '+bs.length+')');
   const dl=document.querySelector('#mapToggle .dl');ok(rect(dl).width>8&&rect(dl).bottom>rect(document.getElementById('mapToggle')).bottom+2,'their names at their feet');

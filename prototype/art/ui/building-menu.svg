@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+<defs>
+ <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8a46c"/><stop offset=".4" stop-color="#9e653a"/><stop offset="1" stop-color="#543b29"/></linearGradient>
+ <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5e1a7"/><stop offset=".45" stop-color="#b69a60"/><stop offset="1" stop-color="#665338"/></linearGradient>
+ <linearGradient id="stone" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dbd3ba"/><stop offset=".55" stop-color="#9b9b88"/><stop offset="1" stop-color="#565e55"/></linearGradient>
+ <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#cf7753"/><stop offset="1" stop-color="#6e392e"/></linearGradient>
+ <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0c2"/><stop offset="1" stop-color="#bea16b"/></linearGradient>
+ <linearGradient id="water" x1=".1" y1="0" x2=".85" y2="1"><stop stop-color="#d9f6f1"/><stop offset=".3" stop-color="#77c4dc"/><stop offset=".65" stop-color="#347eab"/><stop offset="1" stop-color="#204767"/></linearGradient>
+</defs>
+<!-- Beer tankard, with an open handle and foam. -->
+<g stroke="#61472e" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M65 34H77Q94 34 94 51Q94 70 73 70H66L67 59H74Q82 59 82 51Q82 44 74 44H65Z" fill="url(#metal)"/>
+ <path d="M16 27H69L67 83Q43 96 18 84Z" fill="url(#wood)"/>
+ <path d="M28 36L29 84M42 35V87M56 35L55 84" fill="none" stroke="#6a472c" stroke-width="2"/>
+ <path d="M17 35L68 35L68 45Q42 50 17 44ZM18 70Q42 77 67 70L67 81Q42 90 18 81Z" fill="url(#metal)"/>
+ <path d="M14 30Q7 19 19 17Q20 5 33 13Q43 3 52 13Q66 8 69 20Q80 23 71 33L58 33Q59 48 51 48Q45 49 45 34Z" fill="url(#paper)" stroke="#b1a07b"/>
+ <path d="M21 22Q26 17 32 21M38 17Q44 12 49 18" fill="none" stroke="#fff8d9" stroke-width="3"/>
+</g>
+<!-- Water need, separate from a container. -->
+<g transform="translate(100)" stroke-linejoin="round">
+ <path d="M50 5C45 20 17 42 17 62C17 82 31 95 50 95C69 95 83 82 83 62C83 42 55 20 50 5Z" fill="url(#water)" stroke="#52615c" stroke-width="3"/>
+ <path d="M45 28C34 43 26 53 27 66" fill="none" stroke="#e3fbf3" stroke-width="6" stroke-linecap="round" opacity=".9"/>
+ <path d="M32 80Q52 93 69 75" fill="none" stroke="#82c9d8" stroke-width="3" stroke-linecap="round"/>
+</g>
+<!-- Barracks: fortified building and crossed spears. -->
+<g transform="translate(200)" stroke="#565044" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M11 26H31V83H11ZM69 26H89V83H69ZM28 40H72V86H28Z" fill="url(#stone)"/>
+ <path d="M8 15H16V24H22V15H31V24H36V33H8ZM64 24H69V15H78V24H84V15H92V33H64Z" fill="url(#metal)"/>
+ <path d="M39 85V61Q50 47 61 61V85Z" fill="#3d4039"/>
+ <path d="M19 42H25V55H19ZM75 42H81V55H75Z" fill="#444d46" stroke="none"/>
+ <path d="M26 88L71 11M74 88L29 11" stroke="#ad8150" stroke-width="4"/>
+ <path d="M65 18L72 5L76 22ZM24 22L28 5L35 18Z" fill="url(#metal)"/>
+ <path d="M11 85H89" stroke="#c9bc96" stroke-width="4"/>
+</g>
+<!-- Lord's hall. -->
+<g transform="translate(300)" stroke="#565044" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M20 42H80V88H20Z" fill="url(#stone)"/>
+ <path d="M12 45L50 14L88 45Z" fill="url(#roof)"/>
+ <path d="M36 44V85H64V44L50 32Z" fill="url(#stone)"/>
+ <path d="M42 88V67Q50 56 58 67V88Z" fill="url(#wood)"/>
+ <path d="M27 55H32V70H27ZM68 55H73V70H68Z" fill="#414a43" stroke="none"/>
+ <path d="M50 13V3M53 5H74L69 12L74 19H53Z" fill="#577da0" stroke="#ad9560" stroke-width="2"/>
+ <path d="M15 91H85" stroke="url(#metal)" stroke-width="5"/>
+</g>
+<!-- Notice board. -->
+<g transform="translate(0 100)" stroke="#604a32" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M18 23H27V95H18ZM73 23H82V95H73Z" fill="url(#wood)"/>
+ <path d="M9 16H91V76H9Z" fill="url(#wood)"/>
+ <path d="M6 17L50 4L94 17Z" fill="url(#roof)"/>
+ <path d="M20 25L49 29L45 65L17 61ZM54 31L81 27L84 63L57 67Z" fill="url(#paper)" stroke="#ad905b" stroke-width="1.5"/>
+ <path d="M26 37L42 39M24 43L41 45M24 49L36 51M60 39L75 37M61 45L76 43" stroke="#89744e" stroke-width="2"/>
+ <circle cx="35" cy="31" r="2" fill="#d6c389"/><circle cx="68" cy="31" r="2" fill="#d6c389"/>
+ <circle cx="70" cy="56" r="5" fill="#ae5541" stroke="none"/>
+</g>
+<!-- Storehouse. -->
+<g transform="translate(100 100)" stroke="#5e4932" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M15 39H85V88H15Z" fill="url(#wood)"/>
+ <path d="M8 40L50 7L92 40Z" fill="url(#roof)"/>
+ <path d="M37 45H65V89H37Z" fill="#493c2b"/>
+ <path d="M19 47H26V59H19ZM74 47H81V59H74Z" fill="#bdaf80"/>
+ <path d="M17 65H43V92H17ZM48 70H77V92H48Z" fill="url(#wood)"/>
+ <path d="M19 68L40 89M40 68L19 89M51 73L74 89M74 73L51 89" fill="none" stroke="#d3b178" stroke-width="3"/>
+ <path d="M16 35H84" stroke="#c99a67" stroke-width="3"/>
+</g>
+<!-- Prison: arched barred gate and lock. -->
+<g transform="translate(200 100)" stroke="#535044" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M15 92V42Q15 8 50 8Q85 8 85 42V92Z" fill="url(#stone)"/>
+ <path d="M25 87V43Q25 20 50 20Q75 20 75 43V87Z" fill="#3c433c"/>
+ <path d="M35 30V86M50 24V87M65 30V86M26 47H74M26 70H74" stroke="url(#metal)" stroke-width="5"/>
+ <path d="M43 62V57Q50 46 57 57V62" fill="none" stroke="#d4bb7d" stroke-width="4"/>
+ <rect x="39" y="60" width="22" height="20" rx="3" fill="url(#metal)"/>
+ <path d="M50 67V74" stroke="#55452e" stroke-width="3"/>
+ <path d="M8 94H92M18 40H24M76 40H82M18 65H24M76 65H82" stroke="#c5b78e" stroke-width="3"/>
+</g>
+<!-- Tournament: crossed lances behind a heraldic shield. -->
+<g transform="translate(300 100)" stroke="#685035" stroke-width="2.5" stroke-linejoin="round">
+ <path d="M13 92L80 9M87 92L20 9" stroke="#bc905b" stroke-width="5"/>
+ <path d="M77 13L83 4L86 17ZM14 17L17 4L23 13Z" fill="url(#metal)"/>
+ <path d="M71 21L93 29L77 38ZM29 21L7 29L23 38Z" fill="#b35b45" stroke="#d4b478" stroke-width="2"/>
+ <path d="M27 38Q50 28 73 38V66Q71 83 50 95Q29 83 27 66Z" fill="url(#metal)"/>
+ <path d="M34 43Q50 36 66 43V65Q64 78 50 87Q36 78 34 65Z" fill="#587d96" stroke="#c3ac72" stroke-width="1.5"/>
+ <path d="M50 47L53 56L63 57L55 63L58 73L50 67L42 73L45 63L37 57L47 56Z" fill="url(#paper)" stroke="none"/>
+</g>
+</svg>
