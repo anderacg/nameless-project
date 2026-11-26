@@ -21,7 +21,10 @@ const JOIN_RULES={every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near
 // (walk: a fight's walking share of a man's pace, the field's own (battle.js MARCH.base; was .75, near the map's march, when a fight on
 //  the map ran on the map's clock); blocked: battle seconds without a blow before a stalled fight is looked at, 5 (was 30 on that
 //  clock, some 16 s on screen at 1x: as many now on the fight's own, battle.js battleStep))
-const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4};
+const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4,scan:.25};
+// (scan: battle s between looks for who rides in (WorldBattleArea#reinforce): every frame it went through every lord, watch, band and
+//  beast of the world, some 9% of a fight's frame (the owner, 2026-11-26: "How can i improve world battle performance"); those on
+//  their way in still walk every frame)
 /* a fight on the map in the open (doc/OPEN_FIGHTS_DESIGN.md; the owner, 2026-11-14: "remove the battle area for hunting ... the
    same world speed", "the same as monsters", every fight on the map): ring: its circle drawn (false: none); reach: its field this
    much wider than the ring was, its edge twice your sight and more past where it began, that no one sees (a foe past it has got
@@ -292,7 +295,8 @@ class WorldBattleArea{
       if(u.worldFled){const key=u.team?'fledFoes':'fledMine';B[key]=Math.max(0,(B[key]||0)-1);delete u.worldFled}u.hp=u.hpLeft;delete u.left;delete u.fled;delete u.regroup;delete u.worldEscape;u.rout=false;u.shattered=false;u.rallied=false;u.tgt=null;
       const g=B.groups[u.grp],r=g?.resolve;if(r){if((r.worldReturns||0)<=a.cycle){r.worldReturns=a.cycle+1;r.routed=false;r.shattered=false;r.rallied=true;r.breakT=0;r.mor=MORALE.rally;r.confidence=0}r.refreshState();r.sync()}if(g&&!r?.routed){g.hold();g.aiReset()}battleEvent('rejoin',{u});
     }
-    this.reinforce(dt);(this.bystanders||(this.bystanders=new BattleBystanders(this))).step(dt);this.watchBlocked();
+    // (who rides in looked for every WORLD_BATTLE.scan s of the fight, not every frame)
+    const look=(this.scanT=(this.scanT||0)-dt)<=0;if(look)this.scanT=WORLD_BATTLE.scan;this.reinforce(dt,look);(this.bystanders||(this.bystanders=new BattleBystanders(this))).step(dt);this.watchBlocked();
   }
   enterMarchers(dt){
     if(!this.arrivals.length)return;for(const army of new Set(this.arrivals.map(a=>a.army))){const o=army.owner,d=Math.hypot(o.x-this.x,o.y-this.y);if(o!==P&&d>Math.max(0,this.r-marchOuter(o)-3))walk(o,this.x-o.x,this.y-o.y,Math.min(d,partySpeed(o,o.troops)*dt/this.scale));army.step(dt/(this.scale*WORLD_SCALE.move),false,this.marchClamp,this.marchInside)}let entered=false;
@@ -310,11 +314,13 @@ class WorldBattleArea{
      then. An army counted in it at its start (the encounter's allies and foes) is in it wherever it stands, and walks in. Your
      companions' parties and the lords riding in your host are with you: they know of it from as far as of old, WORLD_BATTLE.join
      past the ring's edge */
-  knows(o,R=this.reach()){const d=Math.hypot(o.x-this.x,o.y-this.y),e=G.enc;if(e&&[...(e.allies||[]),...(e.foes||[])].some(f=>(f.src||f)===o))return true;
+  knows(o,R=this.reach(),E=this.counted()){const d=Math.hypot(o.x-this.x,o.y-this.y);if(E.has(o))return true;
     return o.mapKind==='cparty'||o.follow?d<=(this.ring??this.r)+WORLD_BATTLE.join:d-marchOuter(o)<=R}
+  // (the armies counted in it at its start: the encounter's allies and foes, by their owners)
+  counted(){const e=G.enc,s=new Set();if(e)for(const f of [...(e.allies||[]),...(e.foes||[])])s.add(f.src||f);return s}
   reach(){let r=this.core??this.r;if(B?.world===this)for(const u of B.units)if(fighting(u)){const w=this.world(u);r=Math.max(r,Math.hypot(w.x-this.x,w.y-this.y))}return r}
-  reinforce(dt){
-    const R=this.reach();for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||!this.knows(o,R)||!this.tempted(o))continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}
+  reinforce(dt,look=true){
+    if(look){const R=this.reach(),E=this.counted();for(const o of [...W.lords,...W.patrols,...cparties(),...bandits,...W.monsters.map(asMonster)]){if(this.participants.has(o)||o.dead||o.gone||o.inside||o.fight||!o.troops.length||!this.knows(o,R,E)||!this.tempted(o))continue;const team=this.teamFor(o);if(team<0)continue;this.participants.add(o);this.pending.push({o,team});if(this.sides){const r=this.sides.byOwner.get(o);log(this.sides.label(r)+' approaches: '+this.sides.intent(r)+'.',battleEnemy(0,team)?'bad':'gold','war')}}}
     for(let i=this.pending.length-1;i>=0;i--){const a=this.pending[i],o=a.o,d=Math.hypot(o.x-this.x,o.y-this.y);if(this.sides){const r=this.sides.byOwner.get(o);if(r)a.team=r.team}if(d>this.r-3){const sp=Math.min(d,partySpeed(o,o.troops)*dt/this.scale);walk(o,this.x-o.x,this.y-o.y,sp);MARCH_ARMIES.get(o)?.step(dt/(this.scale*WORLD_SCALE.move),false);if(d<(a.best??Infinity)-1){a.best=d;a.stuck=0}else if((a.stuck=(a.stuck||0)+dt)>WORLD_BATTLE.stall)this.turnAway(i);continue}if(this.sides&&!this.sides.room(o,a.existing?a.existing.reduce((n,id)=>n+B.units.filter(u=>u.grp===id).length,0):null)){if((a.full=(a.full||0)+dt)>WORLD_BATTLE.stall)this.turnAway(i);continue}if(a.existing){for(const id of a.existing){const g=B.groups[id],m=B.units.filter(u=>u.grp===id);for(const u of m){u.hp=u.hpLeft;delete u.left;delete u.waiting}this.place(g,m,o,{x:0,y:(a.existing.indexOf(id)-(a.existing.length-1)/2)*5},o);if(g.resolve){g.resolve.refreshState();g.resolve.sync()}}SiteLife.bind(B,this);if(this.sides){const r=this.sides.byOwner.get(o);if(r)r.joined=true}B.cmdT=0;B.moraleNext=0;B.sight=null;log((o.mapKind==='lord'?lordName(o):o.name||o.label?.()||'An army')+' enters the battle.',a.team?'bad':'good','war');battleEvent('reinforcement',{party:o,team:a.team});setOrderUI()}else this.join(o,a.team);this.pending.splice(i,1)}
   }
   /* whether a band or a beast (JOIN_RULES.wild) near the fight rides in now (the owner, 2026-10-30: beasts joining a battle in the

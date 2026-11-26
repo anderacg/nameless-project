@@ -705,6 +705,8 @@ const WorldArt={
   done(j){this.jobs.delete(j.k);this.chunks.set(j.k,j.rec);ArtKeep.made(j.k,j.rec);for(const [k,c] of this.chunks){if(this.chunks.size<=this.capNow)break;if(this.view.has(k))continue;this.chunks.delete(k);this.recycle(c.cv)}},
   recycle(cv){if(cv&&cv.getContext&&this.pool.length<4)this.pool.push(cv)},// (a worker's picture is an ImageBitmap: never pooled)
   chunk(cx,cy){const k=cy*this.cols+cx,c=this.chunks.get(k);if(c){this.chunks.delete(k);this.chunks.set(k,c);return c.cv}const j=this.start(cx,cy);runGen(j.gen);this.done(j);return j.rec.cv},
+  // (every chunk in the last view drawn that is known painted: nothing stands in for one still coming (render.js FightSnap))
+  ready(){for(const k of this.view||[]){const cx=k%this.cols,cy=(k/this.cols)|0,[X,Y,w,h]=this.rect(cx,cy);if(typeof seenAny==='function'&&!seenAny(X,Y,X+w,Y+h))continue;if(!this.chunks.has(k))return false}return true},
   draw(g,cam){const W=MW*TILE,H=MH*TILE,x0=Math.max(0,cam.x),y0=Math.max(0,cam.y),x1=Math.min(W,cam.x+VW),y1=Math.min(H,cam.y+VH);if(x1<=x0||y1<=y0)return;
     const c0=Math.floor(x0/CHUNK),r0=Math.floor(y0/CHUNK),c1=Math.floor((x1-1)/CHUNK),r1=Math.floor((y1-1)/CHUNK);this.view=new Set();
     for(let cy=r0;cy<=r1;cy++)for(let cx=c0;cx<=c1;cx++)this.view.add(cy*this.cols+cx);

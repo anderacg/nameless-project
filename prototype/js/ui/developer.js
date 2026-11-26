@@ -8,14 +8,15 @@ const DEV_QUICK={food:30,drink:30,troops:10,near:90};
 const DEV_ECON_NEXT={full:'light',light:'off',off:'full'};
 const DEV_TOOLS=[
   ['Cheats',[[()=>'noNeeds '+(CHEAT.noNeeds?'off':'on'),'No needs',()=>CHEAT.noNeeds,'No hunger, thirst, stamina drain, wages or harsh-land tolls'],[()=>'speed '+(CHEAT.speed>1?1:3),'Travel ×3',()=>CHEAT.speed>1],
-    [()=>'fog '+(CHEAT.noFog?'on':'off'),'No fog',()=>CHEAT.noFog,'Draw the whole map as it is'],['devmode','Dev marks',()=>DEV.on,'Counts over armies, herds and fights'],['perf','Timings',()=>FRAMEPROF.on,'Frame timings at the top']]],
+    [()=>'fog '+(CHEAT.noFog?'on':'off'),'No fog',()=>CHEAT.noFog,'Draw the whole map as it is'],['devmode','Dev marks',()=>DEV.on,'Counts over armies, herds and fights'],['perf','Timings',()=>FRAMEPROF.on,'Frame timings at the top'],
+    [()=>'stillground '+(FIGHT_SNAP.on?'off':'on'),'Still ground',()=>FIGHT_SNAP.on,'A fight on the map drawn over a kept copy of its ground (compare with Timings)']]],
   ['Give',[['money 1000','+1000 gold'],['supplies','Food & water'],['heal','Heal all',null,'Health, stamina, the wounded and the sick'],['level','Level up'],['troops','+10 troops']]],
   ['World',[['reveal','Reveal map'],['day','Next day'],['bandits','Bandits near'],['battle','Battle test'],
     [()=>'econ '+DEV_ECON_NEXT[ECON.mode],()=>'Economy: '+ECON_MODES[ECON.mode][0],null,()=>ECON_MODES[ECON.mode][1]+' Tap for '+ECON_MODES[DEV_ECON_NEXT[ECON.mode]][0]+'.']]],
   ['Look',[['where','Where'],['nearby','Nearby'],['stalls','Stalls'],['errors','Errors'],['clear','Clear']]]];
 const DevConsole={
   opened:false,root:null,history:[],historyAt:0,previousFocus:null,
-  help:'Tools: noNeeds on|off · speed 3 · fog off|on · devmode · perf\nGive: money 1000 · supplies · heal · level 1 · troops [id] [n]\nWorld: reveal · day 1 · bandits · econ full|light|off · where · tp x y · tp tile x y · goto Ashford · nearby · stalls · errors\nEdit: get player.gold · set player.sk.athl.lv 50 · units bow · roster · get unit.0 · set unit.0.s.spd 80 · set group.<id>.resolve.mor 50\nBattle test: battle · battle hum_bow 5 hum_foot 5 · pause · step 60 · restart · exit\nStory: enc [kind] · quest [kind] · book <id> · chains · chain 1 [go] · passengers · escort [n] · ander\nNone of the tools is saved; coordinates are world px.',
+  help:'Tools: noNeeds on|off · speed 3 · fog off|on · devmode · perf · stillground on|off\nGive: money 1000 · supplies · heal · level 1 · troops [id] [n]\nWorld: reveal · day 1 · bandits · econ full|light|off · where · tp x y · tp tile x y · goto Ashford · nearby · stalls · errors\nEdit: get player.gold · set player.sk.athl.lv 50 · units bow · roster · get unit.0 · set unit.0.s.spd 80 · set group.<id>.resolve.mor 50\nBattle test: battle · battle hum_bow 5 hum_foot 5 · pause · step 60 · restart · exit\nStory: enc [kind] · quest [kind] · book <id> · chains · chain 1 [go] · passengers · escort [n] · ander\nNone of the tools is saved; coordinates are world px.',
   text(value){const seen=new WeakSet();return typeof value==='string'?value:JSON.stringify(value,(k,v)=>{if(v&&typeof v==='object'){if(seen.has(v))return '[reference]';seen.add(v)}return v},2)},
   write(value,error=false){if(!this.root)return;const out=this.root.querySelector('[data-dev-output]'),line=document.createElement('div');line.className=error?'dev-error':'';line.textContent=String(this.text(value)).slice(0,10000);out.append(line);while(out.children.length>100)out.firstChild.remove();out.scrollTop=out.scrollHeight},
   // (a battle test needs a world in: from the main menu with none, it says so; ui/mainmenu.js)
@@ -70,6 +71,7 @@ const DevConsole={
     if(cmd==='help')return this.help;
     if(cmd==='money'){if(args.length!==1)throw Error('Usage: money 1000 (adds gold; negatives subtract).');const n=this.number(arg),next=P.gold+n;if(!Number.isSafeInteger(n)||!Number.isSafeInteger(next)||next<0)throw Error('Gold must remain a nonnegative safe integer.');P.gold=next;updateHUD(true);return 'Gold: '+P.gold}
     if(cmd==='perf')return FrameProf.toggle(args[0]==null?undefined:args[0]==='on');
+    if(cmd==='stillground'){FIGHT_SNAP.on=args[0]==null?!FIGHT_SNAP.on:args[0]==='on';FightSnap.clear();return FIGHT_SNAP.on?'Still ground on: a fight on the map drawn over a kept copy of its ground.':'Still ground off: the whole map drawn every frame in a fight.'}// (render.js FIGHT_SNAP; the owner, 2026-11-26)
     if(cmd==='errors')return LOOP_SEEN.length?LOOP_SEEN.map(x=>'day '+x.day+' '+x.mode+': '+x.k+(x.w?' ('+x.w+')':'')).join('\n'):'No errors this session.';// (main.js loopError)
     if(cmd==='devmode'){prefSet('dev',args[0]==null?!DEV.on:args[0]==='on');return DEV.on?'Dev mode on: counts over armies, herds and fights, the walk badge by you.':'Dev mode off.'}// (ui/ui.js PREFS.dev)// (the frame timings: ui/frameprof.js)
     if(cmd==='where')return {x:P.x,y:P.y,tileX:Math.floor(P.x/TILE),tileY:Math.floor(P.y/TILE),mode:G.mode};

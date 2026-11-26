@@ -98,12 +98,12 @@ function viewState(x,y){const Q=VIEW_SEEN;if(!Q.on)return 2;const i=Math.floor((
 // (any tile known within the game px box x0..x1, y0..y1: a chunk of the painted land drawn only so)
 function seenAny(x0,y0,x1,y1){if(!VIEW_SEEN.on)return true;const S=seenArr(),a=Math.max(0,Math.floor(x0/TILE)),b=Math.max(0,Math.floor(y0/TILE)),c=Math.min(MW-1,Math.floor((x1-1)/TILE)),d=Math.min(MH-1,Math.floor((y1-1)/TILE));
   for(let ty=b;ty<=d;ty++){const o=ty*MW;for(let tx=a;tx<=c;tx++)if(S[o+tx]===1)return true}return false}
-let fogDirty=true,lastReveal=-1;
+let fogDirty=true,lastReveal=-1,seenTick=0;// (seenTick: one more each tile that becomes known: render.js FightSnap)
 // what you see now becomes known (each tile whose middle lies within an eye of your sight, after each build)
 function revealDisk(px,py,V){
   const S=seenArr(),tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
   const r=Math.ceil(V/TILE)+1;
-  for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){if(x<0||y<0||x>=MW||y>=MH||S[y*MW+x])continue;if(Math.hypot((x+.5)*TILE-px,(y+.5)*TILE-py)<V){S[y*MW+x]=1;fogDirty=true}}
+  for(let y=ty-r;y<=ty+r;y++)for(let x=tx-r;x<=tx+r;x++){if(x<0||y<0||x>=MW||y>=MH||S[y*MW+x])continue;if(Math.hypot((x+.5)*TILE-px,(y+.5)*TILE-py)<V){S[y*MW+x]=1;fogDirty=true;seenTick++}}
 }
 function reveal(){
   const S=yourSight(),E=S.eyes;if(S.ver===lastReveal)return;lastReveal=S.ver;
@@ -194,7 +194,8 @@ function fogPut(E,cam){ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmooth
 let FOG_MEM=null;
 function fogMem(mem,cam,V){
   const E=yourSight(V).eyes,r=mem.r||1,w=mem.width/r,h=mem.height/r;let c=mem;
-  if(r>1){if(!FOG_MEM||FOG_MEM.width!==w||FOG_MEM.height!==h)FOG_MEM=mkg(w,h);c=FOG_MEM;const q=c.getContext('2d');q.clearRect(0,0,w,h);q.imageSmoothingEnabled=ctx.imageSmoothingEnabled;q.drawImage(mem,0,0,w,h)}
+  // (the scene kept for the next frame in a fight on the map (render.js FightSnap): cut in a copy, never itself)
+  if(r>1||FightSnap.live()){if(!FOG_MEM||FOG_MEM.width!==w||FOG_MEM.height!==h)FOG_MEM=mkg(w,h);c=FOG_MEM;const q=c.getContext('2d');q.clearRect(0,0,w,h);q.imageSmoothingEnabled=ctx.imageSmoothingEnabled;q.drawImage(mem,0,0,w,h)}
   const g=c.getContext('2d', { willReadFrequently: true });g.save();g.setTransform(1,0,0,1,0,0);if(c===mem&&r>1)g.setTransform(r,0,0,r,0,0);g.globalCompositeOperation='destination-out';
   for(let j=0;j<E.length;j++){const e=E[j],s=fogDisk(e.r),hh=s.width>>1;g.drawImage(s,Math.round(e.x-cam.x)-hh,Math.round(e.y-cam.y)-hh)}
   g.restore();ctx.drawImage(c,0,0,w,h)}

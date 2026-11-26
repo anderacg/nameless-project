@@ -209,6 +209,21 @@ const resAt=s=>{const v=Math.floor(s);for(let r=Math.min(WORLD_VIEW.fine,RENDER.
 // open at (core.js MAPZOOM.auto), so a chunk painted while it loads is not painted again once it opens)
 const paintRes=()=>{const Z=typeof MAPZOOM!=='undefined'?MAPZOOM:null;return !Z||Z.map||!Z.auto?sceneRes():resAt(Z.auto)};
 let MEM=null;const memCv=()=>{const r=sceneRes();return MEM&&MEM.r===r&&MEM.width===(VW+1)*r&&MEM.height===(VH+1)*r?MEM:(MEM=mkg((VW+1)*r,(VH+1)*r),MEM.r=r,MEM)};
+/* a fight on the map fought over a still copy of its ground (the owner, 2026-11-26: "make it into a small battle map ... create a copy
+   version of the area and battle in a separate map", tried first in place): while a fight is fought on the map (B.world), what stands
+   (the painted ground, the land's tint and borders, the tracks, the estates, the buildings, camps and sites, their shadows: memCv) is
+   drawn once and kept, with what it queued (the places' labels, the lights, the banners, the plaques, the depth's pictures), and drawn
+   again only when the camera or the screen moves, more land becomes known (fog.js seenTick), or every every s (a fire's flame, a
+   flag's wave, the tracks); kept only once the painted land in view is all in (WorldArt.ready); no leaping fish (drawEnv's layer 0)
+   while it lasts. Its men, the fallen, everyone who moves, the fog, the night and the weather drawn every frame over it. on false:
+   all of it every frame, as ever */
+const FIGHT_SNAP={on:true,every:2};
+const FightSnap={key:'',at:0,q:null,
+  live(){return FIGHT_SNAP.on&&!!B?.world},
+  keyOf(cam,low){return cam.x+'|'+cam.y+'|'+low.width+'|'+low.height+'|'+low.r+'|'+VS+'|'+VW+'|'+VH+'|'+seenTick},
+  fresh(key,now){return this.live()&&!!this.q&&this.key===key&&now-this.at<FIGHT_SNAP.every*1000},
+  keep(key,now,q){if(!this.live()||!WorldArt.ready())return this.clear();this.key=key;this.at=now;this.q=q},
+  clear(){this.key='';this.q=null}};
 let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkg(VW+1,VH+1));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
@@ -298,13 +313,15 @@ function drawWorld(){
   // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
   reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
   const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
+  // (in a fight on the map: what stands kept from a frame before while it still holds, FightSnap)
+  const now=performance.now(),sk=FightSnap.keyOf(cam,low),snap=FightSnap.fresh(sk,now),fight=FightSnap.live();
   // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
-  ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
+  ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);if(!snap)ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
   WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();IndividualHealth.anchors.clear();
   try{
   viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
-  WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
-  drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V);
+  if(!snap){WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
+    if(!fight)drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V)}
   terrainEnts(ents,cam);// (the finer terrain's grass, laid now, and its nature among the buildings: worldterrain.js)
   // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
   // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
@@ -340,8 +357,10 @@ function drawWorld(){
   // smoke and weather, the fog, the night and its lights, the way you walk, and over it all the banners and every label, the
   // quest marks, your goal and the pointer's brackets (worldui.js), and the minimap
   TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
-  drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
-  drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
+  if(snap){const q=FightSnap.q;TXTQ.push(...q.txt);LIGHTQ.push(...q.light);BANNERQ.push(...q.banner);PLAQUEQ.push(...q.plaque);WDEPTH.pics.push(...q.pics)}
+  else{drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
+    drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
+    if(fight)FightSnap.keep(sk,now,{txt:TXTQ.slice(),light:LIGHTQ.slice(),banner:BANNERQ.slice(),plaque:PLAQUEQ.slice(),pics:WDEPTH.pics.slice()});else FightSnap.clear()}
   nPlace=TXTQ.length}finally{WorldFlags.collect=false;ctx=scr;if(hi){VW--;VH--}}
   // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
   ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
