@@ -86,6 +86,7 @@ const PREFS={
   // over an army's or a herd's banner, the tally over a fight (the owner, 2026-11-14: "remove the numbers above the group, make it
   // available for dev mode only"; gfx/render.js drawBanners, world/fights.js, world/critters.js)
   dev:prefOnOff(false),
+  copyfield:prefOnOff(false),// a fight met on the map fought on a field of its own, copied from the map there (battle/copyfield.js; the owner, 2026-11-26), or on the map as ever
   opaths:{def:'sel',read:s=>['all','sel','off'].includes(s)?s:'sel',write:String},// order paths in battle: every group's, the selected (and pointed at, and just ordered) only, or none (ui/orderpaths.js)
   // the sound (audio.js): all of it off (Shift+M), and the volumes 0–1 (everything, the music, the effects); each change goes straight
   // to the speakers (audioPrefs)

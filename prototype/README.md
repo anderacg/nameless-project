@@ -279,7 +279,7 @@ js/battle/siegeworks.js a siege's walls on the field (SIEGE_WALL, SiegeWorks, Si
 js/battle/drops.js      what falls in a fight (BattleDrops; data/drops.js DROPS): XP dots to your hero, blue ones to the soldier who struck, coins, gear (whole, damaged or junk) and hides on the ground, picked up walking near
                       and the ram, the ladders, the defenders at their posts
 js/battle/            engage.js (going into a fight: power and stance, allies joining, the battle type, flight, auto-resolve, outcomes by kind: ON_WIN), parley.js (cornered parties; RecruitPick: you choose who of a band that yielded joins yours, as many as your groups hold; yieldEnd, yieldSpoils: a yield's spoils window), setup.js (BattleSetup, field
-                      and unit construction), worldbattle.js (WorldBattleSetup, the fixed world area, actual-position march handoff, forming up (BattleMuster, BATTLE_MUSTER.max s at most), reachable escape paths, local fog clearing, arrivals and regrouping), resolution.js (BattleResolution, field results and campaign settlement), worldcombat.js (WorldFigure targets, live rewards and continuous world completion),
+                      and unit construction), worldbattle.js (WorldBattleSetup, the fixed world area, actual-position march handoff, forming up (BattleMuster, BATTLE_MUSTER.max s at most), reachable escape paths, local fog clearing, arrivals and regrouping; worldGrid, the map copied into a field's grid), copyfield.js (CopyBattleSetup: a fight met on the map on a field of its own, copied from the map there, behind its switch), resolution.js (BattleResolution, field results and campaign settlement), worldcombat.js (WorldFigure targets, live rewards and continuous world completion),
                       battle.js (shared group defaults and frame orchestration), actors.js (each soldier's moment and his targeting: Actor, CharActor, HeroActor),
                       battlecontrol.js (group mechanics), commands.js (player selection and orders),
                       attacks.js (blows and wounds: Fighter, the base every Actor extends), projectiles.js (missiles: Missile, ArcMissile, Bolt, MagicBolt),
@@ -823,6 +823,20 @@ Transfer callers supply the receiving room: player capacity includes companions 
 `GarrisonService` owns stationing, local-guard call-ups and paid guard drafting. A holding still saves `gar` as a number: stationing intentionally turns any soldier into one generic defender, and calling one up gives its local melee unit. It does not preserve the stationed unit's type or XP. The last defender remains on the walls, normal capacity checks apply, and partial volunteer drafts are charged only for those actually hired. UI commands only dispatch and describe the result.
 
 ## Battle setup
+
+**A separate field copied from the map** (2026-11-26, the owner: "create a copy version of the area and battle in a separate map", "I want
+style 2"; `battle/copyfield.js` `COPY_FIELD`, `CopyField`, `CopyBattleSetup`; doc/COPY_FIELD_DESIGN.md; `tests/copyfield.js`). Behind
+its switch, off by default: the developer console's Separate field (`separate on|off`, kept: `PREFS.copyfield`). A fight met on
+the map with an army or a beast (`COPY_FIELD.kinds`) is fought on a field of its own: its size by the soldiers coming to it
+(`FIELD_SIZES`), its grid the map round the fight's middle (`fightArea`) at `COPY_FIELD.scale` (6) field px a world px, as a fight on
+the map reads it (`worldbattle.js` `worldGrid`, the cell loop moved out of `WorldBattleArea#terrain`, behaviour kept: water by its
+drawn depth, fords, woods, marsh, rock, roads, height and its steps, climate, the buildings' footprints). Its height counts from its
+lowest ground; the map's roads are its ways (`waysOf` segments), the holdings' buildings stand where they are, each model drawn
+`COPY_FIELD.hs` (6) times its size. Painted as any field (`engine/ground.js`). The world waits while it is fought; your band forms
+up left and theirs right, a man set down on rock or deep water moved to the nearest open ground; it ends as a field battle does.
+Measured (30 a side, 844 x 390, headless Chrome): 4.1 ms a frame against 6.6 on the map, the battle's update about a quarter.
+Not yet: armies riding in mid-fight, those nearby at its start, the fallen left on the map, the climate's patches and the map's
+cliffs drawn, a stream's shallows painted as water.
 
 `startBattle(opts)` remains the entry point. It creates a short-lived `BattleSetup` coordinator in `battle/setup.js`: spawn units and leaders, assemble command groups, create fresh battle state, initialize formations/morale/stamina/camera/deployment, then present the HUD. Unit definitions and character stats still belong to `Unit`/`Character`; group commands still belong to `BattleControl`. The coordinator does not enter saved state or introduce another unit inheritance tree.
 

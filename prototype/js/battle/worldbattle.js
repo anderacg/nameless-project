@@ -101,6 +101,26 @@ class BattleBystanders{
   }
   finish(){for(const [o,p] of this.entries)if(o.mapKind==='worker')o.moving=p.moving;this.entries.clear();this.navs.clear()}
 }
+/* the world's ground copied into a field's grid (WorldBattleArea#terrain's, a fight on the map; copyfield.js's, a fight on a field of
+   its own): each cell of a W x H field, s field px a world px, its corner at world (x0, y0): its tile's kind (water by its drawn depth,
+   a ford's shallows wadeable), its height, its climate, a road, the steps of the map's high ground as walls, the buildings' footprints */
+function worldGrid(x0,y0,W,H,s,env){
+  const cs=TERRAIN.cs,C=Math.ceil(W/cs),R=Math.ceil(H/cs),N=C*R,T=new BattleTerrain({cs,C,R,kind:new Uint8Array(N),lvl:new Uint8Array(N),up:new Int8Array(N).fill(-1)});
+  T.c0=CLIMS.indexOf(env.c);T.mix={c0:env.c,c:env.c,t:env.t,w:[]};T.clim=new Uint8Array(N);T.road=new Uint8Array(N);T.wall=new Uint8Array(N);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,p={x:x0+(c+.5)*cs/s,y:y0+(r+.5)*cs/s},tx=Math.floor(p.x/TILE),ty=Math.floor(p.y/TILE),j=ty*MW+tx,k=tAt(tx,ty);
+    // (the water as the map walks it, by its drawn depth there (worldterrain.js drawnDepth, map.js WATER): ankle to waist deep a ford's
+    //  shallows, deeper (swum, open water) deep; a water tile's dry px land. Was every water tile deep: a stream the bands waded walled
+    //  the fight in two, the owner, 2026-11-17: "Fighting across river or stream is bugged")
+    const dd=typeof drawnDepth==='function'?drawnDepth(p.x,p.y):(k===T_WATER?1:0),wet=dd>0?(depthBand(dd)>=4?TKIND.deep:TKIND.ford):-1;
+    T.kind[i]=k===T_MOUNT?TKIND.rock:k===T_FORD?TKIND.ford:wet>=0?wet:k===T_FOREST?TKIND.wood:climAt(p.x,p.y)==='swamp'?TKIND.marsh:TKIND.open;
+    if(k===T_ROAD){T.kind[i]=TKIND.open;T.road[i]=1}T.clim[i]=WM.climAt(tx,ty);
+    if(WM.has(tx,ty)){T.lvl[i]=Math.max(0,Math.min(3,(WM.elev[j]-64)>>5));const edge=WM.edge[j];if(p.x%TILE<cs/s&&edge&4)T.wall[i]|=4;if(p.x%TILE>TILE-cs/s&&edge&1)T.wall[i]|=1;if(p.y%TILE<cs/s&&edge&8)T.wall[i]|=8;if(p.y%TILE>TILE-cs/s&&edge&2)T.wall[i]|=2}
+  }
+  T.built=new Uint8Array(N);
+  for(const box of marchFootprints(x0,y0,x0+W/s,y0+H/s)){
+    for(let r=Math.max(0,Math.floor((box.y-y0)*s/cs));r<Math.min(R,Math.ceil((box.y+box.h-y0)*s/cs));r++)for(let c=Math.max(0,Math.floor((box.x-x0)*s/cs));c<Math.min(C,Math.ceil((box.x+box.w-x0)*s/cs));c++)T.built[r*C+c]=1;
+  }
+  return T}
 class WorldBattleArea{
   constructor(e){
     const other=e.ref?.src||e.ref,a={x:P.x,y:P.y,facing:marchFacing(P)},at0=other&&Number.isFinite(other.x)&&Number.isFinite(other.y)?other:{x:P.x+worldBattleReach(other),y:P.y};
@@ -140,21 +160,7 @@ class WorldBattleArea{
   exit(u,extra=0){let dx=u.x-this.cx,dy=u.y-this.cy,d=Math.hypot(dx,dy);if(d<1){dx=u.team?1:-1;dy=0;d=1}const r=this.radius+extra;return{x:this.cx+dx*r/d,y:this.cy+dy*r/d}}
   // The combat grid samples this exact window of the world. No mirrored/generated arena replaces it.
   terrain(){
-    const cs=TERRAIN.cs,C=Math.ceil(BW/cs),R=Math.ceil(BH/cs),N=C*R,T=new BattleTerrain({cs,C,R,kind:new Uint8Array(N),lvl:new Uint8Array(N),up:new Int8Array(N).fill(-1)});
-    T.c0=CLIMS.indexOf(this.env.c);T.mix={c0:this.env.c,c:this.env.c,t:this.env.t,w:[]};T.clim=new Uint8Array(N);T.road=new Uint8Array(N);T.wall=new Uint8Array(N);
-    for(let r=0;r<R;r++)for(let c=0;c<C;c++){const i=r*C+c,p=this.world({x:(c+.5)*cs,y:(r+.5)*cs}),tx=Math.floor(p.x/TILE),ty=Math.floor(p.y/TILE),j=ty*MW+tx,k=tAt(tx,ty);
-      // (the water as the map walks it, by its drawn depth there (worldterrain.js drawnDepth, map.js WATER): ankle to waist deep a ford's
-      //  shallows, deeper (swum, open water) deep; a water tile's dry px land. Was every water tile deep: a stream the bands waded walled
-      //  the fight in two, the owner, 2026-11-17: "Fighting across river or stream is bugged")
-      const dd=typeof drawnDepth==='function'?drawnDepth(p.x,p.y):(k===T_WATER?1:0),wet=dd>0?(depthBand(dd)>=4?TKIND.deep:TKIND.ford):-1;
-      T.kind[i]=k===T_MOUNT?TKIND.rock:k===T_FORD?TKIND.ford:wet>=0?wet:k===T_FOREST?TKIND.wood:climAt(p.x,p.y)==='swamp'?TKIND.marsh:TKIND.open;
-      if(k===T_ROAD){T.kind[i]=TKIND.open;T.road[i]=1}T.clim[i]=WM.climAt(tx,ty);
-      if(WM.has(tx,ty)){T.lvl[i]=Math.max(0,Math.min(3,(WM.elev[j]-64)>>5));const edge=WM.edge[j];if(p.x%TILE<cs/this.scale&&edge&4)T.wall[i]|=4;if(p.x%TILE>TILE-cs/this.scale&&edge&1)T.wall[i]|=1;if(p.y%TILE<cs/this.scale&&edge&8)T.wall[i]|=8;if(p.y%TILE>TILE-cs/this.scale&&edge&2)T.wall[i]|=2}
-    }
-    T.built=new Uint8Array(N);
-    for(const box of marchFootprints(this.x0,this.y0,this.x0+this.span,this.y0+this.span)){
-      for(let r=Math.max(0,Math.floor((box.y-this.y0)*this.scale/cs));r<Math.min(R,Math.ceil((box.y+box.h-this.y0)*this.scale/cs));r++)for(let c=Math.max(0,Math.floor((box.x-this.x0)*this.scale/cs));c<Math.min(C,Math.ceil((box.x+box.w-this.x0)*this.scale/cs));c++)T.built[r*C+c]=1;
-    }
+    const T=worldGrid(this.x0,this.y0,BW,BH,this.scale,this.env);
     OutpostTower.lay(T,this);// (a standing outpost tower: raised, sheer but its ladder, world/outposts.js)
     const plan={recipe:'world',hills:[],woods:[],marsh:[],rocks:[],rivers:[],lane:0,built:{houses:[],fields:[]}};T.routes.build(8,BH-8);this.escapeRoutes=T.route;T.route=Object.fromEntries(Object.entries(T.route).map(([who,g])=>{const cost=g.cost.slice();for(let i=0;i<cost.length;i++)if(!this.inside({x:(i%g.C+.5)*g.cs,y:(Math.floor(i/g.C)+.5)*g.cs},4))cost[i]=0;return[who,{...g,cost,pv:0,mv:null,off:null,memo:new Map(),dm:new Map()}]}));T.finish({seed:WM.seedNum||1},plan,BW,8,BH-8,1,false);return T;
   }
