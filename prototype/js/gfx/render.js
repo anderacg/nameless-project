@@ -152,8 +152,8 @@ function drawBanner1(q,cam,now,still){{if(q.marker){if(!inSight(q.o.x,q.o.y))ret
 /* a banner planted on a pole at the world lab's scale (engine/worldlab.js: a sprite's px a fine px): sprites.js bannerSprite's
    (BANNER: its pole, finial, cloth of its shape, its device) r times finer at its own size: the pole lit on its left, a gilt knob
    lit from the upper left, the cloth's folds shaded in three tones dithered where they meet and waving a game px (smoothly out
-   from the pole), its hem lit and its foot shaded, a banner's gilt fringe, its device r times its pattern, ringed a fine px in the
-   cloth's deepest shade; outlined inside as every figure is. Kept (spr); px, py: its pole's left and its foot's bottom edge */
+   from the pole), its hem lit and its foot shaded, a banner's gilt fringe, its device r times its pattern, flat;
+   outlined inside as every figure is. Kept (spr); px, py: its pole's left and its foot's bottom edge */
 function bannerFine(b,f,r){f=f?1:0;const key='bnf'+b.k+b.col+b.dev+f+r;if(spr[key])return spr[key];
   const N=BANNER,g=pgrid(N.w*r,N.h*r),s=(x,y,c)=>pset(g,x,y,c),Wd=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),trade=b.k==='trade',pen=b.k==='pennant'||trade,
     top=(trade?N.trade:N.top)*r,foot=(N.foot+1)*r-1,p0=2*r,x0=p0+r,[c0,h0]=N.cloth[b.k]||N.cloth.banner,cw=c0*r,ch=h0*r,fly=N.fly*r,cut=cw-(N.notch||3)*r,m=ch>>1;
@@ -170,12 +170,11 @@ function bannerFine(b,f,r){f=f?1:0;const key='bnf'+b.k+b.col+b.dev+f+r;if(spr[ke
   for(let i=0;i<cw;i++){const sl=Math.cos(ph(i)),tone=j=>{const v=i<r?.2:sl,a=v>.5?0:v>-.2?1:2,e=Math.abs(v-.5)<.1?1:Math.abs(v+.2)<.1?2:0;return e&&(i+j)&1?e-(a===e?1:0):a};
     for(const [r0,r1] of rows(i)){if(r1<r0)continue;for(let j=r0;j<=r1;j++){const y=top+j+wave(i),k=tone(j);at.set(i+','+j,y);s(x0+i,y,R[j===r0?Math.max(0,k-1):j===r1?Math.min(3,k+1):k])}
       if(b.k==='banner'&&i<cut&&r1===ch-1&&!(i&1))s(x0+i,top+ch+wave(i),G[(i>>1)%2?1:2])}}
-  // (the device in the middle of the field, r px a dot of its pattern, ringed in the deepest shade; a pennant's small)
+  // (the device in the middle of the field, r px a dot of its pattern, flat; a pennant's small)
   let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
-  if(T){const {lum,D}=devInk(b.col),C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},F=pen?[0,0]:devFit(T,N.dev!=null?T[0].length:c0,h0),
+  if(T){const {D}=devInk(b.col),C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},F=pen?[0,0]:devFit(T,N.dev!=null?T[0].length:c0,h0),
       i0=(trade?1:pen?1:(N.dev!=null?N.dev:0)+F[0])*r,j0=(trade?0:pen?Math.min(2,h0-T.length):F[1])*r,dev=new Map();
     T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')for(let v=0;v<r;v++)for(let u=0;u<r;u++)dev.set((i0+x*r+u)+','+(j0+y*r+v),C[c])}));
-    if(!trade&&lum<=.6)for(const p of dev.keys()){const [i,j]=p.split(',').map(Number);for(const [di,dj] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(j+dj);if(!dev.has(q)&&at.has(q))s(x0+i+di,at.get(q),R[3])}}
     for(const [p,c] of dev){const [i,j]=p.split(',').map(Number);if(at.has(p))s(x0+i,at.get(p),c)}}
   g.edge=true;poutline(g);const c=pcanvas(g);c.px=p0;c.py=foot+1;return spr[key]=c}
 // (a banner planted on a pole, its foot at (x, y) in game px, waving on the clock: bannerFine where the scene has fine px, else the

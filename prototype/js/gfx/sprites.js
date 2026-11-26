@@ -300,7 +300,7 @@ function banditSprite(f){f=(f||0)%PEOPLE_STEPS;const k='bd'+f;return FIGURES.get
    PX.ramp: light, the colour, shade, deep), lit from the top left: its folds run down it, each column lit as its fold turns to the
    light and in shade as it turns away (BANNER.fold), the hem along its top lit and its foot in shade; its fly end waves (the
    device's columns stay flat, so it reads); the device in the middle of the field, light on a dark field and dark on a light one,
-   ringed in the field's deepest shade so it stays clear zoomed out (a pennant's the device in small: BANNER_DEV's every other row
+   flat, no ring round it (a pennant's the device in small: BANNER_DEV's every other row
    and column); outlined inside as every figure is (people.js poutline, the edge kept). f: the flutter (0, 1), the folds half a fold along.
    BANNER: the grid (w, h), the cloth's top and the pole's foot (rows; a caravan's top: trade), each shape's cloth [w, h], the folds
    across it (fold) and where its fly end begins to wave (fly, columns) */
@@ -330,10 +330,10 @@ const devInk=col=>{const lum=[1,3,5].reduce((a,i,k)=>a+parseInt(col.slice(i,i+2)
 /* a banner's cloth by s(x, y, colour): its first column at x0 (by the pole), the rest out to dir (1: to the right, -1: to the left,
    trailing back from a man facing right), its top row at top; its size by its shape from sizes (BANNER.cloth, BATTLE_BANNER.cloth),
    its folds and its fly's wave by o (fold, fly; notch: how deep a swallow tail is cut, 3 columns else): the field in its ramp, lit by its folds, each shape's own outline (a swallow tail's
-   notch, a rag's torn foot and fly, a pennant's taper), the device in the middle of the field ringed in its deepest shade (a
+   notch, a rag's torn foot and fly, a pennant's taper), the device in the middle of the field, flat (a
    pennant's in small, a caravan's coin gilt) */
 function bannerCloth(s,x0,top,b,f,sizes,dir,o){const R=PX.ramp(b.col),G=PPAL.gold,trade=b.k==='trade',pen=b.k==='pennant'||trade,[cw,ch]=sizes[b.k]||sizes.banner,X=i=>x0+dir*i;
-  const {lum,D}=devInk(b.col);
+  const {D}=devInk(b.col);
   // the cloth: each column's rows [r0, r1] by its shape
   const rows=i=>{if(pen){const t=Math.round(i*(ch-1)/(cw-1));return[[0,ch-1-t]]}
     if(b.k==='rag'){const d=[0,1,0,2,1,0,3,1,2,0,2][(i+f*3)%11];return i===cw-1?[[0,0],[2,2],[4,Math.min(5,ch-1)]]:[[0,ch-1-Math.min(d,ch>>1)]]}
@@ -342,18 +342,13 @@ function bannerCloth(s,x0,top,b,f,sizes,dir,o){const R=PX.ramp(b.col),G=PPAL.gol
   for(let i=0;i<cw;i++){const sl=Math.cos(ph(i)),k=i===0?1:sl>.45?0:sl<-.45?2:1;for(const [r0,r1] of rows(i))for(let r=r0;r<=r1;r++){const y=top+r+wave(i);at.set(i+','+r,y);s(X(i),y,R[r===0?Math.max(0,k-1):r===r1?Math.min(3,k+1):k])}}
   if(b.k==='rag'&&cw>7){s(X(cw-5),top+3+wave(cw-5),R[3]);s(X(cw-4),top+Math.min(5,ch-2)+wave(cw-4),R[3])}// (a hole, a stain)
   let T=BANNER_DEV[b.dev];if(T&&pen&&!trade&&b.dev!=='lantern')T=[0,2,4].map(y=>[0,2,4].map(x=>T[y][x]).join(''));
-  if(T){const F=pen?[0,0]:devFit(T,o.dev!=null?T[0].length:cw,ch),i0=trade?1:pen?1:(o.dev!=null?o.dev:0)+F[0],r0=trade?0:pen?Math.min(2,ch-T.length):F[1],C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'},dev=new Set();
-    T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')dev.add((i0+x)+','+(r0+y))}));
-    // (a light device ringed in the cloth's deepest shade, to stand off it; a dark one on a light cloth (yours, the Free Banner's gold)
-    //  stands off it as it is: ringed, it read as a dark blot, the owner, 2026-11-26: "Why yellow flag has weird outline emblem")
-    if(!trade&&lum<=.6)for(const p of dev){const [i,r]=p.split(',').map(Number);for(const [di,dr] of [[1,0],[-1,0],[0,1],[0,-1]]){const q=(i+di)+','+(r+dr);if(!dev.has(q)&&at.has(q))s(X(i+di),at.get(q),R[3])}}
+  if(T){const F=pen?[0,0]:devFit(T,o.dev!=null?T[0].length:cw,ch),i0=trade?1:pen?1:(o.dev!=null?o.dev:0)+F[0],r0=trade?0:pen?Math.min(2,ch-T.length):F[1],C={w:trade?G[0]:D[0],x:trade?G[2]:D[1],g:G[1],f:'#fff2a0'};
+    // (flat, no ring round it, on every field (the owner, 2026-11-26: "Please drop emblem outline"))
     T.forEach((row,y)=>[...row].forEach((c,x)=>{const q=(i0+x)+','+(r0+y);if(c!=='.'&&at.has(q))s(X(i0+x),at.get(q),C[c])}))}}
 // (a device alone on a square of its field, n px: the flag window's choices (ui/names.js deviceUrl), large enough to read)
-function deviceTile(col,dev,n=9){const R=PX.ramp(col),T=BANNER_DEV[dev],{lum,D}=devInk(col),g=pgrid(n,n),C={w:D[0],x:D[1],g:PPAL.gold[1],f:'#fff2a0'};
+function deviceTile(col,dev,n=9){const R=PX.ramp(col),T=BANNER_DEV[dev],{D}=devInk(col),g=pgrid(n,n),C={w:D[0],x:D[1],g:PPAL.gold[1],f:'#fff2a0'};
   for(let y=0;y<n;y++)for(let x=0;x<n;x++)pset(g,x,y,R[y===0?0:y===n-1?2:1]);
-  if(T){const [dx,dy]=devFit(T,n,n),on=(x,y)=>(T[y-dy]||'')[x-dx]>'.';T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c==='.')return;
-      if(lum<=.6)for(const [a,e] of [[1,0],[-1,0],[0,1],[0,-1]])if(!on(dx+x+a,dy+y+e))pset(g,dx+x+a,dy+y+e,R[3])}));
-    T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')pset(g,dx+x,dy+y,C[c])}))}
+  if(T){const [dx,dy]=devFit(T,n,n);T.forEach((row,y)=>[...row].forEach((c,x)=>{if(c!=='.')pset(g,dx+x,dy+y,C[c])}))}
   return pcanvas(g)}
 function bannerSprite(b,f){f=f?1:0;const key='bn'+b.k+b.col+b.dev+f;if(spr[key])return spr[key];
   const N=BANNER,g=pgrid(N.w,N.h),s=(x,y,c)=>pset(g,x,y,c),Wd=PPAL.wood,G=PPAL.gold,trade=b.k==='trade',top=trade?N.trade:N.top,[cw]=N.cloth[b.k]||N.cloth.banner;

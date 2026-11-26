@@ -643,9 +643,9 @@ More choices and centred devices (2026-11-26, the owner: "Make flag emblem align
 the key redrawn upright). Each choice is now the device alone on a square of the chosen colour (`sprites.js` `deviceTile`,
 `names.js` `deviceUrl`), not a whole small flag. A device is placed by its drawn part's middle, not its 5 x 5 box (`devFit`), on
 every banner (`bannerCloth`, `render.js` `bannerFine`, `marchgear.js` `hangBackFlag`), so a crown or a star sits as centred as a
-tower; the hung battle banner is a row taller (`BATTLE_BANNER.hang.h` 12) so its device has its middle row. The device's ring is
-left off a light field on the close banner too (`bannerFine`), as on the others; `devInk` gives the device's inks by its field. Fingerprint: W6 changed (bc0bd37f: banners on the map with their devices
-centred); W5, W7, W8 and B2 held.
+tower; the hung battle banner is a row taller (`BATTLE_BANNER.hang.h` 12) so its device has its middle row. No device has a ring
+round it now, on any field (the owner, 2026-11-26: "Please drop emblem outline"); `devInk` gives the device's inks by its field. Fingerprint: W6 changed (255c61fb: banners on the map with their devices
+centred and flat); W5, W7, W8 and B2 held.
 
 ## Gender and pronouns (2026-11-01)
 

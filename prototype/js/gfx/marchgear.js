@@ -129,16 +129,16 @@ function battleBackFlag(b,f,Q=BATTLE_BANNER){if(b.k==='banner'&&Q.hang.on)return
 /* (a realm's banner at his back hung as the group flags are (the owner, 2026-11-10: "do this kind of flag for a faction flag on units
    as well only for a large one. But the pole should still at left side"): the same tall pole and gilt knob, a crossbar out from it
    to the cloth's side with a gold knob at its end, the cloth hung under it, taller than wide (hang: w, h), a gold trim at its sides
-   and foot, the realm's device in its middle ringed in its deepest shade, a gold fringe under it; its foot and fringe swung a px as
+   and foot, the realm's device in its middle, flat, a gold fringe under it; its foot and fringe swung a px as
    he moves (f). A rag, a pennant, a trade flag as before; ax, ay: the shoulders' point) */
 function hangBackFlag(b,f,Q=BATTLE_BANNER){const key='fH'+b.col+b.dev+f+(Q.id||'');let c=MARCH_FLAGS.get(key);if(c)return c;
   const {h,up}=Q.back,{w:cw,h:ch,bar}=Q.hang,g=pgrid(cw+4,h+4),x=cw+2,W=PPAL.wood,G=PPAL.gold,R=PX.ramp(b.col),s=(X,Y,col)=>pset(g,X,Y,col);
   for(let y=2;y<=h+1;y++)s(x,y,W[y>h-2?2:1]);s(x,1,G[1]);s(x,0,G[0]);
   for(let X=x-cw-1;X<x;X++)s(X,bar,W[1]);s(x-cw-1,bar,G[1]);
-  const {lum,D}=devInk(b.col),T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;
+  const {D}=devInk(b.col),T=BANNER_DEV[b.dev],x0=x-cw,y0=bar+1;
   const sw=r=>r>=ch-2?-f:0,dev=new Map();if(T){const [i0,r0]=devFit(T,cw,ch-1);T.forEach((row,y)=>[...row].forEach((q,i)=>{if(q!=='.')dev.set((i0+i)+','+(r0+y),q)}))}
-  for(let r=0;r<ch;r++)for(let i=0;i<cw;i++){const k=i+','+r,d=dev.get(k),ring=lum<=.6&&!d&&[[1,0],[-1,0],[0,1],[0,-1]].some(([a,e])=>dev.has((i+a)+','+(r+e)));
-    s(x0+i+sw(r),y0+r,i===0||i===cw-1||r===ch-1?(r===ch-1||i===cw-1?G[2]:G[1]):d?(d==='x'?D[1]:D[0]):ring?R[3]:R[r===0?0:r>=ch-3?2:1])}
+  for(let r=0;r<ch;r++)for(let i=0;i<cw;i++){const k=i+','+r,d=dev.get(k);
+    s(x0+i+sw(r),y0+r,i===0||i===cw-1||r===ch-1?(r===ch-1||i===cw-1?G[2]:G[1]):d?(d==='x'?D[1]:D[0]):R[r===0?0:r>=ch-3?2:1])}
   for(let i=0;i<cw;i+=2)s(x0+i+sw(ch),y0+ch,G[1]);
   g.edge=true;poutline(g);c=pcanvas(g);c.ax=x;c.ay=h+1-up;MARCH_FLAGS.set(key,c);return c}
 // (its wave: still while he stands, MARCH_GEAR.flutter a second as he moves)
