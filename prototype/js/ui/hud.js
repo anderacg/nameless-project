@@ -90,6 +90,8 @@ function updateHint(){
 function holding(g){const gr=B.groups[g],m=grpUnits(g);return !!gr&&gr.order==='hold'&&!gr.tgt&&!(gr.queue&&gr.queue.length)&&m.length>0&&m.filter(u=>u.slotted&&!u.spdNow).length>=m.length*.6}
 function setOrderUI(){
   if(!B)return;const gs=selGroups().filter(g=>grpUnits(g).length),src=gs.length?gs:selGroups();
+  // (casual command: its three orders, lit by the selection's; the detailed ones hidden, style.css #bbar.casual)
+  {const c=Casual.on();document.getElementById('bbar')?.classList.toggle('casual',c);document.getElementById('screen')?.classList.toggle('casual-battle',c);if(c)document.querySelectorAll('[data-casual]').forEach(b=>{const on=gs.length>0&&gs.every(g=>Casual.orderOf(B.groups[g])===b.dataset.casual);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=!gs.length||!!B.over})}
   document.querySelectorAll('[data-order]').forEach(b=>{const o=b.dataset.order;b.classList.toggle('on',o==='charge'?src.every(g=>!walking(B.groups[g])):o==='advance'?src.every(g=>walking(B.groups[g])):o==='hold'?src.every(holding):src.every(g=>B.groups[g].order===o))});
   // the formation buttons: lit when every selected group it suits stands in it; dimmed when it suits none of them
   document.querySelectorAll('[data-form]').forEach(b=>{const f=b.dataset.form,fit=src.filter(g=>formFits(g,f)),on=fit.length>0&&fit.every(g=>B.groups[g].form===f);b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on));b.disabled=!fit.length});

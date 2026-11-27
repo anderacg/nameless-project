@@ -36,7 +36,7 @@ function rtsSelect(x0,y0,x1,y1,add){
 // Attack-move button armed (B.amArm), an attack-move there: battlecontrol.js AMOVE). Any order but a waypoint ends an attack-move.
 // Keep formation on (two or more groups): sent as one block, turned to face the way it goes (formations.js GroupBlock)
 function rtsOrder(x,y,opt){
-  if(B?.muster?.active)return;
+  if(B?.muster?.active||Casual.on())return;// (casual command: no moves or targets by the field, its orders alone: casual.js)
   if(WorldCombat.live()&&!B.world.inside({x,y},16))return WorldCombat.move(x,y);
   if(WorldCombat.live()&&WorldCombat.click(x,y,true))return;
   opt=opt||{};const gs=selGroups().filter(g=>grpUnits(g).length&&!B.groups[g].resolve?.routed);if(!gs.length)return;const am=amTake(opt),keep=gs.length>1&&keepFormOn();playerOrder(gs,()=>{
@@ -64,7 +64,7 @@ function rtsOrder(x,y,opt){
 function amTake(opt){const am=!!(opt&&opt.amove||B.amArm)&&!B.deploy;if(B.amArm){B.amArm=false;setOrderUI()}return am}
 const amSay=()=>toast(htmlText(selLabel())+': attack-move.');
 // the Attack-move button (D): the selection's next order on the ground an attack-move (pressed again, or Esc: not)
-function armAttackMove(on){if(!B||B.deploy||B.muster?.active)return;B.amArm=on??(!B.amArm&&selGroups().length>0);setOrderUI()}
+function armAttackMove(on){if(!B||B.deploy||B.muster?.active||Casual.on())return;B.amArm=on??(!B.amArm&&selGroups().length>0);setOrderUI()}
 // keep formation on or off (its button, Shift+K; a setting kept: ui.js PREFS.keepform): on, two or more groups sent as one block
 function toggleKeepForm(on){prefSet('keepform',on??!prefGet('keepform'));toast(prefGet('keepform')?'Keep formation: several groups move as one block, turning to face the way they go.':'Keep formation off: each group goes on its own.')}
 // an order to the selected groups: hold (where they stand), charge, advance, withdraw (flee the battle: off your edge,
@@ -125,7 +125,7 @@ function setForm(f){
 }
 // (o.amove: Ctrl, or the Attack-move button: an attack-move to the line, rtsOrder)
 function formDragTo(x0,y0,x1,y1,o){
-  if(B?.muster?.active)return false;
+  if(B?.muster?.active||Casual.on())return false;
   if(B.deploy){const a=inZone(x0,y0),b=inZone(x1,y1);x0=a.x;y0=a.y;x1=b.x;y1=b.y}// (deploying: the line in your zone)
   const plan=formPlan(x0,y0,x1,y1);if(!plan.length)return false;const am=amTake(o);playerOrder(plan.map(p=>p.g),()=>{
   // (each a move to its part of the line, facing as dragged, as wide as its share of it: battlecontrol.js; your hero shares the line)

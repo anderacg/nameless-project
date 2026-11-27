@@ -77,7 +77,13 @@ function marchCanvasView(){
 }
 // (a fresh draft of the field: each row's saved place, facing and formation; base: it as it began, to tell a change)
 function marchDraft(){const draft=marchDefaultsNow();return{draft,base:JSON.stringify(draft),history:[],radius:marchRoom(P),sel:marchRows(P).find(r=>r.id!=='hero')?.id||'hero'}}
-const marchDefaultsNow=()=>Object.fromEntries(marchRows(P).map(r=>[r.id,{x:r.x,y:r.y,face:r.face||0,form:r.form,files:r.files}]));
+const marchDefaultsNow=()=>Object.fromEntries(marchRows(P).map(r=>[r.id,{x:r.x,y:r.y,face:r.face||0,form:r.form,files:r.files,order:marchOrderOf(r.id)}]));
+// (a group's opening order in a battle in casual command: its saved one, else Attack (battle/casual.js CASUAL_ORDERS))
+const marchOrderOf=id=>CASUAL_ORDERS[P.army?.march?.[id]?.order]?.open?P.army.march[id].order:'attack';
+// (the opening order's buttons for the group selected: those a plan may open with; casual command off, said so)
+function marchOrderControls(){const p=G.march.draft[G.march.sel];if(!p)return '';
+  return '<div class="lab">Opening order</div><div class="btns">'+Object.entries(CASUAL_ORDERS).filter(([,o])=>o.open).map(([k,o])=>fbBtn('march-order',k,o.n,'',(p.order||'attack')===k?'on':'')).join('')+'</div>'+
+    '<p class="muted">'+htmlText(CASUAL_ORDERS[p.order||'attack'].d)+(CASUAL.on?'':' (Casual command is off in Settings: you command every group yourself.)')+'</p>'}
 // (the draft made for other rows than march now: a group joined or gone since)
 const marchStale=()=>{const ids=marchRows(P).map(r=>r.id);return ids.length!==Object.keys(G.march.draft).length||ids.some(id=>!G.march.draft[id])};
 // (the tab on its Field view, a fresh draft: the way the tests and any old caller open the editor)
@@ -104,7 +110,7 @@ function marchBind(){if(G.mode!=='char'||G.char!=='march')return;const f=documen
 function marchObserve(cv,draw){G.marchResize?.disconnect();G.marchResize=new ResizeObserver(()=>{if(document.body.contains(cv))draw();else G.marchResize?.disconnect()});G.marchResize.observe(cv)}
 function marchFieldHtml(){
   const s=G.march,ids=marchRows(P).map(r=>r.id);
-  return '<div class="march-layout"><div class="march-stage"><canvas id="marchCanvas" aria-label="Drag a group inside the outer formation ring"></canvas></div><div class="march-side"><div class="fb-scroll" data-fb-scroll="march-field"><div class="btns">'+ids.map(id=>fbBtn('march-select',id,(rg=>rg?groupBadge(rg,12)+' ':'')(partyRoster(P).groups.find(g=>g.id===id))+htmlText(marchNumbers(P)[id]+', '+armyGroupLabel(id)),'',s.sel===id?'on':'')).join('')+'</div><p id="marchLabel"></p>'+fbBtn('march-tool','move','Move groups','',s.tool!=='form'?'on':'')+fbBtn('march-tool','form','Draw formation',s.sel==='hero'?'Select a troop group first':'',s.tool==='form'?'on':'')+fbBtn('march-range',null,s.range?'Hide range':'Show range',marchRangeShape(marchDraftRows().find(r=>r.id===s.sel))?'':'This group has no ranged attack',s.range?'on':'')+marchFormControls()+'<div class="btns">'+[['up','↑'],['left','←'],['right','→'],['down','↓']].map(([k,n])=>fbBtn('march-step',k,n)).join('')+'</div>'+'<div class="btns">'+fbBtn('march-undo',null,'Undo',s.history.length?'':'No changes to undo')+fbBtn('march-reset-selected',null,'Reset group')+fbBtn('march-reset',null,'Reset all')+'</div><p class="fb-note">Drag to move, Right-drag to set frontage and facing, On touch, choose Draw formation.<br>Gold ring: placement boundary, Dashed ring: interaction only, Red: outside boundary, fitted inside on release.<br>Show range opens a range overview. Ground obstacles are resolved while marching.'+marchAllHurt(ids)+'</p></div>'+
+  return '<div class="march-layout"><div class="march-stage"><canvas id="marchCanvas" aria-label="Drag a group inside the outer formation ring"></canvas></div><div class="march-side"><div class="fb-scroll" data-fb-scroll="march-field"><div class="btns">'+ids.map(id=>fbBtn('march-select',id,(rg=>rg?groupBadge(rg,12)+' ':'')(partyRoster(P).groups.find(g=>g.id===id))+htmlText(marchNumbers(P)[id]+', '+armyGroupLabel(id)),'',s.sel===id?'on':'')).join('')+'</div><p id="marchLabel"></p>'+marchOrderControls()+fbBtn('march-tool','move','Move groups','',s.tool!=='form'?'on':'')+fbBtn('march-tool','form','Draw formation',s.sel==='hero'?'Select a troop group first':'',s.tool==='form'?'on':'')+fbBtn('march-range',null,s.range?'Hide range':'Show range',marchRangeShape(marchDraftRows().find(r=>r.id===s.sel))?'':'This group has no ranged attack',s.range?'on':'')+marchFormControls()+'<div class="btns">'+[['up','↑'],['left','←'],['right','→'],['down','↓']].map(([k,n])=>fbBtn('march-step',k,n)).join('')+'</div>'+'<div class="btns">'+fbBtn('march-undo',null,'Undo',s.history.length?'':'No changes to undo')+fbBtn('march-reset-selected',null,'Reset group')+fbBtn('march-reset',null,'Reset all')+'</div><p class="fb-note">Drag to move, Right-drag to set frontage and facing, On touch, choose Draw formation.<br>Gold ring: placement boundary, Dashed ring: interaction only, Red: outside boundary, fitted inside on release.<br>Show range opens a range overview. Ground obstacles are resolved while marching.'+marchAllHurt(ids)+'</p></div>'+
     '<div class="btns march-commit">'+fbBtn('march-back',null,'Discard',JSON.stringify(s.draft)!==s.base?'':'No changes')+fbBtn('march-apply',null,'Apply formation','','primary')+'</div></div></div>';
 }
 function marchFieldBind(cv){
@@ -134,7 +140,7 @@ function marchFacingGuide(g,row,x,y,scale){
    window is open (marchAnimate); still for anyone who asks the system for less motion */
 const MARCH_FX={spin:6,ants:10,breathe:3.5,fps:30,sweep:.7};
 const marchStill=()=>window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-function marchRings(g,v,scale,t,bad){const R=marchDraftOuter()*scale,I=(marchDraftOuter()+WORLD_BATTLE.interaction)*scale,C=marchCore(P)*scale,X=MARCH_FX,arc=r=>{g.beginPath();g.arc(v.x,v.y,r,0,Math.PI*2);g.stroke()};
+function marchRings(g,v,scale,t,bad){const R=marchDraftOuter()*scale,I=(marchDraftOuter()+WORLD_BATTLE.interaction)*scale,C=marchCore(P)*scale,X=MARCH_FX,arc=r=>{g.beginPath();g.arc(v.x,v.y,Math.max(0,r),0,Math.PI*2);g.stroke()};// (none below 0: a canvas not laid out yet, a ring inset past its middle)
   g.save();g.strokeStyle='#756447';g.setLineDash([4,4]);g.lineDashOffset=-t*X.ants;arc(I);g.setLineDash([]);
   g.globalAlpha=.55+.3*Math.sin(t*2*Math.PI/X.breathe);g.strokeStyle='#796943';arc(C);g.globalAlpha=1;
   const gold=bad?'#ef8176':'#c9a551',pulse=bad?.5+.5*Math.sin(t*8):0;g.lineWidth=6;g.globalAlpha=.12+.2*pulse;g.strokeStyle=gold;arc(R);g.lineWidth=3;g.globalAlpha=.2+.2*pulse;arc(R);g.globalAlpha=1;g.lineWidth=1;arc(R);
@@ -263,7 +269,7 @@ onAct('march-',(a,arg)=>{
   if(a==='march-view'){if(MARCH_VIEWS.some(([k])=>k===arg))partyView().march=arg;renderMarch();return}
   if(a.startsWith('march-col-')){G.column?.act(a.slice(10),arg);return}
   const s=G.march;if(!s)return;
-  if(a==='march-apply'){marchDraftClamp();P.army.march=Object.fromEntries(Object.entries(s.draft).map(([id,p])=>[id,{x:p.x,y:p.y,face:p.face||0}]));for(const g of partyRoster(P).groups){const p=s.draft[g.id];if(p){g.form=p.form;g.files=p.files}}G.march=null;renderMarch();return}
+  if(a==='march-apply'){marchDraftClamp();P.army.march=Object.fromEntries(Object.entries(s.draft).map(([id,p])=>[id,{x:p.x,y:p.y,face:p.face||0,order:CASUAL_ORDERS[p.order]?.open?p.order:'attack'}]));for(const g of partyRoster(P).groups){const p=s.draft[g.id];if(p){g.form=p.form;g.files=p.files}}G.march=null;renderMarch();return}
   if(a==='march-range'){s.range=!s.range;renderMarch();return}
   if(a==='march-undo'){if(s.history.length)s.draft=s.history.pop();renderMarch();return}
   if(a==='march-reset-selected'){const before=structuredClone(s.draft);s.draft[s.sel]=marchDefaults()[s.sel];marchDraftClamp();marchRemember(before);renderMarch();return}
@@ -272,6 +278,7 @@ onAct('march-',(a,arg)=>{
   // (Discard: the draft dropped, the saved formation shown again)
   if(a==='march-back'){G.march=null;renderMarch();return}
   if(a==='march-select'&&s.draft[arg]){s.sel=arg;renderMarch();return}
+  if(a==='march-order'&&CASUAL_ORDERS[arg]?.open&&s.draft[s.sel]){const before=structuredClone(s.draft);s.draft[s.sel].order=arg;marchRemember(before);renderMarch();return}
   if(a==='march-reset'){const before=structuredClone(s.draft);s.draft=marchDefaults();marchDraftClamp();marchRemember(before);renderMarch();return}
   if(a==='march-step'){const before=structuredClone(s.draft),p=s.draft[s.sel],d={up:[0,-2],down:[0,2],left:[-2,0],right:[2,0]}[arg];if(!d)return;const row=marchDraftRows().find(r=>r.id===s.sel),q=marchPlace({...row,face:p.face??row.face},p.x+d[0],p.y+d[1],marchDraftOuter());p.x=q.x;p.y=q.y;marchRemember(before);renderMarch()}
 });

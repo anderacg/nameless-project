@@ -109,7 +109,8 @@ function bhudPowers(){
     el.addEventListener('click',e=>{if(e.target.closest('#bAuto')){autoKey();return}const b=e.target.closest('[data-power]');if(b)commandPower(b.dataset.power)});
     el.addEventListener('pointerover',e=>{const b=e.target.closest('[data-power]');if(B)B.cmdHov=b?b.dataset.power:null});el.addEventListener('pointerleave',()=>{if(B)B.cmdHov=null});
     bar.appendChild(el);autoUI()}
-  const pw=powersOn();el.querySelector('.cmdh').textContent=pw?'Commander abilities':'AI command';el.hidden=false;if(!pw){for(const b of el.querySelectorAll('[data-power]'))b.hidden=true;return}
+  const pw=powersOn();el.querySelector('.cmdh').textContent=pw?'Commander abilities':'AI command';el.hidden=!pw&&Casual.on();// (casual command and no powers: nothing left in it, its AI button hidden)
+  if(!pw){for(const b of el.querySelectorAll('[data-power]'))b.hidden=true;return}
   const c=commanderOf(0),R=c?Math.round(commandRadius(0)):0;
   for(const b of el.querySelectorAll('[data-power]')){const id=b.dataset.power,A=COMMANDS[id],st=powerStatus(0,id);b.hidden=false;
     const off=!!st.why,cool=st.cooldown>0;b.classList.toggle('off',off);b.setAttribute('aria-disabled',String(off));b.classList.toggle('on',st.left>0);

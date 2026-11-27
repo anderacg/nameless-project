@@ -277,6 +277,7 @@ const UI_ORDER_ART={
   shieldWall:["shieldWall"],
   hold:["hold"],
   follow:["people","right"],
+  back:["people","left"],
   charge:["charge"],
   advance:["speed"],
   halt:["pause"],

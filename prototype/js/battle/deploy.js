@@ -22,7 +22,7 @@ function setDeploy(on){prefSet('bdeploy',on)}
 // the deployment zone (field px): your side's (setup.js fieldZone: on a sized field with open ground behind it); holding a bridge,
 // on to the bank (B.dzone: setup.js arrangeType)
 const deployZone=()=>{const Z=fieldZone(0);if(B&&B.dzone)Z.x1=Math.max(Z.x0+FORMS.line.gx*2,B.dzone.x1);return Z};
-function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;if(B.deploy&&GUIDE.on)toast('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
+function deployInit(opts){B.deploy=!!(opts.deploy&&(opts.sandbox||BDEPLOY.on)&&!opts.tournament);B.auto=!opts.tournament&&BAUTO.on;Casual.begin(opts);if(B.deploy&&GUIDE.on)toast('Deploy your band: right-click or right-drag in the shaded zone, then Space to begin.')}
 // keep a point in the zone
 const inZone=(x,y)=>{const Z=deployZone();return{x:clamp(x,Z.x0,Z.x1),y:clamp(y,Z.y0,Z.y1)}};
 // deploying, the groups just placed stand there at once (in the zone), not march
@@ -44,7 +44,7 @@ const aiAll=()=>!!B&&(!!B.auto||playerGroups().length>0&&playerGroups().every(id
 const aiAny=()=>!!B&&(!!B.auto||playerGroups().some(id=>B.groups[id].aiCmd));
 // (the AI's hold on your army changed: its captain (commander.js captainMem, its key 0) forgotten, to think afresh at once; the
 // whole-army choice remembered for the next battle)
-function aiChanged(quiet,msg){if(B.captains)delete B.captains[0];B.cmdT=0;if(!B.opts.sandbox)prefSet('bauto',aiAll());autoUI();if(!quiet)toast(msg)}
+function aiChanged(quiet,msg){if(B.captains)delete B.captains[0];B.cmdT=0;if(!B.opts.sandbox&&!B.casual)prefSet('bauto',aiAll());autoUI();if(!quiet)toast(msg)}
 // the AI in command of your whole army, on or off (remembered for the next battle); every group's own flag cleared
 function setAuto(on,quiet){
   if(!B)return;B.auto=!!on;for(const g of playerGroups())B.groups[g].aiCmd=false;

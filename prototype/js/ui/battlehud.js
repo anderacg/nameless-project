@@ -4,6 +4,8 @@
    rings under the soldiers you have selected, a softer one under the group you point at, and lines from each selected group to
    where it is going (or whom it is set on). ---------- */
 // Glyph identities resolve to shared illustrated commands; unknown rows keep their compact fallback.
+// (casual command's orders: battle/casual.js)
+const CASUAL_ICON={attack:'amove',hold:'hold',back:'back'};
 const ORDER_ICON={shieldWall:'shieldWall',hold:'hold',follow:'follow',charge:'charge',advance:'advance',halt:'halt',withdraw:'withdraw',walk:'walk',firm:'firm',cease:'cease',melee:'melee',skirmish:'skirmish',amove:'amove',keep:'keep'};
 function pixelSVG(name,size,cls){return name?uiOrderIcon(name,size,cls):''}
 /* the order bar (doc/UNIT_KITS_DESIGN.md §2, §3, §5, §7b), built from the tables (data/kits.js; its keys KIT_KEYS, by KITS.keys2): the
@@ -16,7 +18,8 @@ function pixelSVG(name,size,cls){return name?uiOrderIcon(name,size,cls):''}
 const barBtn=(attr,key,title,extra)=>'<button class="obtn" type="button" '+attr+' data-key="'+keyFace(key||'')+'" title="'+htmlText(title+(key?' ('+keyFace(key)+')':''))+'"'+(extra||'')+'></button>';
 function bhudBar(){const O=ORDERS,S=STANCES,K=kitKey,k2=KITS.keys2,row=(id,h,hid)=>'<span class="srow'+(hid?' legacy':'')+'" role="group" data-stance="'+id+'"'+(hid?' hidden':'')+' aria-label="'+htmlText(S[id].n+(K(id)?' ('+K(id)+')':'')+(S[id].cycle?': '+[S[id].none,...S[id].ch.map(c=>c.n)].join(', '):''))+'">'+h+'</span>',
     flag=(c,key)=>barBtn('data-flag="'+c.flag+'"',key,c.d,' aria-pressed="false"'),pace=S.pace.ch;
-  return '<div class="ogrp orders" role="group" aria-label="Orders">'+barBtn('data-order="hold"',K('hold'),O.hold.d)+(k2?barBtn('id="bCharge"',K('charge'),O.charge.d):'')+barBtn('id="bAmove"',K('amove'),O.attack.amove.d,' aria-pressed="false"')+'</div>'+
+  return '<div class="ogrp casual" role="group" aria-label="Orders">'+Object.entries(CASUAL_ORDERS).map(([k,o])=>'<button class="obtn" type="button" data-casual="'+k+'" title="'+htmlText(o.n+': '+o.d)+'" aria-label="'+htmlText(o.n+': '+o.d)+'" aria-pressed="false">'+pixelSVG(CASUAL_ICON[k],18)+'<span class="mbh-label">'+o.n+'</span></button>').join('')+'</div>'+
+    '<div class="ogrp orders" role="group" aria-label="Orders">'+barBtn('data-order="hold"',K('hold'),O.hold.d)+(k2?barBtn('id="bCharge"',K('charge'),O.charge.d):'')+barBtn('id="bAmove"',K('amove'),O.attack.amove.d,' aria-pressed="false"')+'</div>'+
     '<div class="ogrp stances pace" role="group" aria-label="Stances">'+row('pace',barBtn('data-order="charge"',k2?'':K('charge'),k2?O.run.d:'Charge: they move at a run; a run at an enemy is a charge')+barBtn('data-order="advance"',K('pace'),pace[1].d+'; '+K('pace')+' switches walking and running'))+'</div>'+
     '<div class="ogrp wd" role="group" aria-label="Withdraw">'+barBtn('data-order="withdraw"',K('withdraw'),O.withdraw.d)+'</div>'+
     '<div class="ogrp stances rest" role="group" aria-label="Stances">'+row('discipline',flag(S.discipline.ch[0],K('discipline')))+
@@ -27,7 +30,7 @@ function bhudBar(){const O=ORDERS,S=STANCES,K=kitKey,k2=KITS.keys2,row=(id,h,hid
     '<div class="ogrp forms" role="group" aria-label="Formations ('+(k2?K('form')+': the next of line, loose, a circle, wedge or column; '+K('ring')+': a circle':'L/T again: line')+'; drag for width and depth)">'+FORM_PICK.map(f=>'<button class="obtn" type="button" data-form="'+f+'" aria-pressed="false"></button>').join('')+'<button class="obtn" type="button" id="bRing" aria-pressed="false"></button></div>'+
     '<div class="ogrp abils skills" role="group" aria-label="Skills ('+skillKeys().join(', ')+': each selected unit its own in that slot)" hidden></div>'}
 function bhudInit(){
-  {const bar=document.querySelector('#bbar .borders');if(bar){bar.innerHTML=bhudBar();bar.dataset.keys=KITS.keys2;withdrawView.bind()}}// (Withdraw's preview on its new button: orderpaths.js)
+  {const bar=document.querySelector('#bbar .borders');if(bar){bar.innerHTML=bhudBar();bar.dataset.keys=KITS.keys2;withdrawView.bind();bar.querySelector('.casual')?.addEventListener('click',e=>{const b=e.target.closest('[data-casual]');if(b&&!b.disabled)Casual.give(b.dataset.casual)})}}// (Withdraw's preview on its new button: orderpaths.js)
   document.querySelectorAll('.obtn[data-order],.obtn[data-flag]').forEach(b=>{const k=b.dataset.order||b.dataset.flag;b.innerHTML=pixelSVG(ORDER_ICON[k],18)+'<span class="k">'+(b.dataset.key||'')+'</span>'+(['hold','withdraw'].includes(k)?'<span class="mbh-label">'+(k==='hold'?'Hold':'Retreat')+'</span>':'');b.setAttribute('aria-label',b.title)});
   {const b=document.getElementById('bAmove');if(b){b.innerHTML=pixelSVG(ORDER_ICON.amove,18)+'<span class="k">'+(b.dataset.key||'')+'</span><span class="mbh-label">Attack</span>';b.setAttribute('aria-label',b.title);b.addEventListener('click',()=>armAttackMove())}}// (attack-move: commands.js armAttackMove)
   // (the Mounted stance: commands.js toggleMounted; Charge, a true order: chargeOrder; the stance slots: stanceSlot)
@@ -90,7 +93,7 @@ const CARD={show:4,low:.25,moved:14};
 // in the card's tooltip (w, lower case)
 function cardStatus(g,m,mo,stm){
   const gr=g!=='all'&&B.groups[g],out=[],add=(p,k,w,o,shown=true)=>out.push({p,k,svg:shown?badgeSVG(k,11):null,w,s:w[0].toLowerCase()+w.slice(1),...o});
-  if(gr?aiHas(gr):g==='all'&&aiAll())add(-1,'ai','The AI in command (A: take '+(gr?'it':'them')+' back)');// (first, always shown: deploy.js)
+  if(!Casual.on()&&(gr?aiHas(gr):g==='all'&&aiAll()))add(-1,'ai','The AI in command (A: take '+(gr?'it':'them')+' back)');// (first, always shown: deploy.js)
   if(mo){const st=stateIcon(mo.state);
     if(st)add(0,st,MORALE_STATE[mo.state].n+((st==='routing'||st==='shattered')&&mo.rout?': '+mo.rout+' running':st==='breaking'&&mo.breaking?': '+mo.breaking+' breaking':''));
     if(mo.rout&&st!=='routing'&&st!=='shattered')add(0,'routing',mo.rout+' running',{n:mo.rout});
@@ -164,7 +167,7 @@ function bhudInfo(){
   const g=gs[0],S=stat(g),gr=S.gr,rep=g==='hero'?'hero':repOf(S.m),st=g==='hero'?B.hero.s:ST[rep]||S.m[0].s,sh=g!=='hero'?grpShape(g):null;
   const flags=[S.mo&&S.mo.breaking?'Breaking: '+S.mo.breaking+' (morale collapse)':'',gr.walk?'Walking':'Running',gr.firm?'Holding ground':'',gr.cease?'Cease fire':'',gr.skirmish?'Skirmishing':'',gr.melee===false&&grpUnits(g).some(u=>u.s.range)?'Melee mode off':'',(r=>r&&r.on<r.of?r.on+'/'+r.of+' mounted':'')(Dismount.tally(S.m)),S.mo?.confident?'Confident: local superiority':''].filter(Boolean).join(', ');
   const head='<div class="bi-head"><button class="bi-picb'+(B.infoCard?' on':'')+'" type="button" data-bi-card title="'+(B.infoCard?'Back to its orders and bars':'Its unit card')+'" aria-pressed="'+!!B.infoCard+'"><img class="bi-pic" src="'+hudPic(rep,g==='hero')+'" alt=""></button><div><div class="bi-title">'+htmlText(g==='hero'&&!gr.customName?(P.name||'Your hero'):groupName(g))+'</div><small>'+(g==='hero'?'Your hero':S.m.length+' × '+(ST[rep]?ST[rep].n:rep))+'</small>'+
-    '<small>'+(aiHas(gr)?'AI, ':'')+(gr.amove?'Attack-move':cap1(gr.order))+(g!=='hero'?', '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
+    '<small>'+(Casual.on()?CASUAL_ORDERS[Casual.orderOf(gr)].n:(aiHas(gr)?'AI, ':'')+(gr.amove?'Attack-move':cap1(gr.order)))+(g!=='hero'?', '+FORMS[gr.form||'line'].n+(sh?' '+sh.files+'×'+sh.ranks:''):'')+'</small></div></div>';
   if(B.infoCard){setHtml(el,head+bhudCardOf(g,S,rep,st));return}
   setHtml(el,head+
     '<div class="bi-bar hp"><i style="width:'+pct(S.hp/Math.max(1,S.mx))+'"></i><em>Health '+Math.round(S.hp)+' / '+Math.round(S.mx)+'</em></div>'+
@@ -186,7 +189,7 @@ function bhudCardOf(g,S,rep,st){const m=S.m,hero=g==='hero',tm=tiredMul(m[0]),st
 function bhudSelection(){
   let el=document.getElementById('bSelectionSummary');if(!el){el=document.createElement('div');el.id='bSelectionSummary';el.className='battle-selection-summary';(document.querySelector('.battle-power-body')||document.querySelector('.btop'))?.appendChild(el)}
   const gs=selGroups().filter(g=>grpUnits(g).some(u=>!u.left)),men=gs.flatMap(grpUnits).filter(u=>!u.left);if(!men.length){setHtml(el,'<span>Select a unit to give orders</span>');return}
-  const hp=men.reduce((a,u)=>a+u.hp,0),max=men.reduce((a,u)=>a+u.max,0),orders=[...new Set(gs.map(g=>B.groups[g].amove?'Attack move':cap1(B.groups[g].order)))],auto=gs.filter(g=>aiHas(B.groups[g])).length,
+  const hp=men.reduce((a,u)=>a+u.hp,0),max=men.reduce((a,u)=>a+u.max,0),orders=[...new Set(gs.map(g=>Casual.on()?CASUAL_ORDERS[Casual.orderOf(B.groups[g])].n:B.groups[g].amove?'Attack move':cap1(B.groups[g].order)))],auto=gs.filter(g=>aiHas(B.groups[g])).length,
     name=gs.length===1?groupName(gs[0]):B.sel==='all'?'All troops':gs.length+' units';
   setHtml(el,'<strong>'+htmlText(name)+'</strong><span>'+men.length+' fighters</span><span class="battle-selection-health" role="meter" aria-label="Selected unit health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(hp/Math.max(1,max)*100)+'"><i style="width:'+pct(hp/Math.max(1,max))+'"></i></span><span>'+htmlText(orders.length===1?orders[0]:'Mixed orders')+'</span><b>'+(auto===gs.length?'AI on':auto?'AI mixed':'Manual')+'</b>');
 }
