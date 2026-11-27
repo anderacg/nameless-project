@@ -21,6 +21,14 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame
   // (off: the whole map, as before)
   t.prefSet('separate',false);t.FightSnap.clear();t.frame();ok(!t.RingCut.on()&&!dark(px(far.x,far.y)),'switched off: the whole map, as before')}
  finally{window.worldOverdraw=ow;t.prefSet('separate',true)}
+ // (its dark drawn only where it shows: the feather's band and the flat dark past it, nothing inside the ring; the same picture as the
+ //  gradient laid over the whole screen, whatever the view and the screen's scale)
+ {const whole=cam=>{const r=A.r+t.RING_CUT.pad,x=A.x-cam.x,y=A.y-cam.y,[R,Gc,Bl]=t.RING_CUT.col,gr=ctx.createRadialGradient(x,y,r,x,y,r+t.RING_CUT.feather);
+   gr.addColorStop(0,'rgba('+R+','+Gc+','+Bl+',0)');gr.addColorStop(1,'rgb('+R+','+Gc+','+Bl+')');ctx.fillStyle=gr;ctx.fillRect(-2,-2,VW+4,VH+4)};
+  const pic=(f,cam,k)=>{const c=document.createElement('canvas');c.width=Math.ceil((VW+2)*k);c.height=Math.ceil((VH+2)*k);const q=c.getContext('2d',{willReadFrequently:true}),was=ctx;ctx=q;q.setTransform(k,0,0,k,0,0);q.fillStyle='#8a9a50';q.fillRect(0,0,VW+2,VH+2);try{f(cam)}finally{ctx=was}return q.getImageData(0,0,c.width,c.height).data};
+  let worst=0,n=0;for(const k of [1,2,3.5])for(const [dx,dy] of [[0,0],[-A.r,0],[A.r*.7,A.r*.7],[-A.r-VW,0],[0,-A.r*1.3],[A.r*.3,-A.r*.2]]){const cam={x:Math.round(A.x+dx-VW/2),y:Math.round(A.y+dy-VH/2)},a=pic(whole,cam,k),b=pic(c=>t.RingCut.draw(c),cam,k);
+   for(let i=0;i<a.length;i++)worst=Math.max(worst,Math.abs(a[i]-b[i]));n++}
+  ok(worst<=1,'its dark drawn only where it shows, the same picture as over the whole screen ('+n+' views, 3 scales: off by '+worst+' at most)')}
  // (the world runs on round it)
  const c0=G.clock+G.day*t.DAY;for(let i=0;i<30;i++)t.openFightWorld(1/60*t.WORLD_TEMPO);ok(G.clock+G.day*t.DAY>c0,'the world runs on round it');
  t.BattleSetup.undo();G.mode='world';ok(!t.RingCut.on(),'out of the fight: the map as ever');

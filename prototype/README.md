@@ -2053,6 +2053,16 @@ the same as drawn whole (the suite: 0% of pixels differ). Who rides in is looked
 frame (`WorldBattleArea#reinforce`, `counted`); those on their way walk every frame. Measured on a desktop's headless Chrome (82 men,
 844 x 390): the battle's update 2.85 to 2.25 ms a frame; the drawing unchanged there (3.7 ms: its cost is laying whole-screen layers,
 which a phone's GPU does otherwise). Compare on the phone: the developer console's Still ground (`stillground on|off`) with Timings.
+A fight on the map's frame cheaper (2026-11-27; the owner: "But can we improve the performance?"). Measured at a phone's size
+(844 x 390 at 3x, the game's own view, `?v=1`; 82 men), each layer timed with its pixels finished: the ring's dark was a gradient over
+the whole screen, 2.3 ms of an 11 ms drawing; now drawn only on its feather's band and flat past it, nothing inside the ring
+(`gfx/render.js` `RingCut.draw`; 0.36 ms; the same picture, `tests/ringcut.js`). Who is whose foe is remembered through each battle
+step (`battle/battle.js` `battleStep`, `BattleSides#relation`'s memo, forgotten as an army joins or the sides part: `add`, `reserve`,
+`activate`): the battle's update 3.85 to 3.0 ms. The canvas's width on the page read as the frame begins (`FRAME_CSS`), before the
+HUD's sync writes to the page: read after them (`worldui.js` `EnemyDifficulty`) it laid the page out again mid-frame; a phone's
+minimap on the map measures its place only when the window, view or its box change, else each second (`campaignhud.js`
+`presentMini`). Left as they were: the scene and the overlay drawn up to the screen (2.6 ms together at that size), the men (most of
+the rest). Untried on a phone: `?gpu=1` (`RENDER.gpu`), which gives those whole-screen layers to the GPU.
 Ponds in the snow (2026-11-12; the owner: "why green in snow when neighbor tiles is also snow"): a spring pond, a hollow or an oxbow in the frost had a meadow's green ring round it. In the frost every pond but a tarn now takes `PX.WN_RING.frost` (`engine/worldnature.js`): a ring of trodden snow, its water iced as a tarn's; its reeds stay, and it gets no flowers or lily pads, as before. W5 re-recorded (`tests/worldprint.js`).
 No dashed outlines under cover (2026-11-12 to 2026-11-13; the owner: "Remove that outline"): a man under a tree or a building has no outline drawn over it (it was `WDEPTH.dash`, and cost much of a battle's frame by a wood); the cover over your own fades as before. A battle's camera glides on fractions of a pixel, and the cover's mask was laid off its grid there, so no tree was drawn over anyone: the overdraw now reckons on the camera's whole pixels, as `drawWorld` keeps the scene (`render.js` drawBattle). Tests: battlewoods.
 No battle stands still (2026-10-30; the owner's army stood idle as the watch routed and bandits joined): an army coming in is known where it stepped in (`heralded`: every other side's last sight of it), a captain whose foes are only leaving the field goes looking instead of charging at them and standing (`commander.js`), toward a world battle's ring middle when it knows nothing, and the stall watch (`stallWatch`) sends every group the AI has at its nearest foe still fighting once no blow has landed for `FOE_CMD.stall` s. Tests: sidestall.

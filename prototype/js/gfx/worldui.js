@@ -321,12 +321,12 @@ class EnemyDifficulty{
   }
   static drawAt(x,y,risk,a,k){const C=ENEMY_DIFFICULTY,w=4*C.size+3*C.gap;ctx.save();ctx.translate(x,y);ctx.scale(k,k);ctx.globalAlpha=a;ctx.lineJoin='round';ctx.lineWidth=1;
     for(let i=0;i<4;i++){const cx=-w/2+C.size/2+i*(C.size+C.gap),cy=-C.size/2;ctx.beginPath();for(let p=0;p<10;p++){const angle=-Math.PI/2+p*Math.PI/5,r=p%2?C.size*.23:C.size/2,px=cx+Math.cos(angle)*r,py=cy+Math.sin(angle)*r;if(p)ctx.lineTo(px,py);else ctx.moveTo(px,py)}ctx.closePath();ctx.fillStyle=i<=risk?C.colors[risk]:'#302a22';ctx.strokeStyle=i<=risk?'#ead8aa':'#8b7959';ctx.fill();ctx.stroke()}ctx.restore()}
-  static world(cam){if(G.mode!=='world'||B?.world)return;const now=performance.now()/1000,k=VW/(cv.clientWidth||VW);
+  static world(cam){if(G.mode!=='world'||B?.world)return;const now=performance.now()/1000,k=VW/(FRAME_CSS.w||VW);
     for(const e of this.worldEntries(cam,now)){const p=this.worldAnchor(e.o,cam);this.drawAt(p.x,p.top-5*k,e.risk,e.a,k)}
   }
   static battle(items){this.reset(B);const now=performance.now()/1000,mine=this.company(now),seen=new Set(),armies=new Map(),target=B.worldTarget||battleTargetFeedback.target(selGroups());
     for(const it of items){if(!it.m.length||!battleEnemy(0,it.m[0]))continue;const wild=it.m[0].s.wildlife;if(wild)continue;const owner=armySource(it.m[0].sourceArmy)||B.groups[it.g],old=armies.get(owner);if(old){old.units.push(...it.m);if(it.y<old.it.y)old.it=it}else armies.set(owner,{it,units:it.m.slice()})}
-    const k=BVW/(cv.clientWidth||BVW),scale=B.world?.scale||1;let n=0;
+    const k=BVW/(FRAME_CSS.w||BVW),scale=B.world?.scale||1;let n=0;
     for(const [owner,{it,units}] of armies){seen.add(owner);const chosen=B.iconHov===it.g||units.includes(target),near=!!B.hero&&Math.hypot(it.cx-B.hero.x,it.cy-B.hero.y)<=ENEMY_DIFFICULTY.near*scale,a=this.alpha(owner,chosen||near,now);if(!a||n++>=ENEMY_DIFFICULTY.max)continue;
       const d=this.rating(owner,now,mine,()=>units.reduce((s,u)=>s+power([u.type])*lvPow(u.lv||1)*clamp(u.hp/Math.max(1,u.s.hp*FIELD_HP),0,1),0));this.drawAt(it.x+UICON.s*unitIconScale()/2,it.y-FLAG.top*unitIconScale()-5*k,d.risk,a,k)}
     if(target?.s.wildlife&&target.hp>0&&!target.left&&seenBy(0,target)){const p=fromField({x:target.x,y:target.y-iconLift(target)-fxFig(target)*(B.world?WORLD_BATTLE.sprite:1)});this.drawAt(p.x,p.y-5*k,0,1,k)}

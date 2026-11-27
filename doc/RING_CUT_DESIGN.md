@@ -15,6 +15,8 @@ The owner, 2026-11-26: "How about make it into a small battle map square based o
 
 30 a side, 844 x 390, headless Chrome, a fight in a village with the map revealed: 15.6 ms a frame ring only against 17.1 the whole map (the drawing 12.3 against 13.8), measured with the fog left out and the ground kept still; with every feature back, about the whole map's less the movers outside the ring. Most of a fight's drawing in a village is each man's depth: what stands in front of him drawn again over him (`depth.js` `worldOverdraw`, about half the frame).
 
+At a phone's size (844 x 390 at 3x, 2026-11-27): the dark past the ring was a gradient laid over the whole screen, 2.3 ms of an 11 ms drawing. Now `RingCut.draw` lays the gradient only on the feather's band and the flat dark past it, and nothing when the view is all inside the ring: 0.36 ms, the same picture (`tests/ringcut.js` compares it with the whole-screen gradient at three scales).
+
 ## 3. Tried first (2026-11-26, taken out)
 
 A separate field in the field battle's own art, its grid copied from the map (`CopyBattleSetup`): the battle's update a quarter of the map's, but it looked like a field, not the map. Kept from it: `worldbattle.js` `worldGrid`, the map read into a field's grid (moved out of `WorldBattleArea#terrain`, its behaviour kept).

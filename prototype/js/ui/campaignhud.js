@@ -53,9 +53,12 @@ class CampaignHud{
     const realm=t.owner&&FACS[t.owner],terrain=regionAt(P.x,P.y);
     setHtml(this.regionCard,'<span class="campaign-region-frame" aria-hidden="true"></span><div class="campaign-region-content"><small>Current region</small><h3>'+htmlText(landName(P.x,P.y))+'</h3><p>'+icon('banner',16)+'<span>'+htmlText(realm?realm.n:'Free folk')+'</span><span aria-hidden="true">·</span>'+icon('map',16)+'<span>'+htmlText(terrain.name)+'</span></p></div>');
   }
+  // (a phone's minimap placed over its spot on the map: the page measured again only when the window, the view or the minimap's box
+  //  changed, else at least each second (measured each frame, after the HUD's writes, it made the browser lay the page out mid-frame))
   presentMini(face){
     let target;if(this.desktop)target=this.slot;else if(this.phone){
-      target=this.mobileMini;const r=worldMiniRect(),c=cv.getBoundingClientRect(),host=target.parentNode.getBoundingClientRect(),k=c.width/VW;
+      target=this.mobileMini;const r=worldMiniRect(),key=innerWidth+'x'+innerHeight+'|'+VW+'x'+VH+'|'+r.x+','+r.y+','+r.w+','+r.h,now=performance.now(),P0=this.miniAt;
+      if(P0&&P0.k===key&&now-P0.t<1000){if(face.parentNode!==target){face.setAttribute('aria-hidden','true');target.replaceChildren(face)}return true}this.miniAt={k:key,t:now};const c=cv.getBoundingClientRect(),host=target.parentNode.getBoundingClientRect(),k=c.width/VW;
       const rim=Math.max(1,Math.min(Math.max(8,Math.ceil(UW_FRAME*k)),Math.floor(r.y*k),Math.floor((VW-r.x-r.w)*k)));
       target.style.setProperty('--phone-map-rim',rim+'px');target.style.left=c.left-host.left+r.x*k-rim+'px';target.style.top=c.top-host.top+r.y*k-rim+'px';target.style.width=r.w*k+2*rim+'px';target.style.height=r.h*k+2*rim+'px';
     }

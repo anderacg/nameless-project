@@ -236,9 +236,14 @@ const RING_CUT={pad:4,feather:12,col:[12,14,19]};
 const RingCut={
   on(){return !!B?.world&&!!prefGet('separate')},
   inside(x,y){const a=B.world;return Math.hypot(x-a.x,y-a.y)<=a.r+RING_CUT.pad+RING_CUT.feather},
-  // (the dark past the ring's edge, over all the map drew)
-  draw(cam){const a=B.world,r=a.r+RING_CUT.pad,x=a.x-cam.x,y=a.y-cam.y,[R,G,Bl]=RING_CUT.col,g=ctx.createRadialGradient(x,y,r,x,y,r+RING_CUT.feather);
-    g.addColorStop(0,'rgba('+R+','+G+','+Bl+',0)');g.addColorStop(1,'rgb('+R+','+G+','+Bl+')');ctx.fillStyle=g;ctx.fillRect(-2,-2,VW+4,VH+4)}};
+  // (the dark past the ring's edge, over all the map drew: the feather's gradient only on its band, the flat dark past it, nothing
+  //  inside the ring, where the gradient is clear (a gradient over the whole screen was a fifth of a phone's frame); the view all in
+  //  the ring, nothing drawn. The bands overlap a px each way where both are clear or both whole, so the picture is the same; each circle its own path, moveTo: one joined to the last by a line leaves a hair of it)
+  draw(cam){const a=B.world,r=a.r+RING_CUT.pad,F=RING_CUT.feather,x=a.x-cam.x,y=a.y-cam.y,x0=-2,y0=-2,x1=VW+2,y1=VH+2,far=Math.max(Math.hypot(x-x0,y-y0),Math.hypot(x-x1,y-y0),Math.hypot(x-x0,y-y1),Math.hypot(x-x1,y-y1));
+    if(far<=r)return;const [R,G,Bl]=RING_CUT.col,col='rgb('+R+','+G+','+Bl+')',g=ctx.createRadialGradient(x,y,r,x,y,r+F);
+    g.addColorStop(0,'rgba('+R+','+G+','+Bl+',0)');g.addColorStop(1,col);
+    const ring=(R,O)=>{ctx.moveTo(x+R,y);ctx.arc(x,y,R,0,O)};ctx.beginPath();ring(r+F+2,Math.PI*2);ring(Math.max(0,r-1),Math.PI*2);ctx.fillStyle=g;ctx.fill('evenodd');
+    if(far>r+F+1){ctx.beginPath();ctx.rect(x0,y0,x1-x0,y1-y0);ring(r+F+1,Math.PI*2);ctx.fillStyle=col;ctx.fill('evenodd')}}};
 let OVR=null;const overCv=()=>OVR&&OVR.width===VW+1&&OVR.height===VH+1?OVR:(OVR=mkg(VW+1,VH+1));
 // the minimap's layers, bottom first, by what each thing is (mapKind): the holdings, then the sites, the beasts, the parties and
 // the caravans and the encounters on the road over them; a kind not here is not dotted
@@ -760,7 +765,10 @@ function drawBattle(){
   ctx.restore();
   calloutFrame();// (the banners for the big moments, over the field: battlehud.js)
 }
-function frame(){
+// (the canvas's width on the page, CSS px, read as the frame begins, before the HUD's sync writes to the page: read after those, it
+// made the browser lay the page out again mid-frame, a phone's battle frame a ms or more (gfx/worldui.js EnemyDifficulty's scale))
+const FRAME_CSS={w:0};
+function frame(){FRAME_CSS.w=cv.clientWidth;
   {const sc=document.getElementById('screen');if(sc&&sc.dataset.mode!==G.mode){sc.dataset.mode=G.mode;updateHint();hideTip()}}
   window.mobileWorldHud?.sync();window.mobileBattleHud?.sync();window.campaignHud?.sync();
   // (loading: the overlay over the last frame, nothing drawn under it, so no effect draws a random number meanwhile: ui/loading.js)

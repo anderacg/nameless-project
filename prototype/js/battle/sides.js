@@ -49,15 +49,16 @@ class BattleSides{
   }
   if(this.records.some(r=>r.neutral))this.activate();for(const r of this.records)for(const q of this.records)if(r.id<q.id&&r.base===q.base&&r.owner!==P&&q.owner!==P&&armyRelation(r.owner,q.owner)<0)this.activate();
  }
- add(owner,force,base,initial=false){const r={id:this.records.length,owner,force,base,team:base,initial,joined:false,groups:[],damage:0,kills:[],playerKills:[]};this.records.push(r);this.byOwner.set(owner,r);this.byForce.set(force,r);return r}
+ add(owner,force,base,initial=false){this.memo?.clear();const r={id:this.records.length,owner,force,base,team:base,initial,joined:false,groups:[],damage:0,kills:[],playerKills:[]};this.records.push(r);this.byOwner.set(owner,r);this.byForce.set(force,r);return r}
  teamRecord(team){return this.records.find(r=>r.team===team)}
  record(u){return this.records.find(r=>r.groups.includes(u.grp))||this.teamRecord(u.team)}
  pair(a,b){
   if(a===b)return 1;if(a.owner===P||b.owner===P){const other=a.owner===P?b:a;if(other.initial&&!other.neutral)return other.base===0?1:-1;if(other.duty&&armyRelation(a.owner,b.owner)>=0)return 1}
   const relation=armyRelation(a.owner,b.owner);if(relation)return relation;if(a.initial&&b.initial&&!a.neutral&&!b.neutral)return a.base===b.base?1:-1;return 0;
  }
- // (asked for every pair of men near each other in the jostle (battle.js): remembered while it runs (memo, nothing can change
- // who is whose foe meanwhile), asked afresh everywhere else)
+ // (asked for every pair of men near each other, every group and shot: remembered while a battle step runs (memo, battle.js
+ // battleStep: nothing in it changes who is whose foe but an army joining, add, reserve, or the sides parting, activate), asked
+ // afresh everywhere else)
  relation(a,b){if(a===b)return 1;const M=this.memo,k=a*4096+b;let v=M?M.get(k):undefined;
   if(v===undefined){const x=this.teamRecord(a),y=this.teamRecord(b);v=x&&y?this.pair(x,y):0;if(M)M.set(k,v)}return v}
  teams(){return [...new Set(this.records.filter(r=>r.joined).map(r=>r.team))]}
@@ -78,7 +79,7 @@ class BattleSides{
   const relations=this.records.map(r=>armyRelation(o,r.owner)),duty=this.duty(o);if(!relations.some(v=>v<0))return null;
   // (a friend of yours by duty joins your side where it is at odds with no one on it: pair)
   let team=-1;if(!this.active)for(const t of [0,1])if(this.records.every((r,i)=>duty&&t===0&&r.team===0?relations[i]>=0:relations[i]===(r.team===t?1:-1))){team=t;break}
-  if(team<0)this.activate();const r=this.add(o,o,team<0?this.records.length:team);r.duty=duty;if(this.active)r.team=r.id;return r;
+  if(team<0)this.activate();const r=this.add(o,o,team<0?this.records.length:team);r.duty=duty;if(this.active)r.team=r.id;this.memo?.clear();return r;
  }
  room(o,count=null){return this.b.units.filter(u=>u.hp>0&&!u.left).length+(count??(o.fighters||o.troops.length))<=BATTLE_JOIN.fighters}
  joined(o,force,groups){const r=this.byOwner.get(armySource(o));if(!r)return;r.force=force;this.byForce.set(force,r);r.groups.push(...groups);r.start=this.b.units.filter(u=>groups.includes(u.grp)).length;r.joined=true}

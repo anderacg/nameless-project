@@ -65,7 +65,7 @@ const roomOf=(a,b)=>{const big=a.s.big||b.s.big;if(!JOSTLE.on)return big?18:8;co
   if(big)return foe?18:18*k;const R=(bodyOf(a)+bodyOf(b))/2*k;return foe?Math.min(R*JOSTLE.foe,Math.max(8,Math.min(a.s.reach||11,b.s.reach||11)*JOSTLE.reach)):R};
 // (the farthest two may stand apart and still be pushed: big ones always gathered)
 const roomMax=a=>(a.s.big?18:JOSTLE.on?(bodyOf(a)+JOSTLE.mount)/2:8)*(JOSTLE.on&&B.world?WORLD_BATTLE.sprite:1);
-function jostle(dt){const S=B.sides;if(S)S.memo=new Map();try{for(let p=0;p<(JOSTLE.on?JOSTLE.passes:1);p++)jostlePass(p?0:dt)}finally{if(S)S.memo=null}}
+function jostle(dt){const S=B.sides,own=!!S&&!S.memo;if(own)S.memo=new Map();try{for(let p=0;p<(JOSTLE.on?JOSTLE.passes:1);p++)jostlePass(p?0:dt)}finally{if(own)S.memo=null}}
 function jostlePass(dt){
   const U=B.units,S=spatialOpen(SPATIAL.jostle),big=[],list=[];for(let i=0;i<U.length;i++)if(U[i].hp>0&&U[i].s.big)big.push(i);
   let a=null,x0=0,y0=0;const gather=()=>{x0=a.x;y0=a.y;const r=roomMax(a)+JOSTLE.pad+1;list.length=0;for(const i of big)list.push(i);S.box(x0-r,y0-r,x0+r,y0+r,null,false,list)};
@@ -113,7 +113,10 @@ function updateBattle(rt){
 // (how many times as far a man steps on this field as on a classic one: a fight on the map draws its men WORLD_BATTLE.sprite times
 // their size, so they step as many times as far a battle second to cross as many of their own lengths: battleStep)
 const fightSpace=()=>typeof B!=='undefined'&&B&&B.world?WORLD_BATTLE.sprite:1;
-function battleStep(rt,world){
+// (who is whose foe remembered through the step (BattleSides relation's memo: asked for every pair of men, groups and shots; an
+// army joining or the sides parting forget it, sides.js add, reserve, activate), asked afresh outside it)
+function battleStep(rt,world){const S=B.sides,own=!!S&&!S.memo;if(own)S.memo=new Map();try{stepBattle(rt,world)}finally{if(own)S.memo=null}}
+function stepBattle(rt,world){
   // the battle's speed: everything runs on its clock; paused, nothing moves but you can still give orders
   if(B.paused||B.deploy)return;if(!world)rt*=B.speed||1;if(!world&&B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
   // (one clock for both kinds of battle (the owner, 2026-11-18: "make battle map and world battle use the same speed"): the fighting
