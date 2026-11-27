@@ -913,7 +913,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(te
 //  (worldterrain.js faceCol, faceTexel; WORLD_TERRAIN.face). W1-W4, W7, W8, B2 and the sums hold. Were W5 ff899fde, W6 c2e6d9ef)
 // Managed Linux Chromium: W6 f9a69e4c on both untouched 5ecd53f and 937a988, all six view hashes identical.
 // The canonical W6 below is retained; the follow-up report records this pre-existing environment mismatch.
-const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
+// (W1-W4 re-recorded 2026-11-27, on purpose: the holdings halved and every kind on the map (the owner: "Make holding less i feel it
+//  too dense please reduce it by 50%"; worldsettings.js WORLD_LIMITS.holdings, worldplace.js PLACE_HAMLET, placeAllKinds): the
+//  world's holdings, roads and the land round them all moved. Were W1 cf80f2ca, W2 5d0e0087, W3 579d48f1, W4 730c7111. W5-W8 and B2
+//  moved with them too (Linux Chromium: W5 1ef61184, W6 cef01159, W7 5c35418a, W8 b4d047bc, B2 ef14c705), left as they were: on this
+//  Linux Chromium they did not match before the change either (W5 dd093bbc, W6 255c61fb, W7 4bf588ba, W8 33a42c68, B2 db8853e7),
+//  to be measured again on the owner's own browser)
+const EXPECT={W1:'fdc52781',W2:'99e50804',W3:'d8106001',W4:'444dcdf5',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
 //  shared Math.random in another order, which moves parties (W8) and what the save holds after 3 days (W7). With farEvery 4 both hold
@@ -1011,7 +1017,9 @@ const EXPECT={W1:'cf80f2ca',W2:'5d0e0087',W3:'579d48f1',W4:'730c7111',W5:'bc12ad
 //  Large s1 127d2d4d)
 // (classic re-recorded 2026-11-17 again, on purpose: its peaks and great river back (7570e2c: W1-W8 above); the random presets'
 //  sums hold, the hints the classic world's alone. Was classic 943ffc16)
-const SUMS={classic:'cddc33f6','Normal s1':'91cae7e6','Normal s2':'3fd4482d','Normal s3':'43cecd26','Large s1':'37ce35ca'};
+// (all re-recorded 2026-11-27, on purpose: the holdings halved and every kind on the map (EXPECT above); the classic world's own 37
+//  as designed, its hamlets halved. Were classic cddc33f6, Normal s1 91cae7e6, s2 3fd4482d, s3 43cecd26, Large s1 37ce35ca)
+const SUMS={classic:'ae8faef9','Normal s1':'d3d2a736','Normal s2':'a5d86c2f','Normal s3':'2db8ff9d','Large s1':'c4701fb1'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance),restorePaint=Kit.paintProgress();
 Kit.progress('worldprint start');
 try{

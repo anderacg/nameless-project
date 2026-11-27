@@ -1,5 +1,5 @@
 'use strict';
-// World settings, Phase 2b (doc/WORLD_DESIGN.md §4, §15 2b): the holdings' defaults and density (worldsettings.js: 27 / 40 / 66,
+// World settings, Phase 2b (doc/WORLD_DESIGN.md §4, §15 2b): the holdings' defaults and density (worldsettings.js: 14 / 20 / 33 since 2026-11-27, were 27 / 40 / 66,
 // the owner's fewer of 2026-10-22; Fewer, Normal, More), the world code (worldCode, parseWorldCode: every setting and the seed,
 // read back clamped), the quick sketch (worldgen.js genSketch: fast at every size, the same twice, its coast the real one's),
 // the New world screen (worldsetup.js: after a past, the presets, Classic's locks, size, holdings and their notes,
@@ -11,9 +11,9 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  try{localStorage.clear()}catch(e){}
  // ---- the holdings: the defaults and the density
  {const pr=['normal','large','huge','frontier','crowded'].map(p=>N(t.defaultSettings(p)).holdings),D=z=>['fewer','normal','more'].map(d=>t.densityHoldings(N({preset:z}),d)).join('/');
-  ok(J(pr)==='[27,40,66,28,40]'&&N(t.classicSettings()).holdings===37&&N({}).holdings===27,'the presets\' holdings: Normal 27, Large 40, Huge 66, Wild Frontier 28, Crowded Realms 40 (about 27% fewer than 37 / 55 / 90); Classic keeps its 37');
-  ok(D('normal')==='25/27/37'&&D('large')==='32/40/55'&&D('huge')==='53/66/90','the density: Fewer, Normal, More at Normal '+D('normal')+', Large '+D('large')+', Huge '+D('huge')+' (Fewer never under 25; More today\'s 37 / 55 / 90)');
-  const s=N({preset:'large'});ok(t.densityOf(s)==='normal'&&t.densityOf({...s,holdings:55})==='more'&&t.densityOf({...s,holdings:41})===null&&t.densityHoldings(N({preset:'normal',wild:'vast',land:'sea'}),'more')===37,'densityOf reads the density back (a number of its own: none); More within the land\'s limit')}
+  ok(J(pr)==='[14,20,33,14,20]'&&N(t.classicSettings()).holdings===37&&N({}).holdings===14,'the presets\' holdings: Normal 14, Large 20, Huge 33, Wild Frontier 14, Crowded Realms 20 (half of 27 / 40 / 66, the owner, 2026-11-27); Classic keeps its 37');
+  ok(D('normal')==='12/14/19'&&D('large')==='16/20/27'&&D('huge')==='26/33/45','the density: Fewer, Normal, More at Normal '+D('normal')+', Large '+D('large')+', Huge '+D('huge')+' (Fewer never under 12)');
+  const s=N({preset:'large'});ok(t.densityOf(s)==='normal'&&t.densityOf({...s,holdings:27})==='more'&&t.densityOf({...s,holdings:21})===null&&t.densityHoldings(N({preset:'normal',wild:'vast',land:'sea'}),'more')===19,'densityOf reads the density back (a number of its own: none); More within the land\'s limit')}
  // ---- the world code
  {const c=t.worldCode(N({preset:'large',seed:'redwater'})),back=t.parseWorldCode(c);
   ok(/^ASH1-L-[0-9A-Z]+-redwater$/.test(c)&&J(back)===J(N({preset:'large',seed:'redwater'})),'a world code: '+c+', read back to the same settings');
@@ -59,18 +59,18 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
    ok(/holdings/.test(q('.ws-counts').textContent)&&!/ring|start/i.test(q('.ws-cap').textContent)&&!white,'its preview: '+q('.ws-cap').textContent+'; '+q('.ws-counts').textContent+'; '+q('.ws-time').textContent+'; no city ringed as your start ('+white+' ring pixels)')}
   t.act('ws-set','monsters:normal')}
  t.act('ws-preset','normal');
- {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===27&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 27 holdings')}
+ {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===14&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 14 holdings')}
  {t.act('ws-random');const k1=t.wsMapKey(S.s),before=S.pics[k1];await new Promise(r=>setTimeout(r,S.wait+100));
   ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Random: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
  {const seen=new Set(),seeds=new Set();for(let i=0;i<12;i++){t.act('ws-surprise');seen.add(t.settingsKey({...S.s,seed:''}));seeds.add(S.s.seed)}
-  const s=S.s;ok(seen.size>=6&&seeds.size===12&&J(t.normSettings(s))===J(s)&&s.w<=640&&s.holdings>=25&&s.holdings<=t.maxHoldings(s)&&/A world of chance/.test(S.note),'Surprise me: a world of chance, its size (Normal or Large), holdings and every land and danger setting rolled, a fresh seed each time ('+seen.size+' mixes in 12)');
+  const s=S.s;ok(seen.size>=6&&seeds.size===12&&J(t.normSettings(s))===J(s)&&s.w<=640&&s.holdings>=12&&s.holdings<=t.maxHoldings(s)&&/A world of chance/.test(S.note),'Surprise me: a world of chance, its size (Normal or Large), holdings and every land and danger setting rolled, a fresh seed each time ('+seen.size+' mixes in 12)');
   {const L=Array.from({length:t.WS_FRESH},()=>t.freshSeed());ok(new Set(L).size===L.length&&L.every(v=>/^[a-z]+$/.test(v)),'a fresh seed never one of the last '+t.WS_FRESH+' given (two words of 32 each: a dozen rolls would meet one again one time in fifteen)')}
   t.act('ws-preset','normal')}
- t.act('ws-size','large');ok(S.s.w===640&&S.s.h===448&&S.s.holdings===40&&S.s.preset==='large','a Large size at the normal density is the Large preset (40 holdings)');
- t.act('ws-dens','more');ok(S.s.holdings===55&&S.s.preset==='custom'&&q('[data-act="ws-dens"][data-arg="more"]').classList.contains('on'),'More: 55 holdings; touching a setting makes it Custom');
- t.act('ws-dens','fewer');t.act('ws-hold','1');ok(S.s.holdings===33&&!q('[data-act="ws-dens"].on'),'Fewer (32), then + one: 33, a number of its own');
+ t.act('ws-size','large');ok(S.s.w===640&&S.s.h===448&&S.s.holdings===20&&S.s.preset==='large','a Large size at the normal density is the Large preset (20 holdings)');
+ t.act('ws-dens','more');ok(S.s.holdings===27&&S.s.preset==='custom'&&q('[data-act="ws-dens"][data-arg="more"]').classList.contains('on'),'More: 27 holdings; touching a setting makes it Custom');
+ t.act('ws-dens','fewer');t.act('ws-hold','1');ok(S.s.holdings===17&&!q('[data-act="ws-dens"].on'),'Fewer (16), then + one: 17, a number of its own');
  t.wsChange({holdings:999});const n1=S.note;t.act('ws-set','wild:vast');const n2=S.note;
- ok(/up to 110/.test(n1)&&S.s.holdings===82&&/Vast wild land/.test(n2),'live clamps with a note: 999 asked, "'+n1+'"; then Vast wild land, "'+n2+'"');
+ ok(/up to 55/.test(n1)&&S.s.holdings===41&&/Vast wild land/.test(n2),'live clamps with a note: 999 asked, "'+n1+'"; then Vast wild land, "'+n2+'"');
  t.act('ws-set','wild:normal');t.act('ws-size','custom');const w0=S.s.w;t.act('ws-w','1');
  ok(q('[data-act="ws-w"]')&&S.s.w===w0+32&&S.s.preset==='custom','Custom: width and height with − and + ('+S.s.w+' x '+S.s.h+')');
  for(let k=0;k<20;k++)t.act('ws-w','1');ok(S.s.w<=1024&&S.s.w*S.s.h<=786432,'the width stops at its limit ('+S.s.w+' x '+S.s.h+')');

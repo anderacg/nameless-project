@@ -247,7 +247,7 @@ function* genHoldings(g){
         if(top)P.push({f,kind,i:top.i})}
       if(g.tick())yield .5+.4*P.length/N}
     if(pass>=PLACE.regrow-1||placeEven(m,F,P.map(h=>({tx:h.i%W,ty:(h.i-h.i%W)/W,kind:h.kind,realm:h.f})),N))break}
-    placeForts(P,h=>h.f,(a,b)=>d2(a.i,b.i));
+    placeForts(P,h=>h.f,(a,b)=>d2(a.i,b.i));placeAllKinds(P,(a,b)=>d2(a.i,b.i));
     // their data: realm, races, style, name, prices and note
     const used=new Set(),ports={};
     for(const h of P){const [tx,ty]=xy(h.i),pp=PLACE_PEOPLE[h.f],c=CLIMS[m.clim[h.i]],water=placePort(m,F,h.i)>=0;
@@ -271,7 +271,7 @@ function* genHoldings(g){
    such land; each PLACE_GAP from the holdings and from each other. A village share of them a small free village, the rest
    hamlets; their people the nearest holding's first; no realm (realm null: the free folk). Their data as a holding's, after the
    realms' in g.holdings (a retry drops the last try's first), so the roads join them ---------- */
-const PLACE_HAMLET={base:[[143360,24],[286720,45],[786432,100]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:6,river:12,bank:6,step:2};
+const PLACE_HAMLET={base:[[143360,12],[286720,22],[786432,50]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:6,river:12,bank:6,step:2};
 function* genHamlets(g){
   const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);
   m.freeHoldings=[];const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}
@@ -286,6 +286,8 @@ function* genHamlets(g){
   const n=Math.min(want,Math.floor(fringe/X.fringe)),P=[];
   for(const [,i] of C){if(P.length>=n)break;const x=i%W,y=(i-x)/W,kind=R()<X.village?'village':'hamlet',d2=h=>(h.tx-x)*(h.tx-x)+(h.ty-y)*(h.ty-y);
     if(own.some(h=>d2(h)<placeGap(h.kind,kind)*placeGap(h.kind,kind))||P.some(h=>d2(h)<placeGap(h.kind,kind)*placeGap(h.kind,kind)))continue;P.push({tx:x,ty:y,kind,i})}
+  // (a hamlet among them, if any are made: the first, should every draw have made a village; the owner, 2026-11-27, every kind of holding on the map)
+  if(P.length&&!P.some(h=>h.kind==='hamlet'))P[0].kind='hamlet';
   yield .8;
   const used=new Set(own.map(h=>h.name));
   for(const h of P){const near=own.reduce((a,o)=>(o.tx-h.tx)*(o.tx-h.tx)+(o.ty-h.ty)*(o.ty-h.ty)<(a.tx-h.tx)*(a.tx-h.tx)+(a.ty-h.ty)*(a.ty-h.ty)?o:a,own[0]);
@@ -339,6 +341,16 @@ function placeKinds(f,n){
    tiles from another of its forts (never a stilt village; the classic world's are in its own data, places.js); by distance alone (no draw: the stream as it was). H: the
    holdings, fOf: one's realm, d2: two's distance squared, in tiles; the forts made */
 const PLACE_FORT={per:1,big:8,gap:30};
+/* (every kind of a realm's holding on the map, at least one of each (the owner, 2026-11-27: "make sure all type of holding is
+   spawned": the holdings halved, a realm's few could leave a kind out): each kind missing made of a holding of the commonest kind
+   past a city (two of it at least), the first of them clear of every other holding by the spacing table for its new kind, else the
+   first of them; by its order alone (no draw). H: the holdings ({kind, i}), d2: two's distance squared, in tiles; the changed */
+const PLACE_KINDS=['town','castle','village','fort'];
+function placeAllKinds(H,d2){const out=[];
+  for(const k of PLACE_KINDS){if(H.some(h=>h.kind===k))continue;const n={};for(const h of H)if(h.kind!=='city')n[h.kind]=(n[h.kind]||0)+1;
+    const from=Object.keys(n).filter(q=>n[q]>1).sort((a,b)=>n[b]-n[a]||PLACE_KINDS.indexOf(a)-PLACE_KINDS.indexOf(b))[0];if(!from)continue;
+    const L=H.filter(h=>h.kind===from),h=L.find(h=>H.every(o=>o===h||d2(o,h)>=placeGap(o.kind,k)**2))||L[0];h.kind=k;out.push(h)}
+  return out}
 function placeForts(H,fOf,d2){const X=PLACE_FORT,out=[];
   for(const f of PLACE_REALMS){const own=H.filter(h=>fOf(h)===f),n=X.per+(own.length>X.big?1:0),made=[];
     const vs=own.filter(h=>h.kind==='village'&&h.style!=='stilt').map(h=>[Math.min(...H.filter(o=>fOf(o)!==f).map(o=>d2(o,h))),H.indexOf(h),h]).sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
@@ -748,7 +760,7 @@ function placeCheck(id){return g=>{
     const need=placeNeed(m);
     for(const c of caps){const p=PLACE_PEOPLE[c.realm],v=g.work.like&&c.name in g.work.like?g.work.like[c.name]:placeSuit(m,F,p,ti(c)),n=placeLand(m,F,p,c.tx,c.ty);if(v<PLACE.suit)return c.name+' liked '+v.toFixed(2);
       if(n<need)return c.name+' has '+n+' suitable tiles';
-      if(Hd.filter(h=>h!==c&&(h.tx-c.tx)*(h.tx-c.tx)+(h.ty-c.ty)*(h.ty-c.ty)<=PLACE.day*PLACE.day).length<3)return c.name+' has no fair start'}
+      if(Hd.filter(h=>h!==c&&(h.tx-c.tx)*(h.tx-c.tx)+(h.ty-c.ty)*(h.ty-c.ty)<=PLACE.day*PLACE.day).length<Math.min(3,q[c.realm]-1))return c.name+' has no fair start'}// (three within a day, or as many as its realm has past its capital: the owner's halved holdings, 2026-11-27)
     const L=placeRealmLand(m,Hd,placeHoldBridged(m,F,Hd)),mean=L.reduce((a,b)=>a+b,0)/L.length,far=Math.max(...L.map(v=>Math.abs(v-mean)/mean));
     if(far>PLACE.even)return 'realm land unbalanced ('+L.join('/')+')';
     if(!Hd.some(h=>h.style==='port'))return 'no port';
