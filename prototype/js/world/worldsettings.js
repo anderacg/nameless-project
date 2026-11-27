@@ -27,6 +27,8 @@ const WORLD_LIMITS={w:[320,1024],h:[224,768],step:32,aspect:[1.2,1.6],tiles:7864
   holdings:{min:12,max:[[143360,30],[286720,55],[786432,100]],def:[[143360,15],[286720,20],[786432,35]],wild:.75,sea:.85}};
 // the holdings' density (the New game screen's Fewer, Normal, More): the area's default holdings times this, clamped
 const HOLDING_DENSITY={fewer:.8,normal:1,more:1.37};
+/* (the Classic preset is no longer offered to the player (the owner, 2026-11-27: "Delete classic world"; ui/worldsetup.js WS_TYPES):
+   kept as the tests' and the wiki's fixed world (worldmap.js installClassic) and so a save made in it still loads) */
 /* the presets (§4.2): each fills every setting; touching one afterwards makes it custom (the screen's). Classic: seed CLASSIC at
    Normal, the classic holdings as anchors (§8.15), every map setting locked to its default: only monsters, bandits and start free.
    Wild Frontier 0.7 x Large's holdings, Crowded Realms 1.5 x Normal's (D27); all but Classic's (its own 37, as designed) halved

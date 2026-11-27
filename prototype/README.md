@@ -27,7 +27,7 @@
 Open `Ashmark.html` in a browser. There is no build step and nothing to install.
 
 **Which world.** The generated world is the only one (doc/WORLD_DESIGN.md §15.2, D42, D49): `Ashmark.html` opens on the main
-menu with no world made (see "The main menu" below), and New Campaign offers the New world screen (Classic first). The old
+menu with no world made (see "The main menu" below), and New Campaign offers the New world screen (Normal first, a fresh seed; no Classic world since 2026-11-27). The old
 hand-made 224 × 160 map is gone (2026-10-22, D49). A save holds the world it was made in: a load makes that world again first
 (`core/save.js` `loadGame`), or takes it from the worlds kept on the device (`core/worldkeep.js`, below); a save of the old map is
 another world version and is refused.
@@ -1750,12 +1750,12 @@ The shared interface uses the management windows' brown surfaces, gold frames an
 
 **The New world screen** (`ui/worldsetup.js`; doc/WORLD_DESIGN.md §4, Phase 2b): after your race and past (a
 past's card names `world:<past>`, `session.js` `begin`), the world's settings, then "Forging the world…". Left (it scrolls):
-the presets (Classic first and chosen at first, then Normal, Large, Huge, Wild Frontier, Crowded Realms; touching a setting makes it Custom, and a mix that is a
+the presets (Normal first and chosen at first, with a fresh seed, then Large, Huge, Wild Frontier, Crowded Realms; no Classic world: the owner, 2026-11-27, "Delete classic world": not offered (`worldsetup.js` `WS_TYPES`), a Classic world code typed in turned down with a note, the preset kept in `worldsettings.js` as the tests' and the wiki's fixed world and so a save made in it still loads; touching a setting makes it Custom, and a mix that is a
 preset's again shows as that preset), the seed (typed, Random; a world code typed or pasted there sets everything), the world code
 with Copy (`worldsettings.js` `worldCode`, `parseWorldCode`: `ASH1-<preset>-<every setting and the size, base 36>-<seed>`), the
 size (or Custom: width and height with − and +), the holdings (Fewer, Normal, More: `HOLDING_DENSITY` times the area's default,
 15 / 20 / 35 at Normal / Large / Huge since 2026-11-27 (were 27 / 40 / 66), More 21 / 27 / 48; or a number with − and +) and the Advanced fold-out (the rest,
-those later phases read marked later). Classic locks everything that changes the map; monsters, bandits and your start stay open.
+those later phases read marked later). Every setting is open: nothing is locked.
 Every change is clamped at once, with a note when a limit moved a value. Right: the preview (no city marked as your start): the quick
 sketch (`worldgen.js` `genSketch`: the real land field and climate noise at 256 points across, mountains, rivers and holdings
 approximate; about 70 ms at any size), redrawn 200 ms after a change, or the real map when it is made (the world in); no buttons there (the owner, 2026-10-22: Random is the seed's own, Enter in the seed redraws); the counts and the time it takes to forge here (measured once, kept in `localStorage`). A generated world but

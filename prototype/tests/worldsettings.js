@@ -44,20 +44,18 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  {const nb=[...document.querySelectorAll('#panel .nav [data-nav]')].map(b=>b.dataset.nav+':'+b.textContent);
   ok(G.mode==='title'&&G.menu==='world'&&/New world/.test(txt())&&/Dwarf, Hedge mage/.test(txt())&&J(nb)===J(['back:Back','close:Forge the world'])&&q('.ws-cv')&&q('.ws-cv').width>2,'the New world screen: its header, the preview drawn, Back on the left and Forge the world on the right ('+nb.join(', ')+')')}
  {const ps=[...document.querySelectorAll('#panel [data-act="ws-preset"]')];
-  ok(ps[0]&&ps[0].dataset.arg==='classic'&&ps[0].classList.contains('on')&&S.s.preset==='classic','the classic world offered first, and the choice at first (WORLD_DESIGN.md wave 4): '+ps.map(b=>b.textContent+(b.classList.contains('on')?' (chosen)':'')).join(', '))}
- t.act('ws-preset','classic');
- {const s=S.s,dis=n=>q('[data-act="'+n.split(' ')[0]+'"]'+(n.split(' ')[1]?'[data-arg="'+n.split(' ')[1]+'"]':'')).disabled;
-  ok(s.preset==='classic'&&s.seed==='CLASSIC'&&q('#wsSeed').disabled&&dis('ws-size large')&&dis('ws-dens more')&&dis('ws-random')&&!dis('ws-forge'),'Classic: its seed, size and holdings locked (greyed)');
+  ok(ps[0]&&ps[0].dataset.arg==='normal'&&ps[0].classList.contains('on')&&S.s.preset==='normal'&&S.s.seed&&S.s.seed!=='CLASSIC'&&!ps.some(b=>b.dataset.arg==='classic'),'no Classic world offered (the owner, 2026-11-27: "Delete classic world"); Normal first, and the choice at first, a fresh seed: '+ps.map(b=>b.textContent+(b.classList.contains('on')?' (chosen)':'')).join(', '))}
+ {const s0=J(S.s);t.act('ws-preset','classic');const kept=J(S.s)===s0;t.wsTyped(t.worldCode(t.classicSettings()));
+  ok(kept&&J(S.s)===s0&&/no longer offered/.test(S.note)&&S.s.preset!=='classic','asked for all the same (its button\'s act, its world code typed): refused, with a note ("'+S.note+'")');S.note='';t.wsRender()}
+ {const dis=n=>q('[data-act="'+n.split(' ')[0]+'"]'+(n.split(' ')[1]?'[data-arg="'+n.split(' ')[1]+'"]':'')).disabled;
   const danger=['monsters:deadly','bandits:many'].every(a=>q('[data-act="ws-set"][data-arg="'+a+'"]'))&&!q('[data-act="ws-set"][data-arg="climate:warm"]');
-  t.act('ws-adv');const free=['monsters:deadly','bandits:many'].every(a=>!dis('ws-set '+a)),locked=['wild:vast','climate:warm','economy:rich'].every(a=>dis('ws-set '+a)),
+  t.act('ws-adv');const open=['monsters:deadly','bandits:many','wild:vast','climate:warm','economy:rich'].every(a=>!dis('ws-set '+a))&&!q('#wsSeed').disabled&&!dis('ws-size large')&&!dis('ws-dens more')&&!dis('ws-random')&&!dis('ws-forge'),
     later=['sacred:common','sites:many','start:settler'].every(a=>!q('[data-act="ws-set"][data-arg="'+a+'"]')),hints=/Beasts in the wilds/.test(txt())&&/More beasts at the start/.test(q('[data-arg="monsters:deadly"]').title);
-  t.act('ws-set','monsters:deadly');t.act('ws-set','climate:warm');t.act('ws-size','huge');t.act('ws-hold','1');
-  ok(free&&locked&&S.s.preset==='classic'&&S.s.monsters==='deadly'&&S.s.climate==='temperate'&&S.s.w===448&&S.s.holdings===37,'Classic: only monsters and bandits stay open (§4.2); the rest refused');
+  ok(open,'every setting open: none locked');
   ok(danger&&later&&hints,'easier (the owner, 2026-11-08): Danger (monsters, bandits) shown unfolded, the land under More options; each setting its line of what it does, each choice its tip; the settings read by nothing yet (sacred places, founding sites, start) not shown');
   // (no start marked: the owner, 2026-11-08, "map creation preview should not show or highlight the city you start"; the ring was white)
   t.wsPreview(true);{const cv=q('.ws-cv'),d=cv.getContext('2d').getImageData(0,0,cv.width,cv.height).data;let white=0;for(let i=0;i<d.length;i+=4)if(d[i]===255&&d[i+1]===255&&d[i+2]===255)white++;
-   ok(/holdings/.test(q('.ws-counts').textContent)&&!/ring|start/i.test(q('.ws-cap').textContent)&&!white,'its preview: '+q('.ws-cap').textContent+'; '+q('.ws-counts').textContent+'; '+q('.ws-time').textContent+'; no city ringed as your start ('+white+' ring pixels)')}
-  t.act('ws-set','monsters:normal')}
+   ok(/holdings/.test(q('.ws-counts').textContent)&&!/ring|start/i.test(q('.ws-cap').textContent)&&!white,'its preview: '+q('.ws-cap').textContent+'; '+q('.ws-counts').textContent+'; '+q('.ws-time').textContent+'; no city ringed as your start ('+white+' ring pixels)')}}
  t.act('ws-preset','normal');
  {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===15&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 15 holdings')}
  {t.act('ws-random');const k1=t.wsMapKey(S.s),before=S.pics[k1];await new Promise(r=>setTimeout(r,S.wait+100));

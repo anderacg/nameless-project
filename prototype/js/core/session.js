@@ -53,7 +53,7 @@ const worldName=m=>!m.settings||m.settings.preset==='classic'||!m.settings.seed?
 const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.settings&&SPAWN_MUL[WM.settings[k]]||1;
 
 /* a new game, as steps behind "Forging the world…" (loading.js runSteps). settings: its world's (worldsettings.js); left out, the
-   New world screen's choice (worldsetup.js newWorldSettings); null, the world in (or the classic seed made now when none is in: the
+   New world screen's choice, or the classic world when none was made (worldsetup.js beginWorldSettings: the tests' way); null, the world in (or the classic seed made now when none is in: the
    game's page opens on the main menu with no world, ui/mainmenu.js).
    k: your past; 'world:<past>' (a past's card on the New game page) opens the New world screen first
    (worldsetup.js worldSetup, D30), whose Forge the world comes back here with its settings.
@@ -64,7 +64,7 @@ const SPAWN_MUL={calm:.6,few:.6,normal:1,deadly:1.5,many:1.5},spawnMul=k=>WM.set
    it was */
 function begin(k,settings){
   if(typeof k==='string'&&k.startsWith('world:'))return worldSetup(k.slice(6));
-  const b=BGS[k];if(!b)return false;if(settings===undefined)settings=newWorldSettings();
+  const b=BGS[k];if(!b)return false;if(settings===undefined)settings=beginWorldSettings();
   const want=settings||!WM?{gen:'ashmark-1',settings:normSettings(settings||classicSettings())}:null,
     made=want&&worldKey(want)!==worldKey(WM)?{r:want.settings&&worldPreviewTake(want.settings)}:null,t0=performance.now();
   runSteps('Forging the world…',[...(made?[...(made.r?[]:forgeSteps(want.gen,want.settings,r=>{made.r=r;if(want.settings)forgeTimed(want.settings,performance.now()-t0)})),{id:'install',label:'Drawing borders',w:150,run:()=>{WorldKeep.put(made.r);return forgeInstallSteps(made.r)}}]:[]),

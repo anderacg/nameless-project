@@ -9,7 +9,8 @@
        bandits: always shown), More options folded (WS_GROUPS: Land, People; each setting its one line of what it does, each choice
        its own in its tip: WS_HINT), and last the seed (typed, Random; a world code typed or pasted in sets everything:
        parseWorldCode) and the world code with Copy. Settings read by nothing yet (sacred places, founding sites, start) are not
-       shown: kept at their preset's in the world code. Classic locks all but monsters and bandits (greyed). Every change clamped
+       shown: kept at their preset's in the world code. No Classic world (the owner, 2026-11-27: "Delete classic world": not offered,
+       a new game Normal with a fresh seed, a Classic world code turned down; the tests' and the wiki's world still). Every change clamped
        at once (normSettings), a note where a limit moved a value or why it stops there, by the part it is about;
      right: the preview: the quick sketch (worldgen.js genSketch), redrawn WSETUP.wait ms after a change, or the real map when it
        is made (the world in); the holdings in their realms' colours, none marked as yours (the owner, 2026-11-08: "map creation
@@ -48,10 +49,11 @@ const WS_HINT={monsters:['Beasts in the wilds',{calm:'Fewer beasts at the start'
   economy:['Goods and resources',{poor:'Scarce stock',normal:'As ever',rich:'Plenty'}]};
 // (a number under n, by chance: crypto, as the seed's)
 const wsRoll=n=>crypto.getRandomValues(new Uint32Array(1))[0]%n;
-const WS_PRESET={classic:['Classic','The world of Ashmark, the same for everyone. Only monsters, bandits and your start can change.'],
-  normal:['Normal','A new world at Normal size, every setting at its default.'],large:['Large','A wider world: more room, more holdings.'],
+// (the world types offered: every preset but the classic one, kept as the tests' and the wiki's world only: WS_TYPES)
+const WS_PRESET={normal:['Normal','A new world at Normal size, every setting at its default.'],large:['Large','A wider world: more room, more holdings.'],
   huge:['Huge','The largest world. Sparse until later phases fill it.'],frontier:['Wild Frontier','Large and cold, rugged and wet: few holdings, deadly beasts, many bandits, rich land.'],
   crowded:['Crowded Realms','Normal size, half as many holdings again, calm beasts.'],custom:['Custom','Your own mix of settings.']};
+const WS_TYPES=Object.keys(WORLD_PRESETS).filter(p=>p!=='classic'),wsTypeName=p=>WS_PRESET[p]?WS_PRESET[p][0]:'Classic';
 const WS_SIZE={normal:[448,320],large:[640,448],huge:[1024,768]};
 /* a fresh seed: two words (crypto.getRandomValues: never Math.random), never one of the last WS_FRESH it gave (32 × 32 of them, so
    a dozen rolls of Surprise me or Random would otherwise meet one again one time in fifteen: "a fresh seed each time") */
@@ -61,45 +63,49 @@ const WS_FRESH=64,wsGiven=[];
 const freshSeed=()=>{let v;do{const r=crypto.getRandomValues(new Uint32Array(1))[0];v=SEED_A[r&31]+SEED_B[r>>>5&31]}while(wsGiven.includes(v));wsGiven.push(v);if(wsGiven.length>WS_FRESH)wsGiven.shift();return v};
 // (a phone: a coarse pointer, the short side of the screen under 900 px: Huge is slow to forge there, D44)
 const phoneSlow=()=>matchMedia('(pointer: coarse)').matches&&Math.min(screen.width,screen.height)<900;
-// the settings the screen holds, clamped (Classic by default); a world with no seed gets a fresh one
-function newWorldSettings(){const S=WSETUP;if(!S.s)S.s=classicSettings();if(!S.s.seed)S.s=normSettings({...S.s,seed:freshSeed()});
-  if(!SAVE_ZIP&&S.s.w*S.s.h>S.zipless)S.s=classicSettings();return S.s}
+// the settings the screen holds, clamped (Normal with a fresh seed by default, never the classic world); a world with no seed gets a fresh one
+const wsNormal=()=>normSettings({...defaultSettings('normal'),seed:freshSeed()});
+function newWorldSettings(){const S=WSETUP;if(!S.s||S.s.preset==='classic')S.s=wsNormal();if(!S.s.seed)S.s=normSettings({...S.s,seed:freshSeed()});
+  if(!SAVE_ZIP&&S.s.w*S.s.h>S.zipless)S.s=wsNormal();return S.s}
+// (a new game begun with no settings given (session.js begin: the tests' way, act('begin', past); the player's is always through this
+// screen): the screen's choice if one was made, else the classic world, the tests' fixed one)
+const beginWorldSettings=()=>WSETUP.s||classicSettings();
 // (a new visit to New game: the same choice, a fresh seed for a world of its own)
-function worldSetupFresh(){const S=WSETUP;S.typed=null;S.note='';if(S.s&&S.s.preset!=='classic')S.s=normSettings({...S.s,seed:freshSeed()})}
-// the preset these settings are (one whose every setting they share), else custom; Classic stays Classic
-function wsPreset(s){if(s.preset==='classic')return s;
-  const p=Object.keys(WORLD_PRESETS).find(p=>p!=='classic'&&SETTING_KEYS.every(k=>['v','preset','seed'].includes(k)||normSettings(defaultSettings(p))[k]===s[k]));
+function worldSetupFresh(){const S=WSETUP;S.typed=null;S.note='';if(S.s)S.s=normSettings({...S.s,seed:freshSeed()})}
+// the preset these settings are (one whose every setting they share), else custom
+function wsPreset(s){
+  const p=WS_TYPES.find(p=>SETTING_KEYS.every(k=>['v','preset','seed'].includes(k)||normSettings(defaultSettings(p))[k]===s[k]));
   return normSettings({...s,preset:p||'custom'})}
 // a change asked for: the settings clamped, a note where a limit moved what was asked
 function wsChange(o,why){const S=WSETUP,want={...S.s,...o};let s=wsPreset(normSettings(want));
   if(!SAVE_ZIP&&s.w*s.h>S.zipless){while(s.w*s.h>S.zipless&&s.h>WORLD_LIMITS.h[0])s=normSettings({...s,h:s.h-WORLD_LIMITS.step});why='saves here cannot be packed small: up to Large'}
-  S.note=want.holdings!=null&&s.holdings!==+want.holdings&&s.preset!=='classic'?'Holdings '+s.holdings+': '+(s.holdings>+want.holdings?'25 at least, 5 a realm':'up to '+maxHoldings(s)+' for this land'+(s.wild==='vast'||s.land==='sea'?' (less with '+(s.wild==='vast'?'Vast wild land':'More sea')+')':''))+'.':
+  S.note=want.holdings!=null&&s.holdings!==+want.holdings?'Holdings '+s.holdings+': '+(s.holdings>+want.holdings?WORLD_LIMITS.holdings.min+' at least':'up to '+maxHoldings(s)+' for this land'+(s.wild==='vast'||s.land==='sea'?' (less with '+(s.wild==='vast'?'Vast wild land':'More sea')+')':''))+'.':
     want.w!=null&&(s.w!==+want.w||s.h!==+want.h)?'Size '+s.w+' × '+s.h+': '+(why||'width '+WORLD_LIMITS.w.join('–')+', height '+WORLD_LIMITS.h.join('–')+', width ÷ height '+WORLD_LIMITS.aspect.join('–'))+'.':'';
   S.noteAt='';S.s=s;S.full=S.full&&S.full.key===settingsKey(s)?S.full:null}
 // the screen (past: the past chosen on the New game page)
 function worldSetup(past){if(!BGS[past])return false;const S=WSETUP;S.past=past;newWorldSettings();G.mode='title';G.menu='world';wsRender();wsPreview(true);return true}
-function wsRender(focus){const S=WSETUP,s=S.s,cl=s.preset==='classic',D=s.w*s.h,sc=panel.querySelector('.ws-set'),top=sc?sc.scrollTop:0;
+function wsRender(focus){const S=WSETUP,s=S.s,D=s.w*s.h,sc=panel.querySelector('.ws-set'),top=sc?sc.scrollTop:0;
   const chip=(act,arg,label,on,dis,tip)=>'<button class="btn sm'+(on?' on':'')+'" type="button" data-act="'+act+'" data-arg="'+arg+'" aria-pressed="'+!!on+'"'+(tip?' title="'+htmlText(tip)+'"':'')+(dis?' disabled':'')+'>'+label+'</button>';
   const step=(act,v,lo,hi,dis)=>'<span class="ws-num"><button class="btn sm" type="button" data-act="'+act+'" data-arg="-1" aria-label="Fewer"'+(dis||v<=lo?' disabled':'')+'>−</button><b>'+v+'</b><button class="btn sm" type="button" data-act="'+act+'" data-arg="1" aria-label="More"'+(dis||v>=hi?' disabled':'')+'>+</button></span>';
-  const size=Object.keys(WS_SIZE).find(z=>WS_SIZE[z][0]===s.w&&WS_SIZE[z][1]===s.h)||'custom',L=WORLD_LIMITS,dens=cl?null:densityOf(s),mx=maxHoldings(s),big=D>S.zipless;
-  const sizes=['normal','large','huge'].map(z=>chip('ws-size',z,WS_PRESET[z][0],size===z&&!S.custom,cl||z==='huge'&&!SAVE_ZIP)).join('')+chip('ws-size','custom','Custom',size==='custom'||S.custom,cl);
+  const size=Object.keys(WS_SIZE).find(z=>WS_SIZE[z][0]===s.w&&WS_SIZE[z][1]===s.h)||'custom',L=WORLD_LIMITS,dens=densityOf(s),mx=maxHoldings(s),big=D>S.zipless;
+  const sizes=['normal','large','huge'].map(z=>chip('ws-size',z,WS_PRESET[z][0],size===z&&!S.custom,z==='huge'&&!SAVE_ZIP)).join('')+chip('ws-size','custom','Custom',size==='custom'||S.custom);
   const row=k=>{const n=WS_SET.find(r=>r[0]===k),C=n[2],H=WS_HINT[k]||['',{}];return '<div class="ws-row"><span class="ws-k">'+n[1]+'<small>'+H[0]+'</small></span><span class="tabs" role="group" aria-label="'+n[1]+'">'+
-    SETTING_CHOICES[k].map(v=>chip('ws-set',k+':'+v,C[v],s[k]===v,cl&&!CLASSIC_FREE.includes(k),H[1][v])).join('')+'</span></div>'};
+    SETTING_CHOICES[k].map(v=>chip('ws-set',k+':'+v,C[v],s[k]===v,false,H[1][v])).join('')+'</span></div>'};
   const group=([id,name,ks])=>'<div class="lab">'+name+'</div>'+ks.map(row).join('');
   const note=at=>S.note&&(S.noteAt||'')===at?'<p class="gold ws-note">'+S.note+'</p>':'';
   showPanel('<div class="top"><h2>New world</h2><span class="muted">'+RACES[G.race||'human'].n+', '+BGS[S.past].n+'</span></div><div class="ws">'+
-    '<div class="ws-set"><div class="lab">World type</div><div class="tabs" role="group" aria-label="World type">'+Object.keys(WORLD_PRESETS).map(p=>chip('ws-preset',p,WS_PRESET[p][0],s.preset===p,p==='huge'&&!SAVE_ZIP,WS_PRESET[p][1])).join('')+
+    '<div class="ws-set"><div class="lab">World type</div><div class="tabs" role="group" aria-label="World type">'+WS_TYPES.map(p=>chip('ws-preset',p,WS_PRESET[p][0],s.preset===p,p==='huge'&&!SAVE_ZIP,WS_PRESET[p][1])).join('')+
       (s.preset==='custom'?chip('ws-preset','custom','Custom',true,true):'')+'</div><div class="ws-line ws-type"><p class="muted">'+WS_PRESET[s.preset][1]+'</p><button class="btn sm ws-dice" type="button" data-act="ws-surprise" title="A world of chance: its type, size and every setting">Surprise me</button></div>'+
     '<div class="lab">Size</div><div class="tabs" role="group" aria-label="Size">'+sizes+'</div>'+
-    (size==='custom'||S.custom?'<div class="ws-line">Width '+step('ws-w',s.w,L.w[0],L.w[1],cl)+' Height '+step('ws-h',s.h,L.h[0],L.h[1],cl)+'</div>':'')+
+    (size==='custom'||S.custom?'<div class="ws-line">Width '+step('ws-w',s.w,L.w[0],L.w[1])+' Height '+step('ws-h',s.h,L.h[0],L.h[1])+'</div>':'')+
     '<p class="muted">'+s.w+' × '+s.h+' tiles'+(big&&phoneSlow()?', slow to forge on this device':'')+(s.w>=1024?', sparse until later':'')+'</p>'+
-    '<div class="lab">Holdings</div><div class="ws-line"><span class="tabs" role="group" aria-label="Holdings">'+Object.keys(HOLDING_DENSITY).map(d=>chip('ws-dens',d,d[0].toUpperCase()+d.slice(1),dens===d,cl)).join('')+'</span>'+step('ws-hold',s.holdings,L.holdings.min,mx,cl)+'</div>'+
-    '<p class="muted">'+(cl?'Today\'s 37, at their places.':'25 to '+mx+' for this land, shared among the five realms'+(s.wild==='vast'||s.land==='sea'?' (fewer with '+(s.wild==='vast'?'Vast wild land':'More sea')+')':'')+'.')+'</p>'+
+    '<div class="lab">Holdings</div><div class="ws-line"><span class="tabs" role="group" aria-label="Holdings">'+Object.keys(HOLDING_DENSITY).map(d=>chip('ws-dens',d,d[0].toUpperCase()+d.slice(1),dens===d)).join('')+'</span>'+step('ws-hold',s.holdings,L.holdings.min,mx)+'</div>'+
+    '<p class="muted">'+L.holdings.min+' to '+mx+' for this land, shared among the five realms'+(s.wild==='vast'||s.land==='sea'?' (fewer with '+(s.wild==='vast'?'Vast wild land':'More sea')+')':'')+'.</p>'+
     note('')+WS_GROUPS.filter(g=>g[3]).map(group).join('')+
     '<button class="btn sm ws-adv" type="button" data-act="ws-adv" aria-expanded="'+S.adv+'">'+(S.adv?'Fewer options ▾':'More options ▸')+'<small>'+WS_GROUPS.filter(g=>!g[3]).map(g=>g[1].toLowerCase()).join(', ')+'</small></button>'+
-    (S.adv?'<div class="ws-advs">'+WS_GROUPS.filter(g=>!g[3]).map(group).join('')+(cl?'<p class="muted">Classic keeps these as they are: pick another world type to change them.</p>':'')+'</div>':'')+
-    '<div class="lab">Seed and sharing</div><div class="ws-line"><input id="wsSeed" class="ws-seed" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Seed or world code" placeholder="a word, or a world code" value="'+htmlText(S.typed!=null?S.typed:s.seed)+'"'+(cl?' disabled':'')+'>'+
-      '<button class="btn sm" type="button" data-act="ws-random"'+(cl?' disabled':'')+'>Random</button></div>'+
+    (S.adv?'<div class="ws-advs">'+WS_GROUPS.filter(g=>!g[3]).map(group).join('')+'</div>':'')+
+    '<div class="lab">Seed and sharing</div><div class="ws-line"><input id="wsSeed" class="ws-seed" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-label="Seed or world code" placeholder="a word, or a world code" value="'+htmlText(S.typed!=null?S.typed:s.seed)+'">'+
+      '<button class="btn sm" type="button" data-act="ws-random">Random</button></div>'+
     '<div class="ws-line ws-code"><span>World code <b>'+htmlText(worldCode(s))+'</b></span><button class="btn sm" type="button" data-act="ws-copy">Copy</button></div>'+
     '<p class="muted">The same seed and settings make the same world: share the code, or paste a friend\'s into the seed.</p>'+note('seed')+'</div>'+
     '<div class="ws-view"><canvas class="ws-cv" width="2" height="2" aria-label="The world, seen from above"></canvas><p class="muted ws-cap"></p>'+
@@ -142,21 +148,22 @@ function wsTime(s){let f=1;try{f=+localStorage.getItem('ashmark.forgerate')||1}c
 // (a world made in ms here: this device's measure kept, a convenience: session.js begin, the full preview)
 function forgeTimed(s,ms){if(!(ms>0&&isFinite(ms)))return;try{localStorage.setItem('ashmark.forgerate',String(Math.round(ms/areaTable(WSETUP.time,s.w*s.h)*100)/100))}catch(e){}}
 // the seed typed: a world code sets everything; else the seed (empty: a fresh one when you forge or regenerate)
-function wsTyped(v){const S=WSETUP,c=parseWorldCode(v);if(c){S.typed=null;S.s=c;S.noteAt='seed';S.note='World code read: '+WS_PRESET[c.preset][0]+', '+c.w+' × '+c.h+', seed '+c.seed+'.';wsRender('#wsSeed');return}
+function wsTyped(v){const S=WSETUP,c=parseWorldCode(v);
+  if(c&&c.preset==='classic'){S.typed=null;S.noteAt='seed';S.note='That is a code of the Classic world, which is no longer offered.';wsRender('#wsSeed');return}// (the owner, 2026-11-27)
+  if(c){S.typed=null;S.s=c;S.noteAt='seed';S.note='World code read: '+WS_PRESET[c.preset][0]+', '+c.w+' × '+c.h+', seed '+c.seed+'.';wsRender('#wsSeed');return}
   S.typed=v;const t=v.trim().slice(0,WORLD_LIMITS.seed);if(!t)return;S.s=normSettings({...S.s,seed:t});S.full=null;const b=panel.querySelector('.ws-code b');if(b)b.textContent=worldCode(S.s);wsPreview()}
 // (the seed field, read once more: empty, a fresh seed)
 function wsSeedNow(){const S=WSETUP;if(S.typed!=null&&!S.typed.trim()){S.s=normSettings({...S.s,seed:freshSeed()});S.typed=null}else S.typed=null}
-onAct('ws-',(a,arg)=>{const S=WSETUP;if(G.menu!=='world'||!S.s)return;const s=S.s,cl=s.preset==='classic',f='[data-act="'+a+'"]'+(arg!=null?'[data-arg="'+arg+'"]':'');
+onAct('ws-',(a,arg)=>{const S=WSETUP;if(G.menu!=='world'||!S.s)return;const s=S.s,f='[data-act="'+a+'"]'+(arg!=null?'[data-arg="'+arg+'"]':'');
   if(a==='ws-back'){clearTimeout(S.timer);return showTitle('past')}
   if(a==='ws-forge'){clearTimeout(S.timer);wsSeedNow();return begin(S.past,S.s)}
   if(a==='ws-copy'){const c=worldCode(s);copyText(c).then(ok=>{if(G.menu!=='world')return;S.noteAt='seed';S.note=ok?'World code '+c+' copied.':'Could not copy it: the code is '+c+'.';wsRender(f)});return}
   if(a==='ws-adv'){S.adv=!S.adv;return wsRender(f)}
-  if(a==='ws-preset'&&WS_PRESET[arg]&&arg!=='custom'){S.custom=false;S.typed=null;S.note='';S.s=arg==='classic'?classicSettings():normSettings({...defaultSettings(arg),seed:cl||!s.seed?freshSeed():s.seed});S.full=null;return wsRender(f)}
+  if(a==='ws-preset'&&WS_PRESET[arg]&&arg!=='custom'){S.custom=false;S.typed=null;S.note='';S.s=normSettings({...defaultSettings(arg),seed:s.seed||freshSeed()});S.full=null;return wsRender(f)}
   if(a==='ws-surprise'){S.typed=null;S.custom=false;const pick=L=>L[wsRoll(L.length)],z=WS_SIZE[pick(['normal','normal','large'])],o={preset:'custom',seed:freshSeed(),w:z[0],h:z[1]};
     for(const [,,ks] of WS_GROUPS)for(const k of ks)o[k]=pick(SETTING_CHOICES[k]);o.holdings=densityHoldings(normSettings(o),pick(Object.keys(HOLDING_DENSITY)));
     S.s=s;wsChange(o);S.note='A world of chance: '+WS_GROUPS.flatMap(g=>g[2]).map(k=>WS_SET.find(r=>r[0]===k)[2][S.s[k]].toLowerCase()+' '+WS_SET.find(r=>r[0]===k)[1].toLowerCase()).slice(0,4).join(', ')+'…';return wsRender(f)}
-  if(a==='ws-set'){const [k,v0]=String(arg).split(':'),v=k==='seasonal'?v0==='true':v0;if(!SETTING_CHOICES[k]||cl&&!CLASSIC_FREE.includes(k))return;wsChange({[k]:v});return wsRender(f)}
-  if(cl)return;// (the rest change the map: Classic keeps them)
+  if(a==='ws-set'){const [k,v0]=String(arg).split(':'),v=k==='seasonal'?v0==='true':v0;if(!SETTING_CHOICES[k])return;wsChange({[k]:v});return wsRender(f)}
   if(a==='ws-random'){S.typed=null;wsChange({seed:freshSeed()});return wsRender(f)}
   if(a==='ws-regen'){wsSeedNow();S.pics={};wsRender(f);return wsPreview(true)}
   if(a==='ws-size'){const z=WS_SIZE[arg],d=densityOf(s)||'normal';S.custom=arg==='custom';if(!z)return wsRender(f);const o={w:z[0],h:z[1]};o.holdings=densityHoldings({...s,...o},d);wsChange(o);return wsRender(f)}
@@ -172,7 +179,7 @@ panel.addEventListener('keydown',e=>{if(!e.target||e.target.id!=='wsSeed')return
    what it holds now */
 function worldPage(){const m=WM,s=m.settings,n=m.first?m.first.towns.length:TOWNS.length,row=(k,v)=>'<div class="ws-row"><span class="ws-k">'+k+'</span><span>'+v+'</span></div>';
   let L=0;for(let i=0;i<m.kind.length;i++)if(m.kind[i]!==T_WATER)L++;
-  return '<div class="ws-page">'+row('World',htmlText(worldName(m))+', '+WS_PRESET[s.preset][0])+row('Seed','<b>'+htmlText(s.seed)+'</b>')+
+  return '<div class="ws-page">'+row('World',htmlText(worldName(m))+', '+wsTypeName(s.preset))+row('Seed','<b>'+htmlText(s.seed)+'</b>')+
     '<div class="ws-row"><span class="ws-k">World code</span><span class="ws-line"><b>'+htmlText(worldCode(s))+'</b><button class="btn sm" type="button" data-act="esc-code">Copy</button></span></div>'+
     row('Size',s.w+' × '+s.h+' tiles')+row('Holdings',n+(n!==s.holdings?' ('+s.holdings+' asked: too few fitted)':''))+
     WS_SET.map(([k,name,C])=>row(name,C[s[k]]+(WS_LATER.includes(k)?' <small class="muted">later</small>':''))).join('')+
