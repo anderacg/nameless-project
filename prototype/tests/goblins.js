@@ -24,7 +24,7 @@ Kit.suite(({ok,info})=>{
  {const hid=W.sites.filter(s=>s.type==='hideout'),gap=Math.min(Infinity,...C.map(a=>Math.min(Infinity,...hid.map(b=>Math.hypot(a.tx-b.tx,a.ty-b.ty)))));
   ok(gap>=t.SITE_GAP.goblins.hideout,'apart from the hideouts ('+gap.toFixed(1)+' tiles at the least)')}
  const root=n=>n.replace(/ (Camp|Warren)$/,'');
- ok(C.every(s=>s.band==='goblins'&&GB.names.some(n=>root(n)===root(s.name))&&s.lairLook!=='tunnel'&&s.ld&&t.CHIEF_NAMES.goblins[0].includes(s.ld.name.split(' ')[0]))&&new Set(C.map(s=>root(s.name))).size===C.length,'each its own name ('+C.slice(0,3).map(s=>s.name).join(', ')+'), never a dug tunnel, a goblin boss ('+C[0].ld.name+')');
+ ok(C.every(s=>s.band==='goblins'&&[...GB.names,...GB.spare].some(n=>root(n)===root(s.name))&&s.lairLook!=='tunnel'&&s.ld&&t.CHIEF_NAMES.goblins[0].includes(s.ld.name.split(' ')[0]))&&new Set(C.map(s=>root(s.name))).size===C.length,'each its own name ('+C.slice(0,3).map(s=>s.name).join(', ')+'), never a dug tunnel, a goblin boss ('+C[0].ld.name+')');
  // (warrens: the owner, 2026-11-08, "add goblin warrens near hills": a camp among hills a cave in the hillside, stormed inside)
  // (GOBLINS.warren.share of a camp's picks look for a hillside first (sites.js GoblinCamp.pick): over three streams of picks about that
  // share among hills, and this game's draw has warrens; by the hideouts' pick alone, 0 of 11 on some draws, 2026-11-17)

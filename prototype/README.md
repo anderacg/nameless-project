@@ -476,9 +476,11 @@ Things in the world are plain data (so a save is plain JSON) read through a clas
 - **Beasts in the wilds** (2026-11-05, the owner: "monsters should spawn far away from holdings. And they tend to avoid holding territories"): a beast lairs 22 tiles at least from every holding (`WORLD_SCALE.spawn.monsterHold` 352 px, was 256 till 2026-11-14, half that at its last tries; `world/monsters.js` `spawnMonster`) and never steps from the wilds onto a holding's land, wandering or hunting you (`beastKeepsOut`: it turns for its lair at the border; a holding's land is a refuge); a mythic one roams as before. The way's footprints shorter (`gfx/worldui.js` `WUI_FOOT`: 4 px long, 10 apart). Test: `tests/beastland.js`.
 - **Holdings halved, every kind on the map** (2026-11-27, the owner: "Make holding less i feel it too dense please reduce it by 50% and
   make sure all type of holding is spawned"; `world/worldsettings.js` `WORLD_LIMITS.holdings`, `WORLD_PRESETS`; `worldplace.js`
-  `PLACE_HAMLET`, `placeAllKinds`; `tests/holdingkinds.js`). The realms' holdings by default 14 / 20 / 33 at Normal / Large / Huge
-  (were 27 / 40 / 66; the least a map may have 12, the most halved too), the free folk's hamlets and villages half as many (Normal
-  about 12, was 24): a Normal map about 26 holdings in all, was about 51. Every map has a city, town, castle, fort, village and hamlet:
+  `PLACE_HAMLET`, `placeAllKinds`; `tests/holdingkinds.js`). The realms' holdings by default 15 / 20 / 35 at Normal / Large / Huge
+  (were 27 / 40 / 66; a whole number a realm, 3 / 4 / 7 each: at 14 one realm had a capital and one more, half the others' land; the
+  least a map may have 12, the most halved too), the free folk's hamlets and villages half as many (Normal about 12, was 24): a
+  Normal map about 27 holdings in all, was about 51. Goblin camps past their twelve names take `GOBLINS.spare`'s (more wild land,
+  more camps). Every map has a city, town, castle, fort, village and hamlet:
   a kind a realm's few left out is made of a holding of the commonest kind (two of it at least), clear of the others by the spacing
   table where it can be (`placeAllKinds`, after the forts); the free folk's first a hamlet if all were drawn villages. A capital's fair
   start asks three holdings within a day, or as many as its realm has past it (`placeCheck`). Classic keeps its own 37 as designed;
@@ -1752,7 +1754,7 @@ the presets (Classic first and chosen at first, then Normal, Large, Huge, Wild F
 preset's again shows as that preset), the seed (typed, Random; a world code typed or pasted there sets everything), the world code
 with Copy (`worldsettings.js` `worldCode`, `parseWorldCode`: `ASH1-<preset>-<every setting and the size, base 36>-<seed>`), the
 size (or Custom: width and height with − and +), the holdings (Fewer, Normal, More: `HOLDING_DENSITY` times the area's default,
-14 / 20 / 33 at Normal / Large / Huge since 2026-11-27 (were 27 / 40 / 66), More 19 / 27 / 45; or a number with − and +) and the Advanced fold-out (the rest,
+15 / 20 / 35 at Normal / Large / Huge since 2026-11-27 (were 27 / 40 / 66), More 21 / 27 / 48; or a number with − and +) and the Advanced fold-out (the rest,
 those later phases read marked later). Classic locks everything that changes the map; monsters, bandits and your start stay open.
 Every change is clamped at once, with a note when a limit moved a value. Right: the preview (no city marked as your start): the quick
 sketch (`worldgen.js` `genSketch`: the real land field and climate noise at 256 points across, mountains, rivers and holdings

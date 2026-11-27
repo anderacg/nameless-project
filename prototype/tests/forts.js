@@ -13,8 +13,8 @@ Kit.suite(({ok,info})=>{
  // ---- a generated world's: each realm's villages nearest a rival made forts (placeForts)
  {const S=t.genWorldSteps({preset:'normal',seed:'redwater'});let r;for(const st of S){const it=st.run();let v;while(!(v=it.next()).done);r=v.value}
   const Hd=r.holdings.filter(h=>h.realm),Fd=Hd.filter(h=>h.kind==='fort'),rv=h=>Math.min(...Hd.filter(o=>o.realm!==h.realm).map(o=>Math.hypot(o.tx-h.tx,o.ty-h.ty)));
-  ok(t.PLACE_REALMS.every(f=>Fd.some(h=>h.realm===f))&&Fd.every(h=>Hd.filter(o=>o.realm===h.realm&&o.kind==='village'&&o.style!=='stilt').every(v=>rv(v)>=rv(h)-1e-9)&&/frontier fort/.test(h.note)),
-   'Normal redwater: '+Fd.length+' forts, each realm’s, its villages’ nearest a rival ('+Fd.map(h=>h.name+' '+Math.round(rv(h))).join(', ')+')')}
+  ok(Fd.length>=1&&new Set(Fd.map(h=>h.realm)).size===Fd.length&&Fd.every(h=>Hd.filter(o=>o.realm===h.realm&&o.kind==='village'&&o.style!=='stilt').every(v=>rv(v)>=rv(h)-1e-9)&&/frontier fort/.test(h.note)),
+   'Normal redwater: '+Fd.length+' forts, one a realm that has a village (the holdings halved, 2026-11-27: a realm of three may have none), its villages’ nearest a rival ('+Fd.map(h=>h.name+' '+Math.round(rv(h))).join(', ')+')')}
  // ---- what: a fort's own
  const f=forts[0],T0=t.HOLDING_TYPES;
  ok(f instanceof t.Castle&&f.T===T0.fort&&T0.fort.tier>T0.village.tier&&T0.fort.tier<T0.castle.tier,'between village and castle (tier '+T0.fort.tier+'), a castle’s kind of garrison');

@@ -1,5 +1,5 @@
 'use strict';
-// World settings, Phase 2b (doc/WORLD_DESIGN.md §4, §15 2b): the holdings' defaults and density (worldsettings.js: 14 / 20 / 33 since 2026-11-27, were 27 / 40 / 66,
+// World settings, Phase 2b (doc/WORLD_DESIGN.md §4, §15 2b): the holdings' defaults and density (worldsettings.js: 15 / 20 / 35 since 2026-11-27, were 27 / 40 / 66,
 // the owner's fewer of 2026-10-22; Fewer, Normal, More), the world code (worldCode, parseWorldCode: every setting and the seed,
 // read back clamped), the quick sketch (worldgen.js genSketch: fast at every size, the same twice, its coast the real one's),
 // the New world screen (worldsetup.js: after a past, the presets, Classic's locks, size, holdings and their notes,
@@ -11,9 +11,9 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
  try{localStorage.clear()}catch(e){}
  // ---- the holdings: the defaults and the density
  {const pr=['normal','large','huge','frontier','crowded'].map(p=>N(t.defaultSettings(p)).holdings),D=z=>['fewer','normal','more'].map(d=>t.densityHoldings(N({preset:z}),d)).join('/');
-  ok(J(pr)==='[14,20,33,14,20]'&&N(t.classicSettings()).holdings===37&&N({}).holdings===14,'the presets\' holdings: Normal 14, Large 20, Huge 33, Wild Frontier 14, Crowded Realms 20 (half of 27 / 40 / 66, the owner, 2026-11-27); Classic keeps its 37');
-  ok(D('normal')==='12/14/19'&&D('large')==='16/20/27'&&D('huge')==='26/33/45','the density: Fewer, Normal, More at Normal '+D('normal')+', Large '+D('large')+', Huge '+D('huge')+' (Fewer never under 12)');
-  const s=N({preset:'large'});ok(t.densityOf(s)==='normal'&&t.densityOf({...s,holdings:27})==='more'&&t.densityOf({...s,holdings:21})===null&&t.densityHoldings(N({preset:'normal',wild:'vast',land:'sea'}),'more')===19,'densityOf reads the density back (a number of its own: none); More within the land\'s limit')}
+  ok(J(pr)==='[15,20,35,15,20]'&&N(t.classicSettings()).holdings===37&&N({}).holdings===15,'the presets\' holdings: Normal 15, Large 20, Huge 35, Wild Frontier 15, Crowded Realms 20 (about half of 27 / 40 / 66, a whole number a realm, the owner, 2026-11-27); Classic keeps its 37');
+  ok(D('normal')==='12/15/21'&&D('large')==='16/20/27'&&D('huge')==='28/35/48','the density: Fewer, Normal, More at Normal '+D('normal')+', Large '+D('large')+', Huge '+D('huge')+' (Fewer never under 12)');
+  const s=N({preset:'large'});ok(t.densityOf(s)==='normal'&&t.densityOf({...s,holdings:27})==='more'&&t.densityOf({...s,holdings:21})===null&&t.densityHoldings(N({preset:'normal',wild:'vast',land:'sea'}),'more')===19&&t.densityHoldings(N({preset:'normal'}),'more')===21,'densityOf reads the density back (a number of its own: none); More within the land\'s limit')}
  // ---- the world code
  {const c=t.worldCode(N({preset:'large',seed:'redwater'})),back=t.parseWorldCode(c);
   ok(/^ASH1-L-[0-9A-Z]+-redwater$/.test(c)&&J(back)===J(N({preset:'large',seed:'redwater'})),'a world code: '+c+', read back to the same settings');
@@ -59,7 +59,7 @@ window.RUN=async()=>{const r=Kit.report(),{ok,info}=r;try{
    ok(/holdings/.test(q('.ws-counts').textContent)&&!/ring|start/i.test(q('.ws-cap').textContent)&&!white,'its preview: '+q('.ws-cap').textContent+'; '+q('.ws-counts').textContent+'; '+q('.ws-time').textContent+'; no city ringed as your start ('+white+' ring pixels)')}
   t.act('ws-set','monsters:normal')}
  t.act('ws-preset','normal');
- {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===14&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 14 holdings')}
+ {const s=S.s;ok(s.preset==='normal'&&s.seed&&s.seed!=='CLASSIC'&&s.holdings===15&&s.w===448&&!q('#wsSeed').disabled&&q('#wsSeed').value===s.seed,'Normal: a fresh seed ('+s.seed+'), 448 x 320, 15 holdings')}
  {t.act('ws-random');const k1=t.wsMapKey(S.s),before=S.pics[k1];await new Promise(r=>setTimeout(r,S.wait+100));
   ok(!before&&S.pics[k1]&&S.last===S.pics[k1]&&S.s.seed,'Random: a new seed ('+S.s.seed+'), the preview redrawn '+S.wait+' ms after the change, the last picture shown meanwhile')}
  {const seen=new Set(),seeds=new Set();for(let i=0;i<12;i++){t.act('ws-surprise');seen.add(t.settingsKey({...S.s,seed:''}));seeds.add(S.s.seed)}

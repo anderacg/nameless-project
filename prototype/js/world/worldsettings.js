@@ -21,10 +21,10 @@ const SETTING_DEFAULT={hamlets:'normal',sacred:'normal',wild:'normal',land:'coas
 /* the limits (§4.1, §4.5): w, h (tiles) in steps of step, w ÷ h within aspect, tiles at most (Huge, on every device: D44);
    holdings at least min, at most by the map's area (max: [tiles, holdings] points, linear between, the first below), x wild with
    Vast wild land, x sea with More sea, floored; the seed text cut to seed characters. def: the holdings a map of that area takes
-   by default, 14 / 20 / 33 (the owner, 2026-10-22: "the holdings seem a bit too much", 27 / 40 / 66 then; 2026-11-27: "I feel
-   it too dense please reduce it by 50%", half of those, min and max halved with them; More gives 1.37 times: HOLDING_DENSITY) */
+   by default, 15 / 20 / 35 (the owner, 2026-10-22: "the holdings seem a bit too much", 27 / 40 / 66 then; 2026-11-27: "I feel
+   it too dense please reduce it by 50%", about half of those, a whole number a realm (five realms: 3 / 4 / 7 each, so their land stays even), min and max halved; More gives 1.37 times: HOLDING_DENSITY) */
 const WORLD_LIMITS={w:[320,1024],h:[224,768],step:32,aspect:[1.2,1.6],tiles:786432,seed:24,
-  holdings:{min:12,max:[[143360,30],[286720,55],[786432,100]],def:[[143360,14],[286720,20],[786432,33]],wild:.75,sea:.85}};
+  holdings:{min:12,max:[[143360,30],[286720,55],[786432,100]],def:[[143360,15],[286720,20],[786432,35]],wild:.75,sea:.85}};
 // the holdings' density (the New game screen's Fewer, Normal, More): the area's default holdings times this, clamped
 const HOLDING_DENSITY={fewer:.8,normal:1,more:1.37};
 /* the presets (§4.2): each fills every setting; touching one afterwards makes it custom (the screen's). Classic: seed CLASSIC at
@@ -33,10 +33,10 @@ const HOLDING_DENSITY={fewer:.8,normal:1,more:1.37};
    2026-11-27 */
 const WORLD_PRESETS={
   classic:{w:448,h:320,seed:'CLASSIC',holdings:37},
-  normal:{w:448,h:320,holdings:14},
+  normal:{w:448,h:320,holdings:15},
   large:{w:640,h:448,holdings:20},
-  huge:{w:1024,h:768,holdings:33},
-  frontier:{w:640,h:448,holdings:14,hamlets:'few',sacred:'common',wild:'vast',land:'continent',rivers:'wet',mountains:'rugged',climate:'cold',monsters:'deadly',bandits:'many',economy:'rich',sites:'many'},
+  huge:{w:1024,h:768,holdings:35},
+  frontier:{w:640,h:448,holdings:15,hamlets:'few',sacred:'common',wild:'vast',land:'continent',rivers:'wet',mountains:'rugged',climate:'cold',monsters:'deadly',bandits:'many',economy:'rich',sites:'many'},
   crowded:{w:448,h:320,holdings:20,hamlets:'many',wild:'few',monsters:'calm',sites:'few'}
 };
 // (the settings Classic leaves free)

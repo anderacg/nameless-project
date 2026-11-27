@@ -18,6 +18,8 @@ const GOBLINS={on:true,col:'#6f9a3a',band:[8,12],grow:12,bossAt:12,mix:[['gob_st
   bands:2,spawn:.35,leash:14,nerve:.7,camp:{size0:12,foes:[11,14],chief:[1,3],gold:1.2,gear:.3},respawn:20,
   loot:{goods:['grain','meat','cloth','tools','iron'],n:[3,6]},raid:{r:4,chance:.3,fear:2,steal:[3,6]},morale:28,bossMorale:45,
   names:['Snaggle Warren','Rotgut Camp','Mudhole Warren','Gristle Hill','Nettle Warren','Sourbog Camp','Gnawbone Camp','Mossrot Warren','Skulk Hollow','Grubpit Camp','Ratchew Warren','Thornmouth Camp'],
+  // (more camps than names (more wild land since the holdings were halved, 2026-11-27): these next, so no two camps share a name)
+  spare:['Bogtooth Camp','Wartnose Warren','Slopgut Camp','Fleabite Warren','Crookshank Camp','Mirefang Warren','Scabknee Camp','Dungheap Warren'],
   d:'A goblin camp of hide yurts in a ring of stakes. Many weak goblins, their boss, and a pile of stolen goods.',
   warren:{on:true,share:.35,banner:['#6f9a3a','#3f5a1e'],T:{n:'Goblin warren',ico:'cave',col:'#6f9a3a',respawn:20,d:'A goblin warren dug into the hillside. Many weak goblins packed in its burrows, their boss, and a pile of stolen goods deep inside.'}},
   meet:'Small green shapes in ragged hoods scurry through the brush, yelling and waving knives. They keep their distance until they are sure of you.'};

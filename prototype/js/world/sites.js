@@ -652,8 +652,8 @@ class GoblinCamp extends Hideout{
   // (the wild land's tiles among hills (hillyAt) clear for a camp, once for each wild land)
   static hills(L){const C=GoblinCamp.hillTiles;if(C&&C.of===L)return C.list;const list=L.list.filter(i=>{const x=i%MW,y=(i-x)/MW;return hillyAt(x,y)&&this.clear(x,y)});GoblinCamp.hillTiles={of:L,list};return list}
   // (its name in its own word: a warren's Warren, a camp's Camp; a name taken in either word taken; one draw, as before)
-  setup(sites){this.band='goblins';const camp=n=>n.replace(/ Warren$/,' Camp'),used=new Set(sites.map(o=>camp(o.name))),free=GOBLINS.names.filter(n=>!used.has(camp(n))),
-    n=camp(unusedName(free.length?free:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}
+  setup(sites){this.band='goblins';const camp=n=>n.replace(/ Warren$/,' Camp'),used=new Set(sites.map(o=>camp(o.name))),free=GOBLINS.names.filter(n=>!used.has(camp(n))),spare=free.length?free:GOBLINS.spare.filter(n=>!used.has(camp(n))),
+    n=camp(unusedName(spare.length?spare:GOBLINS.names,[]));this.name=this.tunnel?n.replace(/ Camp$/,' Warren'):n;this.ld=newChief('goblins',this.newLv(),sites)}
   shelters(b){return b.camp===this.i}
   // (stormed: its own, as scouted or rolled now, and its warbands sheltering in it tonight, as a bandit camp's: world.js campFight)
   attack(own,inside){startEncounter({kind:'camp',ref:this,list:this.keep(own||this.foes()).concat(this.sheltering()),band:this.band,inside:inside||Interior.pick()})}

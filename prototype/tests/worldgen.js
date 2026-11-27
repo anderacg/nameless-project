@@ -13,7 +13,7 @@ try{
  try{localStorage.clear()}catch(e){}
  const N=t.normSettings,J=JSON.stringify,K=t.SETTING_KEYS,pn=()=>performance.now();
  // ---- the settings
- {const d=N({});ok(J(Object.keys(d))===J(K)&&d.v===1&&d.preset==='custom'&&d.w===448&&d.h===320&&d.holdings===14&&d.seed===''&&d.seasonal===true,'nothing given: Normal\'s settings, as custom, every key in order ('+K.join(' ')+')');
+ {const d=N({});ok(J(Object.keys(d))===J(K)&&d.v===1&&d.preset==='custom'&&d.w===448&&d.h===320&&d.holdings===15&&d.seed===''&&d.seasonal===true,'nothing given: Normal\'s settings, as custom, every key in order ('+K.join(' ')+')');
   ok(N({v:7}).v===1&&N({preset:'bogus'}).preset==='custom'&&t.SETTING_CHOICES.preset.every(p=>N({preset:p}).preset===p)&&!('foo' in N({foo:1})),'v is always 1; an unknown preset is custom, the others kept; unknown keys dropped');
   const sz=(w,h)=>{const s=N({w,h});return s.w+'x'+s.h};
   ok(sz(100,100)==='320x224'&&sz(5000,5000)==='1024x768'&&sz(500,300)==='512x320'&&sz(640,200)==='640x416'&&sz(1024,224)==='1024x640'&&sz('640','448')==='640x448'&&sz('x',null)==='448x320',
@@ -22,8 +22,8 @@ try{
   ok(!bad.length,'300 random sizes all clamp to a step of 32, an aspect of 1.2-1.6 and at most 786,432 tiles'+(bad.length?': '+bad.slice(0,5).join(' '):''));
   ok(N({seed:'  red water  '}).seed==='red water'&&N({seed:'x'.repeat(40)}).seed.length===24&&N({seed:42}).seed==='42'&&N({preset:'classic',seed:'x'}).seed==='CLASSIC','seed: trimmed, cut to 24 characters, text; Classic\'s is CLASSIC');
   const hd=o2=>N({holdings:999,...o2}).holdings;
-  ok(N({holdings:5}).holdings===12&&hd({})===30&&hd({wild:'vast'})===22&&hd({land:'sea'})===25&&hd({wild:'vast',land:'sea'})===19&&hd({preset:'large'})===55&&hd({preset:'huge'})===100&&hd({w:544,h:384})===41&&N({holdings:'x'}).holdings===14&&N({preset:'large'}).holdings===20&&N({holdings:20.9}).holdings===20,
-   'holdings: at least 12; at most 30 at Normal (Vast wild 22, More sea 25, both 19), 55 at Large, 100 at Huge, linear between (544x384: '+hd({w:544,h:384})+'); floored; else the preset\'s (14 at Normal, 20 at Large: halved, the owner, 2026-11-27)');
+  ok(N({holdings:5}).holdings===12&&hd({})===30&&hd({wild:'vast'})===22&&hd({land:'sea'})===25&&hd({wild:'vast',land:'sea'})===19&&hd({preset:'large'})===55&&hd({preset:'huge'})===100&&hd({w:544,h:384})===41&&N({holdings:'x'}).holdings===15&&N({preset:'large'}).holdings===20&&N({holdings:20.9}).holdings===20,
+   'holdings: at least 12; at most 30 at Normal (Vast wild 22, More sea 25, both 19), 55 at Large, 100 at Huge, linear between (544x384: '+hd({w:544,h:384})+'); floored; else the preset\'s (15 at Normal, 20 at Large: about halved, the owner, 2026-11-27)');
   const ch=Object.keys(t.SETTING_CHOICES).filter(k=>k!=='preset'),wrong=ch.filter(k=>N({[k]:'bogus'})[k]!==N({})[k]||!t.SETTING_CHOICES[k].every(v=>N({[k]:v})[k]===v));
   ok(!wrong.length&&N({seasonal:'yes'}).seasonal===true&&N({seasonal:false}).seasonal===false,'every choice ('+ch.join(', ')+') keeps its values and takes its default for anything else; seasonal: true but for false'+(wrong.length?': '+wrong.join(', '):''));
   const pick=a=>a[Math.floor(R()*a.length)],idem=[];
@@ -34,7 +34,7 @@ try{
   ok(C.w===448&&C.h===320&&C.seed==='CLASSIC'&&C.holdings===37&&['hamlets','sacred','wild','land','rivers','mountains','climate','seasonal','economy','sites'].every(k=>C[k]===N({})[k])&&C.monsters==='deadly'&&C.bandits==='many'&&C.start==='settler'&&J(t.classicSettings({monsters:'deadly',bandits:'many',start:'settler'}))===J(C),
    'Classic locks size, seed, holdings and every map setting to the defaults; monsters, bandits and start stay free (classicSettings takes them)');
   const pr=Object.keys(t.WORLD_PRESETS).map(p=>{const s=N(t.defaultSettings(p));return p+' '+s.w+'x'+s.h+' '+s.holdings});
-  ok(pr.join()==='classic 448x320 37,normal 448x320 14,large 640x448 20,huge 1024x768 33,frontier 640x448 14,crowded 448x320 20'&&Object.keys(t.WORLD_PRESETS).every(p=>{const d=t.defaultSettings(p),n=N(d);return K.every(k=>n[k]===d[k])}),'the presets clamp to themselves: '+pr.join(', '));
+  ok(pr.join()==='classic 448x320 37,normal 448x320 15,large 640x448 20,huge 1024x768 35,frontier 640x448 15,crowded 448x320 20'&&Object.keys(t.WORLD_PRESETS).every(p=>{const d=t.defaultSettings(p),n=N(d);return K.every(k=>n[k]===d[k])}),'the presets clamp to themselves: '+pr.join(', '));
   ok(t.settingsKey(N({seed:'a'}))===t.settingsKey({seed:'a',foo:2})&&t.settingsKey(N({seed:'a'}))!==t.settingsKey(N({seed:'b'}))&&t.settingsKey(null)==='','settingsKey: equal for equal clamped settings, different for different ones; empty for none');
   ok(t.seedNum('')===2166136261&&t.seedNum('a')===0xe40c292c&&t.seedNum('CLASSIC')>>>0===t.seedNum('CLASSIC')&&t.seedNum('ab')!==t.seedNum('ba'),'seedNum: FNV-1a 32 of the text (CLASSIC: '+t.seedNum('CLASSIC')+')')}
  // ---- T_FORD in every table indexed by kind (x0.6 since the lab's ground speeds, 8a595a1; was .5)
