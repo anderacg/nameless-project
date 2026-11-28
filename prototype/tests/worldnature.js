@@ -210,6 +210,12 @@ try{
  //      Vale's wheat, the Sylvan Court's herbs and orchards, the Karn's rye and potatoes, terraced, the Ashgor's herd ground; the
  //      desert's irrigated plots with their channel, the frost's rye, turnips and fallow under snow), in rows of plants (the crop's
  //      own tones, soil between), what stands on them (stooks, haystacks, fruit trees, date palms: their navy outline)
+ // ---- a swamp field's standing water (engine/worldnature.js CROP_X.wetRun; the owner, 2026-11-28: "Field crop sprite seems weird": it
+ //      was a speck on three soil px in ten over the whole plot, which read as noise): it lies along the troughs in stretches, on its
+ //      troughs' rows only (plants may stand across a stretch)
+ {const W=[70,92,96],look=(sp,N)=>{let n=0,lone=0;const rows=new Set();for(let y=0;y<N;y++)for(let x=0;x<N;x++){const is=(a,b)=>{const i=(b*N+((a+N)%N))*3;return sp.rgb[i]===W[0]&&sp.rgb[i+1]===W[1]&&sp.rgb[i+2]===W[2]};if(!is(x,y))continue;n++;rows.add(y);if(!is(x-1,y)&&!is(x+1,y))lone++}return{n,lone,rows:rows.size}};
+  let bad=[],some=0;for(const k of ['veg','turnips','flax'])for(let v=0;v<4;v++)for(const fine of [2,1]){const sp=PX.worldCrop(k,'swamp',v,{wet:1,fine,stage:'young',ripe:.15}),N=sp.width,L=look(sp,N);if(L.n)some++;/* (the fine picture, what the map draws: on its troughs' rows only, a quarter of its rows at most; the plain 16 px one a speck on its open soil too, CROP_X.wetSpeck: by its share) */if(fine>1&&L.rows>N/4||L.n>N*N*(fine>1?.2:.25))bad.push(k+v+'x'+fine+': '+L.n+' px, '+L.lone+' alone, '+L.rows+' rows')}
+  ok(some>0&&!bad.length,'a swamp field\'s water lies along its troughs in stretches, not a speck here and there ('+some+' pictures with water'+(bad.length?'; '+bad.slice(0,4).join('; '):'')+')')}
  {const se0=t.FARM.season;t.FARM.season='summer';try{// (in summer: the crops ripe, as the coarse picture's c1 tones: worldart.js FARM.grow)
   const people=['vale','sylvan','karn','horde'],cl=['grass','desert','frost','swamp'],tally={},cols={},snowy=[0,0],water=[0,0],stand=[0,0],bad=[];
   const pal=k=>new Set(PX.WORLD_CROPS[k].c1.map(c=>parseInt(c.slice(1,3),16)+','+parseInt(c.slice(3,5),16)+','+parseInt(c.slice(5,7),16)));

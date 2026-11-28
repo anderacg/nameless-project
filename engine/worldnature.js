@@ -274,7 +274,7 @@
     fallow:{c0:['#b8a070','#9a8458','#76643e'],c1:['#c4ac76','#a08a5a','#7a6640']},
     grazed:{c0:['#7e9a48','#66843c','#4e6a32'],c1:['#869c4a','#6a843e','#506a34']}};
   const CROP_X={grape:['#7a4a8a','#4e2e62'],unripe:'#9ab85a',cab:'#c4dc8a',leek:'#ecf0dc',bulb:['#ece4ea','#a85a9a'],flower:['#86a2e8','#b8c8f4'],hay:['#ead890','#b89a58'],
-    herb:[['#b49ae0','#7e5eb0'],['#a8bc98','#6e8a62'],['#f4bc40','#c8862a'],['#f6f2e4','#d0caa8']],water:['#78b4e2','#4a86c0'],snow:'#e4eaf2',frost:'#d8e2ee',wet:[70,92,96],stone:['#a49c8c','#6a6458'],stub:'#6e5c3a',post:'#5a3e24',trod:'#8a7450',dry:[[214,196,120],[186,164,96],[150,128,76]]};
+    herb:[['#b49ae0','#7e5eb0'],['#a8bc98','#6e8a62'],['#f4bc40','#c8862a'],['#f6f2e4','#d0caa8']],water:['#78b4e2','#4a86c0'],snow:'#e4eaf2',frost:'#d8e2ee',wet:[70,92,96],wetRun:.55,wetSpeck:.06,stone:['#a49c8c','#6a6458'],stub:'#6e5c3a',post:'#5a3e24',trod:'#8a7450',dry:[[214,196,120],[186,164,96],[150,128,76]]};
   // (rows of plants: a crop's pattern (pat; veg: rows, one a row of plants in turn) tiled along each row, a row of patterns shifted
   //  st px from the one before (the plants staggered); L, M, D its tones, s soil, '.' soil between plants, t a trough, W a leek's
   //  white, P and B a turnip's bulb, G grapes, K a stake, F and f flax's flowers, H and h a herb's flowers (a row's herb in turn);
@@ -303,7 +303,7 @@
       else if(kind==='grazed'){const m=PX.hash(x>>2,y>>1,s+5);c=m<.22?(n<.5?hx(X.trod):mixA(hx(X.trod),pal[2],.4)):n<.15?pal[2]:n>.85?pal[0]:pal[1]}
       else c=n<.2?pal[0]:n>.85?pal[2]:pal[1];// (the orchard's meadow)
       const ut=Math.floor(u/f);if(ter&&(ut+off)%5===4){c=hx(X.stone[n<.6?0:1]);t=0}else if(ter&&(ut+off)%5===0)c=mixA(c,[24,20,18],.3);
-      if(t&&snow&&H(x,y,2)<snow*(t>1?.85:.3))c=hx(X.snow);else if(!t&&snow&&kind!=='irrigated'&&H(x,y,3)<snow*.1)c=hx(X.frost);else if(t&&wet&&H(x,y,4)<wet*.3)c=X.wet;
+      if(t&&snow&&H(x,y,2)<snow*(t>1?.85:.3))c=hx(X.snow);else if(!t&&snow&&kind!=='irrigated'&&H(x,y,3)<snow*.1)c=hx(X.frost);else if(t>1&&wet&&H(Math.floor(w/(3*f)),u,4)<wet*X.wetRun)c=X.wet;else if(t===1&&wet&&H(x,y,4)<wet*X.wetSpeck)c=X.wet;
       rgb[i*3]=c[0];rgb[i*3+1]=c[1];rgb[i*3+2]=c[2];tr[i]=t?1:0}
     const sp=finish(N,a,rgb,8*f,16*f-1,true);sp.tr=tr;sp.ch=kind==='irrigated'?ch:-1;sp.kind=kind;return CACHE[key]=sp};
   /* a row crop by the fine px (the owner, 2026-11-17: "make it more like other game where i can tell whether this is a wheat or
@@ -372,8 +372,10 @@
       for(const [x,y,c] of late)set(x,y,c)}
     // (the Karn's terraces: a stone lip every fifth row of the coarse picture's)
     if(ter&&!plantsOnly)for(let y=0;y<N;y++){const ut=Math.floor(y/f);if((ut+(v>>1))%5===4)for(let x=0;x<N;x++){const i=y*N+x,c=hx(X.stone[H(x,y,10)<.6?0:1]);rgb.set(c,i*3);tr[i]=0}}
-    // (snow in the troughs, a little on the plants; the swamp's water in some)
-    for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;let c=null;if(tr[i]&&snow&&H(x,y,2)<snow*.85)c=hx(X.snow);else if(!tr[i]&&snow&&H(x,y,3)<snow*.12)c=hx(X.frost);else if(tr[i]&&wet&&H(x,y,4)<wet*.3)c=X.wet;if(c)rgb.set(c,i*3)}
+    // (snow in the troughs, a little on the plants; the swamp's water lying along the troughs in stretches (CROP_X.wetRun of each
+    //  3 px of a trough: its lower row the water, the row over it the wet bank), never a speck here and there over the whole plot: it
+    //  read as noise; the owner, 2026-11-28: "Field crop sprite seems weird")
+    for(let i=0;i<N*N;i++){const x=i%N,y=(i/N)|0;let c=null;if(tr[i]&&snow&&H(x,y,2)<snow*.85)c=hx(X.snow);else if(!tr[i]&&snow&&H(x,y,3)<snow*.12)c=hx(X.frost);else if(tr[i]&&wet){const d=((y-off)%R+R)%R,row=Math.floor((y-off)/R);if(d===R>>1&&H(Math.floor(x/(3*f)),row,4)<wet*X.wetRun)c=X.wet;else if(d===(R>>1)-1&&H(Math.floor(x/(3*f)),row,4)<wet*X.wetRun)c=mixA(X.wet,dark,.45).map(Math.round)}if(c)rgb.set(c,i*3)}
     const sp=finish(N,a,rgb,8*f,16*f-1,true);sp.tr=tr;sp.ch=kind==='irrigated'?Math.floor(chan/f):-1;sp.kind=kind;sp.stage=st;return CACHE[key]=sp};
   PX.worldCropThing=(kind,v)=>{v=((v|0)%4+4)%4;const key='ft'+kind+v;if(CACHE[key])return CACHE[key];const N=8,M=new Uint8Array(N*N),set=(x,y,t)=>{if(x>0&&y>0&&x<N-1&&y<N)M[y*N+x]=t};let col;
     if(kind==='haystack'){for(let y=2;y<7;y++)for(let x=1;x<7;x++){const d=((x+.5-4)/3)**2+((y+.5-6)/4)**2;if(d>1)continue;set(x,y,x+y<7?1:x>4||y>5?3:2)}for(let x=2;x<6;x++)set(x,7,4);set(4,1,2);col=[null,'#f0dc94','#cba85c','#8e7438','#6a5430']}
