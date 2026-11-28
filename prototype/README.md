@@ -1134,15 +1134,19 @@ Gone: `BATTLE_RHYTHM.move`, `ROUT_RUN`, `SPRINT_MUL`, `WORLD_BATTLE.walk`, `MARC
 `HERD_SCATTER.gather`, `ENCAMP.folk.graze.speed`, and the numbers 16, 12, 26 and 10 in the bands' and beasts' moves. `CARAVAN_SPD`,
 `REFUGEE_SPD`, `SHIP_SPD` and `BOAT_SPD` stay as names for the table's rows.
 
-**Even frames.** Measured in a fight of 40 against 40 on the map at a phone's size: the battle's update 9.7 ms a frame, with a
-hitch of about 50 ms twice a second and one of 129 ms when a group broke. Now about 5 ms, the slowest hundredth of frames 79 to
-about 25 ms.
+**Even frames.** Measured in a fight of 40 against 40 on the map at a phone's size, the old and the new code on the same machine the
+same hour: the simulation 15.8 ms a frame, now 9.0; its slowest tenth of frames 30 ms, now 15; its worst step 250 ms, now 130. The
+causes found: the whole battle run twice a frame, a hitch of about 50 ms twice a second (the captains), one of 129 ms when a group
+broke, one of .1 to .2 s when a gate shut.
 - A fight on the map takes a frame's time in one battle step, as the battle screen does (`WORLD_BATTLE.step`: it stepped in
   sixtieths, the whole battle twice a frame at a phone's 30 frames a second).
 - The captains' "can they reach it?" is answered from the ground's regions (`route.js` `routeRegions`, `routeReach`), labelled once
   when the ground changes; it was a search of the whole field for every group and foe.
 - Men fleeing a fight on the map, and those coming back, share one reckoning of the way out and the way in (`routeNearest`,
   `WorldBattleArea#nearestField`).
+- The roads' speed band (`RoadBand`) is made again when the roads change (`RoadBand.touch`: a new world, an estate's track, a
+  crossing shut), not whenever the ways' version moved: a holding's gates shutting as a fight began near it made it again mid-play,
+  .1 to .2 s.
 - Evened time (`Time.even`, `TIME.even`): a frame's time is whole beats of the screen, averaged over the last 3 frames, so a late
   frame moves everyone a little further for a few frames in place of far in one; a stall of more than 4 beats is passed whole.
 - The steady rate (`Time.work`, `Time.fps`, `TIME.steady`): at 60 frames a second, a scene whose frames keep taking over .9 of a

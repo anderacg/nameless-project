@@ -98,7 +98,7 @@ const Router={
   // (its edges in closed, its tiles shut to the searches, the chunks they lie in and the pair cache made afresh, every walker's way
   // found again)
   close(xi,shut){const G=WM.graph,c=WM.crossings[xi];if(!c)return;G.closed[xi]=shut?1:0;SHUT=SHUT||new Uint8Array(MW*MH);
-    for(const i of c.tiles){SHUT[i]=SHUT[i]&2|(shut?1:0);G.chunk.delete(wayChunkOf(G,i))}PAIRS.clear();WAYV++},
+    for(const i of c.tiles){SHUT[i]=SHUT[i]&2|(shut?1:0);G.chunk.delete(wayChunkOf(G,i))}PAIRS.clear();WAYV++;RoadBand.touch()},
   // (the holdings' walls read again now, holdShut)
   holdings(){holdShut(true)},
   stats(){return{...WAYS}},
@@ -195,7 +195,7 @@ function buildWayGraph(g){
 }
 
 // the way graph charted again for the world in use (lots.js: its estates' tracks laid or taken up), its crossings shut as they were
-function wayRechart(){const G=WM.graph;WM.graph=buildWayGraph({map:WM,holdings:TOWNS,camps:CAMP_SPOTS});if(WM.graph.closed.length===G.closed.length)WM.graph.closed.set(G.closed);WAYN=null;PAIRS.clear();WAYV++}
+function wayRechart(){const G=WM.graph;WM.graph=buildWayGraph({map:WM,holdings:TOWNS,camps:CAMP_SPOTS});if(WM.graph.closed.length===G.closed.length)WM.graph.closed.set(G.closed);WAYN=null;PAIRS.clear();WAYV++;RoadBand.touch()}
 // ---- the router on the graph (the world in use: WM.graph)
 // what it keeps: the tiles shut (a byte a tile, bit 1 a crossing shut: Router.close; bit 2 a holding's walls: holdShut; null while
 // none is), the graph's nodes by tile (WAYN), the pair

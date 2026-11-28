@@ -919,6 +919,16 @@ window.RUN=()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(te
 //  moved with them too (Linux Chromium: W5 1ef61184, W6 cef01159, W7 66c5a9f0, W8 b4d047bc, B2 a515cc57), left as they were: on this
 //  Linux Chromium they did not match before the change either (W5 dd093bbc, W6 255c61fb, W7 4bf588ba, W8 33a42c68, B2 db8853e7),
 //  to be measured again on the owner's own browser)
+// (W6, W7, W8 moved 2026-11-28, on purpose: the owner, "make the game use single time unit, speed and make all units, or characters even
+//  the town folk or camps or armys or bandit using the same speed system": the one ladder (data/speed.js SPEED.gait: the battle's
+//  speeds everywhere). W8, the parties' places after 600 frames, and W7, the save after three days: everyone on foot goes at the
+//  ladder's gaits, a stroll .56 of a march (was .76), laden .5 (.54), hurry 1.13 (1.09), a run 1.28 (1.5), and the table's rows for
+//  the bands going home or wandering, the beasts, the herds and the camps' animals are round numbers, up to 1.5% off the old ones.
+//  W6, the views by day and night: the third spot's two (2e3e47e7 120f2805 to ac8d603e 9441a43e), what moves in that view (folk at the
+//  ladder's gaits; a herd's animals on the map's own clock, core/time.js Time.t); the first two spots' four as before. The march's own change (8 px a
+//  second for 14.5, a day as much longer) moves none: the world is stepped here in its own seconds. W1-W5 and B2 held. Linux
+//  Chromium: W6 cef01159 to a7e796d4, W7 66c5a9f0 to eadc600f, W8 b4d047bc to 897d3497; the values below are the owner's own
+//  browser's, which did not match here before this either: W6, W7 and W8 to be measured again there)
 const EXPECT={W1:'fdc52781',W2:'99e50804',W3:'d8106001',W4:'444dcdf5',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the

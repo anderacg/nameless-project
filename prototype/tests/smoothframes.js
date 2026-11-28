@@ -4,6 +4,7 @@
 // speed still cut to steps that long; the captains' "can they reach it?" answered from the ground's regions as the whole-field search
 // answered it (route.js routeRegions, routeReach), a one-way cliff too; the men fleeing a fight and those coming back share one
 // reckoning of the way out and the way in (routeNearest, worldbattle.js nearestField), not a search of the whole field a block of them.
+// The roads' speed band (roadband.js RoadBand) is made again when the roads change, not each time a holding's gates shut.
 Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame=()=>0;
  // (the regions against the measure of the way: every pair of a spread of points, on ground with a wall and its gap, a shut pen and a cliff down one way)
  {const g=t.routeGrid(40,30,8);for(let r=0;r<30;r++)if(r!==7)t.routeCell(g,20,r,0);for(let c=28;c<34;c++)for(let r=12;r<18;r++)if(c===28||c===33||r===12||r===17)t.routeCell(g,c,r,0);
@@ -33,4 +34,9 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame
     ok(near===2&&dist===0,'and one for the way back in')}
    finally{window.routeDist=rd;window.routeNearest=rn}}}
  t.BattleSetup.undo();G.mode='world';
+ // (the roads' speed band: made again when the roads change, not when the ways' version moves for a gate shutting (roadband.js touch))
+ {const RB=t.RoadBand,build=RB.build;let made=0;RB.build=function(){made++;return build.call(this)};
+  try{t.speedAt(P.x,P.y);made=0;const v0=t.WAYV;(0,eval)('WAYV++');t.speedAt(P.x,P.y);ok(t.WAYV!==v0&&made===0,'the ways\' version moving (a holding\'s gates shut) does not make the roads\' band again');
+   t.wayRechart();t.speedAt(P.x,P.y);ok(made===1,'the ways charted again (an estate\'s track laid) does, once ('+made+')')}
+  finally{RB.build=build}}
  ok(!ERR.length,'no runtime errors '+ERR.slice(0,2).join(' | '))});
