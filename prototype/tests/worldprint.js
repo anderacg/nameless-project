@@ -1040,7 +1040,12 @@ const EXPECT={W1:'fdc52781',W2:'99e50804',W3:'d8106001',W4:'444dcdf5',W5:'bc12ad
 //  sums hold, the hints the classic world's alone. Was classic 943ffc16)
 // (all re-recorded 2026-11-27, on purpose: the holdings halved and every kind on the map (EXPECT above); the classic world's own 37
 //  as designed, its hamlets halved. Were classic cddc33f6, Normal s1 91cae7e6, s2 3fd4482d, s3 43cecd26, Large s1 37ce35ca)
-const SUMS={classic:'ae8faef9','Normal s1':'33d414fc','Normal s2':'3616ea63','Normal s3':'145e56de','Large s1':'c4701fb1'};
+// (Normal s1, s2, s3 and Large s1 re-recorded 2026-11-28, on purpose: the owner, "I mean each holding should not too close to each
+//  other, make holding like town, city more spread": a world's holdings are placed as far apart as its land takes, up to twice the
+//  spacing table (worldplace.js PLACE_WIDE), so every generated world's holdings, and the roads, land and hamlets that follow them,
+//  stand elsewhere. Were 33d414fc, 3616ea63, 145e56de, c4701fb1. The Classic world is placed as it was (its widening 1): its sum
+//  and W1 to W8 and B2 above held)
+const SUMS={classic:'ae8faef9','Normal s1':'1c0f9110','Normal s2':'2d3780a7','Normal s3':'122aa4ac','Large s1':'c718813e'};
 const r0=Math.random,pn=performance.now,t0=pn.call(performance),restorePaint=Kit.paintProgress();
 Kit.progress('worldprint start');
 try{
