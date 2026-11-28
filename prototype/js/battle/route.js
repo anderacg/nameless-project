@@ -10,8 +10,8 @@
    reuses the same typed arrays (ROUTE_WS): run it per group order and re-path, not per soldier per frame */
 // unit: open ground's cost; budget: cells a query expands at most; cache: paths kept per grid; deep: deep water impassable
 // (routeGridOf; terrain.js passes its own: TERRAIN.wade); near: rings searched for the passable cell nearest a blocked one; dist:
-// distance fields kept per grid (routeDist)
-const ROUTE={unit:16,budget:4096,cache:64,deep:false,near:16,dist:8};
+// distance fields kept per grid (routeDist); flood: reach floods kept per grid (routeReach)
+const ROUTE={unit:16,budget:4096,cache:64,deep:false,near:16,dist:8,flood:16};
 /* ways round obstacles for bodies (the owner, 2026-11-01: "make the pathfinder better for obstacles? right now the units seem to
    bump into boundaries, houses, etc. which sometimes make them stuck"), each part its own switch, all off as before:
    clear: each grid's clearance (routeRoom: px from each cell's middle to the nearest shut cell or two-way cliff, made once a
@@ -73,7 +73,7 @@ function routePrep(g){
       const dx=ROUTE_DC[d]>0?0:4,dy=ROUTE_DR[d]>0?2:6,x=i+ROUTE_DC[d],y=i+ROUTE_DR[d]*C;
       if(cost[x]&&cost[y]&&open(i,dx)&&open(x,dy)&&open(i,dy)&&open(y,dx))m|=1<<d}
     mv[i]=m}
-  g.lo=lo>255?ROUTE.unit:lo;g.pv=g.v;g.memo.clear();if(g.dm)g.dm.clear();return g}
+  g.lo=lo>255?ROUTE.unit:lo;g.pv=g.v;g.memo.clear();if(g.dm)g.dm.clear();g.rg=null;if(g.fl)g.fl.clear();return g}
 // (the work arrays, one set for every query, grown to the largest grid seen; st: this query's stamp in seen/done)
 const ROUTE_WS={n:0,st:0};
 function routeWs(N){const W=ROUTE_WS;
@@ -174,6 +174,20 @@ function routeFlood(g,s){
   routePrep(g);const N=g.C*g.R,out=new Uint8Array(N);if(s<0)return out;const q=new Int32Array(N),mv=g.mv,off=g.off;let a=0,b=1;q[0]=s;out[s]=1;
   while(a<b){const i=q[a++],m=mv[i];for(let d=0;d<8;d++){if(!(m&1<<d))continue;const j=i+off[d];if(out[j])continue;out[j]=1;q[b++]=j}}
   return out}
+/* the ground's regions: each cell's number (0 shut in on every side), the cells of one region reaching each other both ways (a flood
+   over the steps open both ways: a one-way cliff parts two regions); made once a version */
+function routeRegions(g){
+  routePrep(g);if(g.rg)return g.rg;const N=g.C*g.R,rg=g.rg=new Int32Array(N),q=new Int32Array(N),mv=g.mv,off=g.off;let n=0;
+  for(let s=0;s<N;s++){if(rg[s]||!mv[s])continue;let a=0,b=1;q[0]=s;rg[s]=++n;
+    while(a<b){const i=q[a++],m=mv[i];for(let d=0;d<8;d++){if(!(m&1<<d))continue;const j=i+off[d];if(rg[j]||!(mv[j]&1<<(d+4&7)))continue;rg[j]=n;q[b++]=j}}}
+  return rg}
+/* can one get from (ax,ay) to (bx,by) (as routeDist's way is finite: from a blocked start's nearest passable cell, to the passable
+   cell nearest the goal)? Asked by the captains for every group and foe (terrain.js canReach): one region, yes at once; else a
+   flood from the start's cell (down a one-way cliff), kept per start cell (ROUTE.flood of them) till the version moves */
+function routeReach(g,ax,ay,bx,by){
+  const rg=routeRegions(g);let s=routeIx(g,ax,ay);if(!g.cost[s]&&!g.mv[s])s=routeNear(g,s);const t=routeNear(g,routeIx(g,bx,by));if(s<0||t<0)return false;
+  if(s===t||rg[s]&&rg[s]===rg[t])return true;const fl=g.fl||(g.fl=new Map());let F=fl.get(s);
+  if(!F){F=routeFlood(g,s);if(fl.size>=ROUTE.flood)fl.delete(fl.keys().next().value);fl.set(s,F)}return !!F[t]}
 /* the cost of the way from (x,y) to every cell (Dijkstra over the step masks, a step's cost as routeSearch's: a cell a side on open
    ground 2·ROUTE.unit; Infinity out of reach; a start in a blocked cell from the passable one nearest it): a Float64Array, kept per
    start cell (ROUTE.dist of them) till the version moves. The captains' measure of the ground (terrain.js wayLen) */
@@ -255,6 +269,19 @@ function routeFlow(g,x,y,need,want,F){
     for(let d=0;d<8;d++){const c2=c+ROUTE_DC[d],r2=r+ROUTE_DR[d];if(c2<0||r2<0||c2>=C||r2>=R)continue;const j=r2*C+c2;if(done[j]===st||!(mv[j]&1<<((d+4)&7)))continue;
       const ng=fi+(d&1?SQ:1)*(ci+(cost[j]||g.lo));if(seen[j]!==st){seen[j]=st;Fv[j]=ng;W.h[j]=0;hp[size]=j;routeUp(W,size);size++}else if(ng<Fv[j]){Fv[j]=ng;routeUp(W,pos[j])}}}
   F.lim=size?lim:Infinity;ROUTE_N.flow++;return F}
+/* the way to the nearest of many cells on grid g: from each cell the cost of the cheapest way to any of seeds (cell indices; a step's
+   cost as routeSearch's) and which of them it leads to (S: -1 none), one Dijkstra out from them all over the steps taken backward
+   (a one-way cliff the right way). {v (the grid's version), D, S}, kept by the caller: the men fleeing a fight on the map and
+   those coming back to it (worldbattle.js escapePlan, returnPlan) share one, where each block of them searched the whole field */
+function routeNearest(g,seeds){
+  routePrep(g);const C=g.C,R=g.R,N=C*R,D=new Float32Array(N).fill(Infinity),S=new Int32Array(N).fill(-1);
+  const W=routeWs(N),Fv=W.f,hp=W.hp,pos=W.pos,seen=W.seen,done=W.done,st=W.st,mv=g.mv,cost=g.cost,SQ=Math.SQRT2;let size=0;
+  for(const i of seeds){if(!cost[i]||seen[i]===st)continue;seen[i]=st;Fv[i]=0;W.h[i]=0;S[i]=i;hp[size]=i;routeUp(W,size);size++}
+  while(size){const i=hp[0];if(--size){hp[0]=hp[size];routeDown(W,0,size)}if(done[i]===st)continue;done[i]=st;const fi=Fv[i];D[i]=fi;if(!cost[i])continue;
+    const c=i%C,r=(i-c)/C,ci=cost[i];
+    for(let d=0;d<8;d++){const c2=c+ROUTE_DC[d],r2=r+ROUTE_DR[d];if(c2<0||r2<0||c2>=C||r2>=R)continue;const j=r2*C+c2;if(done[j]===st||!(mv[j]&1<<((d+4)&7)))continue;
+      const ng=fi+(d&1?SQ:1)*(ci+(cost[j]||g.lo));if(seen[j]!==st){seen[j]=st;Fv[j]=ng;W.h[j]=0;S[j]=S[i];hp[size]=j;routeUp(W,size);size++}else if(ng<Fv[j]){Fv[j]=ng;S[j]=S[i];routeUp(W,pos[j])}}}
+  return{v:g.v,D,S}}
 /* (PATHS.corridor) a field along a way on grid g (pts: [x, y] field px, its start first: an army's corridor, a group's way): from each
    cell the cost of reaching the way, PATHS.off times a step's (routeSearch's), and on along it to its end (back: to its start), each
    cell it crosses seeded with the way left from there (px at a step's cost, 2·g.lo a cell); none from a shut cell. A cell short of

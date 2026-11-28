@@ -1375,7 +1375,8 @@ class TerrainRoutes{
     const T=this.T;if(!T.blocky)return Math.hypot(b.x-a.x,b.y-a.y);
     const g=T.route[who];if(lineClear(g,a.x,a.y,b.x,b.y,g.wcap||255))return Math.hypot(b.x-a.x,b.y-a.y);
     const D=routeDist(g,a.x,a.y),i=routeNear(g,routeIx(g,b.x,b.y));return i<0||D[i]===Infinity?Infinity:D[i]*g.cs/(2*ROUTE.unit)}
-  canReach(a,b,who){return this.wayLen(a,b,who)<Infinity}
+  // (can they get there at all: the ground's regions, not a measure of the way (route.js routeReach))
+  canReach(a,b,who='foot'){const T=this.T;if(!T.blocky)return true;const g=T.route[who];return routeReach(g,a.x,a.y,b.x,b.y)||lineClear(g,a.x,a.y,b.x,b.y,g.wcap||255)}
   // (the same for a spot near a: its way's length if it is no longer than max px, else Infinity; a search bounded to about that
   // ground, not the whole field's: the shooters' perch, commander.js)
   nearLen(a,b,max,who='foot'){
@@ -1562,7 +1563,7 @@ function groupWay(g,m){return B.terrain.routes.groupWay(g,m)}
 function wayOn(g,m,x,y,dt){return B.terrain.routes.wayOn(g,m,x,y,dt)}
 function slotWay(u,g,sx,sy){return B.terrain.routes.slotWay(u,g,sx,sy)}
 function wayLen(a,b,who='foot'){const T=B&&B.terrain;return T?T.routes.wayLen(a,b,who):Math.hypot(b.x-a.x,b.y-a.y)}
-const canReach=(a,b,who)=>wayLen(a,b,who)<Infinity;
+const canReach=(a,b,who)=>{const T=B&&B.terrain;return T?T.routes.canReach(a,b,who):true};
 function wayRide(a,b){const T=B&&B.terrain;return T?T.routes.ride(a,b):null}
 function nearLen(a,b,max,who='foot'){const T=B&&B.terrain;if(T)return T.routes.nearLen(a,b,max,who);const d=Math.hypot(b.x-a.x,b.y-a.y);return d>max?Infinity:d}
 // (sight: B.sight)

@@ -21,7 +21,10 @@ const JOIN_RULES={every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near
 // (walk: a fight's walking share of a man's pace, the field's own (battle.js MARCH.base; was .75, near the map's march, when a fight on
 //  the map ran on the map's clock); blocked: battle seconds without a blow before a stalled fight is looked at, 5 (was 30 on that
 //  clock, some 16 s on screen at 1x: as many now on the fight's own, battle.js battleStep))
-const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:1/60,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4,scan:.25};
+// (step: the longest battle step of a fight on the map, s: the frame loop's own (core/frametime.js FRAME_TIME.step), so a frame is one
+//  step at any frame rate, as on the battle screen; it was a 60th, the whole battle run twice a frame at 30 frames a second; a
+//  faster battle speed is still cut to steps this long: doc/TIME_SPEED_DESIGN.md)
+const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:.05,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4,scan:.25};
 // (scan: battle s between looks for who rides in (WorldBattleArea#reinforce): every frame it went through every lord, watch, band and
 //  beast of the world, some 9% of a fight's frame (the owner, 2026-11-26: "How can i improve world battle performance"); those on
 //  their way in still walk every frame)
@@ -237,13 +240,19 @@ class WorldBattleArea{
   // Choose once from the reachable apron, rather than chasing a radial point which can be rock or behind a cliff.
   // (the way out reckoned from the middle of the block of WORLD_BATTLE.escapeBlock cells he stands in, so a group breaking together
   //  shares one reckoning (routeDist keeps a few) instead of each man his own over the whole field, a frame's spike of a third of a
-  //  second; his own way there is still his own: the owner, 2026-11-15, "fix the battle performance")
+  //  second; his own way there is still his own: the owner, 2026-11-15, "fix the battle performance". Since 2026-11-28 one
+  //  reckoning for the whole field (nearestField): the blocks of an army breaking at once still cost a frame an eighth of a second)
+  /* (the way to the nearest cell of a kind on grid g, for every cell at once (route.js routeNearest): 'out', the apron past the ring,
+     where the broken flee to; 'in', inside the ring, where those who rally come back to; made again when the ground or the ring changes) */
+  nearestField(g,kind){
+    const M=this.fields||(this.fields=new Map()),E=M.get(g)||M.set(g,{}).get(g),old=E[kind];if(old&&old.v===g.v&&old.r===this.radius)return old;
+    const seeds=[],top=fieldTop(),bot=fieldBot();for(let i=0;i<g.cost.length;i++){if(!g.cost[i])continue;const x=(i%g.C+.5)*g.cs,y=(Math.floor(i/g.C)+.5)*g.cs;
+      if(kind==='in'?this.inside({x,y},18):!(this.distance({x,y})<this.radius+2||x<8||x>BW-8||y<top||y>bot))seeds.push(i)}
+    const F=routeNearest(g,seeds);F.r=this.radius;E[kind]=F;return F}
+  nearestOf(g,kind,u){let s=routeIx(g,u.x,u.y);if(!g.cost[s]&&!g.mv[s])s=routeNear(g,s);return s<0?-1:this.nearestField(g,kind).S[s]}
   escapePlan(u){
     const g=this.escapeRoutes?.[routeWho(u.s)];if(!g)return null;const old=u.worldEscape;if(old&&old.g===g&&old.v===g.v)return old;
-    const c=g.cs*(WORLD_BATTLE.escapeBlock||1),D=routeDist(g,(Math.floor(u.x/c)+.5)*c,(Math.floor(u.y/c)+.5)*c);let at=-1,best=Infinity;
-    for(let i=0;i<D.length;i++){if(!Number.isFinite(D[i])||!g.cost[i])continue;const x=(i%g.C+.5)*g.cs,y=(Math.floor(i/g.C)+.5)*g.cs;
-      if(this.distance({x,y})<this.radius+2||x<8||x>BW-8||y<fieldTop()||y>fieldBot())continue;
-      if(D[i]<best){at=i;best=D[i]}}
+    const at=this.nearestOf(g,'out',u);
     const to=at<0?this.exit(u,2*g.cs):{x:(at%g.C+.5)*g.cs,y:(Math.floor(at/g.C)+.5)*g.cs},p=routePath(g,u.x,u.y,to.x,to.y,{budget:g.cost.length});
     return u.worldEscape={g,v:g.v,to,p,i:0};
   }
@@ -254,9 +263,7 @@ class WorldBattleArea{
   // Re-enter on the same terrain grid used to escape, through the nearest reachable point inside the ring.
   returnPlan(u){
     const g=this.escapeRoutes?.[routeWho(u.s)];if(!g)return null;
-    const D=routeDist(g,u.x,u.y);let at=-1,best=Infinity;
-    for(let i=0;i<D.length;i++){if(!g.cost[i]||!Number.isFinite(D[i]))continue;const x=(i%g.C+.5)*g.cs,y=(Math.floor(i/g.C)+.5)*g.cs;
-      if(!this.inside({x,y},18))continue;if(D[i]<best){at=i;best=D[i]}}
+    const at=this.nearestOf(g,'in',u);
     if(at<0)return null;const to={x:(at%g.C+.5)*g.cs,y:(Math.floor(at/g.C)+.5)*g.cs},p=routePath(g,u.x,u.y,to.x,to.y,{budget:g.cost.length});
     return{g,v:g.v,to,p,i:0};
   }
