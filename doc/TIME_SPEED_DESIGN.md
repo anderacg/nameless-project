@@ -11,7 +11,7 @@ A fight of 40 against 40, phone size (844 x 390 at 3 device px), every battle fe
 | | Simulation a frame | Worst step | Frames on time (a 60th) |
 |---|---|---|---|
 | Battle screen | 1.3 ms | 9 ms | 72%, the rest one late |
-| Fight on the map | 11.4 ms (battle 9.7, the world round it 1.6) | 107 ms; one-off 200 to 300 ms | 62%, one in seven two or more late |
+| Fight on the map | 11.4 ms (battle 9.7, the world round it 1.6) | 107 ms; one-off 200 to 300 ms | 62%, one in eight two or more late |
 
 Drawing costs the same in both (9 to 10 ms). The unevenness is the simulation of a fight on the map. Its causes, each confirmed by taking it out and recording again:
 
