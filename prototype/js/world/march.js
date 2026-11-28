@@ -207,9 +207,16 @@ const marchCart=(o,at=o)=>{const d=o.dir<0?-1:1;return MARCH_CART.map(([x,r])=>(
    tried again at its next halt (or back when it forms out of its column, as ever). Sent on mid-loop: the loop stops, its men to
    their places as it stands (still turned), a new loop at its next halt. A march formation's order: as above. on false: as above
    for a column too */
+/* wet: the water a man walks into (the owner, 2026-11-28: "recheck pathfinding on bridges jump down water"; a band crossing a bridge
+   left its deck to a few: most of its men's places lay on the river past the one tile shut each side of it (router.js bridgeSide),
+   so 8 to 13 of 13 men waded or swam across beside it). On his own no deeper than own (map.js waterBand: 2, knee deep); deeper only
+   where his army's own way goes (MarchArmy wetStep): as deep as the water under its guide or on its way ahead within its ring, and
+   for its length and hold px more once its guide is out of it. Deeper water is no place of his (MarchGround place: the nearest he
+   may stand on instead, the bank or the deck) and dear times open ground to his way: still open, so one in it walks out, and one
+   with no other way in his army's box swims */
 // formGiveUp, formTry, formMove, formGain: a man short of his place, no nearer it by formGain px in formTry s, stands where he is, till its guide goes formMove px
 // or it is ordered anew (MarchArmy formWatch; the owner, 2026-11-02); off: they try on, as before
-const MARCH_MOVE={slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,home:.5,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
+const MARCH_MOVE={wet:{own:2,hold:24,dear:15},slit:8,formGiveUp:true,formTry:5,formMove:8,formGain:2,cell:4,pad:48,chunk:64,repath:.45,refresh:2,catchup:1,turn:.9,settle:.2,gap:2.4,active:180,queries:6,teleport:160,bucket:8,waypoint:.15,sidestep:[0,.65,-.65,1.2,-1.2],part:3,stride:.3,home:.5,wake:1,squeeze:[.4,1,2,0],road:1.45,jam:1.5,cadence:9,body:1,leash:[4,.6],menCentre:true,lead:[4,.6],wide:192,arrive:2,meetEdge:true,follow:{look:6,gap:1.5,gain:4,moving:2},headArrive:true,arriveWait:3,footing:true,
   about:{on:true,cos:-.7,leg:200,halt:.6,pass:6,side:1.2,look:16,slow:.7,most:20,loop:{on:true,gap:10,end:0,pace:.8,ease:1,margin:2}}};
 /* (the owner, 2026-11-01: "how about making a ring like freeform based on the area?") the ring drawn round an army is the outline
    of the ground its men stand on: each man a soft disc (his body and pad px; a caravan's wagon one too), their fields summed on a
@@ -426,7 +433,8 @@ const MARCH_COR={n:0},MARCH_ON=[0,0];// (MARCH_ON: marchOff's nearest point)
 function marchOff(pts,x,y){let v=Infinity;for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[i+1]||a,dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy,f=L?Math.max(0,Math.min(1,((x-a[0])*dx+(y-a[1])*dy)/L)):0,px=a[0]+dx*f,py=a[1]+dy*f,d=Math.hypot(px-x,py-y);if(d<v){v=d;MARCH_ON[0]=px;MARCH_ON[1]=py}}return v}
 function marchStrays(pts,u,p){let ax=u.x,ay=u.y;for(const q of p){const l=Math.hypot(q.x-ax,q.y-ay),n=Math.max(1,Math.ceil(l/4));for(let k=1;k<=n;k++)if(marchOff(pts,ax+(q.x-ax)*k/n,ay+(q.y-ay)*k/n)>PATHS.stray)return true;ax=q.x;ay=q.y}return false}
 class MarchGround{
-  constructor(o,units,pad=MARCH_MOVE.pad){
+  constructor(o,units,pad=MARCH_MOVE.pad,wet=4){
+    this.wet=wet;this.cap=wet<4?ROUTE.unit*MARCH_MOVE.wet.dear-1:255;// (cap: the dearest cell a straight way crosses: none through water too deep)
     const r=marchOuter(o),chunk=MARCH_MOVE.chunk,cs=MARCH_MOVE.cell,fly=o.mapKind==='monster'&&MONSTERS[o.id]?.mythic?.fly;this.fly=!!fly;this.owner=o;const climb=this.climb=o===P&&heroClimbs();// (your small band climbs: map.js heroClimbs)
     this.x=Math.max(0,Math.floor((Math.min(o.x-r,...units.map(u=>u.x))-pad)/chunk)*chunk);this.y=Math.max(0,Math.floor((Math.min(o.y-r,...units.map(u=>u.y))-pad)/chunk)*chunk);
     const x1=Math.min(MW*TILE,Math.ceil((Math.max(o.x+r,...units.map(u=>u.x))+pad)/chunk)*chunk),y1=Math.min(MH*TILE,Math.ceil((Math.max(o.y+r,...units.map(u=>u.y))+pad)/chunk)*chunk);
@@ -436,10 +444,15 @@ class MarchGround{
     // (the cells a building's footing reaches into: each block laid on the grid once, its cells those whose box it overlaps)
     const shut=this.foot=new Uint8Array(g.cost.length);if(!fly)for(const b of this.blocks){const c0=Math.max(0,Math.floor((b.x-this.x)/cs)),c1=Math.min(g.C-1,Math.ceil((b.x+b.w-this.x)/cs)-1),r0=Math.max(0,Math.floor((b.y-this.y)/cs)),r1=Math.min(g.R-1,Math.ceil((b.y+b.h-this.y)/cs)-1);
       for(let r=r0;r<=r1;r++)for(let c=c0;c<=c1;c++){const x=this.x+(c+.5)*cs,y=this.y+(r+.5)*cs;if(x+cs/2>b.x&&x-cs/2<b.x+b.w&&y+cs/2>b.y&&y-cs/2<b.y+b.h)shut[r*g.C+c]=1}}
+    // (a deck's rails: shut, but no wall a body keeps its room off: the lane between them is already his room in from them,
+    // router.js deckLane; kept off them too, the first and last cells of a deck two cells wide had no room for a footman, so every
+    // way found went round the deck, through the river: route.js routeRoom's soft)
+    const soft=g.soft=new Uint8Array(g.cost.length);
     for(let i=0;i<g.cost.length;i++){const x=this.x+(i%g.C+.5)*cs,y=this.y+(Math.floor(i/g.C)+.5)*cs,tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),k=ty*MW+tx;
-      let open=WM.has(tx,ty)&&(fly||wayLand(k)||climb&&tiles[k]===T_MOUNT&&!(SHUT&&SHUT[k]))&&(fly||!bridgeSide(k)&&!deckOut(x,y));if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
-      // (a bridge's deck: only its cells inside its rails, router.js deckLane; water by its depth, WATER.cost: waded, swum; map.js)
-      const wb=open&&!fly&&tiles[k]===T_WATER?waterBand(k):0;g.cost[i]=open&&!shut[i]?Math.min(255,Math.round(ROUTE.unit*(wb?WATER.cost[wb]:1))):0;
+      let open=WM.has(tx,ty)&&(fly||wayLand(k)||climb&&tiles[k]===T_MOUNT&&!(SHUT&&SHUT[k]))&&(fly||!bridgeSide(k)&&!deckOut(x,y));if(!open&&!fly&&WM.has(tx,ty)&&wayLand(k)&&!bridgeSide(k))soft[i]=1;if(!open&&tAt(tx,ty)===T_WATER)open=ferries.some(f=>{const dx=f.tx-f.x,dy=f.ty-f.y,d=dx*dx+dy*dy,t=clamp(((x-f.x)*dx+(y-f.y)*dy)/d,0,1);return Math.hypot(x-f.x-t*dx,y-f.y-t*dy)<fw});
+      // (a bridge's deck: only its cells inside its rails, router.js deckLane; water by its depth, WATER.cost: waded, swum; map.js;
+      // deeper than its army's way goes, MARCH_MOVE.wet: dear)
+      const wb=open&&!fly&&tiles[k]===T_WATER?waterBand(k):0;g.cost[i]=open&&!shut[i]?Math.min(255,Math.round(ROUTE.unit*(wb?wb>wet&&wb<5?MARCH_MOVE.wet.dear:WATER.cost[wb]:1))):0;
       if(!fly&&WM.has(tx,ty)){const edge=WM.edge[k]|(climb?0:ledgeBits()[k]);if(x%TILE<cs&&edge&4)g.wall[i]|=4;if(x%TILE>TILE-cs&&edge&1)g.wall[i]|=1;if(y%TILE<cs&&edge&8)g.wall[i]|=8;if(y%TILE>TILE-cs&&edge&2)g.wall[i]|=2}
     }
     if(!fly&&MARCH_MOVE.slit)this.shutSlits(Math.floor(MARCH_MOVE.slit/cs));
@@ -459,31 +472,35 @@ class MarchGround{
   covers(p,pad){const g=this.grid,x1=this.x+g.C*g.cs,y1=this.y+g.R*g.cs;return p.x>=this.x+(this.x>0?pad:0)&&p.y>=this.y+(this.y>0?pad:0)&&p.x<x1-(x1<MW*TILE?pad:0)&&p.y<y1-(y1<MH*TILE?pad:0)}
   open(p){return this.contains(p)&&!!this.grid.cost[routeIx(this.grid,p.x-this.x,p.y-this.y)]}
   stand(p){return this.open(p)&&(this.fly||walkAt(p.x,p.y)||this.climb&&terrAt(p.x,p.y)===T_MOUNT)}
+  // (a step from a into water too deep, from ground that is not: none of his own making, a side step, a slide, a push: MARCH_MOVE.wet)
+  dip(a,b){if(this.cap>=255||!this.contains(a)||!this.contains(b))return false;const g=this.grid;return g.cost[routeIx(g,b.x-this.x,b.y-this.y)]>this.cap&&!(g.cost[routeIx(g,a.x-this.x,a.y-this.y)]>this.cap)}
+  // (a place of his: ground he stands on, its water no deeper than his army's way goes: MARCH_MOVE.wet)
+  place(p){return this.stand(p)&&(this.fly||this.wet>=4||waterBand(Math.floor(p.y/TILE)*MW+Math.floor(p.x/TILE))<=this.wet)}
   // (PATHS.clear: a man's (one with a type) half his body (marchBody), the room he keeps off walls; else, or one squeezing out of a
   // pocket (tight: MarchArmy step), none)
   body(p){return PATHS.clear&&p.type&&!p.tight?marchBody(p)/2:0}
   // (PATHS.clear: his room kept to the line's end (route.js lineRoom): no step, way or goal brings him nearer a wall than it, or than he is)
-  clear(a,b){if(!this.contains(a)||!this.contains(b))return false;const g=this.grid,ax=a.x-this.x,ay=a.y-this.y,bx=b.x-this.x,by=b.y-this.y,r=this.body(a);return lineClear(g,ax,ay,bx,by)&&(!r||lineRoom(g,ax,ay,bx,by,r,false))}
-  // (may man u walk straight to his goal q: clear; PATHS.clear, reckoned again only when he or it changes cell (u.sk: kept on him),
+  clear(a,b,cap=255){if(!this.contains(a)||!this.contains(b))return false;const g=this.grid,ax=a.x-this.x,ay=a.y-this.y,bx=b.x-this.x,by=b.y-this.y,r=this.body(a);return lineClear(g,ax,ay,bx,by,cap)&&(!r||lineRoom(g,ax,ay,bx,by,r,false))}
+  // (may man u walk straight to his goal q: clear, through no water too deep (cap); PATHS.clear, reckoned again only when he or it changes cell (u.sk: kept on him),
   // the room along it read once a cell)
-  straight(u,q){if(!PATHS.clear)return this.clear(u,q);const g=this.grid,a=routeIx(g,u.x-this.x,u.y-this.y),b=routeIx(g,q.x-this.x,q.y-this.y),K=u.sk||(u.sk={g:null,v:0,a:-1,b:-1,ok:false});
-    if(K.g===g&&K.v===g.v&&K.a===a&&K.b===b)return K.ok;K.g=g;K.v=g.v;K.a=a;K.b=b;return K.ok=this.clear(u,q)}
+  straight(u,q){if(!PATHS.clear)return this.clear(u,q,this.cap);const g=this.grid,a=routeIx(g,u.x-this.x,u.y-this.y),b=routeIx(g,q.x-this.x,q.y-this.y),K=u.sk||(u.sk={g:null,v:0,a:-1,b:-1,ok:false});
+    if(K.g===g&&K.v===g.v&&K.a===a&&K.b===b)return K.ok;K.g=g;K.v=g.v;K.a=a;K.b=b;return K.ok=this.clear(u,q,this.cap)}
   // (PATHS.clear: px from p to the nearest shut cell (route.js routeGap: exact under r), and whether one of r keeps his room
   // there (routeNeed), or is no nearer a wall than at from)
   gap(p,r){return routeGap(this.grid,p.x-this.x,p.y-this.y,r)}
   roomy(p,r,from){if(!(r>0))return true;const g=this.grid,cl=routeRoom(g),i=routeIx(g,p.x-this.x,p.y-this.y);if(cl[i]-g.cs*.7072>=r)return true;const w=routeNeed(g,i,r),v=this.gap(p,w);return v>=w-1e-6||!!from&&v>=this.gap(from,w)-1e-6}
   // Keep blocked slots on the leader's connected ground; distinct nearby slots prevent a pile on a riverbank or building.
   snap(p,reach,reserved,inside){
-    const g=this.grid,a=this.local(p),i=routeIx(g,a.x,a.y),rb=p.type?marchBody(p):MARCH_MOVE.gap+.2,space=q=>!reserved?.points?.some(v=>Math.hypot(v.x-q.x,v.y-q.y)<(rb+(v.r??rb))/2),at=j=>({x:this.x+(j%g.C+.5)*g.cs,y:this.y+(Math.floor(j/g.C)+.5)*g.cs}),ok=j=>g.cost[j]&&this.stand(at(j))&&(!reach||reach[j])&&(!reserved||!reserved.has(j))&&(!inside||inside(at(j)))&&space(at(j))&&(!rr||cl[j]>=routeNeed(g,j,rr)),keep=(q,j)=>{if(reserved){reserved.add(j);(reserved.points||(reserved.points=[])).push({...q,r:rb})}return q};// (a body's room kept round each goal taken: marchBody)
+    const g=this.grid,a=this.local(p),i=routeIx(g,a.x,a.y),rb=p.type?marchBody(p):MARCH_MOVE.gap+.2,space=q=>!reserved?.points?.some(v=>Math.hypot(v.x-q.x,v.y-q.y)<(rb+(v.r??rb))/2),at=j=>({x:this.x+(j%g.C+.5)*g.cs,y:this.y+(Math.floor(j/g.C)+.5)*g.cs}),ok=j=>g.cost[j]&&this.place(at(j))&&(!reach||reach[j])&&(!reserved||!reserved.has(j))&&(!inside||inside(at(j)))&&space(at(j))&&(!rr||cl[j]>=routeNeed(g,j,rr)),keep=(q,j)=>{if(reserved){reserved.add(j);(reserved.points||(reserved.points=[])).push({...q,r:rb})}return q};// (a body's room kept round each goal taken: marchBody)
     // (PATHS.clear: a man's place where his body has its room off walls, the room his half needs: routeNeed)
     const rr=this.body(p),cl=rr?routeRoom(g):null;
     // (its own spot when there is a body's room there: never moved off it for another goal in the same cell, the cells smaller
     // than a body, or the slots would hop from cell to cell as the army moves)
-    if(this.contains(p)&&this.stand(p)&&g.cost[i]&&(!reach||reach[i])&&(!inside||inside(p))&&space(p)&&this.roomy(p,rr))return keep({x:p.x,y:p.y},i);
+    if(this.contains(p)&&this.place(p)&&g.cost[i]&&(!reach||reach[i])&&(!inside||inside(p))&&space(p)&&this.roomy(p,rr))return keep({x:p.x,y:p.y},i);
     // (a body in the way, the leader's or another's: pushed straight out of it, just clear, so the place moves with the army rather
     // than hop to a cell's middle)
     {const v=reserved?.points?.find(v=>Math.hypot(v.x-p.x,v.y-p.y)<(rb+(v.r??rb))/2);if(v){const d=Math.hypot(p.x-v.x,p.y-v.y)||1,n=(rb+(v.r??rb))/2+.05,q={x:v.x+(p.x-v.x)/d*n,y:v.y+(p.y-v.y)/d*n},a=this.local(q),j=routeIx(g,a.x,a.y);
-      if(this.contains(q)&&this.stand(q)&&g.cost[j]&&(!reach||reach[j])&&(!inside||inside(q))&&space(q)&&this.roomy(q,rr))return keep(q,j)}}
+      if(this.contains(q)&&this.place(q)&&g.cost[j]&&(!reach||reach[j])&&(!inside||inside(q))&&space(q)&&this.roomy(q,rr))return keep(q,j)}}
     const c0=i%g.C,r0=Math.floor(i/g.C);let best=-1,dist=Infinity;
     for(let k=0;k<Math.max(g.C,g.R)&&!(best>=0&&k*k>dist);k++)for(let r=Math.max(0,r0-k);r<=Math.min(g.R-1,r0+k);r++){
       const edge=r===r0-k||r===r0+k;for(let c=c0-k;c<=c0+k;c+=edge||k===0?1:2*k){if(c<0||c>=g.C)continue;const j=r*g.C+c,d=(c-c0)**2+(r-r0)**2;if(ok(j)&&d<dist){best=j;dist=d}}}
@@ -500,23 +517,23 @@ class MarchGround{
   flow(x,y,r,want,side=0){const g=this.grid,M=this.flows||(this.flows=new Map()),key=r*2+side,F0=M.get(key),lx=x-this.x,ly=y-this.y;
     let fresh=!F0||F0.v!==g.v||Math.hypot(F0.x-lx,F0.y-ly)>PATHS.move*g.cs;
     if(!fresh&&F0.lim<Infinity)for(const p of want)if(!(F0.D[routeIx(g,p.x-this.x,p.y-this.y)]<Infinity)){fresh=true;break}
-    if(!fresh)return F0;const F=routeFlow(g,lx,ly,r,want.map(p=>routeIx(g,p.x-this.x,p.y-this.y)),F0);F.id=this.made=(this.made||0)+1;F.strict=true;M.set(key,F);return F}
+    if(!fresh)return F0;const F=routeFlow(g,lx,ly,r,want.map(p=>routeIx(g,p.x-this.x,p.y-this.y)),F0);F.id=this.made=(this.made||0)+1;F.strict=true;F.cap=this.cap;M.set(key,F);return F}
   // (PATHS.corridor) the field along an army's corridor C (MarchArmy corridor) for bodies of half r, side 0 on down it, 1 back up it
   // (route.js routeFlowWay, its room kept to each aim's end: strict), one kept for each r and side till the corridor or the grid
   // changes or one of want (world points) is where it was not made out to; counted with the fields (made)
   flowWay(C,r,want,side){const g=this.grid,M=this.ways||(this.ways=new Map()),key=r*2+side,F0=M.get(key);let fresh=!F0||F0.v!==g.v||F0.cid!==C.id;
     if(!fresh&&F0.lim<Infinity)for(const p of want)if(!(F0.D[routeIx(g,p.x-this.x,p.y-this.y)]<Infinity)){fresh=true;break}
-    if(!fresh)return F0;const F=routeFlowWay(g,C.loc,r,want.map(p=>routeIx(g,p.x-this.x,p.y-this.y)),F0,!!side);F.cid=C.id;F.id=this.made=(this.made||0)+1;F.strict=true;M.set(key,F);return F}
+    if(!fresh)return F0;const F=routeFlowWay(g,C.loc,r,want.map(p=>routeIx(g,p.x-this.x,p.y-this.y)),F0,!!side);F.cid=C.id;F.id=this.made=(this.made||0)+1;F.strict=true;F.cap=this.cap;M.set(key,F);return F}
   // (PATHS.pull: a place on a building's footing (foot) pulled in toward its army's way (C: its corridor on this ground, the
   // nearest point of it), else its guide (gx, gy): the first spot along the way there one stands on, so it lies on that side of what
   // covers it; p itself elsewhere (water, a peak: snapped as ever))
   pull(p,C,gx,gy){if(!this.contains(p)||!this.foot[routeIx(this.grid,p.x-this.x,p.y-this.y)])return p;if(C&&C.ground===this){marchOff(C.pts,p.x,p.y);gx=MARCH_ON[0];gy=MARCH_ON[1]}
-    for(let k=1;k<=10;k++){const q={x:p.x+(gx-p.x)*k/10,y:p.y+(gy-p.y)*k/10,type:p.type};if(this.stand(q))return q}return p}
+    for(let k=1;k<=10;k++){const q={x:p.x+(gx-p.x)*k/10,y:p.y+(gy-p.y)*k/10,type:p.type};if(this.place(q))return q}return p}
   // (PATHS.smooth: man u's way w (MarchArmy step: u.plan) mended for his goal moved, no search: on this ground, he still walking
   // straight to its point he makes for, one of its points from there on reaching his goal straight with his room; the way to it
   // kept, his goal after it. False: searched afresh)
   mend(u,w){if(!w||w.ground!==this||!w.p.length)return false;const p=w.p,i=Math.min(w.i,p.length-1),q=u.goal;if(!this.clear(u,p[i]))return false;
-    for(let k=p.length-1;k>=i;k--)if(this.clear({x:p[k].x,y:p[k].y,type:u.type},q)){p.length=k+1;if(p[k].x!==q.x||p[k].y!==q.y)p.push({x:q.x,y:q.y});w.goal=q;return true}
+    for(let k=p.length-1;k>=i;k--)if(this.clear({x:p[k].x,y:p[k].y,type:u.type},q,this.cap)){p.length=k+1;if(p[k].x!==q.x||p[k].y!==q.y)p.push({x:q.x,y:q.y});w.goal=q;return true}
     return false}
   // (the point a man going down field F makes for (route.js routeFlowAim), world px: kept on him (u.fa) till he changes cell or the
   // field is made again; null where it does not reach him)
@@ -559,7 +576,8 @@ class MarchArmy{
   sync(){
     const rows=marchRows(this.owner),dead=this.units.some(u=>u.dead);if(rows===this.rows&&!dead)return;this.rows=rows;const key=JSON.stringify(rows);if(key===this.key&&!dead)return;this.key=key;
     const targets=this.targets(),old=this.units.filter(u=>!u.dead),used=new Set(),units=[],pick=SLOTFILL.on?this.pick(targets,old):null;
-    this.ground=new MarchGround(this.owner,old);this.refresh=this.time+MARCH_MOVE.refresh;const g=this.ground,reach=g.reachable(this.owner),reserved=new Set();
+    if(this.wet==null)this.wetStep(this.owner,this.owner.x,this.owner.y,0,null,true,null);// (a new army's men set down in no water too deep: MARCH_MOVE.wet)
+    this.ground=new MarchGround(this.owner,old,MARCH_MOVE.pad,this.wet);this.refresh=this.time+MARCH_MOVE.refresh;const g=this.ground,reach=g.reachable(this.owner),reserved=new Set();
     for(let k=0;k<targets.length;k++){const p=targets[k];let u=pick&&!p.character?pick[k]:old.find(u=>!used.has(u)&&u.row===p.row&&u.type===p.type);if(u){used.add(u);reserved.add(routeIx(g.grid,u.x-g.x,u.y-g.y))}else{const q=g.snap(p,reach,reserved)||g.snap(this.owner,null,reserved);if(!q)continue;u={id:++this.serial,x:q.x,y:q.y,walk:0,walking:false};}
       Object.assign(u,{row:p.row,index:p.index,type:p.type,character:p.character,goal:{x:p.x,y:p.y},plan:null});units.push(u)}this.units=units;
     this.carrier=units.find(u=>u.row==='leader'||u.row==='hero')||units[0]||null;// (its leader's marcher (yours: your hero): your badges over him, render.js heroTagAt)
@@ -600,10 +618,17 @@ class MarchArmy{
   // place or given up, keeps its grid; a code review found standing armies making theirs again every 2 s); menCentre (C): men on ground its middle's does not reach in its box (across a river, the bridge or the ford past its edge: a
   // battle's end), its box made MARCH_MOVE.wide px wider round them, so their way round is in it, while they are so (split). Returns
   // what its middle reaches
-  groundStep(o,jump,C){
-    if(jump)this.ground=new MarchGround(o,[]);
-    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)&&this.units.some(u=>!u.dead&&!u.rest)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad);this.refresh=this.time+MARCH_MOVE.refresh}
-    let reach=this.ground.reachable(o);if(C){const g=this.ground,off=this.units.some(u=>!u.dead&&!reach[routeIx(g.grid,u.x-g.x,u.y-g.y)]);if(off&&!this.split){this.split=true;this.ground=new MarchGround(o,this.units,MARCH_MOVE.wide);this.refresh=this.time+MARCH_MOVE.refresh;reach=this.ground.reachable(o)}else if(!off)this.split=false}
+  // (MARCH_MOVE.wet: the water its men walk into now, a band of map.js waterBand: own, or as deep as its guide's way: under its
+  // guide (x, y), on its way ahead (router.js Router.ahead's points) within its ring, and behind it for its length (a column's, else
+  // its ring across) and hold px; a jump: afresh; halted, as it was. The river beside a bridge is no way of its (router.js
+  // bridgeSide): its guide, held near its men's middle while they queue at the deck's end, may lie over it)
+  wetStep(o,x,y,moved,col,jump,ahead){const M=MARCH_MOVE.wet,r=marchOuter(o),band=(x,y)=>{const tx=Math.floor(x/TILE),ty=Math.floor(y/TILE),k=ty*MW+tx;return WM.has(tx,ty)&&!bridgeSide(k)?Math.min(4,waterBand(k)):0};
+    if(!jump&&!(moved>.001)&&this.wet!=null)return;let b=band(x,y);for(const [ax,ay] of ahead||[])if(Math.hypot(ax-x,ay-y)<=r)b=Math.max(b,band(ax,ay));b=Math.max(M.own,b);
+    if(jump||!(b<this.wet)||(this.wetLeft-=moved)<=0){this.wet=b;this.wetLeft=(col?col.len:2*r)+M.hold}}
+  groundStep(o,jump,C){const wet=this.wet||4;
+    if(jump)this.ground=new MarchGround(o,[],MARCH_MOVE.pad,wet);
+    if(!this.ground||!this.ground.fresh()||this.time>=(this.refresh||0)&&this.units.some(u=>!u.dead&&!u.rest)||!this.ground.covers(o,marchOuter(o)+8)||!jump&&this.units.some(u=>!this.ground.covers(u,8))||this.ground.wet!==wet){this.ground=new MarchGround(o,jump?[]:this.units,C&&this.split?MARCH_MOVE.wide:MARCH_MOVE.pad,wet);this.refresh=this.time+MARCH_MOVE.refresh}
+    let reach=this.ground.reachable(o);if(C){const g=this.ground,off=this.units.some(u=>!u.dead&&!reach[routeIx(g.grid,u.x-g.x,u.y-g.y)]);if(off&&!this.split){this.split=true;this.ground=new MarchGround(o,this.units,MARCH_MOVE.wide,wet);this.refresh=this.time+MARCH_MOVE.refresh;reach=this.ground.reachable(o)}else if(!off)this.split=false}
     return reach}
   step(d,sync=true,bounds=null,inside=null){
     if(!(d>0))return;const o=this.owner,C=MARCH_MOVE.menCentre,ox0=o.x,oy0=o.y;if(Math.hypot(o.x-this.x,o.y-this.y)>MARCH_MOVE.teleport){MARCH_ARMIES.delete(o);MarchArmy.of(o);return}
@@ -640,6 +665,7 @@ class MarchArmy{
     // (below), at a halt)
     this.since+=moved;if(this.turned){this.leg+=moved;if((!AF.loop.on||!col)&&(this.leg>=AF.leg||moved<=.001&&(this.still||0)+d>=AF.halt))this.reorderStart(col)}
     if(jump){this.fillOff=null;this.turned=false;this.reorder=null}
+    this.wetStep(o,C?this.gx:o.x,C?this.gy:o.y,moved,col,jump,moved>.001?Router.ahead(o,ox0,oy0):null);
     let reach=this.groundStep(o,jump,C);
     // (each man his march pace; menCentre: the army's own step this moment, at least that, at most road times it: its step how far
     // its guide went over the time since it last moved, at most a mid tier's moment (worldobject.js WORLD_LOD: such a one steps
@@ -693,7 +719,7 @@ class MarchArmy{
       if(u.gave){u.plan=null;u.flow=null;u.straight=false;delete u.needAt;continue}
       // (PATHS.slide: one within PATHS.near px of his place, his way only grazing a wall (through no shut cell), walks straight at it,
       // sliding along the wall, no way laid; stuck so (rescue), he asks one)
-      u.straight=nav.straight(u,u.goal)||PATHS.slide&&!u.rescue&&Math.hypot(u.goal.x-u.x,u.goal.y-u.y)<PATHS.near&&lineClear(nav.grid,u.x-nav.x,u.y-nav.y,u.goal.x-nav.x,u.goal.y-nav.y);if(u.straight){u.plan=null;u.flow=null;delete u.needAt;continue}
+      u.straight=nav.straight(u,u.goal)||PATHS.slide&&!u.rescue&&Math.hypot(u.goal.x-u.x,u.goal.y-u.y)<PATHS.near&&lineClear(nav.grid,u.x-nav.x,u.y-nav.y,u.goal.x-nav.x,u.goal.y-nav.y,nav.cap);if(u.straight){u.plan=null;u.flow=null;delete u.needAt;continue}
       if(PATHS.flow&&!u.rescue){blocked.push(u);continue}
       ask(u)}
     if(R){R.t+=d;if(!off||R.t>=AF.most)this.reorder=null}
@@ -754,23 +780,24 @@ class MarchArmy{
       // (a comrade just ahead in his file, walking his way: he keeps pace behind him (marchLead: his speed capped, the way found as
       // ever), so he never comes up on him to be stopped)
       const lead=col&&moved>.001?marchLead(u,want,friends,ru):null;
-      for(const off of sides){const a=want+off,p={x:u.x+Math.cos(a)*probe,y:u.y+Math.sin(a)*probe};if(nav.clear(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){way=a;break}}
+      for(const off of sides){const a=want+off,p={x:u.x+Math.cos(a)*probe,y:u.y+Math.sin(a)*probe};if(nav.clear(u,p)&&!nav.dip(u,p)&&!friends.some(v=>v!==u&&Math.hypot(v.x-p.x,v.y-p.y)<(ru+marchBody(v))/2&&Math.hypot(v.x-p.x,v.y-p.y)<Math.hypot(v.x-u.x,v.y-u.y)-.001)){way=a;break}}
       // (the army standing, he hemmed in by his own side a while (blocked, or only stepping round them), well short of his place: he
       // squeezes through, the parting pass below making room; the army marching, after MARCH_MOVE.jam s of it: a crowd in a ford)
       u.side=way!=null&&way!==want?Math.sign(Math.atan2(Math.sin(way-want),Math.cos(way-want))):0;let cap=top;if(way===want)u.stuck=Math.max(0,(u.stuck||0)-d/2);else if(way!=null)u.stuck=(u.stuck||0)+d/2;else{u.stuck=(u.stuck||0)+d;}u.squeeze=u.stuck>=(moved<=.001?MARCH_MOVE.squeeze[0]:MARCH_MOVE.jam)&&gd>MARCH_MOVE.squeeze[2];if(u.squeeze){way=want;cap=top*MARCH_MOVE.squeeze[1]}else if(lead)cap=Math.min(cap,lead.cap)
       const df=way==null?0:Math.atan2(Math.sin(way-u.hd),Math.cos(way-u.hd)),rate=K.turn0+(K.turn-K.turn0)*Math.min(1,u.vel/Math.max(1e-6,top));u.hd+=clamp(df,-rate*d,rate*d);
       const off=Math.atan2(Math.sin((way??want)-u.hd),Math.cos((way??want)-u.hd)),tgt=way==null?0:Math.min(cap*Math.max(0,Math.cos(off))**2,Math.sqrt(2*top/K.t*.6*l));
       u.vel=clamp(tgt,u.vel-top/K.t*d*1.6,u.vel+top/K.t*d);if(!(u.vel>1e-4)){u.vel=0;continue}
-      const s1=Math.min(u.vel*d,l),last=s1>=l-.001&&Math.abs(off)<.35;let q=last?{x:aim.x,y:aim.y}:{x:u.x+Math.cos(u.hd)*s1,y:u.y+Math.sin(u.hd)*s1},wall=!nav.clear(u,q);if(wall&&PATHS.slide)u.wt=this.time;
+      const s1=Math.min(u.vel*d,l),last=s1>=l-.001&&Math.abs(off)<.35;let q=last?{x:aim.x,y:aim.y}:{x:u.x+Math.cos(u.hd)*s1,y:u.y+Math.sin(u.hd)*s1},wall=!nav.clear(u,q)||nav.dip(u,q)&&!nav.dip(u,{x:u.x+(aim.x-u.x)/l*s1,y:u.y+(aim.y-u.y)/l*s1});// (into water too deep only where his way goes, a step straight at the point he makes for into it too (a corner of it clipped, a way with no other): MARCH_MOVE.wet)
+      if(wall&&PATHS.slide)u.wt=this.time;
       // (PATHS.slide: a step that meets a wall slides along it (route.js routeSlide), his pace kept, rather than halving it to a stop)
-      if(wall&&PATHS.slide&&routeSlide(nav.grid,u.x-nav.x,u.y-nav.y,q.x-u.x,q.y-u.y,marchBody(u)/2,MARCH_SLIDE)){const p={x:u.x+MARCH_SLIDE[0],y:u.y+MARCH_SLIDE[1]};if(nav.clear(u,p)&&nav.stand(p)){q=p;wall=false}}
+      if(wall&&PATHS.slide&&routeSlide(nav.grid,u.x-nav.x,u.y-nav.y,q.x-u.x,q.y-u.y,marchBody(u)/2,MARCH_SLIDE)){const p={x:u.x+MARCH_SLIDE[0],y:u.y+MARCH_SLIDE[1]};if(nav.clear(u,p)&&nav.stand(p)&&!nav.dip(u,p)){q=p;wall=false}}
       if(wall||friends.some(v=>v!==u&&way!==want&&Math.hypot(v.x-q.x,v.y-q.y)<(ru+marchBody(v))/2-.05&&Math.hypot(v.x-q.x,v.y-q.y)<Math.hypot(v.x-u.x,v.y-u.y))){u.vel*=.5;continue}
       const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.dir=u.hd;u.x=q.x;u.y=q.y;u.walk+=s1;u.stepT=(u.stepT||0)+d;u.walking=true;u.walkT=MARCH_MOVE.stride;put(u);
     }
     if(FT)this.formEnd(FT,d,moved);
     // (then apart: no two closer than their bodies; a caravan's wagon is a body too, never pushed; one squeezing through takes
     // little of the push, those he passes give way)
-    const lead=marchCentrePiece(o)?marchCart(o,col?{x:col.cx,y:col.cy}:o):null,move=(u,x,y)=>{const p={x,y};if(!nav.clear(u,p)||!nav.stand(p))return;const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.x=x;u.y=y;put(u)};
+    const lead=marchCentrePiece(o)?marchCart(o,col?{x:col.cx,y:col.cy}:o):null,move=(u,x,y)=>{const p={x,y};if(!nav.clear(u,p)||!nav.stand(p)||nav.dip(u,p))return;const at=buckets.get(u.bucket);at.splice(at.indexOf(u),1);u.x=x;u.y=y;put(u)};
     for(let pass=0;pass<MARCH_MOVE.part;pass++)for(const u of this.units){const ru=marchBody(u);
       for(const v of lead?[...near(u),...lead]:near(u)){if(v===u)continue;const dx=u.x-v.x,dy=u.y-v.y,dd=Math.hypot(dx,dy),need=(ru+(v.r??marchBody(v)))/2;if(dd>=need)continue;
         const k=v.fixed?1:u.squeeze===!!v.squeeze?.5:u.squeeze?MARCH_MOVE.squeeze[3]:1-MARCH_MOVE.squeeze[3],a=dd>1e-6?Math.atan2(dy,dx):u.id*2.39996;move(u,u.x+Math.cos(a)*(need-dd)*k,u.y+Math.sin(a)*(need-dd)*k)}}
@@ -851,9 +878,12 @@ class MarchArmy{
   // (a man short of his place (not settled in it: rest) who has come no nearer it by formGain px in formTry s stands where he is,
   // facing its way, given up (no way, no squeeze, no rescue, no new share); all those short given up, its forming over and its men's
   // places kept (done). Only while it stands: not on the move (a column forming on the march gives up by its own time: TravelStyle
-  // giveUp), nor while it loops (its own time: the step))
-  formEnd(T,d,moved){if(this.loop||moved>.001){for(const u of this.units)u.fb=null;return}let short=0,left=0;
+  // giveUp), nor while it loops (its own time: the step)). Never one left behind, farther than its ring (marchOuter) from its guide:
+  // he waits his turn at a bridge or a ford, gaining nothing, and follows on (2026-11-28: with the river beside a crossing no longer
+  // waded, the last of a band's queue gave up on the near bank when its guide halted past it))
+  formEnd(T,d,moved){if(this.loop||moved>.001){for(const u of this.units)u.fb=null;return}let short=0,left=0;const o=this.owner,C=MARCH_MOVE.menCentre,gx=C?this.gx:o.x,gy=C?this.gy:o.y,r=marchOuter(o);
     for(const u of this.units){if(u.dead||!u.goal||u.gave)continue;if(u.rest){u.fb=null;continue}short++;const gd=Math.hypot(u.x-u.goal.x,u.y-u.goal.y);
+      if(Math.hypot(u.x-gx,u.y-gy)>r){u.fb=null;left++;continue}// (left behind: he follows on)
       if(u.fb==null||gd<u.fb-MARCH_MOVE.formGain){u.fb=gd;u.fbt=0;left++}else if((u.fbt+=d)>=MARCH_MOVE.formTry){u.gave=true;u.rest=true;u.vel=0;u.plan=null;u.flow=null;u.rescue=false;u.tight=false;u.hd=u.dir=this.face}else left++}
     if(short&&!left&&!T.done){T.done=true;this.forming=null}}
   // (falling into a column, SLOTFILL off (on: refill): each group's places (by index, front to back) to its men in the order they
@@ -862,7 +892,7 @@ class MarchArmy{
   // (PATHS.slide: where a man stuck against a wall steps back to, PATHS.back px off the wall nearest him (route.js routeGap), when one
   // is within that of his room: open ground he may walk to straight; null: no wall near, or nowhere to step)
   backOff(u,nav){if(!nav.contains(u))return null;const r=marchBody(u)/2;if(!(nav.gap(u,r+PATHS.back)<r+PATHS.back)||!(ROUTE_GAP.nx||ROUTE_GAP.ny))return null;
-    const p={x:u.x+ROUTE_GAP.nx*PATHS.back,y:u.y+ROUTE_GAP.ny*PATHS.back};return nav.clear(u,p)&&nav.stand(p)?p:null}
+    const p={x:u.x+ROUTE_GAP.nx*PATHS.back,y:u.y+ROUTE_GAP.ny*PATHS.back};return nav.clear(u,p)&&nav.stand(p)&&!nav.dip(u,p)?p:null}
   fileIn(){const cx=Math.cos(this.heading),cy=Math.sin(this.heading),by=new Map();for(const u of this.units){if(u.dead)continue;let a=by.get(u.row);if(!a)by.set(u.row,a=[]);a.push(u)}
     for(const a of by.values()){const ix=a.map(u=>u.index).sort((p,q)=>p-q);a.sort((u,v)=>(v.x-u.x)*cx+(v.y-u.y)*cy).forEach((u,i)=>{u.index=ix[i]})}}
   /* (about face, MARCH_MOVE.about: a column turned back on its own way (dx, dy: its guide's move this moment): its file the other way

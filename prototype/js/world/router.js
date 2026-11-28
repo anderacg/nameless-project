@@ -443,8 +443,10 @@ function wayRouted(o,x,y){const r=ROUTES.get(o);return !!r&&!!r.legs&&!r.done&&r
 function wayTravel(o,goal,step){holdShut();
   const dd=Math.hypot(goal.x-o.x,goal.y-o.y),straight=()=>{const r=ROUTES.get(o);if(r)r.done=true;walk(o,goal.x-o.x,goal.y-o.y,Math.min(dd,step));return true};if(dd<=1)return true;
   if(goal.tw&&dd<TILE*1.6)return straight();
-  const gt=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),rm=wayKeep(goal);let r=ROUTES.get(o);
-  if(!r||r.goal!==gt||r.rm!==rm||r.v!==WAYV){r=wayTrip(o,goal);r.goal=gt;r.rm=rm;r.v=WAYV;r.li=0;r.path=null;ROUTES.set(o,r)}
+  // (fl: found for a swimmer or not, a climber or not (map.js WAY_NOSWIM, WAY_CLIMB): a band that can swim no longer, its stamina
+  // gone or its men changed, finds its way again, not on into the water of the way it had)
+  const gt=Math.floor(goal.y/TILE)*MW+Math.floor(goal.x/TILE),rm=wayKeep(goal),fl=(WAY_NOSWIM?1:0)|(WAY_CLIMB?2:0);let r=ROUTES.get(o);
+  if(!r||r.goal!==gt||r.rm!==rm||r.v!==WAYV||r.fl!==fl){r=wayTrip(o,goal);r.goal=gt;r.rm=rm;r.v=WAYV;r.fl=fl;r.li=0;r.path=null;ROUTES.set(o,r)}
   if(!r.legs)return goal.tw?straight():false;
   for(let n=0;n<64;n++){
     if(!r.path){if(r.li>=r.legs.length)return straight();r.path=wayLeg(r.legs[r.li++],o,goal);r.pi=0;r.pc=-1;if(!r.path){r.legs=null;return goal.tw?straight():false}if(WAY_SMOOTH.on)r.path=wayStraight(r,o,goal)}

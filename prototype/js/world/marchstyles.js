@@ -329,6 +329,6 @@ class MarchLoop{
   // (room for it on ground nav (march.js MarchGround): its points on ground a man stands on, no wall between them, and so m px out
   // past it (its lanes and ends m px further out))
   fits(nav,m){const q={x:0,y:0},a={x:0,y:0},b={x:0,y:0};
-    for(let i=0;i<this.px.length;i++){b.x=this.px[i];b.y=this.py[i];if(!nav.stand(b)||i&&!nav.clear(a,b)||!nav.stand(this.pt(i*this.du,this.h+m,this.e+m,q)))return false;a.x=b.x;a.y=b.y}
+    for(let i=0;i<this.px.length;i++){b.x=this.px[i];b.y=this.py[i];if(!nav.place(b)||i&&!nav.clear(a,b)||!nav.place(this.pt(i*this.du,this.h+m,this.e+m,q)))return false;a.x=b.x;a.y=b.y}
     return true}
 }

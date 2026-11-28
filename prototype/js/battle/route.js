@@ -204,14 +204,15 @@ function routeDist(g,x,y){
 /* (PATHS.clear) grid g's clearance, kept till its version moves: g.cl, px from each cell's middle to the nearest shut cell's box or
    two-way cliff within PATHS.reach cells (past that, reach + 1 cells' px); g.cm, the most of it in the 3×3 round each cell (the room
    a body finds there). Each shut cell with an open neighbour, and each cliff, stamped on the cells round it; one-way cliffs are no
-   wall to keep off (one goes down them) */
+   wall to keep off (one goes down them), nor are a grid's soft cells (g.soft, a byte a cell: shut, but their room already left
+   by what shut them: a bridge deck's rails, march.js MarchGround) */
 function routeRoom(g){
   if(g.clv===g.v&&g.cl)return g.cl;const C=g.C,R=g.R,cs=g.cs,N=C*R,cost=g.cost,wall=g.wall,K=PATHS.reach,far=(K+1)*cs;
-  const cl=g.cl&&g.cl.length===N?g.cl:(g.cl=new Float32Array(N)),cm=g.cm&&g.cm.length===N?g.cm:(g.cm=new Float32Array(N));cl.fill(far);
+  const cl=g.cl&&g.cl.length===N?g.cl:(g.cl=new Float32Array(N)),cm=g.cm&&g.cm.length===N?g.cm:(g.cm=new Float32Array(N)),soft=g.soft;cl.fill(far);
   const stamp=(x0,y0,x1,y1)=>{const ca=Math.max(0,Math.floor(x0/cs)-K),cb=Math.min(C-1,Math.floor(x1/cs)+K),ra=Math.max(0,Math.floor(y0/cs)-K),rb=Math.min(R-1,Math.floor(y1/cs)+K);
     for(let r=ra;r<=rb;r++){const py=(r+.5)*cs,dy=py<y0?y0-py:py>y1?py-y1:0;for(let c=ca;c<=cb;c++){const px=(c+.5)*cs,dx=px<x0?x0-px:px>x1?px-x1:0,d=Math.sqrt(dx*dx+dy*dy),i=r*C+c;if(d<cl[i])cl[i]=d}}};
   for(let r=0,i=0;r<R;r++)for(let c=0;c<C;c++,i++){
-    if(!cost[i]){let edge=false;for(let d=0;d<8&&!edge;d++){const c2=c+ROUTE_DC[d],r2=r+ROUTE_DR[d];if(c2>=0&&r2>=0&&c2<C&&r2<R&&cost[r2*C+c2])edge=true}if(edge)stamp(c*cs,r*cs,(c+1)*cs,(r+1)*cs);continue}
+    if(!cost[i]){if(soft&&soft[i])continue;let edge=false;for(let d=0;d<8&&!edge;d++){const c2=c+ROUTE_DC[d],r2=r+ROUTE_DR[d];if(c2>=0&&r2>=0&&c2<C&&r2<R&&cost[r2*C+c2])edge=true}if(edge)stamp(c*cs,r*cs,(c+1)*cs,(r+1)*cs);continue}
     const w=wall[i];if(w&1&&c+1<C&&wall[i+1]&4)stamp((c+1)*cs,r*cs,(c+1)*cs,(r+1)*cs);if(w&2&&r+1<R&&wall[i+C]&8)stamp(c*cs,(r+1)*cs,(c+1)*cs,(r+1)*cs)}
   for(let i=0;i<N;i++)if(!cost[i])cl[i]=0;
   for(let r=0,i=0;r<R;r++)for(let c=0;c<C;c++,i++){let m=0;for(let y=r>0?r-1:0;y<=(r<R-1?r+1:r);y++)for(let x=c>0?c-1:0;x<=(c<C-1?c+1:c);x++){const v=cl[y*C+x];if(v>m)m=v}cm[i]=m}
@@ -224,12 +225,12 @@ function gapBox(x,y,x0,y0,x1,y1){const px=x<x0?x0:x>x1?x1:x,py=y<y0?y0:y>y1?y1:y
 /* (PATHS.clear) px from (x,y) to the nearest shut cell or two-way cliff: exact when under need, else a bound no less than need;
    ROUTE_GAP nx, ny: the way out from it (0, 0 when none is nearer than need) */
 function routeGap(g,x,y,need){
-  const cl=g.clv===g.v&&g.cl?g.cl:routeRoom(g),C=g.C,R=g.R,cs=g.cs,cost=g.cost,wall=g.wall,c0=Math.floor(x/cs),r0=Math.floor(y/cs),O=ROUTE_GAP;O.nx=O.ny=0;
+  const cl=g.clv===g.v&&g.cl?g.cl:routeRoom(g),C=g.C,R=g.R,cs=g.cs,cost=g.cost,wall=g.wall,soft=g.soft,c0=Math.floor(x/cs),r0=Math.floor(y/cs),O=ROUTE_GAP;O.nx=O.ny=0;
   if(c0>=0&&r0>=0&&c0<C&&r0<R){const v=cl[r0*C+c0]-cs*.7072;if(v>=need)return v}
   // (the cells a box within need of the point lies in)
   let best=need,bx=0,by=0,bi=-1;const ca=Math.max(0,Math.floor((x-need)/cs)-1),cb=Math.min(C-1,Math.floor((x+need)/cs)),ra=Math.max(0,Math.floor((y-need)/cs)-1),rb=Math.min(R-1,Math.floor((y+need)/cs));
   for(let r=ra;r<=rb;r++)for(let c=ca;c<=cb;c++){const i=r*C+c;let d;
-    if(!cost[i]){d=gapBox(x,y,c*cs,r*cs,(c+1)*cs,(r+1)*cs);if(d<best){best=d;bx=O.px;by=O.py;bi=i}continue}
+    if(!cost[i]){if(soft&&soft[i])continue;d=gapBox(x,y,c*cs,r*cs,(c+1)*cs,(r+1)*cs);if(d<best){best=d;bx=O.px;by=O.py;bi=i}continue}
     const w=wall[i];if(!w)continue;
     if(w&1&&c+1<C&&wall[i+1]&4){d=gapBox(x,y,(c+1)*cs,r*cs,(c+1)*cs,(r+1)*cs);if(d<best){best=d;bx=O.px;by=O.py;bi=-1}}
     if(w&2&&r+1<R&&wall[i+C]&8){d=gapBox(x,y,c*cs,(r+1)*cs,(c+1)*cs,(r+1)*cs);if(d<best){best=d;bx=O.px;by=O.py;bi=-1}}}
