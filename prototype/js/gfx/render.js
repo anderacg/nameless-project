@@ -681,7 +681,7 @@ function drawUnitAt(u){
   // (moving: a step in the last few frames, so a man who stops and starts as he settles does not flicker between standing and walking)
   // (stopped, those frames show the pass, his legs under him, not a stride frozen wide: the owner, "leg stuck before going to idle")
   // (knocked down: over, lying, up again, physics.js)
-  const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;{const dt=Math.max(0,B.t-(u.wpT??B.t));u.wpT=B.t;u.walkPhase=(u.walkPhase||0)+Math.min(distance/(WALK.foot*WALK.step*(B.world?B.world.scale:WALK.field)),dt*WALK.cap)}u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));if(!step&&u.movF>0&&!(Math.floor(u.walkPhase+(u.v||0))&1))u.walkPhase+=1;const moved=u.movF>0;const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
+  const dq=physDownPose(u);if(dq!=null){drawDowned(u,x,y-z,dq);u.plx=u.x;u.ply=u.y}else{const distance=u.plx!=null?Math.hypot(u.x-u.plx,u.y-u.ply):0,step=distance>.02;{const dt=Math.max(0,B.t-(u.wpT??B.t));u.wpT=B.t;u.walkPhase=(u.walkPhase||0)+Math.min(distance/(WALK.foot*WALK.step*(B.world?B.world.scale:WALK.field)),dt*WALK.cap)}u.plx=u.x;u.ply=u.y;u.movF=step?6:Math.max(0,(u.movF||0)-(B.paused?0:1));if(!step&&u.movF>0&&!(Math.floor(u.walkPhase+(u.v||0))&1))u.walkPhase+=1;const moved=u.movF>0;if(u.hero)BattleFlight.skim(u,moved);const beast=!!(ST[u.type]&&ST[u.type].beast),cl=moved&&typeof climbState==='function'?climbState(u):null;let pose=beast?beastPose(u,moved):procPose(u,moved);
     // (on a hill's slope (the ground's climbState): walking or running up, bent forward on short slow steps; down, leaning on long ones)
     if(cl&&!beast&&((pose>=2&&pose<=5)||(pose>=15&&pose<=18)))pose=cl==='up'?19+Math.floor(B.t*5+(u.v||0))%4:23+Math.floor(B.t*9+(u.v||0))%4;
     // (rocked by a throw: leaning back from it, a step or two back, flinching; a mount rearing on its hocks: gfx/stagger.js)
@@ -789,7 +789,7 @@ function battleEnts(){
   let ents;if(B.terrain&&B.ground){ents=B.obs.filter(inV);propsInView(ents,vx-16,vy-16,vx+v.w+16,vy+v.h+40);for(const u of B.units)if(u.hp>0&&inV(u)&&seenBy(0,u))ents.push(u)}
   else ents=[...B.obs.filter(inV),...B.units.filter(u=>u.hp>0&&inV(u)&&seenBy(0,u))];
   for(const h of B.horses||[])if(inV(h))ents.push(h);// (horses no one rides: battle/dismount.js)
-  return ents.sort((a,b)=>a.y-b.y)}
+  return ents.sort((a,b)=>(a.aloft?1:0)-(b.aloft?1:0)||a.y-b.y)}// (one on the wing over everyone: world/flight.js)
 // (a canvas the field's size, only the part in view: the same pixels as drawing it whole)
 function drawInView(img){const v=camView(),vx=v.x,vy=v.y,W=img.width,H=img.height,x0=clamp(Math.floor(vx)-2,0,W),y0=clamp(Math.floor(vy)-2,0,H),x1=clamp(Math.ceil(vx+v.w)+2,0,W),y1=clamp(Math.ceil(vy+v.h)+2,0,H);
   if(x1>x0&&y1>y0)ctx.drawImage(img,x0,y0,x1-x0,y1-y0,x0,y0,x1-x0,y1-y0)}

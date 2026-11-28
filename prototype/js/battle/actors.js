@@ -127,11 +127,12 @@ class Actor extends Fighter{
     try{for(let i=0;i<B.units.length;i++){const u=B.units[i];if(u.hp<=0||u.hero)continue;S.hold(i);u.cd-=dt;Actor.of(u).turn(dt);S.release(i)}}finally{spatialClose()}
   }
   // a troop's or a beast's turn: its step, then a monster's ability and a dragon's breath
-  turn(dt){const u=this.u;if(u.resident&&!u.residentAwake){u.moving=false;return}if(u.wildlife)return (B.hunt||B.wild).turn(u,dt);this.step(dt,null);this.ability(dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){this.breathe(t);u.br=3.5}}}}
+  turn(dt){const u=this.u;if(u.resident&&!u.residentAwake){u.moving=false;return}if(u.wildlife)return (B.hunt||B.wild).turn(u,dt);if(BattleFlight.turn(u,dt,this))return;this.step(dt,null);this.ability(dt);if(u.s.breath){u.br=(u.br??2.5)-dt;if(u.br<=0){const t=nearest(u);if(t&&Math.hypot(t.x-u.x,t.y-u.y)<90){this.breathe(t);u.br=3.5}}}}
   ability(dt){
     const u=this.u,ab=u.s.ability;
     if(ab==='regen')u.hp=Math.min(u.max,u.hp+4*dt);
-    else if(ab==='pounce'){u.ab=(u.ab??1.5)-dt;if(u.ab>0)return;const t=nearest(u);if(!t)return;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d<24||d>110)return;
+    else if(ab==='pounce'){if(BattleFlight.flies(u))return;u.ab=(u.ab??1.5)-dt;if(u.ab>0)return;// (a winged one's pounce is its dive: world/flight.js)
+     const t=nearest(u);if(!t)return;const d=Math.hypot(t.x-u.x,t.y-u.y);if(d<24||d>110)return;
       const a=Math.atan2(t.y-u.y,t.x-u.x);fx(u.x,u.y-6,'#e8d8a0',6);u.x=t.x-Math.cos(a)*10;u.y=t.y-Math.sin(a)*10;u.face=Math.cos(a)>=0?1:-1;
       if(u.type==='tiger'&&PX.tiger)PX.tiger.pounce(u,B.t);this.hit(t,u.s.dmg*1.6);B.floats.push({x:u.x,y:u.y-fxUp(20),t:'POUNCE',life:.6,c:'#ffb070'});u.ab=4.5}
   }

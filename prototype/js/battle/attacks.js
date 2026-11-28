@@ -36,6 +36,7 @@ class Fighter{
   constructor(u){this.u=u}
   // ---- struck: a wound of amt (m: the matchup, for its colour; dt: its damage type; source: who dealt it; missile: a shot)
   wound(amt,m,dt,source,missile){const t=this.u;
+    if(t.aloft&&!missile&&!isMagical(dt)&&!(source&&source.aloft))return;// (on the wing: no blow from the ground reaches it, world/flight.js)
     if(B.sight)sightStruck(source,t);// (whoever strikes or shoots at a side is seen by it: terrain.js)
     if(this.dodging()>0){B.floats.push({x:t.x,y:t.y-fxUp(16),t:'Dodge',life:.4,c:'#cfe0ff'});return}// (rolling, leaping, dashing: unhurt)
     amt=Dismount.share(t,this.taken(amt),source,missile,dt);// (a rider's horse takes its share: battle/dismount.js)

@@ -210,8 +210,12 @@ const partyGround=(x,y,ride)=>Math.max(.45,speedAt(x,y)||1)*(ride&&roughFor(x,y)
 const caravanGround=(x,y)=>Math.max(.5,speedAt(x,y)||1);
 // (your band's: the land for your race and mounts, a Pathfinder's and Woodcraft's ease, rough ground for riders; HERO_GROUND: what
 // travelMul knows of your band for it)
-const HERO_GROUND={ign:null,ride:false};
-function heroGround(x,y){const H=HERO_GROUND;let t=(terrAt(x,y)===T_MOUNT?(headingUp(x,y,P.tx,P.ty)===false?LAB_WALK.cliffDown:LAB_WALK.cliff):speedAt(x,y,P.race,H.ign)||1)*headingMul(x,y,P.tx,P.ty)*(G.keys&&G.keys.shift?LAB_WALK.run:1);if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
+const HERO_GROUND={ign:null,ride:false,fly:false};
+function heroGround(x,y){const H=HERO_GROUND;let t=(terrAt(x,y)===T_MOUNT?(headingUp(x,y,P.tx,P.ty)===false?LAB_WALK.cliffDown:LAB_WALK.cliff):speedAt(x,y,P.race,H.ign)||1)*headingMul(x,y,P.tx,P.ty)*(G.keys&&G.keys.shift?LAB_WALK.run:1);if(t<1&&has('path'))t=1-(1-t)/2;if(t<1&&terrAt(x,y)===T_FOREST)t=1-(1-t)*(1-Math.min(WOODCRAFT.cap,WOODCRAFT.per*skill('wood')));
+  // (a winged mount flies over the land's slopes too, which no home ground levels (map.js slopeMulAt): any land at the open's pace,
+  // the weather's still; the owner, 2026-11-28: "make sure mount system work": a griffin went 0.8 its pace over a hill's slope)
+  if(H.fly&&t<1){const k=terrAt(x,y);if(k!==T_MOUNT&&k!==T_WATER)t=Math.max(t,Math.min(1,Weather.speed(x,y,climAt(x,y),ALL_GROUND)))}
+  return t*(H.ride&&roughFor(x,y,H.ign)?.8:1)}
 // your hero's own pace: on foot a fit 40; mounted, by the mount
 // a lord's army: its pace, slowed by its baggage train unless it is mostly mounted
 const lordSpeed=l=>partySpeed(l,l.troops)*(mountedShare(listSpeeds(l.troops))>=.5?1:.85);
@@ -228,7 +232,7 @@ function bandPace(){
 }
 // (Woodcraft: in a wood, its slowing cut by WOODCRAFT.per a level, up to cap)
 const WOODCRAFT={per:.06,cap:.6,xp:.1};
-function travelMul(){const H=HERO_GROUND;H.ign=mountIgn();H.ride=mountedShare(bandSpeeds())>=.5;return bandPace()*armyGround(P,heroGround)*marchOutriders(P)}// (Outriders: march.js)
+function travelMul(){const H=HERO_GROUND;H.ign=mountIgn();H.fly=!!mountDef()?.fly;H.ride=mountedShare(bandSpeeds())>=.5;return bandPace()*armyGround(P,heroGround)*marchOutriders(P)}// (Outriders: march.js)
 // daily price of the land you camp in; holdings shelter you from all of it. (By the hour, world/supply.js: the frost's extra food,
 // its cold short of furs and frostbite; the desert's thirst.) Each night short of furs in the frost costs a little morale; swamp fever
 function survive(){

@@ -69,16 +69,16 @@ function jostle(dt){const S=B.sides,own=!!S&&!S.memo;if(own)S.memo=new Map();try
 function jostlePass(dt){
   const U=B.units,S=spatialOpen(SPATIAL.jostle),big=[],list=[];for(let i=0;i<U.length;i++)if(U[i].hp>0&&U[i].s.big)big.push(i);
   let a=null,x0=0,y0=0;const gather=()=>{x0=a.x;y0=a.y;const r=roomMax(a)+JOSTLE.pad+1;list.length=0;for(const i of big)list.push(i);S.box(x0-r,y0-r,x0+r,y0+r,null,false,list)};
-  try{for(let i=0;i<U.length;i++){a=U[i];if(a.hp<=0)continue;let last=i;gather();
+  try{for(let i=0;i<U.length;i++){a=U[i];if(a.hp<=0||a.aloft)continue;let last=i;gather();// (one on the wing jostles no one: world/flight.js)
     for(let k=0;k<list.length;k++){const j=list[k];if(j<=last)continue;
       if(Math.abs(a.x-x0)>JOSTLE.pad||Math.abs(a.y-y0)>JOSTLE.pad){gather();k=-1;continue}
-      last=j;const b=U[j];if(b.hp<=0||battleFriend(a,b)&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=roomOf(a,b);if(d<R&&d>.01){if(PHYSICS.on){const q=(R-d)/d,f=physShare(a,b,dt,dx,dy);if(!a.hero){a.x-=dx*q*f;a.y-=dy*q*f;S.refile(i)}if(!b.hero){b.x+=dx*q*(1-f);b.y+=dy*q*(1-f);S.refile(j)}}else{const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}}
+      last=j;const b=U[j];if(b.hp<=0||b.aloft||battleFriend(a,b)&&(a.rout||b.rout||withdrawing(a)||withdrawing(b)))continue;const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);const R=roomOf(a,b);if(d<R&&d>.01){if(PHYSICS.on){const q=(R-d)/d,f=physShare(a,b,dt,dx,dy);if(!a.hero){a.x-=dx*q*f;a.y-=dy*q*f;S.refile(i)}if(!b.hero){b.x+=dx*q*(1-f);b.y+=dy*q*(1-f);S.refile(j)}}else{const p=(R-d)*.5/d;if(!a.hero){a.x-=dx*p;a.y-=dy*p;S.refile(i)}if(!b.hero){b.x+=dx*p;b.y+=dy*p;S.refile(j)}}}}}}
   finally{spatialClose()}
 }
 // off the rocks and trees (obstaclePush; the big ones shoulder through), inside the field, and no step into rock or impassable
 // water, nor over a cliff its blocked way: refused or slid along (terrain.js); was: where each stood as the frame began
 function keepOffObstacles(was){
-  for(const u of B.units){if(u.hp<=0||u.s.big)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
+  for(const u of B.units){if(u.hp<=0||u.s.big||u.aloft)continue;for(const o of B.obs)obstaclePush(u,o,was.get(u))}
   for(const u of B.units){u.x=clamp(u.x,8,BW-8);u.y=clamp(u.y,fieldTop(),fieldBot())}
   if(B.terrain)terrainHold(was);if(B.world)B.world.clamp()}
 // the fight over? one side with no one left fighting (or you withdrew: morale.js retreatNow); a side running off told in the log

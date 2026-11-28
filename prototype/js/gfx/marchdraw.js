@@ -4,7 +4,7 @@
 // off, drawn apart: a flag's spear, gfx/marchgear.js).
 // (his look, as his sprite's: sprites.js spriteLook, kept on him)
 function marchLook(u,o){const type=u.character?u.type.replace(/^comp_/,''):u.type,hero=type==='hero',col=o.look().col;
-  const cl=dressClimAt(o.x,o.y);if(!u.mLook||u.mLookC!==col||u.mLookW!==cl){const L=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLook=o.unarmed?{...L,weapon:null,slung:WPN[L.weapon]?null:L.weapon}:L;u.mLookC=col;u.mLookW=cl}return u.mLook}// (unarmed (refugees): their tools slung on their backs, nothing in hand)
+  const cl=dressClimAt(o.x,o.y),mt=hero?P.gear.mount||'':'';if(!u.mLook||u.mLookC!==col||u.mLookW!==cl||u.mLookM!==mt){u.mLookM=mt;const L=dressedIn(cl,()=>spriteLook(type,o.mapKind==='monster'?1:0,hero,hero||u.row==='leader'?0:u.id%6,col));u.mLook=o.unarmed?{...L,weapon:null,slung:WPN[L.weapon]?null:L.weapon}:L;u.mLookC=col;u.mLookW=cl}return u.mLook}// (unarmed (refugees): their tools slung on their backs, nothing in hand)
 // (his stride's frame on the march, 0-3: by the way he has walked, a step each WALK.foot × WALK.step px, so his feet keep to the ground)
 const marcherStep=u=>footFrame(u.walk,u.id);
 // (drawn walking: stepping, and not yet at his place: there, he stands at once, not on his last stride frozen for the rest of
@@ -32,7 +32,7 @@ function marchDraw(ents,o,cam){
   // (another's men only those in your sight, each by his own ground (worldobject.js spotted, manSpotted): a host's van seen as it comes
   // on, the rest still in the fog; yours and your companions' all)
   const own=o===P||o.faction==='player',S=!own&&SIGHT_EYES.armies&&G.mode==='world'&&!B?yourSight():null;
-  for(const u of army.units)if(!S||manSpotted(S,u)){ents.push({x:u.x,y:u.y,own,f:()=>drawMarcher(u,o,cam)})}
+  for(const u of army.units)if(!S||manSpotted(S,u)){ents.push({x:u.x,y:u.y,own,top:MapFlight.up(u),f:()=>drawMarcher(u,o,cam)})}
   // (a beast's marker over its middle)
   const u0=army.units[0];if(u0&&o.mapKind==='monster')ents.push({x:o.x,y:o.y,f:()=>BANNERQ.push({o,marker:{h:marchSprite(u0,o).height*WORLD_BATTLE.sprite/WORLD_BATTLE.scale,col:o.look().col}})});return true;
 }
@@ -108,18 +108,20 @@ function drawMarcherAt(u,o,cam){
   const S=ST[u.type]||{},I=!marchWalks(u)?idleLife(u.id,performance.now()/1000,S.beast?'beast':S.mounted?'mount':'foot'):null;
   // (what he carries besides, gfx/marchgear.js: his army's flag (on a spear of its own, his body bare; else at his back, before
   // his body), a torch after dark)
-  const act=marchAct(u);MARCH_UP.set(u,act.dy);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy),sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
+  // (on the wing: up by his flight, his wings beating, his shadow under him: world/flight.js MapFlight)
+  const act=marchAct(u),fl=MapFlight.of(u,o);MARCH_UP.set(u,act.dy+fl.up);subT(u);const k=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,x=Math.round(u.x-cam.x),y=Math.round(u.y-cam.y-act.dy)-fl.up,sx=Math.cos(u.dir??marchFacing(o))<0?-k:k,G=marchGear(u,o,x,y,sx);
   // (his body bare, his weapon apart in his hand, as in battle: weapons.js mapHeld (a sword worn out of sight: SHEATH); a flag-bearer's
   // (your hero's, carrying your banner) only if it is sheathed (SHEATH.show), his hands on the pole; none for a beast)
-  const s=marchSprite(u,o,I?.pose??act.pose??marchClimbPose(u,o),true);IndividualHealth.anchor(u,x,y-IndividualHealth.top(s)*k);// (his health squares over his head as drawn)
+  const s=marchSprite(u,o,fl.pose??I?.pose??act.pose??marchClimbPose(u,o),true);IndividualHealth.anchor(u,x,y-IndividualHealth.top(s)*k);// (his health squares over his head as drawn)
   const bx=-Math.floor(s.width/2)+(I?.dx||0),by=-s.height+2,H0=S.beast?null:mapHeld(marchLook(u,o),s,marchWalks(u),marcherStep(u)),H=G.bare&&!H0?.sheathed?null:H0;
   // (in water, the world lab's way: under it from his feet up as deep as it is where he stands (WATER.cut figure px, eased between its bands: wadeCut; worldterrain.js
   //  drawnDepth: his tile's depth eased in from the drawn bank, none on the drawn bank); his body under it faint and wavering, the water's line about him
   //  a wavy ring of foam, a ripple spreading from him (the owner, 2026-11-16: "the water that wrap around unit looks too flat"))
-  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),inn=!S.fly&&tx>=0&&ty>=0&&tx<MW&&ty<MH,ground=inn?WorldGround.at(u.x,u.y):null,deck=ground?.onDeck,cut=!ground||deck?0:wadeCut(ground.depth)||(ground.wet?WATER.cut[1]:0);
+  const tx=Math.floor(u.x/TILE),ty=Math.floor(u.y/TILE),inn=!S.fly&&!fl.air&&tx>=0&&ty>=0&&tx<MW&&ty<MH,ground=inn?WorldGround.at(u.x,u.y):null,deck=ground?.onDeck,cut=!ground||deck?0:wadeCut(ground.depth)||(ground.wet?WATER.cut[1]:0);
+  if(fl.air)MapFlight.shadow(x,y+fl.up,fl.air,s.width*k);
   ctx.save();ctx.translate(x,y);ctx.scale(sx,k);if(cut){ctx.beginPath();ctx.rect(bx-8,by-8,s.width+16,s.height+8-cut);ctx.clip()}
   G.back(s,bx,by);if(H&&H.back)ctx.drawImage(H.w,bx+H.x,by+H.y);ctx.drawImage(s,bx,by);if(H&&!H.back){ctx.drawImage(H.w,bx+H.x,by+H.y);drawGrip(s,bx,by,marchLook(u,o))}G.front(s,bx,by);ctx.restore();
-  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&!deck&&typeof grassOver==='function'){grassOver(u.x,u.y,s.width*k/2);stepPrint(u,!!(S.beast||S.mounted),o)}}// (on a bridge's deck: no water at his legs, no grass)
+  if(cut)drawWading(s,x,y,sx,k,bx,by,cut,u.id,marchWalks(u),cam);else if(!S.fly&&!fl.air&&!deck&&typeof grassOver==='function'){grassOver(u.x,u.y,s.width*k/2);stepPrint(u,!!(S.beast||S.mounted),o)}}// (on a bridge's deck: no water at his legs, no grass)
 // (a man in water (march.js drawMarcherAt): his picture s drawn at (x, y) scaled (sx, k), its corner (bx, by); the water cut figure px up
 // his body. Under the line his body faint and wavering; at it a darker band of water and a broken ring of foam, wavering; a ripple ring
 // spreading from him, quicker while he moves; all of it only over the screen's px where water is drawn (the owner: "the water circle

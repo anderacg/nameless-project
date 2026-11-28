@@ -214,7 +214,7 @@ class InteriorSetup extends BattleSetup{
   *paint(){const e=G.enc,chest=this.style==='cave'&&!(e&&e.ref&&e.ref.within)||this.style==='hideout'||this.style==='den';this.painted=yield* new InteriorArt(this.lay,chest).paintSteps()}
   fogOn(){return true}
   muster(){super.muster();B.inside=this.style;B.interior=this.lay;B.dark=INTERIOR.dark;B.sightK=INTERIOR.sight;if(this.lay.fires)B.lights=this.lay.fires.map(f=>({x:f.x,y:f.y,r:this.lay.X.light}));
-    for(const u of B.units)if(isRider(u))Dismount.down(u,'none');// (no one rides inside)
+    for(const u of B.units)if(isRider(u))Dismount.down(u,'none');else Dismount.hero(u);// (no one rides inside)
     this.place();Interior.look()}
   // (a camp's men in squads of INTERIOR.squad, each a group of its own (as beastmind.js beastPacks splits a pack), so they keep the chambers)
   squads(){const n=INTERIOR.squad;for(const id of Object.keys(B.groups)){const g=B.groups[id],m=grpUnits(id);if(g.team===0||g.role==='hero'||m.length<=n)continue;

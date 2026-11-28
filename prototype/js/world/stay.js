@@ -47,7 +47,7 @@ function startStay(t){
   updateHUD(true);return true;
 }
 // (your army's camp by the gate while you stay: its tents, fire and your banner, by their feet among everyone: render.js drawWorld)
-function stayCampEnts(ents,cam){const C=P.stay&&P.stay.camp;if(C)CampSite.draw(ents,cam,CampSite.yours(C.x,C.y))}
+function stayCampEnts(ents,cam){const C=P.stay&&P.stay.camp;if(C)CampSite.draw(ents,cam,{...CampSite.yours(C.x,C.y),heroAway:true})}// (you are inside the holding: your men by the fire without you)
 // out of the gate (why: the message, if it was not your choice)
 function leaveStay(why,cls){
   const t=stayTown(),out=!!P.stay?.camp;P.stay=null;CampSite.strike('you');if(t){heroAtGate(t);G.lastTown=t;if(!out)GateFile.out(P,t)}G.encCool=2;P.tx=null;G.chase=null;

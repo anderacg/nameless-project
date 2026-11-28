@@ -16,15 +16,20 @@
    goes for poor group of people"; makeshift): yours while you are under its level or lead fewer than its men (CampSite.humble), and
    a poor group's (data/encampments.js poor): a few lean-tos and pup tents of drab cloth (styles, cloth, trim), a tent for every per
    of them (most at most) in a tighter ring (ring, space; yours only: a group's ground was found for its own), bedrolls by the fire
-   (rolls at most, a roll for every three), no pavilion ---------- */
-const CAMP_SITE={men:8,most:14,ring:36,squash:.7,space:34,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7},
+   (rolls at most, a roll for every three), no pavilion.
+   Your camp's people (the owner, 2026-11-28: "recheck the player camps sprites whether one man vs many people in army sprite make
+   sense"; folk): once its fire burns, you by it and one of yours for every per men (most at most) about the camp, the marchers
+   they are, standing: the first seats round the fire (seat px out), the rest by their tents' doors (door: px aside, px down from a
+   tent's feet); by night only the watch is up (one in watch), the rest in their tents. Alone, you alone by your fire. None while a
+   fight has them (CampWake), nor you while you stay in a holding (stay.js) ---------- */
+const CAMP_SITE={men:8,most:14,ring:36,squash:.7,space:34,tent:[9,16],road:.25,gap:.4,pole:.3,rise:.55,fire:.5,forget:3,spot:{r:30,step:8,near:24,need:.7},folk:{on:true,per:6,most:10,seats:4,seat:11,door:[6,4],watch:3},
   makeshift:{level:4,men:16,per:5,most:4,rings:2,ring:22,space:24,styles:['leanto','pup','leanto'],cloth:['#8a7a5c','#9a8a6a','#7a6c54'],trim:['#5a4a3a','#6a5440'],rolls:4,roll:['#6a5a44','#7a6248','#5a5040']}};
 class CampSite{
   // Your dismantling uses the saved game-clock progress, lowering these same tents in reverse setup order.
-  static t0=new Map();static seen=new Map();static lay=new Map();static spots=new Map();
+  static t0=new Map();static seen=new Map();static lay=new Map();static spots=new Map();static men=new Map();
   // (its pitching begins now, unless it has begun)
   static pitch(key){if(!this.t0.has(key))this.t0.set(key,performance.now()/1000)}
-  static strike(key){this.t0.delete(key);this.lay.delete(key);this.spots.delete(key);this.seen.delete(key)}
+  static strike(key){this.t0.delete(key);this.lay.delete(key);this.spots.delete(key);this.seen.delete(key);this.men.delete(key)}
   static tents(n,per=CAMP_SITE.men,most=CAMP_SITE.most){return clamp(Math.ceil((n||1)/per),1,most)}
   // (its pitching's length, s; whether it goes up still)
   static span(k){const X=CAMP_SITE;return (k-1)*X.gap+X.pole+X.rise+X.fire}
@@ -46,7 +51,7 @@ class CampSite{
   // (whether your camp is a makeshift one: under makeshift.level, or fewer than its men)
   static humble(){const M=CAMP_SITE.makeshift;return (P.level||1)<M.level||partySize()<M.men}
   // (your camp at (x, y): its men, banner and, while humble, the makeshift's tents and ring; what's drawn and where your men wake)
-  static yours(x,y){const M=CAMP_SITE.makeshift,c={key:'you',x,y,n:partySize(),banner:()=>P.banner(),seed:0};return this.humble()?{...c,makeshift:true,per:M.per,most:M.most,rings:M.rings,ring:M.ring,space:M.space}:c}
+  static yours(x,y){const M=CAMP_SITE.makeshift,c={key:'you',x,y,n:partySize(),banner:()=>P.banner(),seed:0,folk:true};return this.humble()?{...c,makeshift:true,per:M.per,most:M.most,rings:M.rings,ring:M.ring,space:M.space}:c}
   static layoutOf(c){return this.layout(c.key,c.x,c.y,c.n,c.per,c.most,c.rings,c.ring,c.space)}
   // (a makeshift tent i: a lean-to or a pup tent of drab cloth)
   static rough(q,i,clim){const M=CAMP_SITE.makeshift,h=q.s+i*3;return CampArt.tent(M.styles[h%M.styles.length],{cloth:M.cloth[h%M.cloth.length],trim:M.trim[h%M.trim.length]},q.s+i,clim)}
@@ -67,7 +72,7 @@ class CampSite{
   static draw(ents,cam,c){const X=CAMP_SITE,now=performance.now()/1000,t0=this.t0.get(c.key),elapsed=t0==null?1e9:now-t0,L=this.layoutOf(c),clim=CLIMS[climate[Math.floor(c.y/TILE)*MW+Math.floor(c.x/TILE)]]||'grass';this.seen.set(c.key,now);
     const T=c.key==='you'&&P.camp?.pack?(P.camp.pack.visual??1)*(1-campPackProgress())*this.span(L.length):elapsed;
     L.forEach((q,i)=>{const p=T-i*X.gap;if(p<=0)return;const pic=c.pic?c.pic(q,i,clim):c.makeshift?this.rough(q,i,clim):this.pic(q.s,clim,i,c);ents.push({x:q.x,y:q.y,nf:1,st:inSight(q.x,q.y),f:()=>this.tent(pic,q,p,cam)})});
-    const lit=(L.length-1)*X.gap+X.pole+X.rise;
+    const lit=(L.length-1)*X.gap+X.pole+X.rise;if(T>=lit+X.fire)this.folk(ents,cam,c,L);
     ents.push({x:c.x,y:c.y+1,nf:1,f:()=>{const fx=Math.round(c.x-cam.x),fy=Math.round(c.y-cam.y);
       // (its pit under the flame (gfx/campart.js CampArt.pit: by its seed and its ground), lit, or its first smoke as it is lit, a
       // fine px a puff)
@@ -77,6 +82,17 @@ class CampSite{
       if(c.makeshift&&T>=lit){const M=X.makeshift,k=Math.min(M.rolls,Math.ceil((c.n||1)/3));for(let j=0;j<k;j++){const a=j/k*2*Math.PI+.4,bx=Math.round(fx+Math.cos(a)*10),by=Math.round(fy+Math.sin(a)*5);CampArt.hand(CampArt.roll(M.roll[j%M.roll.length],Math.cos(a)<0?-1:1),bx+.5,by+1)}}
       // (its banner on a pole beside its first tent, on its clear ground; none yet: beside the fire)
       const b=L[0]?{x:L[0].x+9,y:L[0].y}:{x:c.x+10,y:c.y};if(c.banner)BANNERQ.push({o:{x:b.x,y:b.y,faction:c.faction||'player',banner:c.banner,headY:()=>Math.round(b.y-14)+BANNER_GAP}})}})}
+  // (your camp's people this frame: who is up (folkOf), each a stand-in of his marcher kept while the same are up, drawn as a marcher
+  // standing (gfx/marchdraw.js drawMarcher), turned to the fire)
+  static folkOf(c,L){const F=CAMP_SITE.folk,A=F.on&&c.folk&&WORLD_BATTLE.on&&typeof MarchArmy!=='undefined'?MarchArmy.of(P):null;if(!A)return [];A.sync();// (your army as it marches: made here if you camped before it ever set out, a game loaded in camp)
+    const men=A.units.filter(u=>u.type!=='hero'&&!ST[u.type]?.beast),hero=c.heroAway?null:A.units.find(u=>u.type==='hero'),night=darkness()>.5;
+    let k=Math.min(F.most,Math.ceil(men.length/F.per));if(night)k=Math.ceil(k/F.watch);const step=Math.max(1,Math.floor(men.length/Math.max(1,k)));
+    const who=[...(hero?[hero]:[]),...Array.from({length:k},(_,i)=>men[i*step]).filter(Boolean)],sig=who.map(u=>u.id).join(',')+'|'+c.x+','+c.y+'|'+L.length+'|'+(P.gear.mount||'');let M=this.men.get(c.key);if(M&&M.sig===sig)return M.list;
+    const ns=Math.min(who.length,F.seats),list=who.map((u,i)=>{const seat=i<ns||!L.length,a=CampFolk.seatAngle(i%ns,ns),q=L[(i-ns)%Math.max(1,L.length)],
+      x=seat?Math.round(c.x+Math.cos(a)*F.seat):q.x+((i-ns)%2?F.door[0]:-F.door[0]),y=seat?Math.round(c.y+Math.sin(a)*F.seat*CAMP_SITE.squash):q.y+F.door[1];
+      return{...u,x,y,tg:null,walking:false,gateAt:null,dir:x<=c.x?0:Math.PI,campMan:true}});
+    this.men.set(c.key,{sig,list});return list}
+  static folk(ents,cam,c,L){for(const u of this.folkOf(c,L))ents.push({x:u.x,y:u.y,own:1,f:()=>drawMarcher(u,P,cam)})}
   // (one tent: its poles going up at its cloth's ends, then its cloth hauled up them, then standing, its shadow under it; at the
   // lab's scale (CampArt.put: its model a fine px a px, at its own size), the poles a fine px wide)
   static tent(pic,q,p,cam){const X=CAMP_SITE,x=Math.round(q.x-cam.x-pic.ax),y=Math.round(q.y-cam.y-pic.ay+1),H=pic.height,b=opaqueBox(pic),w=1/WORLD_VIEW.fine,
@@ -86,7 +102,7 @@ class CampSite{
   // (camps not drawn a while are struck: their pitching, ground and layout forgotten)
   static purge(){const now=performance.now()/1000;for(const [k,t] of this.seen)if(now-t>CAMP_SITE.forget)this.strike(k)}
 }
-onWorld(()=>{CampSite.t0.clear();CampSite.seen.clear();CampSite.lay.clear();CampSite.spots.clear()});
+onWorld(()=>{CampSite.t0.clear();CampSite.seen.clear();CampSite.lay.clear();CampSite.spots.clear();CampSite.men.clear()});
 /* ---------- caught in camp (the owner, 2026-11-14: "when attacked by camp (surprise) our men should slowly come out from tents") ----------
    A world battle that finds you camped (battle/setup.js, before campCaught strikes it): the camp stays on the field (drawn under the
    battle while it lasts: render.js drawWorld) and your men start in its tents: your hero up at once, the rest held at the tents'
@@ -107,5 +123,5 @@ class CampWake{
     for(const u of out){u.hp=u.hpLeft;delete u.hpLeft;delete u.waiting;delete u.left;delete u.campWake;delete u.campAt;if(typeof heralded==='function')heralded([u]);const r=B.groups[u.grp]?.resolve;if(r){r.refreshState();r.sync()}}
     if(out.length){B.cmdT=0;B.moraleNext=0;if(typeof setOrderUI==='function')setOrderUI()}}
   // (the camp on the field while the battle lasts)
-  static draw(ents,cam){const C=CampWake.camp;if(!C)return;if(!B||!B.world){CampWake.camp=null;return}CampSite.draw(ents,cam,C.c||{...CampSite.yours(C.x,C.y),n:C.n})}// (as it was laid when the battle found you)
+  static draw(ents,cam){const C=CampWake.camp;if(!C)return;if(!B||!B.world){CampWake.camp=null;return}CampSite.draw(ents,cam,{...(C.c||{...CampSite.yours(C.x,C.y),n:C.n}),folk:false})}// (as it was laid when the battle found you)
 }

@@ -55,7 +55,7 @@ function unitSprite(type,team,hero,v,pose,bare,arm,tint,afoot){
     if(DOLL_FIGS.on&&DOLL_FIGS.edge)return spr[key]=s;
     const c=mkc(s.width*2,s.height*2,g=>g.drawImage(s,0,0,s.width*2,s.height*2));c.cw=s.cw*2;c.ch=s.ch*2;return spr[key]=c;}
   if(ST[type]&&ST[type].beast)return beastSprite(type,team===2?0:team,v,pose);
-  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||'')+(P.gear.cape||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||'')+(cg.cape||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'')+(DRESS.cold?'w':'')+(DRESS.clim&&ST[type]?.peasant?'d'+DRESS.clim:'');
+  v=hero?0:(v||0)%6;pose=pose||0;const wk=(w,melee)=>bare&&melee?'m':w||'',key=type+team+(typeof Faces!=='undefined'?Faces.lookKey(hero,type):'')+(hero?'h'+P.race+wk(P.gear.weapon,heroKind()==='melee'&&!unarmed())+(P.gear.body||'')+(P.gear.head||'')+(P.gear.offhand||'')+(P.gear.cape||'')+(HERO_RIDES.on&&P.gear.mount||''):'')+(cg?'g'+wk(cg.weapon,cg.weapon&&(ITEMS[cg.weapon].kind||'melee')==='melee')+(cg.body||'')+(cg.head||'')+(cg.offhand||'')+(cg.cape||''):'')+'v'+v+'p'+pose+(bare==='bow'?'B':bare?'b':'')+(arm?'s':'')+(afoot?'f':'')+(tint?'c'+tint:'')+(DRESS.cold?'w':'')+(DRESS.clim&&ST[type]?.peasant?'d'+DRESS.clim:'');
   {const c=bare?spr[key]:FIGURES.get(key);if(c)return c}
   // soldiers, your hero and companions: the template figures (people.js)
   const L0=spriteLook(type,team,hero,v,tint),L={...L0,...(arm?{weapon:null,slung:WPN[L0.weapon]?null:L0.weapon}:{}),...(afoot?{mount:null}:{})};
@@ -96,7 +96,7 @@ const DOWN_LOOK=new WeakMap();
    (team 0) wears the side's blue; a wild one nothing. Cached by kind, side, variant and pose (the climbs walk, the other blows
    strike) */
 const BEAST_POSES=PX.BEAST_POSES;
-const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=PX.BEAST_GRAZE&&p<=PX.BEAST_REST?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
+const beastPoseOf=(type,p)=>type==='tiger'?p:p>=PX.BEAST_DEAD?p:p>=PX.BEAST_FLY&&p<PX.BEAST_FLY+4?(PX.flies(type)?p:15+(p-PX.BEAST_FLY)):p>=PX.BEAST_GRAZE&&p<=PX.BEAST_REST?p:p>=19?2+(p-19)%4:p>=12&&p<=14?p-6:p>=9&&p<=11&&type!=='dragon'?p-3:p;
 function beastSprite(type,team,v,pose){v=(v||0)%3;pose=beastPoseOf(type,pose||0);const k='bst'+type+(team?1:0)+v+'p'+pose;
   return spr[k]||(spr[k]=cellOf(PX.beast(type,{v,pose,team:team?1:0})))}
 // a beast's pose now: striking (or breathing fire, winding up a spit), running or walking as it moves, leaping (a pounce), breathing
@@ -106,7 +106,7 @@ function beastPose(u,moved){
   if(u.s.breath&&u.br!=null&&u.br>3.5-ATK_ANIM*1.5)return 9+Math.min(2,Math.floor((3.5-u.br)/(ATK_ANIM*1.5)*3));
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.shot)return 6;
-  if((u.z||0)>1)return 16;
+  if((u.z||0)>1)return u.fl&&u.fl.ph!=='ground'?PX.BEAST_FLY+Math.floor(B.t*8+(u.id||0))%4:16;// (on the wing: world/flight.js)
   if(moved){const phase=u.walkPhase!=null?u.walkPhase+(u.v||0):null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*12+(u.v||0))%4:2+Math.floor(phase??B.t*8+(u.v||0))%4}
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,

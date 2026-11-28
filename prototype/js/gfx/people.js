@@ -172,6 +172,7 @@ function pcanvas(g){return mkc(g.w,g.h,x=>{for(let y=0;y<g.h;y++)for(let i=0;i<g
 const OUTLAW_DRESS={helm:['bandana','hood','bare','bandana','cap','hood'],cloth:['leather','cloth','dark','fur','olive','rust'],inner:['linen','wool','dark'],hood:['dark','brown','olive']};
 const WINTER={on:true};
 function winterLook(L){return L}
+const HERO_RIDES={on:true};// (off: your mount only its numbers, your hero drawn on foot as before)
 function lookOf(type,team,hero,v,cid,cg){
   const st=ST[type],race=hero?P.race:(st&&st.race)||(PEOPLE_LOOK[type]&&PEOPLE_LOOK[type].race)||'human',R=RACE_LOOK[race]||RACE_LOOK.human;
   let L=hero?{helm:'bare',outer:'leather',inner:'linen',armor:'leather',weapon:'sword'}:PEOPLE_LOOK[cid||type]||PEOPLE_LOOK[st&&st.look]||PEOPLE_LOOK.militia;
@@ -186,6 +187,9 @@ function lookOf(type,team,hero,v,cid,cg){
   if(L.outlaw==='own')o.outlaw=true;else if(L.outlaw){const D=OUTLAW_DRESS;o.outlaw=true;o.helm=D.helm[(v+D.helm.indexOf(L.helm)+6)%D.helm.length];o.outer=D.cloth[(v*5+1)%D.cloth.length];o.inner=D.inner[v%D.inner.length];if(o.helm==='hood')o.hood=D.hood[v%D.hood.length]}
   if(L.plain){o.helm=race==='orc'&&PLAIN_HELM[v]==='hood'?'bare':PLAIN_HELM[v];o.outer=PLAIN_CLOTH[v]}
   if(o.mount==='horse')o.mountC=L.barded?'horseW':['horse','chestnut','horseB','horse','horseG','chestnut'][v];
+  // (your mount under you (the owner, 2026-11-28: "make sure mount system work and horse sprite actually fit with hero when
+  // mounting"): its figure's kind, its coat its own colour, a destrier barded: data/gear.js MOUNTS fig)
+  if(hero&&HERO_RIDES.on){const M=mountDef(),F=M&&M.fig;if(F){o.mount=F[0];o.mountC=M.col;o.barded=!!F[1]}}
   // your hero: your race, your weapon, your armour and helm as you wear them
   if(hero||cg){const hk=hero?heroKind():cg&&cg.weapon?ITEMS[cg.weapon].kind||'melee':null,hw=hero&&P.gear.weapon?ITEMS[P.gear.weapon]:cg&&cg.weapon?ITEMS[cg.weapon]:null;
     // (a crossbow its own look, and so its own shot: the reload a crossbow's, battle/actors.js shotKind; the owner, 2026-11-01)
@@ -570,6 +574,10 @@ function horseDetail(ps,on,mane,A,F,shape,C,Mn,Tm,o,Y){const T=HORSE_TACK,inBody
   for(const [x,y] of T.breast)put(x,Y+y,L);put(T.stud[0],Y+T.stud[1],PPAL.gold[1])}
 const mountMetrics=kind=>(kind==='wolf'||kind==='warg')&&window.PX&&PX.wolf?PX.wolf.mountSize:{w:32,h:32,downH:22,ground:19,axis:15};
 function drawMount(g,o,walk,dx=0,dy=0){const ps=(x,y,c)=>pset(g,x+dx,y+dy,c);// (dx, dy: the cell's corner in g)
+  // (a winged mount, a griffin or a drake: the beast's own figure, its feet on the cell's ground, on the wing at a gallop's steps
+  // (engine/beasts.js PX.flyMount); a saddle on its back)
+  {const fm=window.PX&&PX.flyMount&&PX.flyMount(o.mount,walk);if(fm){const A=fm.g,oy=32-A.h,sy=oy+fm.seat;for(let y=0;y<A.h;y++)for(let x=0;x<A.w;x++){const c=A.p[y*A.w+x];if(c)ps(x,y+oy,c)}
+    for(let x=11;x<=15;x++)ps(x+fm.riderX,sy-1,PPAL.leather[x<13?0:1]);if(o.saddled){ps(11+fm.riderX,sy-2,PPAL.leather[0]);ps(15+fm.riderX,sy-2,PPAL.leather[1])}return sy-6+dy}}
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'fleece':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team);
   if(horseArt(kind))return drawHorse(ps,o,walk,C,Mn,Tm,(x,y)=>pget(g,x+dx,y+dy))+dy;
   const gal=walk>=4,y0=kind==='ram'?16:14,legs=kind==='ram'?3:5,bob=gal?[0,-1,-2,-1][walk-4]:walk===1||walk===3?-1:0;
@@ -614,6 +622,8 @@ const LIE_T=[
   '......ddHHHHHHHHHHHHHHdddHHHHHHy',
   '........ddddddddddddd....ddddd..'];
 function drawMountDown(g,o,lie){
+  // (a winged mount: the beast's own dead figure, on the grid's ground)
+  {const fm=window.PX&&PX.flyMount&&PX.flyMount(o.mount,'dead');if(fm){const A=fm.g,oy=g.h-A.h;for(let y=Math.max(0,-oy);y<A.h;y++)for(let x=0;x<Math.min(A.w,g.w);x++){const c=A.p[y*A.w+x];if(c)pset(g,x,y+oy,c)}return}}
   const kind=o.mount,C=pal(kind==='horse'?o.mountC||'horse':kind==='stag'?'stag':kind==='ram'?'fleece':kind),Mn=pal(kind==='ram'?'wool':kind==='wolf'||kind==='warg'?kind:'dark'),Tm=pal(o.team),y0=9;
   // (a horse: HORSE_ART's, its legs as a standing one's, out toward you; its cloth over its body, or its saddle)
   if(horseArt(kind)){const D=horseBuild().down,col=horseCols(C,Mn),on=new Set(),ps=(x,y,c)=>pset(g,x,y0+y,c);
@@ -668,7 +678,7 @@ function peopleSprite(o,pose,bare){
   if(bare&&heldWeapon(o))o={...o,weapon:null,held:heldWeapon(o)};if(bare==='bow')o={...o,bowApart:true};// (bare 'bow': his bow drawn apart, aimed: figures.js bowPic)
   if(pose===DEF_POSE||pose===DEF_LOW)o={...o,guardUp:pose===DEF_LOW?'low':true};
   const R=GEAR.room;
-  if(o.mount){const wolf=(o.mount==='wolf'||o.mount==='warg')&&window.PX&&PX.wolf,seatX=wolf?PX.wolf.riderX:0,box=mountMetrics(o.mount),g=pgrid(box.w+2*R,box.h+R),top=drawMount(g,o.mount==='ram'?{...o,ridden:true}:o,walk,R,R),rideY=top-6+RIDER_POSTURE.sink,A=drawMountedRider(g,{...o,shield:null,offShield:null},6+R+seatX,rideY,style,atk,walk>=0?(walk>=4?RIDER_POSTURE.gallop:RIDER_POSTURE.walk):0);
+  if(o.mount){const wolf=(o.mount==='wolf'||o.mount==='warg')&&window.PX&&PX.wolf,seatX=wolf?PX.wolf.riderX:window.PX&&PX.flySeat&&PX.flySeat(o.mount)?PX.flySeat(o.mount)[1]:0,box=mountMetrics(o.mount),g=pgrid(box.w+2*R,box.h+R),top=drawMount(g,o.mount==='ram'?{...o,ridden:true}:o,walk,R,R),rideY=top-6+RIDER_POSTURE.sink,A=drawMountedRider(g,{...o,shield:null,offShield:null},6+R+seatX,rideY,style,atk,walk>=0?(walk>=4?RIDER_POSTURE.gallop:RIDER_POSTURE.walk):0);
     // the rider's leg down the mount's side (the owner, 2026-11-04: the rider looked low, "show more of him"): his thigh forward
     // from the hip over the cloth, the knee, the shin down the horse's side and his foot, outlined on its own so it reads
     // against the cloth (RIDER_LEG: [x, y from the seat row, letter] each)

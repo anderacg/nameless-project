@@ -215,7 +215,7 @@ class PlayerParty extends Party{
       dmg:(HERO_BASE.dmg+LEVEL.dmg*this.level+this.bonus+melee*.6+gm('dmg'))*(1+tm('dmgPct'))*(two?1.2:1)*(fist?FISTS.dmg*(1+tm('fistPct')):1)*(weak?weak.dmg:1),
       spd:HERO_BASE.spd*(1+gm('spd'))*(weak?weak.spd:1),
       reach:21+melee*.4+gm('reach')+(two?4:0)+(fist?FISTS.reach:0),
-      range:heroRange(),magic:kind==='magic',
+      range:heroRange(),magic:kind==='magic',...(this===P&&HERO_RIDES.on&&mountDef()?.fig?{mounted:true}:{}),// (riding: drawn on your mount, a rider on the field; on foot no such number, as before)
       dt:itemDt(this.gear.weapon)||(kind==='magic'?'arcane':'blunt'),armor:itemArmor(this.gear.body)||'none',race:this.race,
       cd:HERO_BASE.cd*(1+gm('cd'))*(fist?FISTS.cd*(1+tm('fistCd')):1),
       tags:Object.values(this.gear).map(id=>id&&ITEMS[id].tag).filter(Boolean)}}

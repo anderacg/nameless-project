@@ -322,6 +322,7 @@ class BattleSetup{
     if(INTERIOR.on&&INTERIOR.holdCamp&&G.enc&&G.enc.kind==='camp'&&!B.tourney)B.holds=true;// (a camp's men at their tents till roused: interior.js insideRoused)
     if(this.playerOrder)B.playerOrder=this.playerOrder;
     Dismount.muster();// (your riders with no horse on foot from the start: battle/dismount.js)
+    if(B.tourney)for(const u of B.units)Dismount.hero(u);// (a tournament is fought on foot: your mount left at the rail)
     if(B.btype)this.arrangeType();
     this.initialize();
   }

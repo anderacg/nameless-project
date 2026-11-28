@@ -102,23 +102,25 @@ const randomGear=(lo,hi)=>{const base=Object.keys(BASES)[rint(0,Object.keys(BASE
 /* ---------- mounts: one mount slot, and nobody starts with one ---------- */
 // sold at stables: where 'any' (every holding), 'town' (towns and castles), 'castle', or by race or climate. drop: only from beasts.
 // ign: terrain and climates crossed at full speed; fly crosses all of them.
+// fig: how it is drawn under you (people.js lookOf): its figure's kind (a horse in its coat col, a ram, a stag, a warg, a griffin, a
+// drake, a strider: the drake's body, green and wingless) and whether it is barded. A camel has no figure of its own yet: a horse in its colour.
 const MOUNTS={
-  mule:{n:'Pack Mule',r:'common',m:{travel:.05,slots:4},v:90,col:'#8a7a6a',where:'any',d:'Slow but steady, with saddlebags.'},
-  pony:{n:'Pony',r:'common',m:{travel:.12,spd:.04},v:130,col:'#a07a4a',where:'any',d:'Small and sure-footed.'},
-  horse:{n:'Riding Horse',r:'common',m:{travel:.22,spd:.1},v:260,col:'#7a4a2a',where:'town',d:'A good horse for the long roads.'},
-  destrier:{n:'War Destrier',r:'rare',m:{travel:.15,spd:.1,hp:30,dmg:2},v:640,col:'#3a3030',where:'castle',d:'Armored and bred for battle.'},
-  courser:{n:'Courser',r:'rare',m:{travel:.32,spd:.18},v:560,col:'#d8c8a0',race:'human',d:'The fastest horse in the human kingdoms.'},
-  ram:{n:'Mountain Ram',r:'rare',m:{travel:.15,hp:20},ign:['hills','frost'],v:420,col:'#c8c0b0',race:'dwarf',d:'Dwarven stock that climbs anything.'},
-  elk:{n:'Great Elk',r:'rare',m:{travel:.18,vis:.1},ign:['forest'],v:440,col:'#9a6a3a',race:'elf',d:'Slips between the trees like a shadow.'},
-  warg:{n:'Warg',r:'rare',m:{travel:.22,spd:.18,dmg:3},v:480,col:'#5a5a5a',race:'orc',d:'Bites whatever its rider points at.'},
-  camel:{n:'Camel',r:'rare',m:{travel:.15,slots:2},ign:['desert'],v:380,col:'#d8b070',clim:'desert',d:'Crosses the sand without slowing.'},
-  strider:{n:'Marsh Strider',r:'rare',m:{travel:.15,hp:15},ign:['swamp'],v:380,col:'#5a8a5a',clim:'swamp',d:'A long-legged lizard at home in the bog.'},
-  griffin:{n:'Griffin',r:'epic',m:{travel:.4,vis:.25},fly:true,v:1600,col:'#e8dcc0',drop:true,d:'Tamed from a wild griffin.'},
-  drake:{n:'Young Drake',r:'epic',m:{travel:.35,hp:40,dmg:4},fly:true,v:2200,col:'#c84a3a',drop:true,d:'Hatched from an egg in a dragon’s hoard.'}
+  mule:{n:'Pack Mule',r:'common',m:{travel:.05,slots:4},v:90,col:'#8a7a6a',where:'any',fig:['horse'],d:'Slow but steady, with saddlebags.'},
+  pony:{n:'Pony',r:'common',m:{travel:.12,spd:.04},v:130,col:'#a07a4a',where:'any',fig:['horse'],d:'Small and sure-footed.'},
+  horse:{n:'Riding Horse',r:'common',m:{travel:.22,spd:.1},v:260,col:'#7a4a2a',where:'town',fig:['horse'],d:'A good horse for the long roads.'},
+  destrier:{n:'War Destrier',r:'rare',m:{travel:.15,spd:.1,hp:30,dmg:2},v:640,col:'#3a3030',where:'castle',fig:['horse',true],d:'Armored and bred for battle.'},
+  courser:{n:'Courser',r:'rare',m:{travel:.32,spd:.18},v:560,col:'#d8c8a0',race:'human',fig:['horse'],d:'The fastest horse in the human kingdoms.'},
+  ram:{n:'Mountain Ram',r:'rare',m:{travel:.15,hp:20},ign:['hills','frost'],v:420,col:'#c8c0b0',race:'dwarf',fig:['ram'],d:'Dwarven stock that climbs anything.'},
+  elk:{n:'Great Elk',r:'rare',m:{travel:.18,vis:.1},ign:['forest'],v:440,col:'#9a6a3a',race:'elf',fig:['stag'],d:'Slips between the trees like a shadow.'},
+  warg:{n:'Warg',r:'rare',m:{travel:.22,spd:.18,dmg:3},v:480,col:'#5a5a5a',race:'orc',fig:['warg'],d:'Bites whatever its rider points at.'},
+  camel:{n:'Camel',r:'rare',m:{travel:.15,slots:2},ign:['desert'],v:380,col:'#d8b070',clim:'desert',fig:['horse'],d:'Crosses the sand without slowing.'},
+  strider:{n:'Marsh Strider',r:'rare',m:{travel:.15,hp:15},ign:['swamp'],v:380,col:'#5a8a5a',clim:'swamp',fig:['strider'],d:'A long-legged lizard at home in the bog.'},
+  griffin:{n:'Griffin',r:'epic',m:{travel:.4,vis:.25},fly:true,v:1600,col:'#e8dcc0',drop:true,fig:['griffin'],d:'Tamed from a wild griffin.'},
+  drake:{n:'Young Drake',r:'epic',m:{travel:.35,hp:40,dmg:4},fly:true,v:2200,col:'#c84a3a',drop:true,fig:['drake'],d:'Hatched from an egg in a dragon’s hoard.'}
 };
 const ALL_GROUND=['forest','hills','grass','frost','desert','swamp'];
 Object.keys(MOUNTS).forEach(k=>{const M=MOUNTS[k],ign=M.fly?ALL_GROUND:M.ign||[];
-  ITEMS['m_'+k]={n:M.n,slot:'mount',r:M.r,m:M.m,v:M.v,icon:'mount',col:M.col,ign,fly:!!M.fly,
+  ITEMS['m_'+k]={n:M.n,slot:'mount',r:M.r,m:M.m,v:M.v,icon:'mount',col:M.col,ign,fly:!!M.fly,fig:M.fig,
     d:M.d+' '+describeGear(M.m)+(M.fly?' Flies over forest, hills, sand and bog at full speed.':ign.length?' Crosses '+ign.join(' and ')+' at full speed.':'')}});
 
 /* ---------- quivers (doc/ITEMS_DESIGN.md §2b): no arrows nor bolts in the bag. A quiver is worn in its own slot (unworn, it takes a

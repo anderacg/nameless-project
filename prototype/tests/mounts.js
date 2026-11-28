@@ -53,7 +53,9 @@ try{
  for(let k=0;k<P.inv.length;k++)if(!P.inv[k])P.inv[k]={k:'good',id:'timber',n:1};for(let k=0;k<t.BAG.maxOver;k++)P.inv.push({k:'good',id:'timber',n:1});const h=P.inv.findIndex(s=>s&&s.id==='m_horse');
  ok(!t.invEquip(h)&&P.gear.mount==='m_mule','you cannot swap off a mule with full saddlebags (the bag at its limit)');P.inv.splice(t.invCap());
  // ground
- P.race='human';P.gear.mount='m_elk';t.fitInv();ok(at(forest,t.travelMul)>at(forest,()=>t.speedAt(P.x,P.y,'human')*(1+t.gm('travel')))*1.5,'an elk crosses forest at full speed');
+ P.race='human';P.gear.mount='m_elk';t.fitInv();// (was: over 1.5 times a walker's pace there; a wood slows less now (0.85), so that no longer told: the wood's own slowing gone is the rule)
+ {const elk=at(forest,t.travelMul),pace=t.bandPace(),raw=at(forest,()=>t.speedAt(P.x,P.y,'human'));P.gear.mount='m_horse';t.fitInv();const hs=at(forest,t.travelMul)/t.bandPace();P.gear.mount='m_elk';t.fitInv();
+  ok(Math.abs(elk-pace)<.01&&raw<1&&hs<raw+.01,'an elk crosses forest at full speed ('+elk.toFixed(2)+' of its '+pace.toFixed(2)+'; a horse '+hs.toFixed(2)+' of its pace there)')}
  P.gear.mount='m_griffin';const fl=[forest,hill,spot('swamp',t.T_OPEN),spot('desert',t.T_OPEN)].map(s=>at(s,t.travelMul));
  ok(fl.every(v=>Math.abs(v-fl[0])<.01)&&fl[0]>=at(grass,t.travelMul)/1.11,'a griffin flies over everything at one speed ('+fl.map(v=>v.toFixed(2)).join(', ')+')');
  ok(t.MONSTERS.griffin.gear.some(g=>g[0]==='m_griffin')&&t.ITEMS.m_drake.fly,'griffins can drop one; dragons guard drake eggs');

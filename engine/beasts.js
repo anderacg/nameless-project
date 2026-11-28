@@ -18,6 +18,8 @@
 (function(PX){
   const OUT='#1a1c26',DEAD=99;
   const GRAZE=80,REST=85;PX.BEAST_GRAZE=GRAZE;PX.BEAST_REST=REST;
+  // (PX.BEAST_FLY + i: on the wing, its legs drawn up, its wings beating (i 0-3): a winged kind's only, PX.flies)
+  const FLY=90;PX.BEAST_FLY=FLY;
   PX.BEAST_DEAD=DEAD;PX.BEAST_POSES=[0,1,2,3,4,5,15,16,17,18,6,7,8,9,10,11];
   /* colour: a hue-shifted ramp from one muted base (light warm toward yellow, shadows cool toward blue) */
   const h2r=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
@@ -108,7 +110,7 @@
   /* the frame: what a pose asks of the body. act: idle, walk, run, atk, alt, dead; i: its step */
   // (PX.BEAST_GRAZE + i: its head down to the grass, nibbling (i 0-1); PX.BEAST_REST: lying with its legs folded under it, its head
   //  up: the map's wild game between its flights, world/critters.js; never in a battle)
-  function act(pose){if(pose>=DEAD)return['dead',pose-DEAD];if(pose===GRAZE||pose===GRAZE+1)return['graze',pose-GRAZE];if(pose===REST)return['rest',0];if(pose<=1)return['idle',pose];if(pose<=5)return['walk',pose-2];if(pose<=8)return['atk',pose-6];
+  function act(pose){if(pose>=DEAD)return['dead',pose-DEAD];if(pose===GRAZE||pose===GRAZE+1)return['graze',pose-GRAZE];if(pose===REST)return['rest',0];if(pose>=FLY&&pose<FLY+4)return['run',pose-FLY];if(pose<=1)return['idle',pose];if(pose<=5)return['walk',pose-2];if(pose<=8)return['atk',pose-6];
     if(pose<=11)return['alt',pose-9];if(pose<=14)return['atk',pose-12];if(pose<=18)return['run',pose-15];return['walk',(pose-19)%4]}
   /* a four-legged gait: legs [far hind, far fore, near hind, near fore] each [dx, lift]; bob (the body's rise, negative up); head
      [dx, dy]; jaw (open 0-2); tail (-1 down .. 1 up); paw (the near fore raised for a blow: 0-2); wing (fold, up, mid, down) */
@@ -356,6 +358,7 @@
   // a griffin: a lion's hindquarters, an eagle's head, breast, forelegs and wings (folded up its back, spread to run and to strike)
   KINDS.griffin={W:32,H:25,coats:['#b8905a','#c09a5a','#8a7a66'],deaths:WING_DEATHS,
     draw(g,F,o){const v=o.v%3,C=R(this.coats[v]),Wc=R(['#8a6a48','#7a5e44','#6a6058'][v]),Wh=R('#e2dacb'),Dk=R('#4a3a30'),Yl=R('#c8a04a');
+      if(o.fly)F={...F,legs:[[-2,2],[-1,2],[-2,2],[-1,2]],bob:-1,wing:['up','mid','down','mid'][F.i&3]};// (on the wing: its legs drawn up under it)
       const S={Y:g.h-2,hip:8,sho:18,back:[9,11],belly:5,ry:4,rh:4,rc:4.5,cx:1,legs:[2,1,1],fore:[1,1,0],foreC:Yl,C,D:Dk,paw:0,pawUp:4,claws:2,
         tail:(g,x,y,F)=>{const m=mask(),up=F.tail;m.limb(x+1,y,x-3,y+2-up,1,1).limb(x-3,y+2-up,x-4,Math.min(g.h-4,y+5-up*2),1,1);flat(g,m,C,2);put(g,x-4,Math.min(g.h-3,y+6-up*2),Dk[1]);put(g,x-5,Math.min(g.h-3,y+6-up*2),Dk[2])},
         wing:(g,F,P,far)=>wing(g,P.sho-2+(far?2:0),P.top[1]+1-(far?1:0),F.dead?(F.raise&&far?'mid':'down'):F.wing,[12,11],Wc,{far}),
@@ -488,13 +491,13 @@
   // head to breathe fire. D: its sizes (the battle's in a 64 cell; the map's, flying, in a 32)
   const DRAGON={big:{W:64,H:60,hip:20,sho:37,back:[19,21],belly:10,ry:8,rh:8.5,rc:9,legs:[5,4,2],k:2,neck:[6,4.5],hd:[13,34],hw:10,hh:7,sn:[6,4],ws:[30,34],tl:[[-7,-6],[-12,-3],[-15,-5]],tw:[5,3.5,2,1]},
     small:{W:32,H:30,hip:11,sho:19,back:[9,10],belly:5,ry:3.6,rh:4,rc:4.2,legs:[2,2,1],k:1,neck:[3,2],hd:[6,15],hw:5,hh:4,sn:[3,2],ws:[15,14],tl:[[-4,-3],[-6,-2],[-7,-3]],tw:[3,2,1.2,.8]}};
-  function dragon(g,F,o,D){const v=o.v%3,C=R(['#9a3e36','#86363e','#a04e30'][v]),Lb=R('#d4b07a'),Mb=R(['#5e2a30','#4e2834','#6a3428'][v]),Dk=R('#3a2a2a'),k=D.k,bone='#e4dcc4';
+  function dragon(g,F,o,D){const v=o.v%3,C=R(o.coat||['#9a3e36','#86363e','#a04e30'][v]),Lb=R('#d4b07a'),Mb=R(['#5e2a30','#4e2834','#6a3428'][v]),Dk=R('#3a2a2a'),k=D.k,bone='#e4dcc4';
     const breath=F.a==='alt',fly=o.fly;
     const S={Y:g.h-2,hip:D.hip,sho:D.sho,back:D.back,belly:D.belly,ry:D.ry,rh:D.rh,rc:D.rc,cx:1,legs:[D.legs[0],D.legs[1],D.legs[2]+k],C,L:Lb,lb:k-1,D:Dk,paw:0,pawUp:0,claws:2,elbow:2*k,toes:k+1,talons:k};
     if(fly){F={...F,legs:[[-2*k,2*k],[-k,2*k],[-2*k,2*k],[-k,2*k]],bob:-k}}
     S.tail=(g,x,y,F,P)=>{const up=F.tail*k,T=[[x+2,y+1,D.tw[0]],...D.tl.map(([dx,dy],j)=>[x+dx,P.Y+dy-up*(j+1)*.5+(F.dead?3:0),D.tw[j+1]])];tube(g,T,C,{L:Lb,belly:[0,1]});
       const [tx,ty]=T[T.length-1];for(const [dx,dy] of [[-1,0],[-1,-1],[-1,1]])put(g,tx+dx,ty+dy,Dk[1])};
-    S.wing=(g,F,P,far)=>{const mode=F.dead?(F.raise&&far?'mid':'down'):fly?(F.i%2?'mid':'up'):breath?['up','mid','mid'][F.i]:F.wing;wing(g,P.sho-3*k+(far?3*k:0),P.top[1]+k-(far?2*k:0),mode,D.ws,C,{far,membrane:Mb,claw:bone})};
+    if(!o.wingless)S.wing=(g,F,P,far)=>{const mode=F.dead?(F.raise&&far?'mid':'down'):fly?(F.i%2?'mid':'up'):breath?['up','mid','mid'][F.i]:F.wing;wing(g,P.sho-3*k+(far?3*k:0),P.top[1]+k-(far?2*k:0),mode,D.ws,C,{far,membrane:Mb,claw:bone})};
     S.marks=(g,b,F,o,P)=>{for(let x=P.hip-3*k;x<=P.sho;x+=2*k){const ty=P.top[0]+Math.round((P.top[1]-P.top[0])*(x-P.hip)/(P.sho-P.hip))-1;put(g,x,ty,Dk[1]);if(k>1){put(g,x+1,ty,Dk[2]);put(g,x,ty-1,Dk[2])}}};
     S.neck=(g,F,P)=>{const hh=F.dead?[P.sho+D.hd[0]+2*k,P.Y-D.hh/2-1]:breath?[[P.sho+D.hd[0]-2*k,P.Y-D.hd[1]-2*k],[P.sho+D.hd[0]+k,P.Y-D.hd[1]*.45],[P.sho+D.hd[0],P.Y-D.hd[1]*.5]][F.i]:[P.sho+D.hd[0]+Math.min(1,F.head[0])*k,P.Y-D.hd[1]+F.head[1]*k+P.b];
       const [hx,hy]=hh,mid=F.dead?[P.sho+(hx-P.sho)*.5,P.Y-4*k]:breath&&F.i?[(P.sho-k+hx-D.hw/2+1)/2,Math.min(P.top[1]+3*k,hy)-k]:[P.sho+3*k,Math.min(P.top[1]-5*k,hy+4*k)];
@@ -547,7 +550,7 @@
       else if(P.length<=2)for(const j of P)g.p[j]=null}}
   function raw(K,o,fly){const pose=o.pose||0,[a,i]=act(pose),g=grid(K.W+2*PAD,K.H+PAD),v=(o.v||0)>>>0;
     const F=a==='dead'?{a,i,dead:true,how:(K.deaths||QUAD_DEATHS)[i]}:(K.gait||gait)(a==='alt'&&!K.alt?'atk':a,i);if(a==='alt'&&K.alt)F.a='alt';
-    OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly,kind:K.kind})}finally{OX=0}
+    OX=PAD+(K.dx||0);try{K.draw(g,F,{v,team:o.team,fly,kind:K.kind,coat:o.coat,wingless:o.wingless})}finally{OX=0}
     if(!K.loose)joinLoose(g);fillHoles(g);
     // (nothing below the ground: its feet on the row over the bottom, where every figure stands (render.js drawUnit), the outline
     //  inside it with PX.BEAST_RIM; with PX.BEAST_EDGE and no outline at all, a row down, its feet on the bottom row)
@@ -555,7 +558,7 @@
   function figure(K,kind,o,fly){const r=raw(K,o,fly),g=grid(K.W,K.H);for(let y=0;y<K.H;y++)for(let x=0;x<K.W;x++)g.p[y*K.W+x]=r.p[(y+PAD)*r.w+x+PAD];return g}
   PX._beastFit=kind=>{const K=kind==='drake'?DRAKE:KINDS[kind];let a=1e9,b=1e9,c=-1e9,pa,pb,pc;for(const pose of kind==='drake'?[15,16]:[...PX.BEAST_POSES,DEAD,DEAD+1,DEAD+2])for(const v of [0,1,2])for(const team of [0,1]){const r=raw(K,{pose,v,team},kind==='drake');
     for(let y=0;y<r.h;y++)for(let x=0;x<r.w;x++)if(r.p[y*r.w+x]){if(x-PAD<a)a=x-PAD,pa=pose;if(x-PAD>c)c=x-PAD,pc=pose;if(y-PAD<b)b=y-PAD,pb=pose}}return{kind,W:K.W,H:K.H,left:a+'@'+pa,right:c+'@'+pc,top:b+'@'+pb,ok:a>=0&&c<K.W&&b>=0}};
-  PX.beast=(kind,o)=>{o=o||{};const K=KINDS[kind];if(!K)return null;const c=canvas(figure(K,kind,o));
+  PX.beast=(kind,o)=>{o=o||{};const K=KINDS[kind];if(!K)return null;const c=canvas(figure(K,kind,o,o.pose>=FLY&&o.pose<FLY+4&&K.deaths===WING_DEATHS));
     if(fhOf[kind]==null){const g0=figure(K,kind,{v:0,team:1,pose:0});let t=g0.h;for(let y=0;y<g0.h&&t===g0.h;y++)for(let x=0;x<g0.w;x++)if(at(g0,x,y)){t=y;break}fhOf[kind]=g0.h-t}
     c.fh=fhOf[kind];c.kind=kind;return c};
   /* the world map's own figures (doc/WORLD_DESIGN.md §10.1), smaller than the battle's (a person stands 10 high there): each kind
@@ -599,6 +602,15 @@
   // figures (MAPF), f their step (0 to PX.MAP_STEPS-1)
   PX.beastMap=(kind,f)=>{f=f||0;if(kind!=='dragon')return mapBeast(kind,f);const c=canvas(figure(DRAKE,'drake',{pose:15+(f%2),team:1},true));c.fh=c.height;c.kind='drake';return c};
   PX._beastKit={grid,put,at,mask,shade,flat,outline,canvas,R,gait,quad,quadDead,quadRest,tube,wing,turn,TEAM,KINDS};
+  // the winged kinds (a griffin and its breeds, the dragon; 'drake': the dragon's young, a mount's, in a 32 cell). PX.flies(kind);
+  // PX.flyMount(kind, walk, o): a winged mount's grid for a rider (people.js drawMount): walk -1 standing, 0-3 walking, 4-7 on the
+  // wing, 'dead' lying; seat: its back's row in the grid, riderX: the rider's shift from the cell's middle (FLY_SEAT). A marsh
+  // strider (the game's long-legged bog lizard) is the drake's body, green and wingless: it never flies
+  const flyer=kind=>kind==='drake'?DRAKE:KINDS[kind]&&KINDS[kind].deaths===WING_DEATHS?KINDS[kind]:null,FLY_SEAT={griffin:[13,-3],drake:[19,-1],strider:[19,-1]},LIZARD={coat:'#5a8a5a',wingless:true};
+  PX.flies=kind=>!!flyer(kind);
+  PX.flySeat=kind=>FLY_SEAT[kind]||null;
+  PX.flyMount=(kind,walk,o)=>{const lz=kind==='strider',K=lz?DRAKE:flyer(kind),S=FLY_SEAT[kind];if(!K||!S)return null;const run=walk>=4,fly=run&&!lz,pose=walk==='dead'?DEAD:walk==null||walk<0?0:run?15+(walk&3):2+(walk&3);
+    return{g:figure(K,kind,{v:0,team:1,...(lz?LIZARD:{}),...(o||{}),pose},fly),seat:S[0]-(fly?1:0),riderX:S[1],fly}};
   // PX.breed(name, kind, coats): a breed of a kind (the game's MONSTER_BREEDS): its kind's figure in its own coats, its kind's size,
   // deaths and map figure; once
   PX.breed=(name,kind,coats)=>{const B=KINDS[kind];if(!B||KINDS[name])return false;KINDS[name]=Object.assign(Object.create(B),{coats});

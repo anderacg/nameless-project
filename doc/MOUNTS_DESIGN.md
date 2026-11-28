@@ -1,5 +1,16 @@
 # Mounts beyond the horse: each its own movement
 
+## Built 2026-11-28: your mount drawn, and flight
+
+The owner: "Make sure mount system work and horse sprite actually fit with hero when mounting", "For dragon and griffin too", "Dragon and griffin should also flying in the map or when figthing as well ( make it like a phase where they can fly and land for attacks)".
+
+- **Your mount is drawn under you**, on the map and in a fight (`data/gear.js` `MOUNTS` `fig`; `gfx/people.js` `lookOf`, `HERO_RIDES`). Before, it only changed your numbers. Horse kinds in their own coat, a destrier barded, the ram, the stag, the warg, and three new figures from the beasts' art (`engine/beasts.js` `PX.flyMount`): a griffin, a drake, a marsh strider (the drake's body, green, wingless). A camel is still a horse in its colour.
+- **Flight** (`prototype/js/world/flight.js`): on the map a winged one climbs when it travels and lands when it stands; in a fight a winged beast goes ground, rise, air, dive, ground. Numbers in `FLIGHT`.
+- **Left:** your own flight in a fight (today your winged mount only skims at a run); a griffin's flight over water and rock on the map (it still keeps to walkable ground); the camel's figure; each mount's own gait (the table below, still ideas).
+- Tests: `tests/heromount.js`, `tests/flight.js`.
+
+## Ideas, not built: each mount its own movement
+
 Status: **ideas, not built** (the owner, 2026-11-03: "I think each of them should have different movements. no need to change yet"). Nothing here is in the game yet.
 
 The owner, 2026-11-03: "can you make this movement but think for something cooler than horse?"
