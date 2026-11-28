@@ -29,14 +29,14 @@ Kit.suite(({ok,info})=>{
  const fight=kind=>{t.startBattle({enemies:[kind],tournament:false});Kit.engage();const B=t.B,b=B.units.find(u=>u.type===kind);return{B,b}};
  for(const kind of ['griffin','dragon']){const {B,b}=fight(kind),K=F.battle.kinds[kind],seen=[],hp0=B.units.filter(u=>u.team===0).reduce((a,u)=>a+u.hp,0);let zmax=0,aloftHit=null,arrowHit=null,err='',landed=0;
   ok(!!b&&t.BattleFlight.flies(b),'a '+kind+' flies in a fight');
-  try{for(let i=0;i<900&&b.hp>0&&landed<2;i++){b.hp=b.max;t.updateBattle(.05);const ph=b.fl?.ph;if(ph&&seen[seen.length-1]!==ph){seen.push(ph);if(ph==='ground'&&seen.length>1)landed++}zmax=Math.max(zmax,b.z||0);
+  try{for(let i=0;i<900&&b.hp>0&&landed<2;i++){b.hp=b.max;t.updateBattle(.05);const ph=t.BattleFlight.phase(b);if(ph&&seen[seen.length-1]!==ph){seen.push(ph);if(ph==='ground'&&seen.length>1)landed++}zmax=Math.max(zmax,b.z||0);
     if(ph==='air'&&aloftHit==null){const h=b.hp,src=B.units.find(u=>u.team===0&&!u.hero);t.applyDmg(b,20,1,'slash',src,false);aloftHit=h-b.hp;const h2=b.hp;t.applyDmg(b,20,1,'pierce',src,true);arrowHit=h2-b.hp;if(i%7===0)t.drawBattle()}}}catch(e){err=e.message+' '+(e.stack||'').split('\n')[1]}
   const hp1=B.units.filter(u=>u.team===0).reduce((a,u)=>a+Math.max(0,u.hp),0);
   info(kind+': '+seen.join(' > ')+'; highest '+zmax.toFixed(1)+' px; yours hurt '+Math.round(hp0-hp1));
   ok(!err,'the fight with a '+kind+' runs'+(err?' ('+err+')':''));
   ok(seen.join(',').includes('rise,air,dive,ground')&&landed>=2,'it rises, flies, dives and lands, then fights on the ground, and rises again ('+seen.join(' > ')+')');
-  ok(zmax>=K.h*t.BattleFlight.scale()*.95&&aloftHit===0&&arrowHit>0&&!b.aloft===(b.fl.ph==='ground'||b.z<=F.battle.reach*t.BattleFlight.scale()),'on the wing ('+zmax.toFixed(0)+' px up) a blade does not reach it ('+aloftHit+'), an arrow does ('+arrowHit+')');
+  ok(zmax>=K.h*t.BattleFlight.scale()*.95&&aloftHit===0&&arrowHit>0&&!b.aloft===(t.BattleFlight.phase(b)==='ground'||b.z<=F.battle.reach*t.BattleFlight.scale()),'on the wing ('+zmax.toFixed(0)+' px up) a blade does not reach it ('+aloftHit+'), an arrow does ('+arrowHit+')');
   ok(hp1<hp0,'it lands with its blow: your men are hurt ('+Math.round(hp0-hp1)+')');Kit.world()}
  // ---- off: no one flies
- {F.on=false;try{const {B,b}=fight('griffin');for(let i=0;i<200;i++)t.updateBattle(.05);ok(!t.BattleFlight.flies(b)&&!b.aloft&&!(b.fl&&b.fl.ph!=='ground')&&!t.MapFlight.kind({type:'griffin'},{mapKind:'monster'}),'FLIGHT.on false: no one flies, in a fight or on the map')}finally{F.on=true;Kit.world()}}
+ {F.on=false;try{const {B,b}=fight('griffin');for(let i=0;i<200;i++)t.updateBattle(.05);ok(!t.BattleFlight.flies(b)&&!b.aloft&&!t.BattleFlight.phase(b)&&!('fl' in b)&&!t.MapFlight.kind({type:'griffin'},{mapKind:'monster'}),'FLIGHT.on false: no one flies, in a fight or on the map')}finally{F.on=true;Kit.world()}}
 });

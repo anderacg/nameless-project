@@ -37,7 +37,11 @@ class MapFlight{
   // (his shadow on the ground under him, smaller and fainter the higher he is)
   static shadow(x,y,air,w){ctx.save();ctx.globalAlpha=.3-.12*air;ctx.fillStyle='#000';const r=Math.max(2,w*.3*(1-.25*air));ctx.beginPath();ctx.ellipse(x,y,r,Math.max(1,r*.35),0,0,6.283);ctx.fill();ctx.restore()}
 }
+// (each flyer's phase, kept aside: nothing new on his record while he is on the ground, so a fight's state reads as before)
+const FLIGHTS=new WeakMap();
 class BattleFlight{
+  // (his phase now: ground, rise, air, dive; null: he has not flown)
+  static phase(u){const f=FLIGHTS.get(u);return f?f.ph:null}
   static kindOf(u){const K=FLIGHT.battle.kinds;return K[u.type]||(u.s.big?K.dragon:K.griffin)}
   // (whether he flies in this fight)
   static flies(u){return FLIGHT.on&&FLIGHT.battle.on&&!!u.s.beast&&!u.wildlife&&!B.inside&&!B.holds&&u.team!==0&&PX.flies(u.type)}
@@ -51,7 +55,7 @@ class BattleFlight{
     const sh=L.filter(e=>e.s.range>0),P0=sh.length?sh:L;return P0.reduce((a,e)=>d(e)<d(a)?e:a,P0[0])}
   // his turn while he is off the ground: true (his turn on the ground is not taken)
   static turn(u,dt,actor){if(!this.flies(u)){if(u.aloft){u.aloft=false;u.z=0}return false}
-    const F=FLIGHT.battle,K=this.kindOf(u),H=K.h*this.scale(),f=u.fl||(u.fl={ph:'ground',t:F.first});
+    const F=FLIGHT.battle,K=this.kindOf(u),H=K.h*this.scale();let f=FLIGHTS.get(u);if(!f)FLIGHTS.set(u,f={ph:'ground',t:F.first});
     if(f.ph==='ground'){if(u.rout||u.down>0||u.stun>0)return false;f.t-=dt;if(f.t>0||u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM||!nearest(u))return false;f.ph='rise';f.t=0;return false}
     u.moving=true;u.inMelee=false;u.shot=null;
     if(f.ph==='rise'){f.t+=dt;const p=Math.min(1,f.t/F.rise);u.z=H*p*p*(3-2*p);u.aloft=u.z>F.reach*this.scale();if(p>=1){f.ph='air';f.t=0;f.mark=this.pick(u)}return true}

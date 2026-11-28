@@ -106,7 +106,7 @@ function beastPose(u,moved){
   if(u.s.breath&&u.br!=null&&u.br>3.5-ATK_ANIM*1.5)return 9+Math.min(2,Math.floor((3.5-u.br)/(ATK_ANIM*1.5)*3));
   if(u.atkAt!=null&&B.t-u.atkAt<ATK_ANIM)return 6+Math.min(2,Math.floor((B.t-u.atkAt)/ATK_ANIM*3));
   if(u.shot)return 6;
-  if((u.z||0)>1)return u.fl&&u.fl.ph!=='ground'?PX.BEAST_FLY+Math.floor(B.t*8+(u.id||0))%4:16;// (on the wing: world/flight.js)
+  if((u.z||0)>1)return (BattleFlight.phase(u)||'ground')!=='ground'?PX.BEAST_FLY+Math.floor(B.t*8+(u.id||0))%4:16;// (on the wing: world/flight.js)
   if(moved){const phase=u.walkPhase!=null?u.walkPhase+(u.v||0):null;return u.spdNow>u.s.spd*.75?15+Math.floor(phase??B.t*12+(u.v||0))%4:2+Math.floor(phase??B.t*8+(u.v||0))%4}
   return (B.t*.8+((u.id||0)*.37)%1)%1<.45?1:0}
 // a monster on the world map (engine/beasts.js PX.beastMap): the dragon on the wing (its own small figure in a 32 cell, wings up,
