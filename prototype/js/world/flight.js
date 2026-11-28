@@ -6,7 +6,8 @@
    On the map (MapFlight; drawn only, on the real clock): one who travels takes wing. He climbs to his kind's height (map.h px)
    over rise s, his wings beating a frame every beat s, bobbing bob px, his shadow on the ground under him, drawn over everyone
    he passes (the frame's top); standing, he comes down over land s and stands on the ground. A griffin flies only while it
-   hunts or flees (m.wing: world/monsters.js BEAST_MIND) and walks while it wanders by its lair.
+   hunts or flees (MapFlight.wing, told by world/monsters.js BEAST_MIND; kept aside, never in a save) and walks while it wanders
+   by its lair.
    In a fight (BattleFlight; a winged beast's, never inside a cave or a hold, nor one of your own men's, who keep to their group's
    orders), a phase at a time:
      ground: it fights on the ground as any beast, for its kind's ground s (first s at the start);
@@ -22,12 +23,15 @@ const FLIGHT={on:true,
   map:{h:{griffin:9,dragon:16,drake:9},rise:.9,land:.6,beat:.13,bob:1},
   battle:{on:true,first:1.5,rise:.7,land:.45,air:1.2,spd:1.5,dive:46,reach:6,hero:5,
     kinds:{griffin:{h:22,ground:6,blow:1.6},dragon:{h:34,ground:9,blow:1.5,slam:30,crowd:30}}}};
+const MON_WING=new WeakMap();
 class MapFlight{
+  // (a beast's mind says whether it flies now)
+  static wing(m,on){MON_WING.set(m,on)}
   static NONE={air:0,up:0,pose:null};static out={air:0,up:0,pose:null};
   // (his kind on the wing: a winged beast's, your hero's winged mount's; null: he walks)
   static kind(u,o){if(!FLIGHT.on)return null;if(o.mapKind==='monster')return PX.flies(u.type)?u.type:null;const M=o===P&&u.type==='hero'?mountDef():null;return M&&M.fly&&HERO_RIDES.on&&M.fig?M.fig[0]:null}
   // (whether he means to fly now: travelling; a beast that only wanders walks)
-  static wants(u,o){return marchWalks(u)&&(o.mapKind!=='monster'||o.wing!==false)}
+  static wants(u,o){return marchWalks(u)&&(o.mapKind!=='monster'||MON_WING.get(o)!==false)}
   // (how he is drawn this frame: air 0-1 (eased), up px, his pose on the wing; NONE on the ground)
   static of(u,o){const k=this.kind(u,o);if(!k)return this.NONE;const M=FLIGHT.map,now=performance.now()/1000,dt=Math.min(.1,now-(u._flT??now));u._flT=now;
     const a=u._air=clamp((u._air||0)+(this.wants(u,o)?dt/M.rise:-dt/M.land),0,1);if(!a)return this.NONE;

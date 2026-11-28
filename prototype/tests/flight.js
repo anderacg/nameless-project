@@ -22,8 +22,8 @@ Kit.suite(({ok,info})=>{
   ok(!g0.air&&mid.air>0&&mid.air<1&&top.air===1&&Math.abs(top.up-F.map.h.griffin)<=F.map.bob&&top.pose>=15&&top.pose<=18&&up&&down.air<1&&down.air>0&&!land.air&&!t.MapFlight.up(hu),'setting out he climbs to his height, his mount on the wing, over everyone he passes; standing he comes down and lands');
   let err='';try{hu.walking=true;hu._air=1;t.drawWorld();hu._air=0}catch(e){err=e.message}ok(!err,'the map drawn with you on the wing'+(err?' ('+err+')':''))}
  // ---- the map: a griffin flies while it hunts, walks while it wanders; the dragon whenever it travels
- {const u={type:'griffin',id:3,walking:true},gr={mapKind:'monster',wing:true},dr={mapKind:'monster'};
-  ok(t.MapFlight.kind(u,gr)==='griffin'&&t.MapFlight.wants(u,gr)&&!t.MapFlight.wants(u,{mapKind:'monster',wing:false})&&t.MapFlight.wants({type:'dragon',walking:true},dr)&&!t.MapFlight.wants({type:'dragon',walking:false},dr)&&!t.MapFlight.kind({type:'wolf'},gr),'a griffin takes wing to hunt or flee and walks about its lair; the dragon flies wherever it goes; a wolf never')}
+ {const u={type:'griffin',id:3,walking:true},gr={mapKind:'monster'},wd={mapKind:'monster'},dr={mapKind:'monster'};t.MapFlight.wing(gr,true);t.MapFlight.wing(wd,false);
+  ok(t.MapFlight.kind(u,gr)==='griffin'&&t.MapFlight.wants(u,gr)&&!t.MapFlight.wants(u,wd)&&!('wing' in gr)&&t.MapFlight.wants({type:'dragon',walking:true},dr)&&!t.MapFlight.wants({type:'dragon',walking:false},dr)&&!t.MapFlight.kind({type:'wolf'},gr),'a griffin takes wing to hunt or flee and walks about its lair; the dragon flies wherever it goes; a wolf never')}
  // ---- a fight: the phases
  P.gear.mount=null;Kit.world();P.troops={hum_spear:6,hum_bow:3};
  const fight=kind=>{t.startBattle({enemies:[kind],tournament:false});Kit.engage();const B=t.B,b=B.units.find(u=>u.type===kind);return{B,b}};

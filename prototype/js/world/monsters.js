@@ -122,8 +122,8 @@ const BEAST_MIND={think(m,d,hide){
     // (how it means to fight you weighed only while you are in its sight: out of it, it wanders whatever it thinks of you; but
     // afraid of you and remembering you (engage.js fearOf) it keeps away, just after a fight too, not back to its lair past you)
     const see=TravelAwareness.sees(m)?travelDetection(m).range:0,pw=monPower(m),at=stance(pw,m),fear=fearOf(m,at),st=dist<see||fear?at:null,hunt=M.aggro&&Math.hypot(prey.x-m.hx,prey.y-m.hy)<A.lairHunt;
-    m.wing=true;// (hunting or fleeing, a winged one flies; wandering, it walks: world/flight.js)
-    if(m.cool>0&&!fear||!stanceMove(m,st,dist,dx,dy,see,moveStep(Speed.pace('beast')*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){m.wing=false;m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
+    MapFlight.wing(m,true);// (hunting or fleeing, a winged one flies; wandering, it walks: world/flight.js)
+    if(m.cool>0&&!fear||!stanceMove(m,st,dist,dx,dy,see,moveStep(Speed.pace('beast')*Math.min(1,speedAt(m.x,m.y)||1),d),hunt)){MapFlight.wing(m,false);m.t-=d;if(m.t<=0){const R=monRng();m.t=2+R.next()*4;m.a=R.next()*6.283}
       // wander, but stay near the lair
       const hx=m.hx-m.x,hy=m.hy-m.y;if(Math.hypot(hx,hy)>A.lairLeash)m.a=Math.atan2(hy,hx);walk(m,Math.cos(m.a),Math.sin(m.a),moveStep(Speed.pace('beastWander'),d))}
     // a band it meets: it falls on them, and they fight back (a fight on the map)
