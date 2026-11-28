@@ -41,7 +41,7 @@ class Herd extends WorldObject{
     const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),N=PX.MAP_STEPS,stride=Math.max(4,A.w)/N;
     // (what it shows held steady (flockHold): the herd's doing as drawn, each animal's legs walking or still: never flickering frame to frame)
     const now=Time.ms(),st=flockSt(F,c.st,now);
-    F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);if(!c.memberVisible(m,V))return;grassFoot(m.x,m.y,go,true,m);if(typeof stepPrint==='function'&&!CRITTERS[c.id].live)stepPrint(m,true,c);ents.push({x:m.x,y:m.y,id:m,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
+    F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);if(!c.memberVisible(m,V))return;if(typeof stepPrint==='function'&&!CRITTERS[c.id].live)stepPrint(m,true,c);ents.push({x:m.x,y:m.y,id:m,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
       // (in the drawn water it wades, as a marcher does (herdWade): under it from its feet up, no shadow, no leap; else on its shadow)
       const cut=herdWade(m,a),sx=m.f<0?-a.k:a.k,bx=-(a.s.width>>1),by=-a.s.height+(a.k<1?2:1);
       if(!cut){ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),y-1,w,2)}

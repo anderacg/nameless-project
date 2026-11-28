@@ -11,7 +11,7 @@ const Quality={
   pick(v){if(QUALITY.levels[v])return v;const A=QUALITY.auto;if(!this.testAuto&&typeof location!=='undefined'&&/[?&]test=/.test(location.search))return A.desk;return this.phone()?(this.weak()?A.weak:A.phone):A.desk},
   apply(){const B=this.base||(this.base={fine:WORLD_VIEW.fine,fxCap:FXP_CAP,vfx:VFX.max,ambient:AMBIENT.density,mist:[MIST.res,WFOG.mistEvery],mini:[MINIMAP.world,MINIMAP.refresh]});
     const lv=this.pick(prefGet('gfx')),Q=QUALITY.levels[lv],o=(k,d)=>Q[k]===undefined?d:Q[k];
-    this.level=lv;this.now={fine:o('fine',B.fine),cap:o('cap',Infinity),fps:o('fps',60),grass:o('grass',1),feet:o('feet',true),fx:o('fx','full'),fxCap:o('fxCap',B.fxCap)};
+    this.level=lv;this.now={fine:o('fine',B.fine),cap:o('cap',Infinity),fps:o('fps',60),grass:o('grass',1),fx:o('fx','full'),fxCap:o('fxCap',B.fxCap)};
     VFX.max=o('vfx',B.vfx);AMBIENT.density=o('ambient',B.ambient);[MIST.res,WFOG.mistEvery]=o('mist',B.mist);[MINIMAP.world,MINIMAP.refresh]=o('mini',B.mini);
     RENDER.fine=this.now.fine;this.W=null;renderCaps();return lv},
   // (Auto on a phone: the work of its first frames on the map (from the frame's start to its spare time), once play has gone on
