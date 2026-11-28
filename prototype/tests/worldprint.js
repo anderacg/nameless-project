@@ -929,6 +929,13 @@ window.RUN=()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(te
 //  second for 14.5, a day as much longer) moves none: the world is stepped here in its own seconds. W1-W5 and B2 held. Linux
 //  Chromium: W6 cef01159 to a7e796d4, W7 66c5a9f0 to eadc600f, W8 b4d047bc to 897d3497; the values below are the owner's own
 //  browser's, which did not match here before this either: W6, W7 and W8 to be measured again there)
+// (W6, W7, W8 moved again 2026-11-28, on purpose: the owner, "recheck pathfinding on bridges jump down water": a marching man keeps
+//  out of water over knee deep unless his army's own way goes through it, and crosses a bridge on its deck (march.js MARCH_MOVE.wet).
+//  An army is where its men are (its point their middle), so where a river is near, the armies marched man by man stand and go
+//  elsewhere: W8, the parties' places after 600 frames (bands 99 to 100), W7, the save after three days, and W6's first spot, your
+//  band by Ashford's river, by day and night (c7f5f5f7 d96c1bf3 to a660252f 5bb5483b); its other two spots' four as before. W1-W5
+//  and B2 held. Linux Chromium: W6 a7e796d4 to 4d360aee, W7 eadc600f to 4e533969, W8 897d3497 to d24a5ce7; the values below still
+//  the owner's own browser's, to be measured again there)
 const EXPECT={W1:'fdc52781',W2:'99e50804',W3:'d8106001',W4:'444dcdf5',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
