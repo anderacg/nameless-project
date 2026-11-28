@@ -216,6 +216,13 @@ try{
  {const W=[70,92,96],look=(sp,N)=>{let n=0,lone=0;const rows=new Set();for(let y=0;y<N;y++)for(let x=0;x<N;x++){const is=(a,b)=>{const i=(b*N+((a+N)%N))*3;return sp.rgb[i]===W[0]&&sp.rgb[i+1]===W[1]&&sp.rgb[i+2]===W[2]};if(!is(x,y))continue;n++;rows.add(y);if(!is(x-1,y)&&!is(x+1,y))lone++}return{n,lone,rows:rows.size}};
   let bad=[],some=0;for(const k of ['veg','turnips','flax'])for(let v=0;v<4;v++)for(const fine of [2,1]){const sp=PX.worldCrop(k,'swamp',v,{wet:1,fine,stage:'young',ripe:.15}),N=sp.width,L=look(sp,N);if(L.n)some++;/* (the fine picture, what the map draws: on its troughs' rows only, a quarter of its rows at most; the plain 16 px one a speck on its open soil too, CROP_X.wetSpeck: by its share) */if(fine>1&&L.rows>N/4||L.n>N*N*(fine>1?.2:.25))bad.push(k+v+'x'+fine+': '+L.n+' px, '+L.lone+' alone, '+L.rows+' rows')}
   ok(some>0&&!bad.length,'a swamp field\'s water lies along its troughs in stretches, not a speck here and there ('+some+' pictures with water'+(bad.length?'; '+bad.slice(0,4).join('; '):'')+')')}
+ // ---- a crop in the wind bends by its height (engine/worldnature.js CROP_X.tall; the owner, 2026-11-28: "Field crop sprite seems weird
+ //      ... When it animate": a spring sprout 3 or 4 px tall had its top thrown 2 px over, as a ripe stalk's, so a row flicked between
+ //      slashes): at the full lean no px of a young plant is more than 1 px from where it stands still; a ripe crop still sways 2
+ {const far=(k,st)=>{let worst=0;for(let v=0;v<4;v++){const o={fine:2,stage:st,plantsOnly:true},a=PX.worldCrop(k,'grass',v,{...o,lean:0}),b=PX.worldCrop(k,'grass',v,{...o,lean:2}),N=a.width,on=(sp,x,y)=>!!sp.a[y*N+((x%N)+N)%N];/* (a plot's picture tiles: a plant at its edge leans round to the other) */
+    for(let y=0;y<N;y++)for(let x=0;x<N;x++){if(!on(b,x,y))continue;let d=0;while(d<4&&!on(a,x-d,y)&&!on(a,x+d,y))d++;worst=Math.max(worst,d)}}return worst};
+  const young=['veg','flax','wheat','turnips','herbs'].map(k=>[k,far(k,'young')]),ripe=far('wheat','ripe');
+  ok(young.every(q=>q[1]<=1)&&ripe>=2,'in the wind a young crop\'s sprouts lean a px at most ('+young.map(q=>q[0]+' '+q[1]).join(', ')+'), ripe wheat '+ripe)}
  {const se0=t.FARM.season;t.FARM.season='summer';try{// (in summer: the crops ripe, as the coarse picture's c1 tones: worldart.js FARM.grow)
   const people=['vale','sylvan','karn','horde'],cl=['grass','desert','frost','swamp'],tally={},cols={},snowy=[0,0],water=[0,0],stand=[0,0],bad=[];
   const pal=k=>new Set(PX.WORLD_CROPS[k].c1.map(c=>parseInt(c.slice(1,3),16)+','+parseInt(c.slice(3,5),16)+','+parseInt(c.slice(5,7),16)));

@@ -274,7 +274,7 @@
     fallow:{c0:['#b8a070','#9a8458','#76643e'],c1:['#c4ac76','#a08a5a','#7a6640']},
     grazed:{c0:['#7e9a48','#66843c','#4e6a32'],c1:['#869c4a','#6a843e','#506a34']}};
   const CROP_X={grape:['#7a4a8a','#4e2e62'],unripe:'#9ab85a',cab:'#c4dc8a',leek:'#ecf0dc',bulb:['#ece4ea','#a85a9a'],flower:['#86a2e8','#b8c8f4'],hay:['#ead890','#b89a58'],
-    herb:[['#b49ae0','#7e5eb0'],['#a8bc98','#6e8a62'],['#f4bc40','#c8862a'],['#f6f2e4','#d0caa8']],water:['#78b4e2','#4a86c0'],snow:'#e4eaf2',frost:'#d8e2ee',wet:[70,92,96],wetRun:.55,wetSpeck:.06,stone:['#a49c8c','#6a6458'],stub:'#6e5c3a',post:'#5a3e24',trod:'#8a7450',dry:[[214,196,120],[186,164,96],[150,128,76]]};
+    herb:[['#b49ae0','#7e5eb0'],['#a8bc98','#6e8a62'],['#f4bc40','#c8862a'],['#f6f2e4','#d0caa8']],water:['#78b4e2','#4a86c0'],snow:'#e4eaf2',frost:'#d8e2ee',wet:[70,92,96],wetRun:.55,wetSpeck:.06,tall:8,stone:['#a49c8c','#6a6458'],stub:'#6e5c3a',post:'#5a3e24',trod:'#8a7450',dry:[[214,196,120],[186,164,96],[150,128,76]]};
   // (rows of plants: a crop's pattern (pat; veg: rows, one a row of plants in turn) tiled along each row, a row of patterns shifted
   //  st px from the one before (the plants staggered); L, M, D its tones, s soil, '.' soil between plants, t a trough, W a leek's
   //  white, P and B a turnip's bulb, G grapes, K a stake, F and f flax's flowers, H and h a herb's flowers (a row's herb in turn);
@@ -368,7 +368,7 @@
           if(!plantsOnly&&fyy+1<N){const i=(fyy+1)*N+((jx+(pw>>1)+1)%N);if(tr[i]){const c=mixA([rgb[i*3],rgb[i*3+1],rgb[i*3+2]],shade,.5);rgb.set(c.map(Math.round),i*3)}}// (its contact shadow)
           if(soilOnly)continue;
           for(let j=cut;j<ph;j++)for(let k=0;k<pw;k++){const L=pat[j][flip?pw-1-k:k];if(L==='.')continue;const c=T[L];if(!c)continue;const y=fyy-(ph-1-j);
-            const bend=L==='k'||L==='K'||L==='q'?0:Math.round(lean*(1-j/Math.max(1,ph-1))**2*(.7+.3*H(x0,r,11)));if(y<0)late.push([jx+k+bend,y+N,c]);else set(jx+k+bend,y,c)}}}
+            const bend=L==='k'||L==='K'||L==='q'?0:Math.round(lean*Math.min(1,(ph-cut)/X.tall)*(1-j/Math.max(1,ph-1))**2*(.7+.3*H(x0,r,11)));/* (by its height: a sprout a few px tall barely stirs, X.tall px and over bends the whole lean) */if(y<0)late.push([jx+k+bend,y+N,c]);else set(jx+k+bend,y,c)}}}
       for(const [x,y,c] of late)set(x,y,c)}
     // (the Karn's terraces: a stone lip every fifth row of the coarse picture's)
     if(ter&&!plantsOnly)for(let y=0;y<N;y++){const ut=Math.floor(y/f);if((ut+(v>>1))%5===4)for(let x=0;x<N;x++){const i=y*N+x,c=hx(X.stone[H(x,y,10)<.6?0:1]);rgb.set(c,i*3);tr[i]=0}}
