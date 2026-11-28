@@ -308,7 +308,7 @@ function routStep(u,dt){
   {const w=B.terrain?steerDir(u,ex,ey):null;if(w){mx=w[0];my=w[1]}}// (round rock, cliffs and impassable water to the edge: terrain.js)
   if(e){const dx=u.x-e.x,dy=u.y-e.y,d=Math.hypot(dx,dy)||1;if(d<80){mx+=dx/d*.6;my+=dy/d*.6}}
   const m=Math.hypot(mx,my)||1;// (physics on: he stumbles and wanders as he runs, physics.js physRout)
-  if(PHYSICS.on){physRout(u,dt,mx/m,my/m,u.s.spd*1.1*(u.slow>0?.5:1));u.run=0}else{const sp=u.s.spd*1.1*dt*(u.slow>0?.5:1)*groundMul(u,mx/m,my/m);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0}fatigueStep(u,dt,true,false,false);
+  const rout=Speed.ratio('rout','run');if(PHYSICS.on){physRout(u,dt,mx/m,my/m,u.s.spd*rout*(u.slow>0?.5:1));u.run=0}else{const sp=u.s.spd*rout*dt*(u.slow>0?.5:1)*groundMul(u,mx/m,my/m);u.x+=mx/m*sp;u.y+=my/m*sp;u.spdNow=u.s.spd;u.dir=Math.atan2(my,mx);u.face=mx>=0?1:-1;u.run=0}fatigueStep(u,dt,true,false,false);
   if(any?exitReached(u,exitOf(u),2):u.team?u.x>=BW-MORALE.edge-2:u.x<=MORALE.edge+2){u.fled=true;if(u.team===1)B.fledFoes=(B.fledFoes||0)+1;else B.fledMine=(B.fledMine||0)+1;leaveField(u)}
 }
 // a soldier off the field (at its edge): out of the fight, alive (not a loss); its health kept for after (your hero's)

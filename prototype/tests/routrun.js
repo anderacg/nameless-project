@@ -14,11 +14,11 @@ Kit.suite(({ok,info})=>{
  const run=(sta,secs)=>{u.x=a.cx;u.y=a.cy;u.sta=sta;const x0=u.x,y0=u.y,s0=u.sta;let n=0;for(;n<secs/.05;n++)a.escape(u,.05);return{v:Math.hypot(u.x-x0,u.y-y0)/secs,spent:s0-u.sta,drawn:u.spdNow}};
  // (a run order's step, for the same man at the same breath: actors.js, his speed x tired x groundMul, a second's worth)
  const order=sta=>{u.sta=sta;return u.s.spd*t.tiredMul(u).spd*t.groundMul(u,1,0)};
- const fresh=run(t.FATIGUE.max,1),want=order(t.FATIGUE.max)*t.ROUT_RUN;
+ const fresh=run(t.FATIGUE.max,1),want=order(t.FATIGUE.max)*t.Speed.ratio('rout','run');
  info('fleeing, fresh: '+fresh.v.toFixed(1)+' px/s; a run order '+order(t.FATIGUE.max).toFixed(1)+' px/s, his walk '+(order(t.FATIGUE.max)*t.MARCH.walk).toFixed(1));
  ok(Math.abs(fresh.v-want)<want*.05,'a fresh man flees at a run, ROUT_RUN x a run order\'s pace, the map\'s scale in it ('+fresh.v.toFixed(1)+' px/s, '+want.toFixed(1)+' wanted)');
  ok(fresh.spent>0&&fresh.drawn>u.s.spd*.75,'running spends his breath ('+fresh.spent.toFixed(2)+' in a second) and he is drawn running');
- const tired=run(t.FATIGUE.spent+5,1);ok(Math.abs(tired.v-order(t.FATIGUE.spent+5)*t.ROUT_RUN)<tired.v*.05&&tired.v<fresh.v*.9,'tired, he flees slower, as a tired man runs ('+tired.v.toFixed(1)+' px/s)');
+ const tired=run(t.FATIGUE.spent+5,1);ok(Math.abs(tired.v-order(t.FATIGUE.spent+5)*t.Speed.ratio('rout','run'))<tired.v*.05&&tired.v<fresh.v*.9,'tired, he flees slower, as a tired man runs ('+tired.v.toFixed(1)+' px/s)');
  const out=run(0,1),walk=u.s.spd*t.MARCH.walk*t.tiredMul(u).spd*t.groundMul(u,1,0);
  ok(Math.abs(out.v-walk)<walk*.05&&out.drawn<u.s.spd*.75&&out.spent<=0,'out of breath he walks: a walk\'s pace ('+out.v.toFixed(1)+' px/s), drawn walking, spending none');
 });

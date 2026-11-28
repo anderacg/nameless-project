@@ -5,7 +5,7 @@
 // Realms ship their holdings' surplus to friendly holdings short of it; the goods move from one stock to the other, and the
 // receiving owner takes a toll. Bandits (unless the guards hold) and enemy lords take them. You can trade with them, demand a
 // toll, attack them for their cargo, or (with a fief) seize them.
-const CARAVAN_CAP=density().caravans,CARAVAN_SPD=17;
+const CARAVAN_CAP=density().caravans,CARAVAN_SPD=Speed.pace('caravan');// (a caravan's pace number, the table's: data/speed.js SPEED.map)
 // a caravan afraid of you near where it is bound (brains.js CaravanBrain): it runs for the gate when the gate is nearer it than you
 // are (dash: the gate within dash × your distance), and turns for another holding of its realm when you stand at that gate (block px)
 const CARAVAN_FEAR={dash:1,block:60};// (CARAVAN_CAP: today's; a world's own: density(WM), data/world.js)

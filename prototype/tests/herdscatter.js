@@ -21,7 +21,7 @@ Kit.suite(({ok,info})=>{
  const P0={x:P.x,y:P.y};P.x=c.x+400;P.y=c.y;// (you away: no threat, so it gathers as it goes)
  for(;steps<600&&c.m;steps++){const ox=c.x,oy=c.y;t.HERD_MIND.think(c,.05,0);const now=at();if(now&&prev){const mv=Math.hypot(c.x-ox,c.y-oy);now.forEach((q,i)=>{const d=Math.hypot(q.x-prev[i].x,q.y-prev[i].y)-mv;if(d>jump)jump=d})}prev=now}
  P.x=P0.x;P.y=P0.y;
- ok(!c.m&&steps>3&&jump<=t.moveStep(X.gather,.05)+1e-6,'each walks back to its place in the herd ('+steps+' steps of .05 s, at most '+jump.toFixed(2)+' px a step past the herd\'s own going): one point again');
+ ok(!c.m&&steps>3&&jump<=t.moveStep(t.Speed.pace('gather'),.05)+1e-6,'each walks back to its place in the herd ('+steps+' steps of .05 s, at most '+jump.toFixed(2)+' px a step past the herd\'s own going): one point again');
  // (a hunt begun again on a scattered herd meets each animal where it stands)
  const c2=t.asHerd({crit:true,id:'deer',n:2,x:P.x+40,y:P.y+30,hx:P.x+40,hy:P.y+30,dir:1,t:5,a:0,cool:0,idle:true,m:[{dx:-9,dy:4,f:-1,sta:3,go:false},{dx:7,dy:-5,f:1,sta:5,go:false}]});W.critters=[c2];t.frame();H.prepare(c2);t.frame();b=t.B;a=b.hunt;
  const an=a.animals.filter(u=>u.herd===c2);ok(an.length===2&&an.every((u,i)=>{const p=a.world(u),m=c2.m[i];return Math.hypot(p.x-(c2.x+m.dx),p.y-(c2.y+m.dy))<1&&u.face===m.f&&u.escapeSta===m.sta}),'a hunt begun on a scattered herd meets each animal where it stands, facing its way, with its own wind');

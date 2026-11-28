@@ -12,7 +12,7 @@ window.RUN=()=>{const t=T,L=t.BattleLab,o=[],ok=(c,m)=>o.push((c?'PASS ':'FAIL '
   mine.forEach((g,i)=>{g.placeAt(200,90+i*90);g.face=0;g.currentFacing=0;t.layForm(g.id);g.units.forEach(u=>{u.x=g.ax+u.sx;u.y=g.ay+u.sy;u.cd=999;u.dir=0;u.face=1})});
   foes.forEach((g,i)=>{g.placeAt(1000,120+i*120);g.face=Math.PI;t.layForm(g.id);g.units.forEach(u=>{u.x=g.ax+u.sx;u.y=g.ay+u.sy;u.cd=999})});return{b,mine,foes}};
  // (combat seconds: the lab steps real frames of 1/60 s, combat time runs at the battle's pace)
- const stepFor=sec=>{const end=t.B.t+sec;for(let i=0;i<40&&t.B.t<end-1e-9;i++)L.step(Math.max(1,Math.min(600,Math.ceil((end-t.B.t)*60/Math.max(.1,t.BATTLE_PACE)))))};
+ const stepFor=sec=>{const end=t.B.t+sec;for(let i=0;i<40&&t.B.t<end-1e-9;i++)L.step(Math.max(1,Math.min(600,Math.ceil((end-t.B.t)*60))))};
  const seeded=(n,f)=>{const r=Math.random;Math.random=t.seeded(n);try{return f()}finally{Math.random=r}};
  // a charger set beside tg on one side (of tg facing east), at full momentum unless told
  const at=(a,tg,side,run=C.run)=>{a.x=tg.x+(side==='rear'?-12:side==='flank'?0:12);a.y=tg.y+(side==='flank'?12:0);a.run=run;a.sta=100;return a};

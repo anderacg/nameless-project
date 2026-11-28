@@ -8,7 +8,7 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame
  G.mode='world';G.modal=false;P.troops={hum_levy:12,hum_bow:6};
  const e=t.asParty({kind:'bandits',troops:Array(12).fill('militia'),x:P.x+60,y:P.y,cool:0});W.parties.push(e);G.enc={kind:'party',ref:e,list:e.troops.slice(),allies:[],foes:[],mine:true};
  t.startBattle({enemies:G.enc.list,tournament:false,deploy:false});const B=t.B;ok(!!B&&!!B.world,'a fight on the map');if(!B)return;if(B.muster)B.muster.active=false;B.ready=true;B.paused=false;
- const A=B.world;G.cam.x=A.x-VW/2+A.r*.9;G.cam.y=A.y-VH/2;A.syncCamera();for(let i=0;i<20;i++){t.updateBattle(1/60);t.openFightWorld(1/60*t.WORLD_TEMPO);t.frame()}
+ const A=B.world;G.cam.x=A.x-VW/2+A.r*.9;G.cam.y=A.y-VH/2;A.syncCamera();for(let i=0;i<20;i++){t.updateBattle(1/60);t.openFightWorld(t.Time.map(1/60));t.frame()}
  const cv=document.querySelector('canvas'),g=cv.getContext('2d'),k=cv.width/(VW+1),px=(x,y)=>[...g.getImageData(Math.round((x-G.cam.x)*k),Math.round((y-G.cam.y)*k),1,1).data].slice(0,3),dark=c=>c.every((v,i)=>Math.abs(v-t.RING_CUT.col[i])<=3);
  // (outside the ring dark, inside the map's picture)
  const far={x:A.x+A.r+t.RING_CUT.pad+t.RING_CUT.feather+20,y:A.y},mid={x:A.x+A.r*.5,y:A.y-A.r*.3};
@@ -30,6 +30,6 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame
    for(let i=0;i<a.length;i++)worst=Math.max(worst,Math.abs(a[i]-b[i]));n++}
   ok(worst<=1,'its dark drawn only where it shows, the same picture as over the whole screen ('+n+' views, 3 scales: off by '+worst+' at most)')}
  // (the world runs on round it)
- const c0=G.clock+G.day*t.DAY;for(let i=0;i<30;i++)t.openFightWorld(1/60*t.WORLD_TEMPO);ok(G.clock+G.day*t.DAY>c0,'the world runs on round it');
+ const c0=G.clock+G.day*t.DAY;for(let i=0;i<30;i++)t.openFightWorld(t.Time.map(1/60));ok(G.clock+G.day*t.DAY>c0,'the world runs on round it');
  t.BattleSetup.undo();G.mode='world';ok(!t.RingCut.on(),'out of the fight: the map as ever');
  ok(!ERR.length,'no runtime errors')});

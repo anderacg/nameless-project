@@ -283,9 +283,9 @@ const herdSp=c=>Math.max(4,Math.round(critterArt(c.id,0,c.coat??Math.floor((c.hx
 function herdSlot(c,i,sp){const j=i%3,ox=j===0?0:j===1?-sp:Math.round(sp*.4),oy=j===0?0:j===1?-1:-3;return {x:c.dir<0?-ox:ox,y:oy}}
 // (a herd scattered by a hunt (HERD_SCATTER, battle/hunting.js finish: m, each animal's spot about its point, its facing f, whether it
 // walks, go): its animals drawn there by its flock (flockSpot), back to their places as they gather (herdGather))
-// (its animals walk back to their places, HERD_SCATTER.gather px a s, carried along as the herd moves (mx, my this step); all
+// (its animals walk back to their places, at the table's gather (data/speed.js SPEED.map), carried along as the herd moves (mx, my this step); all
 //  within near px of theirs: the herd as before)
-function herdGather(c,d,mx,my){const X=HERD_SCATTER,sp=herdSp(c),st=moveStep(X.gather,d);let back=true;if(c.m.length>(c.n||0))c.m.length=c.n||0;
+function herdGather(c,d,mx,my){const X=HERD_SCATTER,sp=herdSp(c),st=moveStep(Speed.pace('gather'),d);let back=true;if(c.m.length>(c.n||0))c.m.length=c.n||0;
   c.m.forEach((m,i)=>{const q=herdSlot(c,i,sp),ex=q.x-m.dx,ey=q.y-m.dy,e=Math.hypot(ex,ey);let gx=0,gy=0;if(e>X.near){const k=Math.min(1,st/e);gx=ex*k;gy=ey*k;m.dx+=gx;m.dy+=gy;back=false}
     const vx=gx+mx;m.go=Math.hypot(vx,gy+my)>.01;if(Math.abs(vx)>.05)m.f=vx>0?1:-1});
   if(back)delete c.m}
@@ -308,7 +308,7 @@ const HERD_MIND={think(c,d,hide){
       // (wild game on a holding's ground (a lot, or by the holding) walks off it, away from the holding: WILD_LIFE.town)
       const tame=!D.live&&wildTame(c.x,c.y);if(tame){let t=null,td=1e9;for(const h of TOWNS){const e=Math.hypot(h.x-c.x,h.y-c.y);if(e<td){td=e;t=h}}if(t)c.a=Math.atan2(c.y-t.y,c.x-t.x);c.idle=false;c.drink=null}
       if(c.st!=='drink')c.st=c.idle?'graze':'walk';
-      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):tame?(x,y)=>habitatOk(c.id,x,y):(x,y)=>wildOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(D.live?4:8,d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true;c.drink=null;c.st='graze'}}}
+      if(!c.idle){const ok=D.live?(x,y)=>grazeOk(c.id,x,y,c.pen):tame?(x,y)=>habitatOk(c.id,x,y):(x,y)=>wildOk(c.id,x,y);if(!walk(c,Math.cos(c.a),Math.sin(c.a),moveStep(Speed.pace(D.live?'herdTame':'herd'),d),ok)){c.a=Math.atan2(hy,hx)+(critRng().next()-.5);c.idle=true;c.drink=null;c.st='graze'}}}
     // (it faces the way it went, turning only on a clear step sideways: no flicker as it swerves or runs straight up or down)
     {const mx=c.x-ox,my=c.y-oy;if(Math.abs(mx)>Math.hypot(mx,my)*.35&&Math.abs(mx)>.01)c.dir=mx>0?1:-1;if(c.m)herdGather(c,d,mx,my)}
 

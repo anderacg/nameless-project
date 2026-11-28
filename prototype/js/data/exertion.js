@@ -5,9 +5,9 @@ const ESCAPE_STAMINA={delay:5,recovery:.1,floor:.55,safe:100,capacity:{worker:16
 //  running, a rabbit or a fowl still ahead of him, any of them winded at ESCAPE_STAMINA.floor about a footman's run)
 const HUNT_AREA={radius:110,hp:4,alertOpen:2,alertCover:4,replan:1,threatShift:60,run:1.4};
 // A herd after a hunt (battle/hunting.js finish, world/critters.js Herd): each animal left where it stood, its own spot about the
-// herd's point (Herd m), walking back to its place in the herd at gather map px a s (none jumps back); near px: all back, the herd
+// herd's point (Herd m), walking back to its place in the herd at the table's gather (data/speed.js SPEED.map; none jumps back); near px: all back, the herd
 // as before. Animals still bolting when it ended keep the herd running their way (on: their speed, run s more)
-const HERD_SCATTER={on:true,gather:6,near:1,run:4};
+const HERD_SCATTER={on:true,near:1,run:4};
 // A hunt's tracks (battle/hunting.js HuntTracks): a print every sample field px an animal runs, kept life s, at most keep a beast;
 // read by your hunters within read px of one (scout px more a level of Scouting); one with no prey in sight follows the freshest
 // trail it reads, ahead prints on from the nearest; drawn as the map's prints (gfx/tracks.js), faded with their age

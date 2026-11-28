@@ -42,7 +42,7 @@ Kit.suite(({ok,info})=>{
   finally{ctx.drawImage=draw;ctx.restore();window.eval('VS='+native)}
   const mind=t.CharacterMind.of(b.hero),auto=mind.auto,turn=window.updateNonHeroActors;let heroTime=0,troopTime=0;mind.auto=function(dt){heroTime+=dt;return auto.call(this,dt)};window.updateNonHeroActors=dt=>{troopTime+=dt;return turn(dt)};
   const pin=v=>Object.defineProperty(b.hero,'ranks',{get:()=>v,set(){},configurable:true});// (held through the frame's steps)
-  try{b.hx.stop=1;b.slow=1;pin(false);t.updateBattle(.03);ok(troopTime>0&&Math.abs(heroTime/troopTime-t.HERO_PACE/t.BATTLE_PACE)<1e-6,'the hero out of his ranks on his own quicker clock on the map as on a field (HERO_PACE / BATTLE_PACE '+(heroTime/troopTime).toFixed(3)+'; the owner, 2026-11-18), hero impacts never freezing the whole battle');
+  try{b.hx.stop=1;b.slow=1;pin(false);t.updateBattle(.03);ok(troopTime>0&&Math.abs(heroTime/troopTime-t.SPEED.hero)<1e-6,'the hero out of his ranks on his own quicker clock on the map as on a field (HERO_PACE / BATTLE_PACE '+(heroTime/troopTime).toFixed(3)+'; the owner, 2026-11-18), hero impacts never freezing the whole battle');
     heroTime=0;troopTime=0;pin(true);t.updateBattle(.03);ok(troopTime>0&&Math.abs(heroTime-troopTime)<1e-8,'marching in his place in his group\'s formation, the hero on his men\'s clock (the owner: "for the marching in army he need to be at the position")')}finally{delete b.hero.ranks;mind.auto=auto;window.updateNonHeroActors=turn}
   // The battle boundary cannot grant map knowledge; only actual unit sight can.
   const a=b.world,memory=t.W.seen.slice(),boundary={x:a.x,y:a.y,r:a.r},sources=a.sight();

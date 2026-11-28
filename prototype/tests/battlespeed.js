@@ -1,9 +1,9 @@
 'use strict';
 // One speed for both kinds of battle (the owner, 2026-11-18: "Can you make battle map and world battle use the same speed?"; battle.js
-// battleStep, fightSpace): a classic field and a fight on the map run on one clock, BATTLE_PACE at BATTLE_TEMPO on screen (main.js), so a
+// battleStep, fightSpace): a classic field and a fight on the map run on one clock, game seconds (main.js, core/time.js), so a
 // swing's cooldown runs down as fast on both; its men, drawn WORLD_BATTLE.sprite times their size on the map, step as many times as far,
 // so they cross as many of their own lengths a second; the speed buttons mean the same on both. Measured as a player sees it: real time
-// at 1/60 s a frame, each passed through main.js's updateBattle(dt*BATTLE_TEMPO).
+// at 1/60 s a frame, each passed through main.js's updateBattle(dt).
 // No slow motion, a calm pace (the owner, 2026-11-19: "make it not look like slow motion please but just want a battle not to be so fast
 // pace"): that clock is a real second a second, and the pace is the rules' own (data/units.js BATTLE_RHYTHM): a walk of about .7 of a
 // man's lengths a second, a blow every 1.5 to 2.5 s, a shot every 2.5 to 4, a 20 v 20 melee as long as it was at the old slow clock; the
@@ -26,12 +26,13 @@ Kit.suite(({ok,info})=>{
  for(const sp of [1,2])for(const kind of ['field','map']){const B=fight(kind==='map',sp,{hum_levy:8,hum_bow:4},['militia','militia','militia','militia','archer','archer']);if(!B){ok(false,kind+' x'+sp+': the fight begins');continue}
   const k=kind==='map'?t.WORLD_BATTLE.sprite:1,T0=B.t,secs=sp===1?14:8,bl=blows(B);
   const v=[];let was=null;
-  for(let i=0;i<secs*60&&t.B===B&&!B.over;i++){was=new Map(B.units.map(m=>[m,[m.x,m.y]]));bl.before();t.updateBattle(fr*t.BATTLE_TEMPO);bl.after(shooter);
+  for(let i=0;i<secs*60&&t.B===B&&!B.over;i++){was=new Map(B.units.map(m=>[m,[m.x,m.y]]));bl.before();t.updateBattle(fr);bl.after(shooter);
    for(const m of B.units){if(m.hp<=0||m.s.mounted||shooter(m))continue;const b=was.get(m);const d=b?Math.hypot(m.x-b[0],m.y-b[1]):0;if(d>0)v.push(d/(t.actorSprite(m).ch*k)*60)}}
   if(sp===1)shots.push(...bl.gaps);
-  // (one of your levies walking on open ground, by the rule: his pace at MARCH.walk, as far as the field steps him (fightSpace) at the
-  //  battle's walking rhythm, on its clock, over his length as drawn; the ground under him is each field's own, groundMul)
-  const m=B.units.find(w=>w.hp>0&&w.team===0&&w.type==='hum_levy'),clock=(B.t-T0)/secs,rule=m.s.spd*t.MARCH.walk*t.fightSpace()*t.BATTLE_RHYTHM.move*clock/(t.actorSprite(m).ch*k);
+  // (one of your levies walking on open ground, by the rule: his pace at MARCH.walk, as far as the field steps him a point of his speed
+  //  (core/speed.js Speed.field: the ladder's run on this field's scale), on its clock, over his length as drawn; the ground under him
+  //  is each field's own, groundMul)
+  const m=B.units.find(w=>w.hp>0&&w.team===0&&w.type==='hum_levy'),clock=(B.t-T0)/secs,rule=m.s.spd*t.MARCH.walk*t.Speed.field()*clock/(t.actorSprite(m).ch*k);
   res[kind+sp]={clock,walk:med(v)||0,n:v.length,rule,space:t.fightSpace(),ch:t.actorSprite(m).ch};B.over=true}
  for(const sp of [1,2]){const f=res['field'+sp],m=res['map'+sp];if(!f||!m)continue;
   ok(within(f.clock,m.clock,.05),'x'+sp+': one clock, '+f.clock.toFixed(3)+' battle s a real second on a field, '+m.clock.toFixed(3)+' on the map (a swing, a shot, a cooldown as long)');
@@ -47,19 +48,19 @@ Kit.suite(({ok,info})=>{
  // (a 20 v 20 of levies and militia at 1x on each)
  for(const kind of ['field','map']){const B=fight(kind==='map',1,{hum_levy:20},Array(20).fill('militia'));if(!B){ok(false,kind+' 20 v 20: the fight begins');continue}
   const hp0=B.units.reduce((a,m)=>a+m.hp,0),bl=blows(B);let n=0,hit=null;
-  for(;n<60*240&&t.B===B&&!B.over;n++){bl.before();t.updateBattle(fr*t.BATTLE_TEMPO);bl.after();
+  for(;n<60*240&&t.B===B&&!B.over;n++){bl.before();t.updateBattle(fr);bl.after();
    if(hit==null&&B.units.reduce((a,m)=>a+Math.max(0,m.hp),0)<hp0)hit=n/60}
   const over=B.over,last=bl.last==null?null:bl.last/60,melee=hit==null||last==null?NaN:last-hit,g=med(bl.gaps),[lo,hi]=RHYTHM.melee[kind];B.over=true;
   info(kind+' 20 v 20: first wound '+(hit==null?'-':hit.toFixed(1))+' s, last blow '+(last==null?'-':last.toFixed(1))+' s, over at '+(n/60).toFixed(1)+' s, '+bl.gaps.length+' gaps between blows');
   ok(g>=RHYTHM.gap[0]&&g<=RHYTHM.gap[1],kind+': a man strikes every '+g.toFixed(2)+' s by the median (between '+RHYTHM.gap.join(' and ')+')');
   ok(over&&melee>=lo&&melee<=hi,kind+': a 20 v 20 melee lasts '+(over?melee.toFixed(1):'past 240')+' real s (between '+lo+' and '+hi+')')}
  // (the map's march as it was: your army walking on the map at 1x, a levy's lengths as drawn in a fight there a real second (0.35, as
- //  before the battle's rhythm, 2026-11-19); main.js updateWorld(dt*WORLD_TEMPO), world.js on WORLD_PACE, none of a battle's rhythm)
+ //  before the battle's rhythm, 2026-11-19); main.js updateWorld(Time.map(dt)), none of a battle's rhythm)
  {t.WORLD_BATTLE.on=true;G.mode='world';G.modal=false;G.enc=null;P.troops={hum_levy:8};
   const len=(res.field1?res.field1.ch:24)*t.WORLD_BATTLE.sprite;let v=[];
-  for(const a of [0,Math.PI,Math.PI/2,-Math.PI/2]){P.x=home.x;P.y=home.y;P.tx=null;for(let i=0;i<30;i++)t.updateWorld(fr*t.WORLD_TEMPO);
+  for(const a of [0,Math.PI,Math.PI/2,-Math.PI/2]){P.x=home.x;P.y=home.y;P.tx=null;for(let i=0;i<30;i++)t.updateWorld(t.Time.map(fr));
    P.tx=home.x+Math.cos(a)*400;P.ty=home.y+Math.sin(a)*400;const w=[];
-   for(let i=0;i<60*5&&P.tx!=null;i++){const x=P.x,y=P.y;t.updateWorld(fr*t.WORLD_TEMPO);const d=Math.hypot(P.x-x,P.y-y);if(d>0&&i>30)w.push(d*60/len)}
+   for(let i=0;i<60*5&&P.tx!=null;i++){const x=P.x,y=P.y;t.updateWorld(t.Time.map(fr));const d=Math.hypot(P.x-x,P.y-y);if(d>0&&i>30)w.push(d*60/len)}
    if(w.length>v.length)v=w;if(v.length>200)break}
   const m=med(v);ok(v.length>60&&within(m,.35,.05),'the map\'s march as it was: '+m.toFixed(3)+' of a levy\'s lengths a real second at 1x (0.35)')}
 });

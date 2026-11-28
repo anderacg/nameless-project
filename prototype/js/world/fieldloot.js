@@ -37,6 +37,6 @@ class FieldLootQuest extends StepQuest{
   // a band's moment bound for it (BandBrain): a step there; there, it takes it. False when it is no more to seek
   static seek(b,d){const g=b.lootGo,q=P.quests.find(x=>x.id===g.q&&x.type==='fieldloot');if(!q){b.lootGo=null;return false}
     if(Math.hypot(g.x-b.x,g.y-b.y)<FIELD_LOOT.take){b.lootGo=null;Quest.as(q).over('looted','looted');return true}
-    Router.travel(b,g,moveStep(16,d))||walk(b,g.x-b.x,g.y-b.y,Math.min(Math.hypot(g.x-b.x,g.y-b.y),moveStep(16,d)));return true}
+    Router.travel(b,g,moveStep(Speed.pace('loot'),d))||walk(b,g.x-b.x,g.y-b.y,Math.min(Math.hypot(g.x-b.x,g.y-b.y),moveStep(Speed.pace('loot'),d)));return true}
 }
 defineKind('step','fieldloot',{cls:FieldLootQuest});

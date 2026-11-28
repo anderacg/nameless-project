@@ -29,9 +29,9 @@ const grpUnits=g=>B.units.filter(u=>u.grp===g&&u.hp>0);
 // (a battle over: this long before its summary, the field left to settle)
 const END_WAIT=2;
 const GRP_FLAGS={walk:true,firm:false,cease:false,skirmish:false,melee:false,shieldWall:false};// Capability-filtered requests; soldiers keep their own equipment and stats.
-const MARCH={reached:10,skirmish:44,edge:40,base:.55,get walk(){return typeof B!=='undefined'&&B&&B.world?WORLD_BATTLE.walk:this.base}};
+const MARCH={reached:10,skirmish:44,edge:40,get walk(){return Speed.ratio('walk','run')}};
 // walking: a group set to walk, unless this order is a run (g.run: a double right-click, a charge); a walk keeps the slowest's
-// pace at MARCH.walk of it (base; a fight on the map WORLD_BATTLE.walk, near the world's own march), and builds no charge
+// pace at MARCH.walk of it (the ladder's walk of its run, data/speed.js SPEED.gait, in both kinds of battle), and builds no charge
 const walking=g=>!!(g&&g.walk&&!g.run);
 /* a rock or tree: whoever walks into one is put back on its rim (r+3 out from its centre), and so slides round it as he
    keeps on. Walking dead at its centre (a stack withdrawing or routing straight back, a march exactly through it), the push
@@ -100,7 +100,8 @@ const BATTLE_EARS=[];
 const battleOn=f=>{BATTLE_EARS.push(f)};
 function battleEvent(type,d){for(const f of BATTLE_EARS)f(type,d)}
 // Actor execution lives in actors.js; shared group defaults and frame orchestration remain here.
-// rt is real time; fighting runs on dt (BATTLE_PACE, 1: real time, calmed by data/units.js BATTLE_RHYTHM), effects on rt
+// rt is game time (core/time.js: a real second at 1x); fighting runs on it times the battle's own speed (dt), calmed by
+// data/units.js BATTLE_RHYTHM, effects on rt
 function updateBattle(rt){
   if(B?.muster?.active){B.muster.step(rt);return}
   if(B?.world){
@@ -120,11 +121,11 @@ function stepBattle(rt,world){
   // the battle's speed: everything runs on its clock; paused, nothing moves but you can still give orders
   if(B.paused||B.deploy)return;if(!world)rt*=B.speed||1;if(!world&&B.slow>0){B.slow-=rt;rt*=VFX.slow}// (a charge's impact: a moment of slow motion, vfx.js)
   // (one clock for both kinds of battle (the owner, 2026-11-18: "make battle map and world battle use the same speed"): the fighting
-  //  on BATTLE_PACE, at BATTLE_TEMPO on screen (main.js), so a swing, a shot, a cooldown and a morale tick take as long on the map as on
+  //  on game seconds (main.js), so a swing, a shot, a cooldown and a morale tick take as long on the map as on
   //  a field; its men drawn WORLD_BATTLE.sprite times their size step as many times as far (fightSpace: groundMul, the missiles), so
   //  they cross as many of their own lengths a second. The world inside a fight on the map (its comers, bystanders, the regrouping)
-  //  keeps the map's own travel clock, dw (data/world.js moveStep), as those marching by: WORLD_TEMPO, as main.js steps the map)
-  const dt=rt*BATTLE_PACE,dw=world?moveStep(1,rt*WORLD_TEMPO*WORLD_PACE,true)*B.world.scale:dt;
+  //  keeps the map's own travel clock, dw (data/world.js moveStep), as those marching by: Time.map, as main.js steps the map)
+  const dt=rt,dw=world?moveStep(1,Time.map(rt)*WORLD_PACE,true)*B.world.scale:dt;
   B.t+=dt;for(const u of B.units){rankUnit(u);buffUnit(u)}// (each soldier's rank passives and his group's upgrades, once: battle/rankskills.js, world/buffs.js)
   // World combat keeps the campaign clock: a hero impact must not freeze every army.
   if(world){B.slow=0;if(B.hx)B.hx.stop=0}
@@ -135,10 +136,10 @@ function stepBattle(rt,world){
     if(B.world&&!B.over){checkBattleOver();if(!B.over)B.world.step(dw)}
     // (RTS command: your hero fights on their own, as every unit does; the manual control is set aside for now)
     const was=new Map(B.units.map(u=>[u,[u.x,u.y]]));// (where each stood as the frame began: its motion, for the way round a rock or tree)
-    // (your hero on HERO_PACE, quicker than his men, in both kinds of battle (the owner, 2026-11-18: "Give the hero the same speed boost on
+    // (your hero on SPEED.hero, quicker than his men, in both kinds of battle (the owner, 2026-11-18: "Give the hero the same speed boost on
     //  the map"), but marching with them in his group's formation, his place in it, on their clock ("for the marching in army he need to be at
     //  the position": actors.js u.ranks, last step's)
-    const hp=B.hero&&B.hero.ranks?dt:rt*HERO_PACE;if(MANUAL_HERO)updateHero(hp);else if(B.hero)CharacterMind.of(B.hero).auto(hp);
+    const hp=B.hero&&B.hero.ranks?dt:rt*SPEED.hero;if(MANUAL_HERO)updateHero(hp);else if(B.hero)CharacterMind.of(B.hero).auto(hp);
     for(const id in B.groups)B.groups[id].step(dt);command(dt);companyRules.battle(dt);SiteLife.battle(dt);CharacterMind.command(dt);// (every group minds itself, then the captains give their orders: battlecontrol.js, commander.js)// (your hero fights on their own, as every character does: charmind.js; the enemy's captain: commander.js)
     for(const u of B.units){if(u.hp<=0)continue;if(u.kx||u.ky){u.x+=u.kx*dt;u.y+=u.ky*dt;if(Math.abs(u.kx)+Math.abs(u.ky)>60&&Math.random()<.4)vfx({k:'dust',x:u.x,y:u.y-1,vx:-u.kx*.1,vy:-u.ky*.05,r:2,grow:8,life:.4,col:'196,180,140'});const k=Math.pow(.004,dt);u.kx*=k;u.ky*=k;if(Math.abs(u.kx)+Math.abs(u.ky)<2)u.kx=u.ky=0}if(u.buffT>0)u.buffT-=dt;if(u.wardT>0)u.wardT-=dt}
     for(const u of B.units){if(u.hp<=0)continue;if(u.slow>0)u.slow-=dt;if(u.hero&&gm('regen'))u.hp=Math.min(u.max,u.hp+gm('regen')*dt)}

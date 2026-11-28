@@ -234,7 +234,7 @@ class CampFolk{
   // (an animal's moment: by day it grazes, a few px at a time round its tether; by night, or with danger near, it stands)
   static graze(C,b,d){const G=ENCAMP.folk.graze,f=Clock.frac;b.moving=false;if(f>=ENCAMP.day.dusk||C.danger)return;if(b.wait>0){b.wait-=d;return}
     const dx=b.tx-b.x,dy=b.ty-b.y,dd=Math.hypot(dx,dy);
-    if(dd>.5){const st=Math.min(dd,moveStep(G.speed,d));b.x+=dx/dd*st;b.y+=dy/dd*st;b.walked+=st;if(Math.abs(dx)>.2)b.dir=dx>0?1:-1;b.moving=true;return}
+    if(dd>.5){const st=Math.min(dd,moveStep(Speed.pace('graze'),d));b.x+=dx/dd*st;b.y+=dy/dd*st;b.walked+=st;if(Math.abs(dx)>.2)b.dir=dx>0?1:-1;b.moving=true;return}
     const a=b.R()*Math.PI*2,r=b.R()*G.r,x=b.hx+Math.cos(a)*r,y=b.hy+Math.sin(a)*r*.7;if(passable(tAt(Math.floor(x/TILE),Math.floor(y/TILE)))){b.tx=x;b.ty=y}b.wait=G.pause[0]+b.R()*(G.pause[1]-G.pause[0])}
   // (where he goes next for that, from where he is; fresh: placed there at once)
   static aim(C,p,mode,fresh){const s=C.s,F=ENCAMP.folk,R=p.R2,w=p.R.work,f=Clock.frac,pray=f>=ENCAMP.day.pray[0]&&f<ENCAMP.day.pray[1];p.mode=mode;p.kneel=false;p.play=false;

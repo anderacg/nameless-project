@@ -58,7 +58,7 @@ function inShape(x,y,a,R,c,e){
 // stamina pays for physical effort, mana for skills; some skills need both
 // (regen, delay: the manual control's breath, set aside. Under RTS command your stamina comes back as a soldier's does: fatigue.js)
 // mana comes back in battle only with the talents for it (mpRegen: MANA_REGEN a second at +100%); health only by a skill, a talent or gear
-const STAM={swing:[8,8,14],dodge:22,sprint:20,regen:18,delay:.6,guard:1.2},MANA_REGEN=2.5,SPRINT_MUL=1.6;
+const STAM={swing:[8,8,14],dodge:22,sprint:20,regen:18,delay:.6,guard:1.2},MANA_REGEN=2.5;
 // your hero's stamina and mana, health, stamina and mana kept between battles, and their recovery: methods of your band (P:
 // parties.js PlayerParty), under their older names here
 const maxSP=()=>P.maxSP(),maxMP=()=>P.maxMP();

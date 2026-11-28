@@ -89,8 +89,8 @@ class BandBrain extends Brain{
       if(G.chase===b&&this.canMeet(b,v.d)){meetBand(b);return true}return false}
     const home=night&&campNear(b,fear);
     if(fear&&home||b.cool>0&&!fear||!stanceMove(b,st,v.d,v.dx,v.dy,TravelAwareness.sees(b)?travelDetection(b).range:0,sp,true)){
-      if(home){const s=fear?sp*.85:moveStep(16,d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
-      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3;if(b.haunt&&Math.hypot(b.haunt.x-b.x,b.haunt.y-b.y)>b.hauntR*TILE)b.a=Math.atan2(b.haunt.y-b.y,b.haunt.x-b.x)}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(12,d))}}
+      if(home){const s=fear?sp*.85:moveStep(Speed.pace('bandHome'),d);Router.travel(b,home,s)||walk(b,home.x-b.x,home.y-b.y,Math.min(Math.hypot(home.x-b.x,home.y-b.y),s));if(Math.hypot(home.x-b.x,home.y-b.y)<8){(home.bands=home.bands||[]).push(b);b.x=home.x;b.y=home.y;b.gone=true;return false}}
+      else if(!(b.lootGo&&FieldLootQuest.seek(b,d))){b.t-=d;if(b.t<=0){b.t=2+Math.random()*3;b.a=Math.random()*6.283;b.idle=Math.random()<.3;if(b.haunt&&Math.hypot(b.haunt.x-b.x,b.haunt.y-b.y)>b.hauntR*TILE)b.a=Math.atan2(b.haunt.y-b.y,b.haunt.x-b.x)}if(!b.idle)walk(b,Math.cos(b.a),Math.sin(b.a),moveStep(Speed.pace('bandWander'),d))}}
     if(this.canMeet(b,v.d)){meetBand(b);return true}
     return false;
   }

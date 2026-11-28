@@ -3,8 +3,6 @@
 /* melee: on the world map each fighter is drawn sprite times as big (and his formation's slots as wide), so his melee reach and
    the few fixed melee distances (meleeK: a duel's slack, the riders' contact, a bowman's blade) are that much more too (the owner,
    2026-10-29: "the units overlap in world battle"); off, as they were */
-/* walk: a formation's walk on the map, of its slowest's full pace (a fight apart's MARCH.base): with the fight on the world's own
-   clock (battle.js), its men walking near the pace of those marching by */
 // (an army coming in is told as it comes ("X enters the battle"): where its men stepped in, every other side has as last seen (BattleSight
 // lastSeen), so a captain who has not set eyes on them still knows where to go: commander.js search; the owner, 2026-10-30: his army
 // stood idle as bandits joined, the watch routing)
@@ -18,13 +16,12 @@ const ARRIVAL={r:5,pulse:1.2,fade:1.5,col:{own:'#6fa8e0',ally:'#8fd08a',foe:'#e0
 const JOIN_RULES={every:5,band:{small:12,after:40,worn:.4,chance:.5},beast:{near:240,chance:.25},wild:o=>o.mapKind==='band'||o.mapKind==='monster',
   kin:(o,e)=>!!e&&(o.mapKind==='monster'?e.kind==='monster'&&o.id===e.ref?.id:e.kind==='party'&&(o.kind||'bandits')===((e.ref?.src||e.ref)?.kind||'bandits'))};// (kin: a pack or band of the kind you fight, riding to its own: as ever)
 // (clear: px kept between your army's room and a place's defenders' as a fight there begins: WorldBattleArea.clearOf)
-// (walk: a fight's walking share of a man's pace, the field's own (battle.js MARCH.base; was .75, near the map's march, when a fight on
-//  the map ran on the map's clock); blocked: battle seconds without a blow before a stalled fight is looked at, 5 (was 30 on that
+// (a formation's walk is the ladder's, in both kinds of battle: battle.js MARCH.walk, data/speed.js SPEED.gait; blocked: battle seconds without a blow before a stalled fight is looked at, 5 (was 30 on that
 //  clock, some 16 s on screen at 1x: as many now on the fight's own, battle.js battleStep))
 // (step: the longest battle step of a fight on the map, s: the frame loop's own (core/frametime.js FRAME_TIME.step), so a frame is one
 //  step at any frame rate, as on the battle screen; it was a 60th, the whole battle run twice a frame at 30 frames a second; a
 //  faster battle speed is still cut to steps this long: doc/TIME_SPEED_DESIGN.md)
-const WORLD_BATTLE={on:true,melee:true,walk:.55,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:.05,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4,scan:.25};
+const WORLD_BATTLE={on:true,melee:true,scale:6,inner:8,outer:14,interaction:6,apron:22,join:220,regroup:7,returns:0,turn:3.5,blocked:5,stall:6,sprite:3,step:.05,sightBase:1,perFighter:4,room:60,perMan:3,avoid:28,avoidScan:1,clear:24,escapeBlock:4,scan:.25};
 // (scan: battle s between looks for who rides in (WorldBattleArea#reinforce): every frame it went through every lord, watch, band and
 //  beast of the world, some 9% of a fight's frame (the owner, 2026-11-26: "How can i improve world battle performance"); those on
 //  their way in still walk every frame)
@@ -92,7 +89,7 @@ class BattleBystanders{
     for(const o of objects)if(!this.entries.has(o)&&this.eligible(o)&&Math.hypot(o.x-this.area.x,o.y-this.area.y)<this.area.r+this.margin(o)){const p=this.plan(o);if(p)this.entries.set(o,p)}
     for(const [o,p] of this.entries)if(!objects.has(o)||!this.eligible(o)){if(o.mapKind==='worker')o.moving=p.moving;this.entries.delete(o)}
   }
-  speed(o){if(o.mapKind==='ship')return o.k==='trade'?SHIP_SPD:BOAT_SPD;if(o.mapKind==='worker')return footPace(FIELD.hurry);if(o.mapKind==='critter')return CRITTERS[o.id].spd||20;if(o instanceof Party)return partySpeed(o,o.troops);return ENC_SPD.run}
+  speed(o){if(o.mapKind==='ship')return Speed.pace(o.k==='trade'?'ship':'boat');if(o.mapKind==='worker')return footPace(FIELD.hurry);if(o.mapKind==='critter')return CRITTERS[o.id].spd||20;if(o instanceof Party)return partySpeed(o,o.troops);return ENC_SPD.run}
   step(dt){
     this.time+=dt;if(this.time>=this.next){this.next=this.time+WORLD_BATTLE.avoidScan;this.scan()}
     for(const [o,p] of this.entries){if(!this.eligible(o))continue;if(p.nav.version!==WAYV){const q=this.plan(o);if(!q)continue;Object.assign(p,q)}
@@ -287,7 +284,7 @@ class WorldBattleArea{
     //  pace), a tenth faster for his life; out of breath (FATIGUE.runMin) he walks; drawn as he goes, running or walking; the owner,
     //  2026-11-20: "when they flee they run. But running and all those also based on stamina")
     const exit=this.escapePlan(u)?.to||this.exit(u,2),way=this.escapeWay(u),p=way?{x:u.x+way[0]*way[2],y:u.y+way[1]*way[2]}:exit,d=Math.hypot(p.x-u.x,p.y-u.y),
-      wk=staOf(u)<FATIGUE.runMin,spd=(wk?u.s.spd*MARCH.walk:u.s.spd*ROUT_RUN)*tiredMul(u).spd,s=d>0?Math.min(d,spd*dt*groundMul(u,(p.x-u.x)/d,(p.y-u.y)/d)):0;
+      wk=staOf(u)<FATIGUE.runMin,spd=(wk?u.s.spd*MARCH.walk:u.s.spd*Speed.ratio('rout','run'))*tiredMul(u).spd,s=d>0?Math.min(d,spd*dt*groundMul(u,(p.x-u.x)/d,(p.y-u.y)/d)):0;
     if(d>0){u.x+=(p.x-u.x)*s/d;u.y+=(p.y-u.y)*s/d;u.dir=Math.atan2(p.y-u.y,p.x-u.x);u.face=Math.cos(u.dir)>0?1:-1;u.spdNow=spd}fatigueStep(u,dt,s>0,wk,false);
     if(!this.inside(u,-2)){if(keep)hold();else this.depart(u)}
   }

@@ -66,7 +66,7 @@ const ENCAMP_PROPS={wagon:{},cart:{},stall:{},shrine:{},rack:{},mound:{smoke:tru
 // (ground: where a camp whose tents cannot stand moves its fire when first drawn, r px round it, every step px: Encampment#ground)
 const ENCAMP={ground:{r:64,step:12},travellers:6,count:{pow:.5},tents:{per:3,most:8,rings:2},stay:{seasonal:[20,40],wandering:[3,8]},gap:24,
   day:{dawn:.06,work:.4,dusk:.5,pray:[.18,.28]},
-  folk:{graze:{r:10,speed:5,pause:[3,9],out:22},route:2,gait:'stroll',run:1.5,pause:[1.5,4],out:[3,6],work:[4,9],near:520,most:16,seat:13,danger:90,ring:10},
+  folk:{graze:{r:10,pause:[3,9],out:22},route:2,gait:'stroll',run:1.5,pause:[1.5,4],out:[3,6],work:[4,9],near:520,most:16,seat:13,danger:90,ring:10},
   // (its services' icons on the map (world/encampments.js CampSpots; the owner, 2026-11-18: "interactable icons ... for each camp sites",
   //  "icons when close"): shown within near px of you and in your sight; css: the shared illustrated badge's size in CSS px;
   //  up: world px over its ground by what it stands at (a tent, a piece, the fire); gap: CSS px kept between two, and off your hero;

@@ -30,10 +30,11 @@ function paintIdle(now){if(worldPaintActive())try{
 function stepSimulation(dt){
   if(Dice.el)return true;
   const mode=G.mode;
-  if(G.mode==='battle'&&B){updateBattle(heroBeat(dt)*BATTLE_TEMPO);openFightWorld(dt*WORLD_TEMPO)}
+  // (dt: game seconds, a battle's as they are, the map's by its own calendar: core/time.js Time.map)
+  if(G.mode==='battle'&&B){updateBattle(heroBeat(dt));openFightWorld(Time.map(dt))}
   else openFightOver();
   if(G.mode==='scene')updateScene(dt);
-  else if(G.mode==='world')updateWorld(dt*WORLD_TEMPO);
+  else if(G.mode==='world')updateWorld(Time.map(dt));
   return G.mode===mode;
 }
 // A hidden tab resumes from now, without replaying time spent in the background.

@@ -42,7 +42,7 @@ const asRefugees=asClass(Refugees);
 // (who walks among them, a marcher's place in the group (u.id) round this: adults with bundles, children, elders on sticks)
 const REFUGEE_FOLK=['adult','child','elder','adult','child','adult','elder','child'];
 const REFUGEE_CHILD=.72;// (a child drawn this much an adult's size)
-const REFUGEE_CAP=density().refugees,REFUGEE_SPD=11;// (REFUGEE_CAP: today's; a world's own: density(WM), data/world.js)
+const REFUGEE_CAP=density().refugees,REFUGEE_SPD=Speed.pace('refugee');// (REFUGEE_CAP: today's; a world's own: density(WM), data/world.js)
 // why people would leave a holding, or '' if they stay; where they go (holding.js Holding fleeReason, refuge)
 const fleeReason=t=>t.fleeReason();
 const refuge=t=>t.refuge();

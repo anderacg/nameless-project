@@ -49,7 +49,7 @@ function shipUnder(L,B,cam){const mem=memCv(),r=mem.r||1;ctx.save();if(SUBD)ctx.
     g.clearRect(0,0,w,h);g.drawImage(d.cv,x0-X,y0-Y,w,h,0,0,w,h);g.globalCompositeOperation='source-in';g.drawImage(mem,x0*r,y0*r,w*r,h*r,0,0,w,h);g.globalCompositeOperation='source-over';
     ctx.drawImage(UNDER_CV,0,0,w,h,x0,y0,w,h)}
   ctx.restore()}
-const SHIP_SPD=26,BOAT_SPD=13,SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once, today's; a world's own: density(WM), data/world.js)
+const SHIP_SPD=Speed.pace('ship'),BOAT_SPD=Speed.pace('boat'),SHIP_CAP=density().ships;// (SHIP_CAP: trade ships at sea at once, today's; a world's own: density(WM), data/world.js)
 // open water a boat can sail: not the frozen lakes of the frost (their ports fish through the ice). The sea round the edge
 // of the world is the coastal route that joins the ports of different shores. Of the generated world's rivers (WM.river) only
 // the navigable reaches, under their bridges and over their fords too (doc/WORLD_DESIGN.md §6.6.3): a river joins the sea or a

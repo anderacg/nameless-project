@@ -119,7 +119,7 @@ const relocating=(u,g,tgt)=>!!(g&&g.mvId&&u.mvId!==g.mvId&&g.order==='hold'&&!(t
 const ACTORS=new WeakMap();
 class Actor extends Fighter{
   static of(u){const K=u.hero?HeroActor:isFighter(u)?CharActor:Actor;let a=ACTORS.get(u);if(!a||a.constructor!==K)ACTORS.set(u,a=new K(u));return a}
-  // Non-hero turns keep the original order and simulation clock. The hero's separate HERO_PACE turn stays in updateBattle.
+  // Non-hero turns keep the original order and simulation clock. The hero's separate turn (SPEED.hero) stays in updateBattle.
   static turns(dt){
     // every unit's moment (lords, chieftains and companions fight as your hero does: charmind.js CharacterMind.auto)
     // (the grid, spatial.js: only the one taking his turn moves, so he is held loose while he acts, then filed where he ends up)
@@ -315,7 +315,7 @@ class HeroActor extends CharActor{
     if(dx||dy)B.mt=null;else if(B.mt){const ex=B.mt.x-h.x,ey=B.mt.y-h.y,ed=Math.hypot(ex,ey);if(ed<3)B.mt=null;else{dx=ex/ed;dy=ey/ed}}
     const l=Math.hypot(dx,dy);
     const X=HeroHands.of(),run=l>0&&G.keys.shift&&!B.blocking&&X.sp>0;if(run){X.sp=Math.max(0,X.sp-STAM.sprint*dt);X.spT=0}
-    if(l>0){dx/=l;dy/=l;const sp=h.s.spd*(B.blocking?.55:1)*(B.draw?.6:1)*(run?SPRINT_MUL:1)*(h.slow>0?.5:1)*groundMul(h,dx,dy)*dt;h.x+=dx*sp;h.y+=dy*sp;h.face=dx>=0?1:-1;h.spdNow=h.s.spd;if(run)train('athl',dt*.4)}
+    if(l>0){dx/=l;dy/=l;const sp=h.s.spd*(B.blocking?.55:1)*(B.draw?.6:1)*(run?Speed.ratio('sprint','run'):1)*(h.slow>0?.5:1)*groundMul(h,dx,dy)*dt;h.x+=dx*sp;h.y+=dy*sp;h.face=dx>=0?1:-1;h.spdNow=h.s.spd;if(run)train('athl',dt*.4)}
     if(G.mouse.in&&G.mouse.type==='mouse')B.aim=Math.atan2(G.mouse.y-(h.y-6),G.mouse.x-h.x);
     else{const n=nearest(h);if(n)B.aim=Math.atan2(n.y-h.y,n.x-h.x)}
   }

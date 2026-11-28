@@ -83,26 +83,15 @@ const rint=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const sum=o=>Object.values(o).reduce((a,b)=>a+b,0);
 const seeded=s=>()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296};
 const angGap=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
-// pace: share of full speed for the world (travel, days, everyone on the map) and for battles (movement, attacks, arrows).
-// Visual effects ignore it. Lower is calmer; 1 is the original pace.
-// the world clock: one day (DAY clock units) lasts DAY_SECONDS real seconds at 1x speed, whatever the travel pace;
-// the first half is daylight, then dusk, night and dawn fill the other half (NIGHT_AT on; the owner, 2026-10-19: 50/50). A day of 180 s at a world pace of .4
-// (doc/WORLD_DESIGN.md D9: it was 120 s at .6) keeps 72 units of the world's time to a day, so every timer counted in it lasts
-// the same share of a day; what moves goes slower on screen (data/world.js WORLD_SCALE.move)
-const DAY_SECONDS=293,NIGHT_AT=.5;// (180, times the world lab's walk over the map's old one: data/world.js WORLD_SCALE.move)
-// (a battle's clock: 1, a battle second a real second at 1x, so a swing, a shot, a fall play at their own speed (the owner, 2026-11-19:
-//  "make it not look like slow motion please but just want a battle not to be so fast pace"); the calm pace is the battle's own rules,
-//  data/units.js BATTLE_RHYTHM. Your hero out of his ranks HERO_PACE, as ever .85/.6 his men's (were .6 and .85 at a tempo of .55))
-const WORLD_PACE=.4,BATTLE_PACE=1,HERO_PACE=.85/.6;
-// a battle's tempo on screen (the owner, 2026-11-17: "Can you reduce the speed in battle?"): the real time a frame of a battle runs on,
-// at its 1x (main.js); its rules and its tests' steps untouched. The world round a fight on the map keeps its own speed
-// (.55, was .7: the owner, 2026-11-18: "Reduce moving speed in the world and battle speed"; 1 since 2026-11-19, the slow motion gone,
-//  BATTLE_PACE above)
-const BATTLE_TEMPO=1;
-// the map's tempo on screen (the owner, 2026-11-18: "Reduce moving speed in the world"): the real time a frame on the map runs on, at its
-// 1x (main.js), the same way as a battle's; everything on the map goes slower together, its clock too (a day 293 s / WORLD_TEMPO), so
-// what a day holds is the same; its rules and its tests' steps untouched
-const WORLD_TEMPO=.75;
+// time (doc/TIME_SPEED_DESIGN.md): a game second is a real second at 1x, in every mode (core/time.js); how fast anything goes is one
+// table's (data/speed.js SPEED). What is left here is the map's own reckoning, in calendar time: a day (DAY clock units) is
+// DAY_SECONDS of the map's seconds, the first half daylight, then dusk, night and dawn (NIGHT_AT on; the owner, 2026-10-19:
+// 50/50); WORLD_PACE of the map's timing units (the d every system on the map is handed) to one of its seconds, so every timer
+// counted in them lasts the same share of a day. How many of the map's seconds a game second holds follows from the march's
+// speed on screen (core/speed.js Speed.mapRate, Time.map), so a day's march covers the same ground at any speed.
+// (They were tunables of the speed on screen, one layer a request: WORLD_PACE, WORLD_TEMPO, BATTLE_PACE, BATTLE_TEMPO; the battle's
+//  calm is its own rules, data/units.js BATTLE_RHYTHM; your hero's quicker time out of his ranks SPEED.hero)
+const DAY_SECONDS=293,NIGHT_AT=.5,WORLD_PACE=.4;
 // the world's time controls (D23): 1x, 2x and 4x (keys 1-3), and Travel fast (key 4, the top bar's 8×), 8x till you change the
 // speed (the owner, 2026-10-22: back on the bar)
 const SPEEDS=[1,2,4],TRAVEL_FAST=8;
