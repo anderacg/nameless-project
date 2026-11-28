@@ -940,15 +940,7 @@ window.RUN=()=>{const o=[],ok=(c,m)=>{const text=(c?'PASS ':'FAIL ')+m;o.push(te
 //  realistic or remove it completely and only keep grass waving to the wind": no foot bends or presses the grass now
 //  (worldterrain.js terrainEnts). Its third spot by night only, where a clump stood bent at someone's feet (9441a43e to 7288086c); its
 //  other five pictures, W1-W5, W7, W8 and B2 held. Linux Chromium: W6 4d360aee to 4864532b; to be measured again on the owner's PC)
-// (W1, W3, W4 re-recorded 2026-11-28, on purpose, and W5 to W8 and B2 moved with them: the owner, "Please make holding spread more,
-//  they seems too close to eachother it should be 100 more spread": a holding's houses, inner works and centre keep 3 free tiles
-//  between any two, its ring and its works' reach 1.5 times as far (lots.js LOT_SPREAD), so every holding is laid out anew. W3, TOWNS
-//  as JSON: its lots stand elsewhere (562 to 567 of them); was d8106001. W4, LAND: the land its buildings and fields claim (31351 to
-//  31611 tiles); was 444dcdf5. W1, tiles and climate: the tracks to its outer works are road tiles, laid to where they stand now;
-//  was fdc52781. W2 held. These three matched here before and are measured here; W5 to W8 and B2, the owner's own browser's below,
-//  did not: Linux Chromium W5 1ef61184 to 1d2b370f, W6 4864532b to 5b44810d (all six pictures), W7 4e533969 to 8a7aff9a, W8 d24a5ce7
-//  to 713cd8bf, B2 a515cc57 to b9a6b44b; those five to be measured again on the owner's PC)
-const EXPECT={W1:'c516c710',W2:'99e50804',W3:'79315391',W4:'53847438',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
+const EXPECT={W1:'fdc52781',W2:'99e50804',W3:'d8106001',W4:'444dcdf5',W5:'bc12addb',W6:'36c65d13',W7:'341a5a14',W8:'d8a7e003',B2:'23d198e7'};
 // (W7, W8 re-recorded 2026-11-21, on purpose, the owner's "I still get lag my phone": the far parties, caravans and ships think every
 //  12th frame with 12x d, not every 4th (worldobject.js WORLD_LOD.farEvery), so the far ones step on other frames and draw the
 //  shared Math.random in another order, which moves parties (W8) and what the save holds after 3 days (W7). With farEvery 4 both hold

@@ -23,10 +23,4 @@ Kit.suite(({ok,info})=>{
  ok(L.every(({p})=>p.slice(1).reduce((a,q,j)=>a+Math.hypot(q[0]-p[j][0],q[1]-p[j][1]),0)<=(X.lane.max+2)*t.TILE*1.42),'each at most '+X.lane.max+' tiles');
  ok(L.every(({p})=>p.slice(2).every((q,j)=>{const a=p[j],b=p[j+1],u=[b[0]-a[0],b[1]-a[1]],v=[q[0]-b[0],q[1]-b[1]],n=Math.hypot(...u)*Math.hypot(...v);return Math.hypot(...u)<1||Math.hypot(...v)<1||(u[0]*v[0]+u[1]*v[1])/n>.5})),'each bends gently: no right angle along it');
  info(JSON.stringify({houses:houses.length,by,nooks:nooks.length,lanes:L.length}));
- // ---- its buildings stand apart (lots.js LOT_SPREAD; the owner, 2026-11-28: "Please make holding spread more, they seems too close to
- //  eachother it should be 100 more spread"): row free tiles between any two of its houses, its inner works and its centre; its people housed
- {const S=t.LOT_SPREAD,gap=(a,b)=>Math.max(Math.max(a.x-(b.x+b.n),b.x-(a.x+a.n)),Math.max(a.y-(b.y+b.n),b.y-(a.y+a.n)));let n=0,near=1e9,sum=0;const short=[];
-  for(const z of H){const L=z.lots.filter(l=>l.st!=='ruined'&&(l.k==='house'||l.k==='centre'||t.INNER.includes(l.k)));for(const a of L){let g=1e9;for(const b of L)if(a!==b)g=Math.min(g,gap(a,b));if(g<1e9){n++;sum+=g;near=Math.min(near,g)}}if(t.housing(z)<(z.pop||z.T.pop0))short.push(z.name)}
-  ok(n>100&&near>=S.row,'a holding\'s houses, inner works and centre stand '+S.row+' free tiles apart at least (the nearest two '+near+'; '+(sum/n).toFixed(1)+' on average over '+n+' buildings; it was 0.2 to 1.1, most of a town\'s wall to wall)');
-  ok(!short.length,'and every holding still houses its people'+(short.length?': not '+short.join(', '):''))}
 });
