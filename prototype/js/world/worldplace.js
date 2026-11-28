@@ -49,11 +49,27 @@ const PLACE_SHARE={vale:8,karn:7,sylvan:7,horde:7,salt:8};
 const PLACE_REALMS=Object.keys(PLACE_SHARE);
 // the least distance (tiles) between two kinds (§8.8; capitals: PLACE.cap x the map's diagonal; the owner, 2026-11-14, "make sure
 // that holdings are not too close to each other (spread out more)": about 1.3 x the old, were city-town 30, town-town 26, village 16,
-// hamlet 12)
+// hamlet 12), times the world's widening (PLACE_WIDE, below: placeGap)
 const PLACE_GAP={city:{town:39,castle:39,fort:31,village:31,hamlet:23},fort:{fort:21,castle:23,town:26,village:21,hamlet:18},town:{town:34,castle:31,village:26,hamlet:21},castle:{castle:31,village:23,hamlet:21},village:{village:21,hamlet:18},hamlet:{hamlet:16}};
-const placeGap=(a,b)=>PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][a]||0;
-/* the numbers: reach (a new holding within this of its realm's own), cap (capitals apart, x the diagonal), skew (capitals' nearest
-   rivals within this share of their mean), suit (a capital's least liking), day (tiles: a day's travel, for a fair start), land
+/* as far apart as the land takes (the owner, 2026-11-28: "Please make holding spread more, they seems too close to eachother it
+   should be 100 more spread", "I mean each holding should not too close to each other, make holding like town, city more spread"):
+   a world's holdings are placed with every least distance of PLACE_GAP, the reach of a new one from its realm's own (PLACE.reach)
+   and the fair start's (PLACE.day) times its widening: most (2: twice as far) at its first tries, step less every tries tries its
+   checks fail (too few fit, a capital with no fair start, the realms' land unbalanced), down to 1, the spacing as it was, for its
+   last 8 tries as ever. So each world is as wide as its own land takes and never loses a holding to it: at a flat 2 a Normal
+   world's 15 holdings fitted on the stage's last try on two seeds of seven, and 18 asked for left 7 to 13. The widening a world
+   was placed at is kept on its map (wide) and read by its hamlets, its checks and the tests. The Classic world: 1, its holdings
+   where they are */
+const PLACE_WIDE={most:2,step:.2,tries:2};
+const placeWide=n=>Math.max(1,Math.round((PLACE_WIDE.most-PLACE_WIDE.step*Math.floor(n/PLACE_WIDE.tries))*10)/10);
+// (the tries the holdings' stage has before one holding fewer a realm: those at each widening over 1, then 8 at 1)
+const placeWideTries=()=>Math.round((PLACE_WIDE.most-1)/PLACE_WIDE.step)*PLACE_WIDE.tries+8;
+let PLACE_K=1;// (the widening of the world being placed: genHoldings, genHamlets)
+const placeGap=(a,b,k=PLACE_K)=>Math.round((PLACE_GAP[a]&&PLACE_GAP[a][b]||PLACE_GAP[b]&&PLACE_GAP[b][a]||0)*k);
+/* the numbers: reach (a new holding within this of its realm's own, x the world's widening: PLACE_WIDE), cap (capitals apart, x the
+   diagonal), skew (capitals' nearest
+   rivals within this share of their mean), suit (a capital's least liking), day (tiles: a day's travel, for a fair start, x the
+   world's widening), land
    (a realm's suitable tiles within landR of its capital, at Normal: x1.5 at Large, x2.4 at Huge), lords ([holdings, lords a
    realm] points, D10), bridge, ford, ferry (the most water each spans), gap (a river's crossings at most this far apart), apart
    (another crossing's end no new crossing's end comes within, tiles: placeApart), spread
@@ -189,6 +205,7 @@ function placeNarrows(m,F,x,y,r){
    before each try (the driver puts back kind and feat) */
 function* genHoldings(g){
   const m=g.map,W=m.w,H=m.h,K=m.kind,R=g.rng('holdings',g.attempt),out=g.holdings=[];g.lords=null;
+  const WK=PLACE_K=m.wide=m.classic?1:placeWide(g.attempt|0);// (as far apart as this try allows: PLACE_WIDE)
   if(g.work.high7)m.high.set(g.work.high7);else g.work.high7=m.high.slice();
   const F=g.work.place||(g.work.place=yield* placeFields(g));yield .3;
   const xy=i=>[i%W,(i-i%W)/W],d2=(i,j)=>{const [a,b]=xy(i),[c,d]=xy(j);return(a-c)*(a-c)+(b-d)*(b-d)};
@@ -233,7 +250,7 @@ function* genHoldings(g){
     // holdings are sparser than space). Grown again from the capitals, up to PLACE.regrow times in all, while too few fit or the
     // realms' land is unbalanced as the check will find it (placeEven): the stage's checks failed on it in most of its tries
     // (Normal s4 took 7, s7 and s9 8), each try drawing the capitals again
-    const rc=Math.round(PLACE.reach*Math.max(1,Math.sqrt((g.work.land||W*H)/N)/PLACE.space)),rk=rc/PLACE.reach,nc=P.length;
+    const rc=Math.round(PLACE.reach*WK*Math.max(1,Math.sqrt((g.work.land||W*H)/N)/PLACE.space)),rk=rc/(PLACE.reach*WK),nc=P.length,dayR=PLACE.day*WK-5;
     for(let pass=0;;pass++){const left={};for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);P.length=nc;
     for(let more=true;more;){more=false;
       for(const f of PLACE_REALMS){if(!left[f].length)continue;more=true;const kind=left[f].shift(),own=P.filter(h=>h.f===f);if(!own.length)continue;
@@ -242,7 +259,7 @@ function* genHoldings(g){
           if(dd>rc*rc||dd<144)continue;const [bx,by]=xy(b);if(!m.has(bx+dx,by+dy))continue;const i=b+dx+dy*W;if(!site(i))continue;
           let near=null,nd=Infinity,rival=Infinity;
           for(const h of P){const e=d2(h.i,i),gp=h.kind==='city'&&kind==='city'?gap:placeGap(h.kind,kind);if(e<gp*gp){near=null;nd=-1;break}if(e<nd){nd=e;near=h}if(h.f!==f&&e<rival)rival=e}
-          if(!near||near.f!==f||own.length<4&&d2(cap,i)>(PLACE.day-5)*(PLACE.day-5))continue;
+          if(!near||near.f!==f||own.length<4&&d2(cap,i)>dayR*dayR)continue;
           const v=placeSuit(m,F,p,i)+placeKindScore(m,F,kind,i,Math.sqrt(rival),own.length)-PLACE.pull*Math.sqrt(d2(cap,i))/100+PLACE.room[0]*Math.min(1,(Math.sqrt(nd)-placeGap(near.kind,kind))/(PLACE.room[1]*rk))+R()*.15;if(!top||v>top.v)top={v,i}}
         if(top)P.push({f,kind,i:top.i})}
       if(g.tick())yield .5+.4*P.length/N}
@@ -273,7 +290,7 @@ function* genHoldings(g){
    realms' in g.holdings (a retry drops the last try's first), so the roads join them ---------- */
 const PLACE_HAMLET={base:[[143360,12],[286720,22],[786432,50]],mult:{none:0,few:.5,normal:1,many:1.6},fringe:900,village:.25,margin:6,river:12,bank:6,step:2};
 function* genHamlets(g){
-  const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);
+  const m=g.map,W=m.w,H=m.h,K=m.kind,F=g.work.place,R=g.rng('hamlets',g.attempt),X=PLACE_HAMLET,own=g.holdings=g.holdings.filter(h=>h.realm);PLACE_K=m.wide||1;
   m.freeHoldings=[];const want=Math.round(areaTable(X.base,W*H)*(X.mult[g.s.hamlets]??1));if(!want||!F){yield 1;return}
   const free=(x,y)=>own.every(h=>{const r=HOLDING_TYPES[h.kind].reach+X.margin;return(h.tx-x)*(h.tx-x)+(h.ty-y)*(h.ty-y)>r*r});
   const site=i=>{const x=i%W,y=(i-x)/W;if(x<4||y<4||x>=W-5||y>=H-5||F.conn[i]!==F.main)return false;
@@ -760,7 +777,7 @@ function placeCheck(id){return g=>{
     const need=placeNeed(m);
     for(const c of caps){const p=PLACE_PEOPLE[c.realm],v=g.work.like&&c.name in g.work.like?g.work.like[c.name]:placeSuit(m,F,p,ti(c)),n=placeLand(m,F,p,c.tx,c.ty);if(v<PLACE.suit)return c.name+' liked '+v.toFixed(2);
       if(n<need)return c.name+' has '+n+' suitable tiles';
-      if(Hd.filter(h=>h!==c&&(h.tx-c.tx)*(h.tx-c.tx)+(h.ty-c.ty)*(h.ty-c.ty)<=PLACE.day*PLACE.day).length<Math.min(3,q[c.realm]-1))return c.name+' has no fair start'}// (three within a day, or as many as its realm has past its capital: the owner's halved holdings, 2026-11-27)
+      if(Hd.filter(h=>h!==c&&(h.tx-c.tx)*(h.tx-c.tx)+(h.ty-c.ty)*(h.ty-c.ty)<=(PLACE.day*(m.wide||1))**2).length<Math.min(3,q[c.realm]-1))return c.name+' has no fair start'}// (three within a day, or as many as its realm has past its capital: the owner's halved holdings, 2026-11-27)
     const L=placeRealmLand(m,Hd,placeHoldBridged(m,F,Hd)),mean=L.reduce((a,b)=>a+b,0)/L.length,far=Math.max(...L.map(v=>Math.abs(v-mean)/mean));
     if(far>PLACE.even)return 'realm land unbalanced ('+L.join('/')+')';
     if(!Hd.some(h=>h.style==='port'))return 'no port';
@@ -770,4 +787,4 @@ function placeCheck(id){return g=>{
     return null}
   const want=density(m).camps;return g.camps.length<want?g.camps.length+' camps of '+want:null}}
 for(const id of ['holdings','roads','sites'])Object.assign(GEN_STAGES.find(s=>s.id===id),{check:placeCheck(id)},
-  id==='holdings'?{relax:g=>{if((g.work.fewer|0)>=2||g.map.classic||!/holdings of|fair start/.test(placeCheck(id)(g)))return null;g.work.fewer=(g.work.fewer|0)+1;return 'holdings: one fewer a realm'}}:{});
+  id==='holdings'?{tries:placeWideTries(),relax:g=>{if((g.work.fewer|0)>=2||g.map.classic||!/holdings of|fair start/.test(placeCheck(id)(g)))return null;g.work.fewer=(g.work.fewer|0)+1;return 'holdings: one fewer a realm'}}:{});

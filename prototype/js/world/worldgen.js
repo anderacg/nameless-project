@@ -270,7 +270,7 @@ function* genStage(g,st){
     g.attempt=n;if(n){m.kind.set(keep.kind);m.feat.set(keep.feat)}
     const it=st.run(g);for(let r=it.next();;r=it.next()){if(r.done){v=r.value;break}yield top=Math.max(top,typeof r.value==='number'?r.value:0)}
     g.tries[st.id]=n+1;bad=st.check?st.check(g):null;if(!bad)return v;
-    if(++k<8)continue;
+    if(++k<(n<(st.tries||8)?st.tries||8:8))continue;// (a stage's own tries before its first relaxing: the holdings', worldplace.js PLACE_WIDE; 8 after it)
     const why=st.relax?st.relax(g):null;if(why){g.relaxed.push(why);k=0;continue}
     g.relaxed.push(st.id+': '+bad+', kept after 8 tries');return v}
 }
@@ -1032,12 +1032,12 @@ function genSketch(settings){
     if(ok){const v=worth(pick);if(!best||v>best.v)best={v,pick}}}
     if(best||gap*.9<gap0*PLACE.capMin)break;gap*=.9}
   for(const f of PLACE_REALMS){const c=best?best.pick[f]:cand[f][0];if(c)P.push({f,kind:'city',i:c[1]})}
-  const quota=placeQuota(s.holdings),left={},rc=PLACE.reach*Math.max(1,Math.sqrt(land*k*k/s.holdings)/PLACE.space),rk=rc/PLACE.reach;for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);
+  const WK=PLACE_WIDE.most,quota=placeQuota(s.holdings),left={},rc=PLACE.reach*WK*Math.max(1,Math.sqrt(land*k*k/s.holdings)/PLACE.space),rk=rc/(PLACE.reach*WK);// (the preview: at the widest, PLACE_WIDE)for(const f of PLACE_REALMS)left[f]=placeKinds(f,quota[f]);
   for(let more=true;more;){more=false;
     for(const f of PLACE_REALMS){if(!left[f].length)continue;more=true;const kind=left[f].shift(),own=P.filter(h=>h.f===f);if(!own.length)continue;const p=PLACE_PEOPLE[f];let top=null;
       for(let u=0;u<60;u++){const b=own[Math.floor(RH()*own.length)].i,dx=RH()*(2*rc+1)-rc,dy=RH()*(2*rc+1)-rc,dd=dx*dx+dy*dy;if(dd>rc*rc||dd<144)continue;
         const x=X(b)+dx,y=Y(b)+dy;if(x<0||y<0||x>=W||y>=H)continue;const i=at(x,y);if(!site(i))continue;let nd=Infinity,nk=null,mine=false,bad=false;
-        for(const h of P){const e=d2(h.i,i),gp=h.kind==='city'&&kind==='city'?gap:placeGap(h.kind,kind);if(e<gp*gp){bad=true;break}if(e<nd){nd=e;nk=h.kind;mine=h.f===f}}
-        if(bad||!mine)continue;const v=placeSuit(m,F,p,i)-PLACE.pull*Math.sqrt(d2(own[0].i,i))/100+PLACE.room[0]*Math.min(1,(Math.sqrt(nd)-placeGap(nk,kind))/(PLACE.room[1]*rk))+RH()*.15;if(!top||v>top.v)top={v,i}}
+        for(const h of P){const e=d2(h.i,i),gp=h.kind==='city'&&kind==='city'?gap:placeGap(h.kind,kind,WK);if(e<gp*gp){bad=true;break}if(e<nd){nd=e;nk=h.kind;mine=h.f===f}}
+        if(bad||!mine)continue;const v=placeSuit(m,F,p,i)-PLACE.pull*Math.sqrt(d2(own[0].i,i))/100+PLACE.room[0]*Math.min(1,(Math.sqrt(nd)-placeGap(nk,kind,WK))/(PLACE.room[1]*rk))+RH()*.15;if(!top||v>top.v)top={v,i}}
       if(top)P.push({f,kind,i:top.i})}}
   return{map:m,k,holdings:P.map(h=>({tx:h.i%cw,ty:(h.i-h.i%cw)/cw,realm:h.f,kind:h.kind})),rivers,land:land/N,ms:performance.now()-t0}}
