@@ -13,8 +13,11 @@ Kit.suite(({ok,info})=>{
  // ---- a generated world's: each realm's villages nearest a rival made forts (placeForts)
  {const S=t.genWorldSteps({preset:'normal',seed:'redwater'});let r;for(const st of S){const it=st.run();let v;while(!(v=it.next()).done);r=v.value}
   const Hd=r.holdings.filter(h=>h.realm),Fd=Hd.filter(h=>h.kind==='fort'),rv=h=>Math.min(...Hd.filter(o=>o.realm!==h.realm).map(o=>Math.hypot(o.tx-h.tx,o.ty-h.ty)));
-  ok(Fd.length>=1&&new Set(Fd.map(h=>h.realm)).size===Fd.length&&Fd.every(h=>Hd.filter(o=>o.realm===h.realm&&o.kind==='village'&&o.style!=='stilt').every(v=>rv(v)>=rv(h)-1e-9)&&/frontier fort/.test(h.note)),
-   'Normal redwater: '+Fd.length+' forts, one a realm that has a village (the holdings halved, 2026-11-27: a realm of three may have none), its villages’ nearest a rival ('+Fd.map(h=>h.name+' '+Math.round(rv(h))).join(', ')+')')}
+  // (a world's one village is the one made after its forts so that every kind stands on the map, worldplace.js placeAllKinds: it may lie
+  //  nearer a rival than its realm's fort; so on Normal redwater since its holdings stand wider, 2026-11-28)
+  const lone=Hd.filter(o=>o.kind==='village').length===1;
+  ok(Fd.length>=1&&new Set(Fd.map(h=>h.realm)).size===Fd.length&&Fd.every(h=>(lone||Hd.filter(o=>o.realm===h.realm&&o.kind==='village'&&o.style!=='stilt').every(v=>rv(v)>=rv(h)-1e-9))&&/frontier fort/.test(h.note)),
+   'Normal redwater: '+Fd.length+' forts, one a realm that has a village (the holdings halved, 2026-11-27: a realm of three may have none), its villages’ nearest a rival ('+Fd.map(h=>h.name+' '+Math.round(rv(h))).join(', ')+(lone?'; its one village made after them, for the kind':'')+')')}
  // ---- what: a fort's own
  const f=forts[0],T0=t.HOLDING_TYPES;
  ok(f instanceof t.Castle&&f.T===T0.fort&&T0.fort.tier>T0.village.tier&&T0.fort.tier<T0.castle.tier,'between village and castle (tier '+T0.fort.tier+'), a castle’s kind of garrison');
