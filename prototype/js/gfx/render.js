@@ -329,112 +329,183 @@ const SIEGE_CAMP={seed:77,looks:6,dx:24,dy:2};
 // (the order the movers are drawn in: what lies on the ground first (lay: 0 blood, 1 the fallen: carcasses.js BodyRot.ents, a fight's
 //  fallen below), then everyone standing, each by its feet (the owner, 2026-11-26: "Carcass or dead body is draw over unit"))
 const byLay=(a,b)=>(a.lay??2)-(b.lay??2)||a.y-b.y;
-function drawWorld(){
-  // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
-  reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
-  const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
-  // (in a fight on the map: what stands kept from a frame before while it still holds, FightSnap)
-  const now=performance.now(),sk=FightSnap.keyOf(cam,low),snap=FightSnap.fresh(sk,now),fight=FightSnap.live(),cut=RingCut.on();
-  // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
-  ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);if(!snap)ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
-  WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();IndividualHealth.anchors.clear();
-  try{
-  viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
-  if(!snap){WorldArt.draw(ctx,cam);// (the painted map by chunks, those in view: worldart.js)
-    if(!fight)drawEnv(cam,V,0);drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V)}
-  terrainEnts(ents,cam);// (the finer terrain's grass, laid now, and its nature among the buildings: worldterrain.js)
-  // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
-  // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
-  // the road (road.js) and fights
-  for(const s of W.sites)s.draw(ents,cam,V);SiteLife.draw(ents,cam,V);
-  Remains.drawAll(ents,cam,V);// (the remains of a hero who fell, the graves, your family's plot, the lords' crypts: world/death.js, world/lineage.js)
-  Carcass.drawAll(ents,cam,V);// (the fallen of a fight on the map: world/carcasses.js)
-  // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
-  drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
-  for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
-  drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
-  // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
-  if(P.raid&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
-  // (the siege camp: one of SIEGE_CAMP.looks by the holding besieged, of the ground's climate, at the lab's scale (gfx/campart.js
-  // CampArt.put: its model a fine px a px, at its own size) on its trampled yard, its fire lit and your banner planted)
-  if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,st:true,f:()=>{subT(P);const S=SIEGE_CAMP,t=townBy(P.siege.town),s=campSprite(S.seed+((t&&t.seed)|0)%S.looks,'camp',climAt(P.x,P.y)),X=Math.round(P.x-S.dx-s.ax-cam.x),Y=Math.round(P.y+S.dy-s.ay-cam.y),f=CampArt.fine(s);
-    ctx.drawImage(f.gr||s.gr,X,Y,s.width,s.height);CampArt.put(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],(t&&t.seed)|0);drawPoleBanner(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
-  if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
-  if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);
-  CampWake.draw(ents,cam);// (the camp a battle caught you in, on the field while it lasts: world/campsite.js)// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
-  // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
-  // (marching: you are one of your army, in your own place in it: march.js)
-  // (pitching camp: your men stand by while the tents go up, world/campsite.js)
-  if(!P.stay&&(!P.camp||WORLD_BATTLE.on&&CampSite.pitching('you',partySize()))&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
-    else{ents.push({x:P.x,y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
-    ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}})} }
-  GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)
-  drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
-  ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
-  // the order: the ground (the chunks: their trees, woods and ranges painted in), what lies flat (fields, yards, borders), the
-  // shadows of what is built (one pass), the buildings, moored boats, camps and sites (in their own order, by their feet), then everyone who moves by their feet, each with
-  // what stands in front of him drawn again over him (depth.js worldOverdraw; whoever flies, after them all); then the clouds,
-  // smoke and weather, the fog, the night and its lights, the way you walk, and over it all the banners and every label, the
-  // quest marks, your goal and the pointer's brackets (worldui.js), and the minimap
-  TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
-  if(snap){const q=FightSnap.q;TXTQ.push(...q.txt);LIGHTQ.push(...q.light);BANNERQ.push(...q.banner);PLAQUEQ.push(...q.plaque);WDEPTH.pics.push(...q.pics)}
-  else{drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
-    drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
-    if(fight)FightSnap.keep(sk,now,{txt:TXTQ.slice(),light:LIGHTQ.slice(),banner:BANNERQ.slice(),plaque:PLAQUEQ.slice(),pics:WDEPTH.pics.slice()});else FightSnap.clear()}
-  nPlace=TXTQ.length}finally{WorldFlags.collect=false;ctx=scr;if(hi){VW--;VH--}}
-  // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
-  ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
-  // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
-  // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
-  drawSafe(ambientFlat,cam);drawSafe(worldOverdraw,ents.filter(e=>!e.st&&(!cut||RingCut.inside(e.x,e.y))).sort(byLay),cam);// (in a fight drawn as its ring alone, whoever moves outside it not drawn: RingCut)
-  drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
-  if(!B?.world){drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))}
-  // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
-  // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
-  // (the clouds' shadows, smoke, snow and fireflies at the scene's fine px, before the fog: so only where you see (the owner,
-  //  2026-11-16: "draw them before the fog layer"))
-  drawSafe(drawEnv,cam,V,1);
-  const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
-  try{
-  drawSafe(fogMem,low,cam,V);
-  // The geographic sky in native screen pixels (not the low-resolution overlay); in world combat, drawn over actors instead. Seen
-  // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
-  if(!B?.world){const target=ctx;try{ctx=scr;drawSafe(()=>WeatherArt.drawMap())}finally{ctx=target}}
-  drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
-  // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
-  if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
-  }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
-  // the tile grid and a building being placed lie over the fog
-  if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
-  if(G.place)drawPlace(cam);
-  const a=darkness();
-  if(a>0){ctx.fillStyle='rgba(10,14,50,'+(a*.34).toFixed(3)+')';ctx.fillRect(0,0,VW+1,VH+1)}
-  // torchlight: a warm glow over the dark, pulsing unevenly, its pool on the ground; light only, each fire draws its own flame
-  // (fire.js fireLights). FLAMES off: as it was, a round glow and a small flame of its own, flickering
-  if(FLAMES.on)fireLights(cam,a);
-  else{const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
-    ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
-  ambientGlow(cam);// (the fireflies' light: ambient.js)
-  wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
-  drawTravelConcealment(cam);
-  drawTravelPace(cam);
-  drawTravelDetection(cam);
-  drawBanners(cam);// (the parties' labels and the packs' markers, over all, their counts queued with the rest)
-  // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
-  drawPlaques(cam);// (the holdings' bars, over all: structures.js)
-  drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
-  drawSafe(()=>HoldSpots.draw(cam));
-  drawSafe(()=>LairSpots.draw(cam));// (a hideout's services while you may deal there: world/lairdeal.js)// (the holdings' places near you, over their buildings: world/holdspots.js)
-  const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
-  drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
-  drawSafe(()=>EnemyDifficulty.world(cam));
-  if(cut)drawSafe(()=>RingCut.draw(cam));// (a fight drawn as its ring alone: the dark past it)
-  wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
-  ctx.restore();
-  // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
-  // screen: worldMiniRect)
-  if(!B?.world)drawWorldMini(V);
+/* the map's frame, layer by layer (the owner, 2026-11-28: "Can you make the drawing layer more streamlined and more structured?"):
+   WORLD_LAYERS is the order, bottom to top, a pass a row and each name a WorldFrame method below; drawWorld is one WorldFrame drawn.
+     scene: into the kept scene (memCv: game px on the camera's whole pixels, at the scene's fine px), which the fog puts back where
+       you no longer see; in a fight on the map kept from a frame before while it holds (FightSnap), only its list made afresh.
+         ground    the painted map by chunks (worldart.js: the land, its water and roads), the ground's weather under all
+         flat      what lies flat on it: the holdings' land (tint), the tracks, the estates' fields and yards
+         nature    the grass in the wind, laid now; the trees, rocks and bushes onto the list, to stand among the buildings
+         everyone  each thing on the map says how it is drawn, onto the frame's list (WorldObject draw): {x, y: its feet, f: its
+                   drawing, st: it stands (a building, a tree, a camp: scene), else it moves (movers); lay: 0 blood, 1 the fallen,
+                   flat on the ground under those standing; top: it flies, over all; own: yours; nf: it fades no cover}
+         standing  the shadows of what is built (one pass), then all that stands, by its feet, each up by its ground's lift; the
+                   borders over it
+     movers: onto the screen, shifted by the camera's fraction as everything after is.
+         splashes  ripples and the flyers' shadows, flat under everyone (ambient.js)
+         figures   everyone who moves: what lies first, then each by its feet, what stands in front of him put back over him
+                   (depth.js worldOverdraw: a tree in front of a man hides him, fading over yours); those in flight after them all
+         flyers    the birds in the air, a blessing's motes
+         squares   your men's health and the map's flags
+     sky: what drifts over the land and what hides it.
+         weather   the clouds' shadows, smoke, snow at the scene's fine px, only where you see
+         veil      the remembered scene put back outside your sight, the sky, the climate's air, the fog (one picture at a finer screen)
+     light:
+         grid      the tile grid and a building being placed
+         night     the dark, the fires' light over it, the fireflies
+     over: the interface on the map, in the screen's own px.
+         ways      the way you walk and your goal, how you travel
+         labels    the parties' tags, the holdings' bars, the places' icons, every queued name and count (a place's where you know
+                   the land, anyone's only in your sight)
+         marks     the quests' and rumours' marks, a foe's strength, a fight's ring, the pointer's brackets
+     mini: the minimap.
+   A layer that fails is left out and the rest drawn where it is wrapped in drawSafe, as before. */
+const WORLD_LAYERS={scene:['ground','flat','nature','everyone','standing'],movers:['splashes','figures','flyers','squares'],sky:['weather','veil'],
+  light:['grid','night'],over:['ways','labels','marks'],mini:['minimap']};
+class WorldFrame{
+  constructor(){
+    // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
+    reveal();FIGURES.frame();const V=vis(),C=G.cam;if(!B?.world){const F=camFollow(P.x,P.y);C.x=snapV(clamp(F.x-VW/2,0,MW*TILE-VW));C.y=snapV(clamp(F.y-VH/2,0,MH*TILE-VH));}
+    const cam={x:Math.floor(C.x),y:Math.floor(C.y)},fx=C.x-cam.x,fy=C.y-cam.y,scr=ctx,low=memCv(),hi=VS>1,ents=[];let nPlace=0;
+    // (in a fight on the map: what stands kept from a frame before while it still holds, FightSnap)
+    const now=performance.now(),sk=FightSnap.keyOf(cam,low),snap=FightSnap.fresh(sk,now),fight=FightSnap.live(),cut=RingCut.on();
+    Object.assign(this,{V,cam,fx,fy,scr,low,hi,ents,nPlace,now,sk,snap,fight,cut})
+  }
+  pass(k){for(const n of WORLD_LAYERS[k])this[n]()}
+  draw(){const {cam,low,scr,hi,snap,fx,fy}=this;
+    // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
+    ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);if(!snap)ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
+    WorldFlags.begin(cam);EnemyDifficulty.anchors.clear();IndividualHealth.anchors.clear();
+    try{
+    viewSeen(cam);// (what of the view you see, remember or never saw: fog.js VIEW_SEEN)
+    this.pass('scene');
+    this.nPlace=TXTQ.length}finally{WorldFlags.collect=false;ctx=scr;if(hi){VW--;VH--}}
+    // onto the screen, shifted by the camera's fraction, as is everything over it up to the minimap
+    ctx.drawImage(low,-fx,-fy,low.width/low.r,low.height/low.r);ctx.save();ctx.translate(-fx,-fy);
+    this.pass('movers');this.pass('sky');this.pass('light');this.pass('over');
+    ctx.restore();this.pass('mini')
+  }
+  // ---- scene
+  ground(){const {cam,V,snap,fight}=this;if(snap)return;WorldArt.draw(ctx,cam);if(!fight)drawEnv(cam,V,0)}
+  flat(){const {cam,V}=this;if(this.snap)return;drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V)}
+  nature(){terrainEnts(this.ents,this.cam)}
+  everyone(){const {ents,cam,V}=this;
+    // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
+    // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
+    // the road (road.js) and fights
+    for(const s of W.sites)s.draw(ents,cam,V);SiteLife.draw(ents,cam,V);
+    Remains.drawAll(ents,cam,V);// (the remains of a hero who fell, the graves, your family's plot, the lords' crypts: world/death.js, world/lineage.js)
+    Carcass.drawAll(ents,cam,V);// (the fallen of a fight on the map: world/carcasses.js)
+    // the holdings (and their estates) are drawn as their placed buildings (lotEnts, called with the estates below)
+    drawParties(ents,cam,V);// lords, bands, patrols and your companions' parties (each party draws itself: parties.js)
+    for(const m of W.monsters)asMonster(m).draw(ents,cam,V);
+    drawHerds(ents,cam,V);// (a pasture's herd: one animal on each worked field tile; the rest as herds: critters.js)
+    // (your siege camp, raid and camp: not while a battle is fought on the map round you (B.world): its men stand there instead)
+    if(P.raid&&!B?.world)ents.push({x:P.x,y:P.y-1,f:()=>{subT(P);txt('Raiding '+Math.round(P.raid.t/RAID_TIME*100)+'%',Math.round(P.x-cam.x),Math.round(P.y-20-cam.y),'#ff9a90','center')}});
+    // (the siege camp: one of SIEGE_CAMP.looks by the holding besieged, of the ground's climate, at the lab's scale (gfx/campart.js
+    // CampArt.put: its model a fine px a px, at its own size) on its trampled yard, its fire lit and your banner planted)
+    if(P.siege&&!B?.world)ents.push({x:P.x,y:P.y-1,st:true,f:()=>{subT(P);const S=SIEGE_CAMP,t=townBy(P.siege.town),s=campSprite(S.seed+((t&&t.seed)|0)%S.looks,'camp',climAt(P.x,P.y)),X=Math.round(P.x-S.dx-s.ax-cam.x),Y=Math.round(P.y+S.dy-s.ay-cam.y),f=CampArt.fine(s);
+      ctx.drawImage(f.gr||s.gr,X,Y,s.width,s.height);CampArt.put(s,X,Y);drawFire(X+s.fire[0],Y+s.fire[1],(t&&t.seed)|0);drawPoleBanner(P.banner(),X+s.flag[0],Y+s.flag[1],0);txt('Siege day '+P.siege.days,Math.round(P.x-cam.x),Math.round(P.y-18-cam.y),'#e8b94a','center')}});
+    if(P.camp&&!B?.world){if(WORLD_BATTLE.on)marchCircle(ents,P,cam);bandCampEnts(ents,cam);}
+    if(P.stay&&P.stay.camp&&!B?.world)stayCampEnts(ents,cam);
+    CampWake.draw(ents,cam);// (the camp a battle caught you in, on the field while it lasts: world/campsite.js)// (your army camped by the gate while you stay: world/stay.js STAY_CAMP)// (your camp's tents, fire and banner in your place, by their feet among the trees as everyone is: world/supply.js)
+    // (you, not while you camp: on foot, a step each WALK.foot px you walk; mounted, your horse on the same feet, a step each WALK.ride px; your host behind, as a lord's: drawParties)
+    // (marching: you are one of your army, in your own place in it: march.js)
+    // (pitching camp: your men stand by while the tents go up, world/campsite.js)
+    if(!P.stay&&(!P.camp||WORLD_BATTLE.on&&CampSite.pitching('you',partySize()))&&!B?.world){if(WORLD_BATTLE.on){marchDraw(ents,P,cam)}
+      else{ents.push({x:P.x,y:P.y,own:1,id:P,f:()=>{subT(P);const sx=Math.round(P.x-cam.x),sy=Math.round(P.y-cam.y),m=mountDef(),go=mapStepping(P,atGoal()),s=partySprite('#e8b94a',m?m.col:'',go?frameOf(P,m?WALK.ride:WALK.foot,WALK.n):0);
+      ctx.fillStyle='rgba(0,0,0,.3)';ctx.fillRect(sx-(m?6:3),sy-1,m?12:6,2);drawHost(partySize(),'#3d74d6',sx-(m?P.dir*4:0),sy+2,P.dir,go?WALKED.get(P)||0:null,5,P.race);ctx.save();ctx.translate(sx,sy-10);ctx.scale(P.dir,1);ctx.drawImage(s,-(s.width>>1),13-s.height);ctx.restore()}})} }
+    GateFile.draw(ents,cam);GateFile.camps(ents,cam,V);// (armies filing in at a gate, camps by a gate with no room: world/gatefile.js)
+    drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
+    ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
+  }
+  standing(){const {ents,cam,V,scr,snap,fight,sk,now}=this;
+    // (the frame's queues begun: labels, lights, banners, plaques, the depth's pictures; the estates' buildings and all that stands)
+    TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
+    if(snap){const q=FightSnap.q;TXTQ.push(...q.txt);LIGHTQ.push(...q.light);BANNERQ.push(...q.banner);PLAQUEQ.push(...q.plaque);WDEPTH.pics.push(...q.pics)}
+    else{drawShadows(bents);bents.sort((a,b)=>a.y-b.y).forEach(e=>liftDraw(e));// (each up by its ground's lift: worldterrain.js liftDraw)// (their shadows first, in one pass: structures.js)
+      drawLand(cam,'line');// (the borders over all that stands and the water's glints, under everyone who moves: territory.js)
+      if(fight)FightSnap.keep(sk,now,{txt:TXTQ.slice(),light:LIGHTQ.slice(),banner:BANNERQ.slice(),plaque:PLAQUEQ.slice(),pics:WDEPTH.pics.slice()});else FightSnap.clear()}
+  }
+  // ---- movers
+  splashes(){drawSafe(ambientFlat,this.cam)}
+  figures(){const {ents,cam,cut}=this;
+    // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
+    // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
+    drawSafe(worldOverdraw,ents.filter(e=>!e.st&&(!cut||RingCut.inside(e.x,e.y))).sort(byLay),cam);// (in a fight drawn as its ring alone, whoever moves outside it not drawn: RingCut)
+  }
+  flyers(){const {cam}=this;
+    drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
+  }
+  squares(){const {cam}=this;
+    if(!B?.world){drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))}
+  }
+  // ---- sky
+  weather(){const {cam,V}=this;
+    // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
+    // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
+    // (the clouds' shadows, smoke, snow and fireflies at the scene's fine px, before the fog: so only where you see (the owner,
+    //  2026-11-16: "draw them before the fog layer"))
+    drawSafe(drawEnv,cam,V,1);
+  }
+  veil(){const {cam,V,low,scr,hi}=this;
+    const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
+    try{
+    drawSafe(fogMem,low,cam,V);
+    // The geographic sky in native screen pixels (not the low-resolution overlay); in world combat, drawn over actors instead. Seen
+    // where you see, dim where you remember, none on land you have never seen (the owner, 2026-11-08)
+    if(!B?.world){const target=ctx;try{ctx=scr;drawSafe(()=>WeatherArt.drawMap())}finally{ctx=target}}
+    drawSafe(climateAir,cam);// (the frost's flakes, the swamp's mist: worldterrain.js)
+    // fog and night: the land you remember, outside your sight, lies dim; land you have never seen is dark (fog.js)
+    if(!CHEAT.noFog)drawSafe(drawWorldFog,cam,V);// (the console's fog off: ui/developer.js)
+    }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
+  }
+  // ---- light
+  grid(){const {cam}=this;
+    // the tile grid and a building being placed lie over the fog
+    if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
+    if(G.place)drawPlace(cam);
+  }
+  night(){const {cam}=this;
+    const a=darkness();
+    if(a>0){ctx.fillStyle='rgba(10,14,50,'+(a*.34).toFixed(3)+')';ctx.fillRect(0,0,VW+1,VH+1)}
+    // torchlight: a warm glow over the dark, pulsing unevenly, its pool on the ground; light only, each fire draws its own flame
+    // (fire.js fireLights). FLAMES off: as it was, a round glow and a small flame of its own, flickering
+    if(FLAMES.on)fireLights(cam,a);
+    else{const now=performance.now();for(const L of LIGHTQ){if(!inSight(L.x+cam.x,L.y+cam.y))continue;const r=L.r*(1+.06*Math.sin(now/90+L.x)),g=ctx.createRadialGradient(L.x,L.y,1,L.x,L.y,r);g.addColorStop(0,'rgba(255,190,90,'+(.12+.28*a).toFixed(3)+')');g.addColorStop(1,'rgba(255,150,60,0)');
+      ctx.save();ctx.globalCompositeOperation='lighter';ctx.fillStyle=g;ctx.fillRect(L.x-r,L.y-r,2*r,2*r);ctx.restore();const f=Math.floor(now/120+L.x)%2;rect(ctx,'#e8803a',L.x-1+f,L.y-2,2,2);rect(ctx,'#ffe090',L.x,L.y-1-f,1,1)}}
+    ambientGlow(cam);// (the fireflies' light: ambient.js)
+  }
+  // ---- over
+  ways(){const {cam}=this;
+    wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
+    drawTravelConcealment(cam);
+    drawTravelPace(cam);
+    drawTravelDetection(cam);
+  }
+  labels(){const {cam,nPlace}=this;
+    drawBanners(cam);// (the parties' labels and the packs' markers, over all, their counts queued with the rest)
+    // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
+    drawPlaques(cam);// (the holdings' bars, over all: structures.js)
+    drawSafe(()=>CampSpots.draw(cam));// (the camps' services near you, their icons: world/encampments.js)
+    drawSafe(()=>HoldSpots.draw(cam));
+    drawSafe(()=>LairSpots.draw(cam));// (a hideout's services while you may deal there: world/lairdeal.js)// (the holdings' places near you, over their buildings: world/holdspots.js)
+    const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
+  }
+  marks(){const {cam,cut}=this;
+    drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
+    drawSafe(()=>EnemyDifficulty.world(cam));
+    if(cut)drawSafe(()=>RingCut.draw(cam));// (a fight drawn as its ring alone: the dark past it)
+    wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
+  }
+  // ---- mini
+  minimap(){const {V}=this;
+    // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
+    // screen: worldMiniRect)
+    if(!B?.world)drawWorldMini(V);
+  }
 }
+function drawWorld(){new WorldFrame().draw()}
 // Canvas GUI pass: world battles call this after units, effects and world labels.
 function drawWorldMini(V){
   if(MINIMAP.on){drawMiniMap(V);return}
