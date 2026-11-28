@@ -331,7 +331,7 @@ class CampSpot extends WorldObject{
    box, in the ground's px with a finger's slack (I.tap), kept on it (o.box) for a tap (world.js pickAt), none for one not drawn;
    I: css (its size), gap, tap; name(o): its picture (ui/icons.js) */
 const MapBadges={
-  draw(items,cam,I,name){const m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=sc/dpr,V=vis(),S=yourSight(V),put=[];
+  draw(items,cam,I,name){const m=ctx.getTransform(),sc=Math.hypot(m.a,m.b)||1,dpr=dprOf(),k=sc/dpr,V=vis(),S=yourSight(V),put=[],snap=v=>Math.round(v*dpr)/dpr;
     for(const {o,a} of items){o.box=null;o.x=a.x;o.y=a.y;if(!S.sees(a.x,a.y,1.2))continue;
       const lf=typeof liftAt==='function'?liftAt(a.x,a.y):0,wx=a.x-cam.x,wy=a.y-a.up-lf-cam.y;put.push({o,a,lf,cx:(m.a*wx+m.c*wy+m.e)/dpr,cy:(m.b*wx+m.d*wy+m.f)/dpr})}
     if(!put.length)return;const w=I.css,h=I.css,hx=(m.a*(P.x-cam.x)+m.e)/dpr,hy=(m.d*(P.y-(typeof liftAt==='function'?liftAt(P.x,P.y):0)-cam.y)+m.f)/dpr,hw=8*k,hh=24*k;
@@ -341,10 +341,13 @@ const MapBadges={
       for(let j=0;j<i;j++){const q=put[j];if(p.x0<q.x0+w+I.gap&&p.x0+w+I.gap>q.x0&&p.y0<q.y0+h+I.gap&&p.y0+h+I.gap>q.y0)p.x0=q.x0+w+I.gap}}
     for(const p of put){const nm=name(p.o);if(!uiMarkerReady(nm))continue;
       const T=I.tap,gx=x=>(x*dpr-m.e)/m.a+cam.x,gy=y=>(y*dpr-m.f)/m.d+cam.y+p.lf;p.o.box=[gx(p.x0-T),gy(p.y0-T),gx(p.x0+w+T),gy(p.y0+h+T)];
-      ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
+      // (put to the screen's own px, a device px, not a whole CSS px: the map glides a device px at a time (core.js VS), and a badge
+      //  snapped to CSS px stood still for dpr - 1 of its steps and then jumped dpr, shaking against its building on a phone
+      //  (dpr 3); the owner, 2026-11-28: "These icons around buildings are shaking")
+      const sx=snap(p.x0),sy=snap(p.y0),by=snap(p.y0+h);ctx.save();ctx.setTransform(dpr,0,0,dpr,0,0);
       // (a thin stalk down to what it stands at)
-      ctx.fillStyle='rgba(30,24,16,.75)';ctx.fillRect(Math.round(p.x0+w/2-1),Math.round(p.y0+h),2,Math.max(0,Math.round(p.cy-p.y0-h)));
-      ctx.translate(Math.round(p.x0),Math.round(p.y0));campBadge(ctx,nm,w,h);ctx.restore()}}
+      ctx.fillStyle='rgba(30,24,16,.75)';ctx.fillRect(snap(p.x0+w/2-1),by,2,Math.max(0,snap(p.cy)-by));
+      ctx.translate(sx,sy);campBadge(ctx,nm,w,h);ctx.restore()}}
 };
 const CampSpots={
   of:new Map(),

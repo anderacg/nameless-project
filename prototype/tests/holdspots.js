@@ -30,6 +30,15 @@ Kit.suite(({ok,info})=>{const t=T,G=t.G,P=t.P,H=t.HoldSpots,S=t.HOLD_SPOTS;windo
  P.x=mid(t.lotCentre(town)).x+20;P.y=mid(t.lotCentre(town)).y+30;Kit.world();t.frame();
  ok(H.shown(town),'shown while you are near it');const o=H.list(town).find(q=>q.box);
  if(o){const b=o.box;ok(t.pickAt((b[0]+b[2])/2,(b[1]+b[3])/2)===o,'a tap on a badge picks it')}else info('no badge drawn yet (its pictures still loading)');
+ // ---- a badge glides with the map (the owner, 2026-11-28: "These icons around buildings are shaking"): on a phone (3 device px a CSS
+ //  px) the map moves a device px at a time; a badge is put to the device px too, a step for each of the map's, not three at once
+ {const dp=Object.getOwnPropertyDescriptor(window,'devicePixelRatio'),cap=t.RENDER.cap,ready=window.uiMarkerReady,badge=window.campBadge,c=t.ctx,tr=c.translate,xs=[];
+  try{Object.defineProperty(window,'devicePixelRatio',{value:3,configurable:true});t.RENDER.cap=3;window.uiMarkerReady=()=>true;window.campBadge=()=>{};
+   const cam={x:Math.floor(P.x-100),y:Math.floor(P.y-100)},it=[{o:{},a:{x:P.x,y:P.y+4,up:10}}];
+   for(let k=0;k<12;k++){c.save();c.setTransform(6,0,0,6,-k,0);let got=null;c.translate=function(x,y){if(got==null)got=x;return tr.call(this,x,y)};try{t.MapBadges.draw(it,cam,S,()=>'x')}finally{c.translate=tr;c.restore()}xs.push(got*3)}
+   const whole=xs.every(v=>Math.abs(v-Math.round(v))<1e-6),steps=xs.slice(1).map((v,i)=>Math.round(xs[i]-v));
+   ok(whole&&steps.every(d=>d===1),'the map moved a device px at a time, a badge moves with it a device px at a time (steps '+steps.join(' ')+'; snapped to CSS px it stood two frames and jumped three)')}
+  finally{if(dp)Object.defineProperty(window,'devicePixelRatio',dp);else delete window.devicePixelRatio;t.RENDER.cap=cap;window.uiMarkerReady=ready;window.campBadge=badge}}
  P.x=town.x+S.near*3;P.y=town.y;ok(!H.shown(town),'none from afar');
  ok(!ERR.length,'no runtime errors');
 });

@@ -114,7 +114,7 @@ class Buildings{
   // house on the best free plot (lots.js lotSpot); false (and no project) when there is none
   start(k,lv,at){
     const t=this.t;t.work={k,lv,done:G.day+this.days(lv),start:G.day};
-    if(k==='house'){const R=seeded(G.day*31+t.seed+(t.lots||[]).length),type=typeFor(t,'house',R),n=lotSize(type),p=at||lotSpot(t,n,'open',1,9,R,{gap:'row',jit:.8});
+    if(k==='house'){const R=seeded(G.day*31+t.seed+(t.lots||[]).length),type=typeFor(t,'house',R),n=lotSize(type),p=at||lotSpot(t,n,'open',1,Math.round(9*LOT_SPREAD.ring),R,{gap:'row',jit:.8});
       if(!p){t.work=null;return false}t.work.lot=t.layout.add({k:'house',type,x:p[0],y:p[1],n,lv:1,seed:Math.floor(R()*1e6),st:'building'}).id;return true}
     if(k!=='wall'&&ESTATES[k]){const l=lotAt(t,k);if(!l)t.layout.estateLot(k,null,at,'building');else if(!bldLv(t,k)){l.st='building';l._s=null}}
     return true}
