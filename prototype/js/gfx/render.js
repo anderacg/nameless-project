@@ -329,39 +329,46 @@ const SIEGE_CAMP={seed:77,looks:6,dx:24,dy:2};
 // (the order the movers are drawn in: what lies on the ground first (lay: 0 blood, 1 the fallen: carcasses.js BodyRot.ents, a fight's
 //  fallen below), then everyone standing, each by its feet (the owner, 2026-11-26: "Carcass or dead body is draw over unit"))
 const byLay=(a,b)=>(a.lay??2)-(b.lay??2)||a.y-b.y;
-/* the map's frame, layer by layer (the owner, 2026-11-28: "Can you make the drawing layer more streamlined and more structured?"):
-   WORLD_LAYERS is the order, bottom to top, a pass a row and each name a WorldFrame method below; drawWorld is one WorldFrame drawn.
-     scene: into the kept scene (memCv: game px on the camera's whole pixels, at the scene's fine px), which the fog puts back where
-       you no longer see; in a fight on the map kept from a frame before while it holds (FightSnap), only its list made afresh.
-         ground    the painted map by chunks (worldart.js: the land, its water and roads), the ground's weather under all
-         flat      what lies flat on it: the holdings' land (tint), the tracks, the estates' fields and yards
-         nature    the grass in the wind, laid now; the trees, rocks and bushes onto the list, to stand among the buildings
-         everyone  each thing on the map says how it is drawn, onto the frame's list (WorldObject draw): {x, y: its feet, f: its
-                   drawing, st: it stands (a building, a tree, a camp: scene), else it moves (movers); lay: 0 blood, 1 the fallen,
-                   flat on the ground under those standing; top: it flies, over all; own: yours; nf: it fades no cover}
-         standing  the shadows of what is built (one pass), then all that stands, by its feet, each up by its ground's lift; the
-                   borders over it
-     movers: onto the screen, shifted by the camera's fraction as everything after is.
-         splashes  ripples and the flyers' shadows, flat under everyone (ambient.js)
-         figures   everyone who moves: what lies first, then each by its feet, what stands in front of him put back over him
-                   (depth.js worldOverdraw: a tree in front of a man hides him, fading over yours); those in flight after them all
-         flyers    the birds in the air, a blessing's motes
-         squares   your men's health and the map's flags
-     sky: what drifts over the land and what hides it.
-         weather   the clouds' shadows, smoke, snow at the scene's fine px, only where you see
-         veil      the remembered scene put back outside your sight, the sky, the climate's air, the fog (one picture at a finer screen)
-     light:
-         grid      the tile grid and a building being placed
-         night     the dark, the fires' light over it, the fireflies
-     over: the interface on the map, in the screen's own px.
-         ways      the way you walk and your goal, how you travel
-         labels    the parties' tags, the holdings' bars, the places' icons, every queued name and count (a place's where you know
-                   the land, anyone's only in your sight)
-         marks     the quests' and rumours' marks, a foe's strength, a fight's ring, the pointer's brackets
-     mini: the minimap.
-   A layer that fails is left out and the rest drawn where it is wrapped in drawSafe, as before. */
-const WORLD_LAYERS={scene:['ground','flat','nature','everyone','standing'],movers:['splashes','figures','flyers','squares'],sky:['weather','veil'],
-  light:['grid','night'],over:['ways','labels','marks'],mini:['minimap']};
+/* ---------- the map's frame, layer by layer (the owner, 2026-11-28: "Can you make the drawing layer more streamlined and more
+   structured?", "Define each layer carefully so it easier to maintain and develop further"; doc/DRAW_LAYERS.md: each layer's
+   definition in full, and where a new thing goes) ----------
+   WORLD_LAYERS is the order, bottom to top: a layer a row {name: its WorldFrame method, below, with its definition; pass; when: drawn
+   only while it holds, of the frame F}. drawWorld is one WorldFrame drawn: every layer in this order, each on its own (a layer that
+   throws is left out, its error told once, the canvas's state put back and the rest drawn: drawSafe). The passes:
+     scene   into the kept scene (memCv: the land and all that stands, in game px on the camera's whole pixels, at the scene's fine
+             px). The fog puts this picture back wherever you no longer see, so what is drawn here is remembered: nothing that moves.
+             In a fight on the map it is kept from a frame before while it holds (FightSnap: F.snap), only its list made afresh.
+     movers  onto the screen, over the scene, shifted by the camera's fraction (as every pass after): everyone who moves, in your
+             sight only (the veil covers the rest).
+     sky     what drifts over the land and what hides it. After it, nothing of the world shows outside your sight.
+     light   the dark and what lights it; what you are placing.
+     over    the interface on the map, in the screen's own px: never dimmed, never fogged.
+     mini    the minimap, on the screen itself. */
+const WORLD_LAYERS=[
+  {name:'ground',pass:'scene',when:F=>!F.snap},{name:'flat',pass:'scene',when:F=>!F.snap},{name:'nature',pass:'scene'},{name:'everyone',pass:'scene'},{name:'standing',pass:'scene'},
+  {name:'splashes',pass:'movers'},{name:'figures',pass:'movers'},{name:'flyers',pass:'movers'},{name:'squares',pass:'movers',when:()=>!B?.world},
+  {name:'weather',pass:'sky'},{name:'veil',pass:'sky'},
+  {name:'grid',pass:'light',when:()=>GRID.on||!!G.place},{name:'night',pass:'light'},
+  {name:'ways',pass:'over'},{name:'labels',pass:'over'},{name:'marks',pass:'over'},
+  {name:'minimap',pass:'mini',when:()=>!B?.world}];
+/* an entry of the frame's list (F.ents; what each thing on the map pushes from its draw(ents, cam, V): layer everyone), its fields:
+   one place for them all, so a new kind of thing says the same things the same way (tests/worldlayers.js: no entry carries another) */
+const WORLD_ENT={
+  y:'its feet on the map, px: where it stands, the order it is drawn in (lower on the screen, later) and what covers it',
+  x:'its place across, px (none: drawn with no lift and no bridge, and left out of a fight drawn as its ring alone)',
+  f:'its drawing, at the camera it was made with (ctx: the layer\'s canvas; labels by txt, lights, banners and plaques into their queues)',
+  st:'it stands (a building, a tree, a tent, a site): drawn into the kept scene by layer standing, remembered under the fog; else it moves: layer figures',
+  sh:'[picture, x, y]: its shadow, all laid in one pass under everything that stands',
+  fl:'fl(lift): its drawing at its ground\'s lift with no context saved round it (a prop: thousands a frame)',
+  r:'the scene\'s fine px its kept entry was made at (a prop\'s: made again when that changes)',
+  lx:'the point whose ground lifts it, across, where that is not its feet',
+  ly:'the point whose ground lifts it, down (a flyer\'s shadow point, a site\'s base)',
+  lay:'it lies on the ground, under everyone standing: 0 blood, 1 the fallen',
+  top:'it flies: drawn after every figure, covered by nothing',
+  own:'yours: what covers it fades and it shows through as a ghost',
+  nf:'it fades nothing that covers it (ambient life, the fallen)',
+  loot:'something to take: its outline shown where it is hidden',
+  id:'who it is (the thing itself): for a test or a pick to find its entry'};
 class WorldFrame{
   constructor(){
     // (the camera to 1/VS px: G.cam; cam its whole pixels, the rest (fx, fy) the shift of everything drawn on the screen)
@@ -371,7 +378,8 @@ class WorldFrame{
     const now=performance.now(),sk=FightSnap.keyOf(cam,low),snap=FightSnap.fresh(sk,now),fight=FightSnap.live(),cut=RingCut.on();
     Object.assign(this,{V,cam,fx,fy,scr,low,hi,ents,nPlace,now,sk,snap,fight,cut})
   }
-  pass(k){for(const n of WORLD_LAYERS[k])this[n]()}
+  // (a pass's layers in the table's order, each while it holds and on its own: drawSafe)
+  pass(k){for(const l of WORLD_LAYERS)if(l.pass===k&&(!l.when||l.when(this)))drawSafe(()=>this[l.name]())}
   draw(){const {cam,low,scr,hi,snap,fx,fy}=this;
     // what stands, into the scene in game pixels (memCv: its extra pixel each way counted in VW, VH while it is drawn)
     ctx=low.getContext('2d', { willReadFrequently: true });ctx.setTransform(1,0,0,1,0,0);if(!snap)ctx.clearRect(0,0,low.width,low.height);if(low.r>1){ctx.setTransform(low.r,0,0,low.r,0,0);ctx.imageSmoothingEnabled=false}if(hi){VW++;VH++}// (its transform reset each frame: nothing drawn into it can leave a shift that piles up)
@@ -386,9 +394,21 @@ class WorldFrame{
     ctx.restore();this.pass('mini')
   }
   // ---- scene
-  ground(){const {cam,V,snap,fight}=this;if(snap)return;WorldArt.draw(ctx,cam);if(!fight)drawEnv(cam,V,0)}
-  flat(){const {cam,V}=this;if(this.snap)return;drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V)}
+  /* ground. The painted land: the chunks in view (worldart.js WorldArt.draw: the land, its water, roads and all that is painted once and
+     kept), then the ground's own life under everything (drawEnv 0: the water's glints, fish; none in a fight). A thing that never
+     changes belongs in the chunk's painting (worldart.js, worldterrain.js), not here a frame at a time. */
+  ground(){const {cam,V,fight}=this;WorldArt.draw(ctx,cam);if(!fight)drawEnv(cam,V,0)}
+  /* flat. What lies on the ground with no height, so nothing can stand behind it: the holdings' land (territory.js drawLand tint), the
+     tracks of who passed (gfx/tracks.js), the estates' fields, yards and paths (structures.js drawEstates). Drawn in this order, never
+     sorted. Anything with a height goes on the list instead (everyone, st). */
+  flat(){const {cam,V}=this;drawLand(cam,'tint');drawTracks(cam);drawEstates(cam,V)}
+  /* nature. The finer land's living part (worldterrain.js terrainEnts): the grass, flat and in the wind, laid at once from one buffer
+     (it stands behind nothing); the trees, rocks, bushes and logs of the chunks in view put on the list as standing entries (propEnt),
+     to be drawn by their feet among the buildings. */
   nature(){terrainEnts(this.ents,this.cam)}
+  /* everyone. Nothing drawn: each thing on the map says how it is drawn, onto the frame's list (F.ents; an entry's fields: WORLD_ENT),
+     from its own draw(ents, cam, V) (WorldObject draw), in the order below (two as deep keep it). A new kind of thing is one more
+     line here and its own draw: it never draws at once, or it would lie under the buildings and over the fog. */
   everyone(){const {ents,cam,V}=this;
     // each thing on the map draws itself onto the frame's list (WorldObject draw), in the order they always went (two as deep stay
     // in it): the sites, the parties, the beasts, the herds, you, then the workers, caravans, ships, refugees, the encounters on
@@ -419,6 +439,11 @@ class WorldFrame{
     drawFolk(ents,cam,V);drawTownFolk(ents,cam,V);Hunters.drawAll(ents,cam,V);drawCaravans(ents,cam,V);drawShips(ents,cam,V);drawRefugees(ents,cam,V);drawRoad(ents,cam,V);drawFights(ents,cam,V);
     ambientWorld(ents,cam,V);// (the birds, critters and butterflies on the ground, with everyone; the rest stepped: ambient.js)
   }
+  /* standing. The frame's queues begun (TXTQ labels, LIGHTQ lights, BANNERQ tags, PLAQUEQ bars, WDEPTH.pics: filled by entries as they
+     draw, read by night, labels and figures); the estates' buildings and the pens' animals onto the list (structures.js estateEnts); then
+     all that stands (st): the shadows in one pass, each entry by its feet (y), up by its ground's lift (worldterrain.js liftDraw),
+     giving its picture to the depth (depth.js depthPic) so a figure behind it is covered; the borders over them (drawLand line). In a
+     kept fight frame nothing is drawn: the queues as they were kept. */
   standing(){const {ents,cam,V,scr,snap,fight,sk,now}=this;
     // (the frame's queues begun: labels, lights, banners, plaques, the depth's pictures; the estates' buildings and all that stands)
     TXTQ=[];TXTQ.ctx=scr;TXTQ.lo=ctx;LIGHTQ=[];BANNERQ=[];PLAQUEQ=[];WDEPTH.pics.length=0;const bents=[];PEN_ENTS.length=0;estateEnts(bents,cam,V);for(const e of PEN_ENTS)ents.push(e);PEN_ENTS.length=0;for(const e of ents.filter(e=>e.st))bents.push(e);
@@ -428,19 +453,28 @@ class WorldFrame{
       if(fight)FightSnap.keep(sk,now,{txt:TXTQ.slice(),light:LIGHTQ.slice(),banner:BANNERQ.slice(),plaque:PLAQUEQ.slice(),pics:WDEPTH.pics.slice()});else FightSnap.clear()}
   }
   // ---- movers
-  splashes(){drawSafe(ambientFlat,this.cam)}
+  /* splashes. Flat on the ground under everyone who moves: ripples, the flyers' shadows (ambient.js ambientFlat). */
+  splashes(){ambientFlat(this.cam)}
+  /* figures. Everyone who moves: the list's entries that do not stand (in a fight drawn as its ring alone, those inside it), what lies
+     first (lay), then each by its feet; each drawn (drawMover: on a bridge's deck, up by its ground's lift), then what stands in front
+     of it put back over it (depth.js worldOverdraw: a tree before a man covers him, fading over yours); those in flight (top) last. */
   figures(){const {ents,cam,cut}=this;
     // fog of war: keep the scene of structures, draw everyone, then put the remembered scene back over all but your sight, so
     // nothing that moves shows outside it; labels likewise (a place's, where you know the land; anyone's, only in your sight)
     drawSafe(worldOverdraw,ents.filter(e=>!e.st&&(!cut||RingCut.inside(e.x,e.y))).sort(byLay),cam);// (in a fight drawn as its ring alone, whoever moves outside it not drawn: RingCut)
   }
+  /* flyers. What is in the air over everyone: the birds (ambient.js ambientAir), a blessing's motes (blessing.js). */
   flyers(){const {cam}=this;
     drawSafe(ambientAir,cam);drawSafe(()=>BlessFx.draw(cam));// (the splashes and the flyers' shadows under everyone, the flyers over them: ambient.js)
   }
+  /* squares. What rides on the figures: your men's health squares (ui/individualhealth.js), the map's flags (worldflags). Not in a fight
+     on the map: the battle draws its own. */
   squares(){const {cam}=this;
-    if(!B?.world){drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))}
+    drawSafe(()=>IndividualHealth.world(cam));drawSafe(()=>WorldFlags.draw(cam))
   }
   // ---- sky
+  /* weather. What drifts low over the land: the clouds' shadows, smoke, snow, fireflies (drawEnv 1), at the scene's fine px. Before the
+     veil, so only where you see. */
   weather(){const {cam,V}=this;
     // (at the screen's finer scale the remembered scene, the clouds and weather and the fog are laid in game pixels, as ever, into
     // one more picture the scene's size (overCv), drawn up in one step: three full screens' work made one)
@@ -448,6 +482,10 @@ class WorldFrame{
     //  2026-11-16: "draw them before the fog layer"))
     drawSafe(drawEnv,cam,V,1);
   }
+  /* veil. What hides the land you do not see, in this order: the remembered scene put back over all but your sight (fog.js fogMem: so
+     no mover shows outside it), the sky (WeatherArt, at the screen's own px; not in a fight on the map), the climate's air (frost's
+     flakes, the swamp's mist), the fog and the dark of land never seen (drawWorldFog). At a finer screen all but the sky go into one
+     picture the scene's size (overCv), laid once. */
   veil(){const {cam,V,low,scr,hi}=this;
     const ov=hi?overCv():null;if(ov){ctx=ov.getContext('2d', { willReadFrequently: true });ctx.clearRect(0,0,ov.width,ov.height)}
     try{
@@ -461,11 +499,14 @@ class WorldFrame{
     }finally{ctx=scr}if(ov)ctx.drawImage(ov,0,0);
   }
   // ---- light
+  /* grid. What you are placing, over the fog so it shows on land you do not see: the tile grid, the building being placed. */
   grid(){const {cam}=this;
     // the tile grid and a building being placed lie over the fog
-    if(GRID.on||G.place)drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
+    drawGrid(cam.x,cam.y,VW+1,VH+1,cam.x,cam.y,1);
     if(G.place)drawPlace(cam);
   }
+  /* night. The dark over everything drawn so far, then what lights it: every fire's glow (LIGHTQ, queued by the entries that burn as
+     they drew: fire.js fireLights), the fireflies (ambient.js ambientGlow). A new light is a push into LIGHTQ from its entry's f. */
   night(){const {cam}=this;
     const a=darkness();
     if(a>0){ctx.fillStyle='rgba(10,14,50,'+(a*.34).toFixed(3)+')';ctx.fillRect(0,0,VW+1,VH+1)}
@@ -477,12 +518,17 @@ class WorldFrame{
     ambientGlow(cam);// (the fireflies' light: ambient.js)
   }
   // ---- over
+  /* ways. Your travel on the map: the way you walk, your goal's ring, a click's ripple, the ring round what you chase (worldui.js
+     wuiUnder); how you travel (concealment, pace, who has seen you). Under every label. */
   ways(){const {cam}=this;
     wuiUnder(cam);// (the way you walk, your goal's ring, a click's ripple, the ring round what you chase: worldui.js)
     drawTravelConcealment(cam);
     drawTravelPace(cam);
     drawTravelDetection(cam);
   }
+  /* labels. Every name and number, sharp at the screen's own px: the parties' tags (BANNERQ), the holdings' bars (PLAQUEQ), the icons of
+     the camps', holdings' and hideouts' places, then the queued texts (TXTQ: txt called while an entry drew; the first nPlace are
+     places', shown where you know the land, the rest movers', only in your sight). */
   labels(){const {cam,nPlace}=this;
     drawBanners(cam);// (the parties' labels and the packs' markers, over all, their counts queued with the rest)
     // Queued names and counts use native-resolution text; their world anchors and visibility stay the same.
@@ -492,6 +538,8 @@ class WorldFrame{
     drawSafe(()=>LairSpots.draw(cam));// (a hideout's services while you may deal there: world/lairdeal.js)// (the holdings' places near you, over their buildings: world/holdspots.js)
     const q=TXTQ;TXTQ=null;q.forEach((a,i)=>{const wx=a[1]+cam.x,wy=a[2]+cam.y;if(i<nPlace?seenAt(wx,wy+6):inSight(wx,wy+8))mapTxt(...a)});
   }
+  /* marks. Over all: the quests' and rumours' marks, a foe's strength, the dark past a fight's ring, then the pointer: your goal's
+     arrow, the arrow over what you chase, the brackets round what the pointer is on (worldui.js wuiOver). */
   marks(){const {cam,cut}=this;
     drawQuestMarks(cam);drawRumourMarks(cam);// (the quests' marks, then the rumours' faint "?": news.js)
     drawSafe(()=>EnemyDifficulty.world(cam));
@@ -499,10 +547,11 @@ class WorldFrame{
     wuiOver(cam);// (your goal's arrow, the arrow over what you chase, the brackets round what the pointer is on: worldui.js)
   }
   // ---- mini
+  /* minimap. The land from the tile data and who is on it, on the screen itself (drawWorldMini). Not in a fight on the map. */
   minimap(){const {V}=this;
     // minimap (the land from the tile data, a pixel per k tiles: worldart.js WorldArt.mini, k = ceil(MW / 256); where it lies on the
     // screen: worldMiniRect)
-    if(!B?.world)drawWorldMini(V);
+    drawWorldMini(V);
   }
 }
 function drawWorld(){new WorldFrame().draw()}
