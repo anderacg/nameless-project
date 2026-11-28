@@ -30,6 +30,12 @@ Kit.suite(({ok,info})=>{
   try{C=near(s,.7)}finally{Math.random=r0}
   ok(C&&C.ppl.length===Math.min(s.pop,F.most)&&C.ppl.filter(p=>!p.hid).length===C.ppl.filter(p=>p.watch==='fire'||p.watch==='ring').length,'by night they sleep in their tents ('+C.ppl.filter(p=>p.hid).length+' of '+C.ppl.length+'), their watch awake');
   ok(!draws,'their life draws nothing from the world’s Math.random ('+draws+')');
+  // (their seats: round the fire but for its far side, where a man sat under its frame (the owner, 2026-11-28: "Character behind fire
+  //  sprite seems weird and got cut off"); more than F.row[0] of them in two rows; a seated figure's legs drawn short, not cut off)
+  {const sq=t.CAMP_SITE.squash,far=C.ppl.filter(p=>p.seat.y<s.y+3-F.seat*sq*.5&&Math.abs(p.seat.x-s.x)<F.seat*.7),R=C.ppl.map(p=>Math.hypot(p.seat.x-s.x,(p.seat.y-s.y-3)/sq)),two=new Set(R.map(r=>Math.round(r))).size;
+   ok(!far.length&&C.ppl.every((p,i)=>Math.abs(Math.atan2((p.seat.y-s.y-3)/sq,p.seat.x-s.x)-Math.atan2(Math.sin(t.CampFolk.seatAngle(i,C.ppl.length)),Math.cos(t.CampFolk.seatAngle(i,C.ppl.length))))<1e-6),'no seat on the far side of the fire: '+C.ppl.length+' seats round the rest of it');
+   ok(C.ppl.length>F.row[0]?two===2&&Math.abs(Math.max(...R)-Math.min(...R)-F.row[1])<1e-6:two===1,C.ppl.length+' at the fire: '+(two===2?'two rows, '+F.row[1]+' px apart':'one row'));
+   ok(F.sit[1]>0&&F.sit[1]<F.sit[0]&&/sit/.test(String(t.CampFolk.draw))&&!/H-low/.test(String(t.CampFolk.draw)),'a seated figure\'s '+F.sit[0]+' rows of legs are drawn in '+F.sit[1]+', none cut off')}
   C=near(s,.22);ok(C.ppl.some(p=>p.role==='priest')&&C.ppl.filter(p=>p.R.work==='pray').every(p=>p.kneel&&Math.hypot(p.x-p.seat.x,p.y-p.seat.y)<2),'at midday the pilgrims kneel in prayer round the fire');
   C=near(s,.45);ok(C.ppl.every(p=>p.mode==='seat'&&!p.hid),'at dusk everyone gathers at the fire');
   {const hu=of(3)[0];hu.seen=true;W.monsters=W.monsters.filter(m=>Math.hypot(m.x-hu.x,m.y-hu.y)>F.danger*3);const H=near(hu,.15),out=H.ppl.filter(p=>p.R.work==='out');

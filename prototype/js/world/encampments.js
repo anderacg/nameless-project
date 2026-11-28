@@ -204,12 +204,16 @@ SITE_CLASS.travelers=Encampment;
 class CampFolk{
   static of=new Map();
   static forget(s){this.of.delete(s)}
+  // (the i-th of n seats at the fire: round it but for the far side (ENCAMP.folk.open of the ring, behind the fire as you look at it:
+  //  whoever sat there was drawn under its frame, his head over its bar; the owner, 2026-11-28: "Character behind fire sprite seems weird");
+  //  more than row[0] of them in two rows, every other one row[1] px further out)
+  static seatAngle(i,n){const o=ENCAMP.folk.open;return (o-.5)*Math.PI+(i+.5)/n*2*Math.PI*(1-o)}
   // (who lives there: pop people (most at most), their roles filled in the kind's order and shares, each his tent, his seat at the
   // fire, his look, his own stream)
   static make(s){s.ground();const T=s.TR,F=ENCAMP.folk,n=Math.min(s.residents?.slots||s.pop,F.most),L=s.layout().slice(),R=seeded(s.seed*7919+13),roles=[];
     for(const [r,sh] of T.roles){const k=Math.max(1,Math.round(sh*n));for(let j=0;j<k&&roles.length<n;j++)roles.push(r)}while(roles.length<n)roles.push(T.roles[0][0]);
     const bare=!L.length;if(bare)L.push({x:s.x+10,y:s.y-4});
-    const N=FOLK_NAMES[s.folkRace]||FOLK_NAMES.human,ppl=roles.map((role,i)=>{const a=(i+.5)/n*Math.PI*2,q=L[i%L.length];return Object.assign(new CampDweller(),{site:s,name:N[folkHash(s.seed+'|'+i)%N.length],role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*F.seat,y:s.y+3+Math.sin(a)*F.seat*CAMP_SITE.squash},
+    const N=FOLK_NAMES[s.folkRace]||FOLK_NAMES.human,ppl=roles.map((role,i)=>{const a=CampFolk.seatAngle(i,n),sr=F.seat+(n>F.row[0]&&i%2?F.row[1]:0),q=L[i%L.length];return Object.assign(new CampDweller(),{site:s,name:N[folkHash(s.seed+'|'+i)%N.length],role,R:ENCAMP_ROLES[role],i,v:Math.floor(R()*7),door:{x:q.x+3,y:q.y+3},seat:{x:s.x+Math.cos(a)*sr,y:s.y+3+Math.sin(a)*sr*CAMP_SITE.squash},
       x:s.x,y:s.y,tx:s.x,ty:s.y,wait:0,walked:0,dir:R()<.5?-1:1,mode:null,hid:false,R2:seeded(s.seed*31+i*977+5)})});
     const watch=ppl.filter(p=>p.R.watch);watch.forEach((p,j)=>p.watch=j===0?'fire':j===1?'ring':null);
     const C={s,L,bare,ppl,P:s.props(),beasts:this.herd(s,L,s.props()),ring:Math.max(...L.map(q=>Math.hypot(q.x-s.x,(q.y-s.y)/CAMP_SITE.squash)),8)+F.ring};this.of.set(s,C);
@@ -289,15 +293,18 @@ class CampFolk{
         if(p.R.work==='out'&&p.mode==='work'&&p.leg==='go'){p.wait=F.work[0]+p.R2()*(F.work[1]-F.work[0]);p.leg='at';continue}
         this.aim(C,p,p.mode)}}}
   // (its people within your sight, each by his feet: a soldier of their people for a guard, a hunter or a ranger, else in their dress
-  // (people.js folkLook); sitting or kneeling at the fire: his legs hidden; a child smaller; the players bob to their tune)
+  // (people.js folkLook); sitting or kneeling at the fire: his legs drawn short under him (ENCAMP.folk.sit: his figure's sit[0] rows
+  //  of legs in sit[1], his body as much lower; they were cut off flat: "and got cut off"); a child smaller; the players bob to
+  //  their tune)
   static draw(s,ents,cam,V){const C=this.of.get(s);if(!C)return;const cl=dressClimAt(s.x,s.y),S=yourSight(V),k0=WORLD_BATTLE.sprite/WORLD_BATTLE.scale,race=s.folkRace,now=performance.now()/1000;
     // (its animals as the herds are drawn (critters.js, gfx/sprites.js critterArt): their battle figure at the marchers' scale)
     for(const b of C.beasts){if(!S.sees(b.x,b.y,1.2))continue;ents.push({x:b.x,y:b.y,f:()=>{const A0=critterArt(b.id,0,b.v),N=PX.MAP_STEPS,fr=b.moving?Math.floor(b.walked/Math.max(4,A0.w)*N)%N:0,A=critterArt(b.id,fr,b.v),sx=Math.round(b.x-cam.x),sy=Math.round(b.y-cam.y),w=Math.max(4,A.w-2);
       ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-(w>>1),sy-1,w,2);ctx.save();ctx.translate(sx,sy);ctx.scale(b.dir<0?-A.k:A.k,A.k);ctx.drawImage(A.s,-(A.s.width>>1),-A.s.height+(A.k<1?2:1));ctx.restore()}})}
     for(const p of C.ppl){if(p.hid||SiteLife.busy(p)||!S.sees(p.x,p.y,1.2))continue;
       ents.push({x:p.x,y:p.y,f:()=>dressedIn(cl,()=>{const pose=p.moving?2+footFrame(p.walked,p.v):0,sp=p.R.unit?unitSprite(RACES[race][p.R.unit],0,false,p.v,pose,false,false,s.TR.col):personSprite(p.R.look,race,p.v+p.i,pose),
-        k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play)?4:0,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;
-        ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);ctx.drawImage(sp,0,0,W2,H-low,-Math.floor(W2/2),-H+2+low,W2,H-low);ctx.restore()})})}}
+        k=k0*(p.R.child?.72:1),low=!p.moving&&(p.kneel||p.mode==='seat'&&!p.R.watch&&!p.play),[L,l]=ENCAMP.folk.sit,bob=p.play&&!p.moving&&Math.floor(now*3+p.i)%2?1:0,sx=Math.round(p.x-cam.x),sy=Math.round(p.y-cam.y),W2=sp.width,H=sp.height;
+        ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(sx-2,sy-1,5,2);ctx.save();ctx.translate(sx,sy-bob);ctx.scale(p.dir<0?-k:k,k);const X0=-Math.floor(W2/2),F0=H-1-L;/* (F0: the row his legs begin at, the sprite's last row empty under his feet) */
+        if(!low)ctx.drawImage(sp,0,0,W2,H,X0,-H+2,W2,H);else{ctx.drawImage(sp,0,0,W2,F0,X0,-H+2+L-l,W2,F0);ctx.drawImage(sp,0,F0,W2,L,X0,1-l,W2,l)}ctx.restore()})})}}
 }
 Systems.add({name:'camp folk',order:{frame:141},frame:d=>CampFolk.step(d)});
 onWorld(()=>CampFolk.of.clear());

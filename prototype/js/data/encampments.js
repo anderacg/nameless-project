@@ -57,7 +57,8 @@ const ENCAMP_ROLES={
    how far out to work, tiles [least, most], how long at it; graze: its animals' tether (out px past the tents) and how far
    they wander from it (r px), their pace and stops; route: a walk longer than this (tiles) goes by the router (its ways
    round water and rock), near: how far a camp's people are kept for (px from you), most drawn,
-   seat: the ring round the fire, px; danger px: a band or beast that near sends them in); travellers: the first kinds who travel
+   seat: the ring round the fire, px; open: the share of it left empty, the far side of the fire; row: more than row[0] seated,
+   every other one row[1] px further out; sit: a seated figure's rows of legs, and the rows they are drawn in; danger px: a band or beast that near sends them in); travellers: the first kinds who travel
    and may camp anywhere, among a ruin's broken walls too (sites.js RUIN_OCC) */
 /* a camp's pieces, drawn pixel by pixel (gfx/campart.js CampArt.prop): stack: n of it heaped in one pile (the owner: "if they are a
    cluster then just stack them"), else each on its own; smoke: a thin smoke over it (a charcoal mound); ring: px past the tents
@@ -66,7 +67,7 @@ const ENCAMP_PROPS={wagon:{},cart:{},stall:{},shrine:{},rack:{},mound:{smoke:tru
 // (ground: where a camp whose tents cannot stand moves its fire when first drawn, r px round it, every step px: Encampment#ground)
 const ENCAMP={ground:{r:64,step:12},travellers:6,count:{pow:.5},tents:{per:3,most:8,rings:2},stay:{seasonal:[20,40],wandering:[3,8]},gap:24,
   day:{dawn:.06,work:.4,dusk:.5,pray:[.18,.28]},
-  folk:{graze:{r:10,pause:[3,9],out:22},route:2,gait:'stroll',run:1.5,pause:[1.5,4],out:[3,6],work:[4,9],near:520,most:16,seat:13,danger:90,ring:10},
+  folk:{graze:{r:10,pause:[3,9],out:22},route:2,gait:'stroll',run:1.5,pause:[1.5,4],out:[3,6],work:[4,9],near:520,most:16,seat:13,open:.25,row:[8,5],sit:[6,3],danger:90,ring:10},
   // (its services' icons on the map (world/encampments.js CampSpots; the owner, 2026-11-18: "interactable icons ... for each camp sites",
   //  "icons when close"): shown within near px of you and in your sight; css: the shared illustrated badge's size in CSS px;
   //  up: world px over its ground by what it stands at (a tent, a piece, the fire); gap: CSS px kept between two, and off your hero;
