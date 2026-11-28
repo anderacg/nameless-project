@@ -307,7 +307,7 @@ function updateWorld(dt){
   if(G.dead){if(G.mode!=='dead')showDeath();return}// (dead in hours passed off the map, a cage's day or a wake: the death's page, not a map that never moves again)
   if(G.paused)return;
   fastWatch();KNOWLEDGE.watch();// (last-known sightings: knowledge.js)
-  const d=dt*G.speed*WORLD_PACE;lodTick(dt);
+  const d=dt*G.speed*WORLD_PACE;lodTick(dt);Time.pass(dt/Speed.mapRate()*G.speed);
   if(Clock.advance(dt*G.speed*DAY/DAY_SECONDS,true)){
     // Finish this simulation step after the daily transaction releases input; an encounter may start its own loading job.
     LOADING.task.then(()=>{try{worldMoment(d,dt)}catch(e){if(typeof loopError==='function')loopError(e);else setTimeout(()=>{throw e})}},()=>{});return;

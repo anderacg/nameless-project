@@ -53,7 +53,7 @@ Kit.suite(({ok,info})=>{
   ok(gz.s!==st.s&&rs.s!==st.s&&rs.h<st.h,'a deer grazes with its head down and beds down lower ('+st.h+' px standing, '+rs.h+' lying)');
   ok(new Set(rn).size>=3,'fleeing it gallops ('+new Set(rn).size+' frames)');
   const fw=t.critterArt('fowl',0,0,'rest');ok(fw.h<t.critterArt('fowl',0,0).h,'a marsh fowl sits down on its legs to rest');
-  const c={id:'deer',st:'flee',hx:0,hy:0},up=[];for(let k=0;k<20;k++){const pn=performance.now;performance.now=()=>k*37;try{up.push(t.herdPose(c,0,true,2).up)}finally{performance.now=pn}}
+  const c={id:'deer',st:'flee',hx:0,hy:0},up=[];/* (its pose by the map's own clock: core/time.js Time.t) */const T0=t.Time.t;for(let k=0;k<20;k++){t.Time.t=k*.037;try{up.push(t.herdPose(c,0,true,2).up)}finally{t.Time.t=T0}}
   ok(Math.max(...up)>=L.bound-1&&Math.min(...up)===0,'a deer bounds as it flees, up to '+Math.max(...up)+' px');
   c.st='bed';ok(t.herdPose(c,0,false,0).how==='rest','at night it lies');c.st='drink';ok(t.herdPose(c,0,false,0).how==='graze','drinking, its head down');c.st='wary';ok(t.herdPose(c,0,false,0).how===null,'wary, its head up')}
  // ---- the wild game's ways (world/critters.js HERD_MIND)
@@ -97,7 +97,7 @@ Kit.suite(({ok,info})=>{
   const land0=window.flockLand,push0=window.flockPush;window.flockLand=(c,q)=>q;window.flockPush=(c,m,dx,dy)=>{m.x+=dx;m.y+=dy};
   try{// (at rest: spread round its point, none on another, each grazing, looking up and turning on its own time)
    const c=herd('reindeer',5),A0=t.critterArt(c.id,0,c.coat),w=A0.w;let F=run(c,0,4),low=1e9,same=0,samples=0,flips=0,prev=null;
-   for(let s=4;s<34;s+=1/30){F=t.herdFlock(c,A0,s*1000);const pn=performance.now;performance.now=()=>s*1000;let hows;try{hows=F.m.map((m,i)=>t.herdPose(c,i,t.herdGoes(c,m),0).how)}finally{performance.now=pn}
+   for(let s=4;s<34;s+=1/30){F=t.herdFlock(c,A0,s*1000);const pn=t.Time.t;t.Time.t=s;let hows;try{hows=F.m.map((m,i)=>t.herdPose(c,i,t.herdGoes(c,m),0).how)}finally{t.Time.t=pn}
     low=Math.min(low,pairs(F)[1]);if(Math.round(s*30)%15===0){samples++;if(new Set(hows).size===1&&new Set(F.m.map(m=>m.f)).size===1)same++}
     if(prev)flips+=hows.filter((h,i)=>h!==prev[i]).length;prev=hows}
    const [mean]=pairs(F);

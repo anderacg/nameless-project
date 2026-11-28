@@ -2,7 +2,7 @@
 damageTypesInit();// (every troop kind its damage type and armour: matchups.js)
 /* ---------- loop ---------- */
 let last=performance.now(),hudCards=false;
-// (about RENDER.fps frames a second at most: a frame sooner than .65 of its interval after the last is skipped, so a 120 Hz screen
+// (about Time.fps() frames a second at most (RENDER.fps, or the 30 it holds: core/time.js): a frame sooner than .65 of its interval after the last is skipped, so a 120 Hz screen
 // draws every other one (60), a 90 Hz one each (its frames come late enough); 30: a 60 Hz screen every other one. The setting
 // Frame rate, ui.js)
 // (an error in a step or a frame never stops the game: the loop goes on, the error still raised a moment later for the tests and
@@ -20,11 +20,11 @@ function loopError(e){const k=String(e&&e.message||e),t=performance.now();
 function worldPaintActive(){return !!(WM&&(G.mode==='world'||G.mode==='battle'&&B?.world||G.mode==='esc'&&(G.esc?.mode==='world'||G.esc?.mode==='battle'&&B?.world)))}
 // Missing terrain gets first use of a new frame's budget; expensive drawing cannot starve it indefinitely.
 function paintPriority(start){if(!worldPaintActive())return;WorldArt.keepLive();
-  FrameBudget.run(start,RENDER.fps,[['missing terrain',ms=>WorldArt.prepare(ms)]])}
+  FrameBudget.run(start,Time.fps(),[['missing terrain',ms=>WorldArt.prepare(ms)]])}
 // Refinements and other speculative warming share the deadline after the visible frame.
 function paintIdle(now){if(worldPaintActive())try{
   WorldArt.keepLive();Quality.watch(now);
-  FrameBudget.run(now,RENDER.fps,[['terrain paint',ms=>WorldArt.idle(ms)],['march sprites',ms=>marchWarm(ms)],['buildings',ms=>lotWarm(ms)],['route warmup',ms=>wayWarm(ms)]]);
+  FrameBudget.run(now,Time.fps(),[['terrain paint',ms=>WorldArt.idle(ms)],['march sprites',ms=>marchWarm(ms)],['buildings',ms=>lotWarm(ms)],['route warmup',ms=>wayWarm(ms)]]);
 }catch(e){loopError(e)}}
 
 function stepSimulation(dt){
@@ -38,12 +38,13 @@ function stepSimulation(dt){
   return G.mode===mode;
 }
 // A hidden tab resumes from now, without replaying time spent in the background.
-addEventListener('visibilitychange',()=>{last=performance.now();FrameTime.reset()});
+addEventListener('visibilitychange',()=>{last=performance.now();FrameTime.reset();Time.reset()});
 
 function loop(now){
-  if(now-last<650/RENDER.fps){requestAnimationFrame(loop);return}
-  const dt=Math.min(FRAME_TIME.catchup,Math.max(0,(now-last)/1000));last=now;
-  const frameStart=performance.now();FrameBudget.begin(frameStart,RENDER.fps);
+  Time.tick(now);if(now-last<650/Time.fps()){requestAnimationFrame(loop);return}
+  // (the frame's time evened to the screen's beats: core/time.js)
+  const dt=Time.even(Math.min(FRAME_TIME.catchup,Math.max(0,(now-last)/1000)));last=now;
+  const frameStart=performance.now();FrameBudget.begin(frameStart,Time.fps());
   fastWatch();// (Travel fast: back to 1x when anything calls for you: world.js)
   const t0=FRAMEPROF.on?performance.now():0;// (the frame timings: ui/frameprof.js)
   try{paintPriority(frameStart)}catch(e){loopError(e)}
@@ -58,6 +59,7 @@ function loop(now){
   audioWatch();// (the music follows the scene; a town, a meeting, a new day, a battle's start are heard: music.js)
   // (the main menu draws its own scene, never the world: ui/mainmenu.js; anything else, the game's frame)
   const t1=FRAMEPROF.on?performance.now():0;try{MainMenu.frame(now);if(G.mode!=='title')frame()}catch(e){loopError(e);ctx.setTransform(1,0,0,1,0,0)}
+  Time.work(performance.now()-frameStart);// (the steady rate's watch: the simulation and the drawing, none of the spare time's work)
   const t2=FRAMEPROF.on?performance.now():0;paintIdle(frameStart);
   if(FRAMEPROF.on)FrameProf.frame(t1-t0,t2-t1,performance.now()-t2);
   FrameBudget.end();requestAnimationFrame(loop);

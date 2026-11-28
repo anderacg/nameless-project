@@ -8,10 +8,13 @@
    for a march (world.js MAP_BASE: its parties' paces are reckoned on it).
    gait: the one ladder, a man's px a second at each: stalk (creeping up on game), laden (carrying), stroll (about his day), walk (a
      formation's advance in a fight), march (an army on the map, and whoever walks the map on his way), hurry (home from danger),
-     run (a charge, a flight on foot), rout (a broken man's), sprint (your hero, in hand). flee: the map's walkers' run, till the
-     ladder is made one.
-   foot: the words the map's walkers use for their gaits (world.js footPace: town and camp folk, workers, hunters, sentries) and the
-     ladder's gait each is.
+     run (a charge, a flight on foot), rout (a broken man's), sprint (your hero, in hand).
+     The battle's speeds are the ladder's (the owner, 2026-11-28: chosen; walk and run as the battle was tuned, 2026-11-19): an
+     army on the map marches between a formation's walk and a charge, a townsman strolls slower than a soldier walks. The map
+     marched at 14.5 before; a day is as much longer (core/time.js Time.day: 708 game seconds at 1x, was 391), so a day's march
+     covers the same ground and whatever is counted in days is as it was. Each number is a man's px a second: change one here
+     and everyone at that gait follows.
+   foot: a map walker's word for a gait where it is not the ladder's (world.js footPace: his walk is a march).
    map: who else goes on the map at what, px a second on open ground: caravan, refugee, ship (a trader's) and boat (a fisher's),
      bandHome and bandWander (a band going home, and with nowhere to go), beast and beastWander (a beast after someone, and idle),
      herd and herdTame (a herd wandering: wild, and a holding's stock), gather (a scattered herd coming together), graze (a camp's
@@ -23,9 +26,9 @@
    hero: your hero out of his ranks, times his men's time (the owner, 2026-11-18). */
 const SPEED={
   man:38,base:34,
-  gait:{stalk:5.11488,laden:7.757568,stroll:11.08224,walk:5.643,march:14.49216,hurry:15.77088,flee:21.73824,run:10.26,rout:11.286,sprint:16.416},
-  foot:{walk:'march',run:'flee'},
-  map:{caravan:7.24608,refugee:4.68864,ship:11.08224,boat:5.54112,bandHome:6.81984,bandWander:5.11488,beast:11.08224,beastWander:4.2624,herd:3.40992,herdTame:1.70496,gather:2.55744,graze:2.1312,loot:6.81984},
+  gait:{stalk:3,laden:4,stroll:4.5,walk:5.643,march:8,hurry:9,run:10.26,rout:11.286,sprint:16.416},
+  foot:{walk:'march'},
+  map:{caravan:4,refugee:2.6,ship:6.1,boat:3.1,bandHome:3.8,bandWander:2.8,beast:6.1,beastWander:2.4,herd:1.9,herdTame:.95,gather:1.4,graze:1.2,loot:3.8},
   body:2,
   hero:.85/.6
 };

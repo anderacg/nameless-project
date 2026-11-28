@@ -12,7 +12,7 @@ const sceneAt=(S,tx,ty)=>tx<0||ty<0||tx>=S.W||ty>=S.H?S_SOLID:S.tiles[ty*S.W+tx]
 const sceneOpen=(S,tx,ty)=>{const v=sceneAt(S,tx,ty);return v===S_GROUND||v===S_PATH||v===S_PIER};
 // can something stand at pixel (x, y)? its feet are a small box
 const sceneFree=(S,x,y)=>[[-4,0],[4,0],[-4,-3],[4,-3]].every(([dx,dy])=>sceneOpen(S,Math.floor((x+dx)/TILE),Math.floor((y+dy)/TILE)));
-const SCENE_SPD=64,FOLK_SPD=20,TALK_R=20;
+const TALK_R=20;// (you run and its folk stroll at the one ladder's gaits, on a scene's scale: core/speed.js Speed.scene; Shift: a sprint)
 
 /* in and out */
 function enterScene(t){
@@ -69,7 +69,7 @@ function sceneGossip(t){
 function updateScene(dt){
   const S=G.scene;if(!S||G.modal)return;const p=S.p,d=dt;let mv=0,my=0;
   if(G.keys.w||G.keys.arrowup)my--;if(G.keys.s||G.keys.arrowdown)my++;if(G.keys.a||G.keys.arrowleft)mv--;if(G.keys.d||G.keys.arrowright)mv++;
-  const run=SCENE_SPD*(G.keys.shift?1.5:1);p.moving=false;
+  const run=Speed.scene(G.keys.shift?'sprint':'run');p.moving=false;
   if(mv||my){p.path=null;p.goal=null;const l=Math.hypot(mv,my);p.moving=sceneStep(S,p,p.x+mv/l*20,p.y+my/l*20,run*d)}
   else if(p.path&&p.path.length){const w=p.path[0];p.moving=sceneStep(S,p,w.x,w.y,run*d);if(Math.hypot(w.x-p.x,w.y-p.y)<2)p.path.shift();else if(!p.moving)p.path=null}
   if(p.goal&&Math.hypot(p.goal.x-p.x,p.goal.y-p.y)<TALK_R){const g=p.goal;p.goal=null;p.path=null;return sceneTalk(g)}
@@ -79,7 +79,7 @@ function updateScene(dt){
   for(const f of S.folk){
     if(f.wait>0){f.wait-=d;f.moving=false;continue}
     if(!f.path||!f.path.length){const tgt=S.walk[rint(0,S.walk.length-1)];f.path=scenePath(S,Math.floor(f.x/TILE),Math.floor(f.y/TILE),tgt[0],tgt[1])||[];if(!f.path.length)f.wait=1+Math.random()*2;continue}
-    const w=f.path[0];f.moving=sceneStep(S,f,w.x,w.y,FOLK_SPD*d);if(Math.hypot(w.x-f.x,w.y-f.y)<2)f.path.shift();else if(!f.moving){f.path=null;f.wait=.5}
+    const w=f.path[0];f.moving=sceneStep(S,f,w.x,w.y,Speed.scene('stroll')*d);if(Math.hypot(w.x-f.x,w.y-f.y)<2)f.path.shift();else if(!f.moving){f.path=null;f.wait=.5}
     if(!f.path||!f.path.length)f.wait=1+Math.random()*3;f.t=(f.t||0)+d;
   }
 }

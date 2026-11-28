@@ -30,7 +30,7 @@ try{
  ok(G.mode==='scene'&&S&&S.ref==='Ashford'&&!G.modal,'walking in opens the town');
  t.frame();ok(true,'and draws it');
  // ---- walking
- const p=S.p,y0=p.y;G.keys.w=true;for(let i=0;i<10;i++)t.updateScene(.05);G.keys.w=false;ok(p.y<y0-20,'WASD walks ('+Math.round(y0-p.y)+' px up the street)');
+ const p=S.p,y0=p.y;G.keys.w=true;for(let i=0;i<10;i++)t.updateScene(.05);G.keys.w=false;{const y1=p.y;G.keys.w=true;G.keys.shift=true;for(let i=0;i<10;i++)t.updateScene(.05);G.keys.w=G.keys.shift=false;ok(Math.abs(y1-p.y-t.Speed.scene('sprint')*.5)<.5,'Shift: a sprint ('+(y1-p.y).toFixed(1)+' px in half a second)');p.y=y1}/* (at a soldier's run, the one ladder's, on a scene's scale: core/speed.js Speed.scene; it was 64 px a second) */ok(Math.abs(y0-p.y-t.Speed.scene('run')*.5)<.5,'WASD walks, at a run ('+(y0-p.y).toFixed(1)+' px up the street in half a second)');
  const hb=S.blds[0];p.x=(hb.door[0]+.5)*16;p.y=(hb.door[1]+1)*16-3;G.keys.w=true;for(let i=0;i<30;i++)t.updateScene(.05);G.keys.w=false;
  ok(p.y>=(hb.y+hb.h)*16-1,'buildings are solid: you stop at the door');
  // ---- talking: click someone, walk there, and their tab opens

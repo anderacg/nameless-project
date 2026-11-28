@@ -7,7 +7,7 @@
 // No slow motion, a calm pace (the owner, 2026-11-19: "make it not look like slow motion please but just want a battle not to be so fast
 // pace"): that clock is a real second a second, and the pace is the rules' own (data/units.js BATTLE_RHYTHM): a walk of about .7 of a
 // man's lengths a second, a blow every 1.5 to 2.5 s, a shot every 2.5 to 4, a 20 v 20 melee as long as it was at the old slow clock; the
-// map's march as it was.
+// map's march the one table's (data/speed.js): between a formation's walk and a charge.
 Kit.suite(({ok,info})=>{
  const t=T,G=t.G,P=t.P,W=t.W;window.requestAnimationFrame=()=>0;Kit.begin('soldier',51);Kit.clear();Kit.world();t.GUIDE.on=false;G.paused=false;G.speed=1;
  const fr=1/60,within=(a,b,q)=>Math.abs(a-b)<=q*Math.max(Math.abs(a),Math.abs(b),1e-9),med=a=>{const v=a.slice().sort((x,y)=>x-y);return v.length?v[v.length>>1]:NaN};
@@ -54,13 +54,14 @@ Kit.suite(({ok,info})=>{
   info(kind+' 20 v 20: first wound '+(hit==null?'-':hit.toFixed(1))+' s, last blow '+(last==null?'-':last.toFixed(1))+' s, over at '+(n/60).toFixed(1)+' s, '+bl.gaps.length+' gaps between blows');
   ok(g>=RHYTHM.gap[0]&&g<=RHYTHM.gap[1],kind+': a man strikes every '+g.toFixed(2)+' s by the median (between '+RHYTHM.gap.join(' and ')+')');
   ok(over&&melee>=lo&&melee<=hi,kind+': a 20 v 20 melee lasts '+(over?melee.toFixed(1):'past 240')+' real s (between '+lo+' and '+hi+')')}
- // (the map's march as it was: your army walking on the map at 1x, a levy's lengths as drawn in a fight there a real second (0.35, as
- //  before the battle's rhythm, 2026-11-19); main.js updateWorld(Time.map(dt)), none of a battle's rhythm)
- {t.WORLD_BATTLE.on=true;G.mode='world';G.modal=false;G.enc=null;P.troops={hum_levy:8};
-  const len=(res.field1?res.field1.ch:24)*t.WORLD_BATTLE.sprite;let v=[];
+ // (the map's march: your army walking on the map at 1x, once under way, goes at the one table's march for its men, its load and its
+ //  ground (data/speed.js SPEED.gait.march through world.js travelMul): px a game second, main.js updateWorld(Time.map(dt)); a march
+ //  is slower than a charge and faster than a formation's walk (the owner, 2026-11-28: the battle's speeds everywhere))
+ {t.WORLD_BATTLE.on=true;G.mode='world';G.modal=false;G.enc=null;P.troops={hum_levy:8};let best=null;
   for(const a of [0,Math.PI,Math.PI/2,-Math.PI/2]){P.x=home.x;P.y=home.y;P.tx=null;for(let i=0;i<30;i++)t.updateWorld(t.Time.map(fr));
-   P.tx=home.x+Math.cos(a)*400;P.ty=home.y+Math.sin(a)*400;const w=[];
-   for(let i=0;i<60*5&&P.tx!=null;i++){const x=P.x,y=P.y;t.updateWorld(t.Time.map(fr));const d=Math.hypot(P.x-x,P.y-y);if(d>0&&i>30)w.push(d*60/len)}
-   if(w.length>v.length)v=w;if(v.length>200)break}
-  const m=med(v);ok(v.length>60&&within(m,.35,.05),'the map\'s march as it was: '+m.toFixed(3)+' of a levy\'s lengths a real second at 1x (0.35)')}
+   P.tx=home.x+Math.cos(a)*400;P.ty=home.y+Math.sin(a)*400;let n=0,went=0,want=0;
+   for(let i=0;i<60*14&&P.tx!=null;i++){const x=P.x,y=P.y;t.updateWorld(t.Time.map(fr));if(i>=240){went+=Math.hypot(P.x-x,P.y-y);want+=t.Speed.px(t.MAP_BASE*t.travelMul())*fr;n++}}
+   if(n>120&&(!best||n>best.n))best={n,v:went/(n*fr),want:want/(n*fr)};if(best&&best.n>480)break}
+  const g=t.SPEED.gait;ok(!!best&&within(best.v,best.want,best.want*.06),'the map\'s march, once under way: '+(best?best.v.toFixed(2):'-')+' px a game second at 1x (by the table '+(best?best.want.toFixed(2):'-')+')');
+  ok(!!best&&best.v>g.walk*.9&&best.v<g.run*1.1,'between a formation\'s walk ('+g.walk.toFixed(1)+') and a charge ('+g.run.toFixed(1)+')')}
 });

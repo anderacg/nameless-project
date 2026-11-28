@@ -25,7 +25,7 @@ class Herd extends WorldObject{
     for(const m of F?.m||[])reach=Math.max(reach,Math.hypot(m.x-this.x,m.y-this.y)+TILE);
     if(!yourSight(V).sees(this.x,this.y,1,reach))return null;
     if(!advance&&F)return F;const coat=this.coat??(this.coat=Math.floor((this.hx||0)+(this.hy||0)));
-    return herdFlock(this,critterArt(this.id,0,coat),performance.now());
+    return herdFlock(this,critterArt(this.id,0,coat),Time.ms());// (on the map's own clock: still while it is paused, as fast as its speed)
   }
   inView(V){return !!this.members(V)?.m.some(m=>this.memberVisible(m,V))}
   pick(at){if(!this.wild||B?.world?.hides(this))return;
@@ -40,7 +40,7 @@ class Herd extends WorldObject{
     // 2026-11-13: "The wildlife sprite flashing, like it changes the color"); its legs by its own steps (d), its pose by its own time
     const v0=c.coat??(c.coat=Math.floor((c.hx||0)+(c.hy||0))),A=critterArt(c.id,0,v0),N=PX.MAP_STEPS,stride=Math.max(4,A.w)/N;
     // (what it shows held steady (flockHold): the herd's doing as drawn, each animal's legs walking or still: never flickering frame to frame)
-    const now=performance.now(),st=flockSt(F,c.st,now);
+    const now=Time.ms(),st=flockSt(F,c.st,now);
     F.m.forEach((m,i)=>{const go=flockHold(m,'g',herdGoes(c,m),now,WILD_LIFE.flock.hold.go);if(!c.memberVisible(m,V))return;grassFoot(m.x,m.y,go,true,m);if(typeof stepPrint==='function'&&!CRITTERS[c.id].live)stepPrint(m,true,c);ents.push({x:m.x,y:m.y,id:m,f:()=>{subT(m);const q=herdPose(c,i,go,go?Math.floor(m.d/stride)%N:0,st,m),a=critterArt(c.id,q.fr,v0+i,q.how),w=Math.max(4,a.w-2),x=Math.round(m.x-cam.x),y=Math.round(m.y-cam.y);
       // (in the drawn water it wades, as a marcher does (herdWade): under it from its feet up, no shadow, no leap; else on its shadow)
       const cut=herdWade(m,a),sx=m.f<0?-a.k:a.k,bx=-(a.s.width>>1),by=-a.s.height+(a.k<1?2:1);
@@ -56,7 +56,7 @@ const asHerd=asClass(Herd);
    up for look s, each animal on its own time; drinking at the water's edge, its head down; wary, its head up, still; else walking as
    it steps. how: critterArt's pose; fr: its step; up: px over its shadow; st: the herd's doing as drawn (flockSt); m: the animal,
    its leaps by the ground it covers (WILD_LIFE.leap px a leap), never on the clock) */
-function herdPose(c,i,go,fr,st=c.st,m){const L=WILD_LIFE,now=performance.now()/1000;
+function herdPose(c,i,go,fr,st=c.st,m){const L=WILD_LIFE,now=Time.t;
   if(st==='flee'&&go){const b=L.bounders.includes(c.id)?L.bound:L.hoppers.includes(c.id)?L.hop:0;return{how:'run',fr,up:b?Math.round(b*Math.abs(Math.sin(((m?m.d:now*30)/L.leap+i*.37)*Math.PI))):0}}
   if(go)return{how:null,fr,up:0};
   if(st==='bed')return{how:'rest',fr:0,up:0};
@@ -80,7 +80,7 @@ function herdFlock(c,A,now){const L=WILD_LIFE.flock,n=CRITTERS[c.id].live?Math.m
   //  move's two speeds, held a while at rest, so its animals never switch between their wedge and their blob each frame)
   if(dt>0){F.sp+=(mv/dt-F.sp)*Math.min(1,dt*4);if(mv>.01){const w=Math.atan2(my,mx);if(!F.hdOn){F.hd=w;F.hdOn=true}else{let dh=w-F.hd;dh=Math.atan2(Math.sin(dh),Math.cos(dh));F.hd+=Math.sign(dh)*Math.min(Math.abs(dh),L.hd*dt)}}}
   {const M=L.move;if(!F.mov){if(F.sp>M[0]){F.mov=true;F.calm=0}}else if(F.sp<M[1]){F.calm=F.calm||now;if(now-F.calm>=M[2]*1000)F.mov=false}else F.calm=0}
-  const moving=!!F.mov,amble=L.amble*Math.max(1,G.speed||1),wary=c.st==='wary',bed=c.st==='bed';
+  const moving=!!F.mov,amble=L.amble,wary=c.st==='wary',bed=c.st==='bed';
   F.m.forEach((m,i)=>{const q=flockSpot(c,F,i,n,gap,now,moving),ex=c.x+q[0]-m.x,ey=c.y+q[1]-m.y,e=Math.hypot(ex,ey),st=L.start[0]+m.h*(L.start[1]-L.start[0]);m.go=false;
     if(bed||!(e>st||(m.walk&&e>.3))){m.walk=false;m.vx=0;return}
     m.walk=true;m.drift=!moving&&e<gap*.6;const v=Math.max(F.sp*1.1,amble)*(L.pace[0]+m.h*L.pace[1])*(e>gap?L.catch:1),k=Math.min(1,v*dt/e),sx=ex*k,sy=ey*k;
@@ -157,7 +157,7 @@ function penSpots(t,now){const c=herdOf(t),F=c&&fieldsOf(t,'pasture');if(!F)retu
 // the marchers' scale lost every other pixel: "sticks") to those who move (render.js drawWorld), drawn at the screen's pixels as
 // in a battle; the owner, 2026-11-13: "For pasture use the same drawing in battle")
 const PEN_ENTS=[];
-function penEnts(t,ents,cam){const p=bldSpots(t).pasture,L0=p&&typeof liftAt==='function'?liftAt(p.x,p.y):0;penSpots(t,performance.now()).forEach((s0,j)=>ents.push({x:s0.x,y:s0.y,f:()=>{const s=penSpots(t,performance.now())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y-(p?L0-LIFT_NOW:0)),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
+function penEnts(t,ents,cam){const p=bldSpots(t).pasture,L0=p&&typeof liftAt==='function'?liftAt(p.x,p.y):0;penSpots(t,Time.ms()).forEach((s0,j)=>ents.push({x:s0.x,y:s0.y,f:()=>{const s=penSpots(t,Time.ms())[j];if(!s)return;ctx.save();subT(s);const x=Math.round(s.x-cam.x),sy=Math.round(s.y-cam.y-(p?L0-LIFT_NOW:0)),w=Math.max(4,s.a.w-2);// (its fraction of a pixel kept inside save/restore: drawn into the scene, a shift left over would pile up frame on frame)
   ctx.fillStyle='rgba(0,0,0,.25)';ctx.fillRect(x-(w>>1),sy-1,w,2);ctx.translate(x,sy);ctx.scale(s.flip?-s.a.k:s.a.k,s.a.k);ctx.drawImage(s.a.s,-(s.a.s.width>>1),-s.a.s.height+(s.a.k<1?2:1));ctx.restore()}}))}
 // (the wild game's and the herds' own dice: the stream 'critters', core/rng.js, so a kind added or a spawning rule changed never
 // moves the world's Math.random)

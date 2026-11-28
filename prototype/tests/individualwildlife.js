@@ -3,7 +3,7 @@ Kit.suite(({ok,info})=>{const t=T,P=t.P,W=t.W;window.requestAnimationFrame=()=>0
  const home=Kit.goHome('Ashford');Kit.goTo(home.x+360,home.y+320);t.MARCH_ARMIES.delete(P);const V=120,S=t.yourSight(V),TILE=t.TILE,changed=new Map();
  const cover=(x,y,kind)=>{const j=Math.floor(y/TILE)*t.MW+Math.floor(x/TILE);if(!changed.has(j))changed.set(j,t.tiles[j]);t.tiles[j]=kind};
  const c=t.asHerd({crit:true,id:'deer',n:3,x:P.x+85,y:P.y,hx:P.x+85,hy:P.y,dir:1,t:5,a:0,cool:0,idle:true,st:'bed',coat:2});W.critters=[c];
- const F=t.herdFlock(c,t.critterArt(c.id,0,c.coat),performance.now());Object.assign(F.m[0],{x:c.x,y:c.y});Object.assign(F.m[1],{x:P.x+85,y:P.y+32});Object.assign(F.m[2],{x:P.x+85,y:P.y-32});
+ const F=t.herdFlock(c,t.critterArt(c.id,0,c.coat),t.Time.ms());/* (on the map's own clock, as the game draws it: core/time.js) */Object.assign(F.m[0],{x:c.x,y:c.y});Object.assign(F.m[1],{x:P.x+85,y:P.y+32});Object.assign(F.m[2],{x:P.x+85,y:P.y-32});
  try{
   cover(c.x,c.y,t.T_FOREST);cover(F.m[1].x,F.m[1].y,t.T_OPEN);cover(F.m[2].x,F.m[2].y,t.T_FOREST);
   ok(!t.spotted(c,V)&&!c.memberVisible(F.m[0],V)&&c.memberVisible(F.m[1],V),'reproduction: the forest hides the centre while an individual remains visible on open ground');
@@ -21,9 +21,9 @@ Kit.suite(({ok,info})=>{const t=T,P=t.P,W=t.W;window.requestAnimationFrame=()=>0
   // Existing scattered members can remain visible even when the coordinator is entirely outside sight.
   c.x=P.x+600;F.m[1].x=P.x+40;F.m[1].y=P.y+32;cover(F.m[1].x,F.m[1].y,t.T_OPEN);
   ok(c.inView(V)&&f.inView(V),'scattered animals are not culled by an out-of-range coordinator');
-  const previous=F.t;c.st='walk';c.x-=2;const now=performance.now,at=previous+100;
-  try{performance.now=()=>at;c.draw([],{x:P.x-60,y:P.y-60},V)}finally{performance.now=now}
-  ok(F.t===at&&F.px===c.x,'nearby herd movement advances even when the centre is not visible');
+  const previous=F.t;c.st='walk';c.x-=2;const now=t.Time.t,at=previous+100;
+  try{t.Time.t=at/1000;c.draw([],{x:P.x-60,y:P.y-60},V)}finally{t.Time.t=now}
+  ok(Math.abs(F.t-at)<1e-6&&F.px===c.x,'nearby herd movement advances even when the centre is not visible');
   info('Mixed forest cover, individual drawing/picking/targeting, complete member counts and hidden-centre movement checked.');
   ok(!ERR.length,'individual wildlife visibility produces no runtime errors');
  }finally{for(const [j,k]of changed)t.tiles[j]=k}

@@ -44,7 +44,7 @@ class Horse{
      rider goes (terrain.js steerDir, on the riders' grid: nav, its body there), and kept off them as every soldier is (hold), off
      the rocks and trees (battle.js obstaclePush) and within the field (inside); stall: s it has hardly moved, held up */
   toward(x,y,spd,stop,dt){const dx=x-this.x,dy=y-this.y,d=Math.hypot(dx,dy);this.mv=d>stop;if(!this.mv)return true;
-    const ax=this.x,ay=this.y,n=this.nav||(this.nav={id:Math.random()*1e3|0,s:{mounted:true}}),st=Math.min(d,spd*dt*Speed.field()/fightSpace());n.x=ax;n.y=ay;const w=steerDir(n,x,y);
+    const ax=this.x,ay=this.y,n=this.nav||(this.nav={id:Math.random()*1e3|0,s:{mounted:true}}),st=Math.min(d,spd*dt*Speed.field());n.x=ax;n.y=ay;const w=steerDir(n,x,y);
     this.x+=(w?w[0]:dx/d)*st;this.y+=(w?w[1]:dy/d)*st;this.hold(ax,ay);
     const mv=Math.hypot(this.x-ax,this.y-ay);if(Math.abs(this.x-ax)>.3)this.face=this.x>ax?1:-1;this.stall=mv<st*.3?(this.stall||0)+dt:0;return false}
   // (its step from (ax, ay) refused or slid along where a soldier's would be: terrain.js hold)

@@ -84,6 +84,8 @@ js/core/              core.js (DOM, canvas, constants, helpers, the action regis
                       equipment.js (EquipmentService), recruitment.js (RecruitmentService: hiring, prices, upgrades: one full unit of the new kind),
                       talents.js (TalentService and character talent commands), session.js (GameSession and new game), save.js, worldkeep.js (WorldKeep: the made worlds kept on the device, so a load does not make its world again),
                       frametime.js (elapsed simulation steps and the shared frame deadline),
+                      time.js (Time: the one clock, a game second a real second at 1x; the map's calendar seconds made from it, evened frame time, the steady rate),
+                      speed.js (Speed: every mover's pace read from the one table, data/speed.js SPEED),
                       systems.js (Systems: the world's day and frame, each system's work registered in its own file with its order),
                       saves.js (Saves: the world part of a save, each piece registered with its key, order, save, load and defaults)
                       audio.js (the sound: context, buses, synth parts, the SFX cues), music.js (generative music, its moods, audioWatch);
@@ -91,7 +93,7 @@ js/core/              core.js (DOM, canvas, constants, helpers, the action regis
                       last days), bus.js (worldOn/worldEmit), rng.js (rngOf: named random streams), pronouns.js (genderOf, pr, prFill:
                       he or she), spatial.js (Spatial: nearest, within), assign.js (assignSlots: places to men by the least
                       walking, SLOTFILL)
-js/data/              tables only, no game logic: races (and WILD_RACES: those no one plays, the goblins), factions, units,
+js/data/              tables only, no game logic: races (and WILD_RACES: those no one plays, the goblins), factions, units, speed (SPEED: every speed, in map px a game second),
                       goblins (GOBLINS: their switch and every number, their troops), monsters (incl. mythic ones like the dragon), critters, hunters (HUNTERS: the holdings' hunters),
                       kits (a unit's kit, its terms: ORDERS, STANCES, KITS (each kind's ladder; RANK_SKILLS its old name), the skill bar's
                       SKILL_KEYS: doc/UNIT_KITS_DESIGN.md), abilities (the characters' skills, HERO_SKILLS, and the traits, TRAITS), matchups, gear, progression (pasts, skills, perks, companions), tree, holdings (the kinds of holding and their
@@ -1078,6 +1080,79 @@ Tunables: `AI_TACTICS` in `battle/commander.js`, `CHAR_FALL` in `battle/charmind
 ## Phones: resolution and frame rate (2026-10-29)
 
 The owner: "it lags on mobile". Settings → **Resolution** (core.js `RENDER.cap`, `dprOf`: Full the screen's own density, **Balanced** 2 (the default), Fast 1.5) and **Frame rate** (`RENDER.fps`: 60, or 30; main.js `loop` skips a frame sooner than .65 of its interval, so a 120 Hz screen draws 60, a 90 Hz one all of its own). The art is whole pixels, so fewer canvas pixels shown at the window's size (pixelated) look the same, the text a little coarser; every place that read `devicePixelRatio` reads `dprOf()`. And: `reducedMotion` (vfx.js) asks the browser once, not each call; the travel-detection eye (render.js `travelDetectionState`) is worked out at most every 100 ms, drawn only; a multi-army battle's `relation` (sides.js) is remembered while the jostle runs. Measured (headless, 844 × 390 at density 3, a world battle of about 90): the canvas 2534 × 1176 → 1692 × 783; the map's frame 13.1 → 5.0 ms to draw, 7.0 → 5.4 ms to update. Tests: render.
+
+## Time and speed: one clock, one table (2026-11-28)
+
+The owner: "I still feel like the battle frame rate is not smooth, can you check and make the game use single time unit, speed and
+make all units, or characters even the town folks or camps or armys or bandit using the same speed system? This also include world
+battle, battle screen and etc"; doc/TIME_SPEED_DESIGN.md (what was measured, the design, the choices: the battle's speeds
+everywhere, evened time on).
+
+**The clock** (`core/time.js` `Time`). A game second is a real second at 1x, in every mode. `main.js` hands it to a battle as it is
+and to the map through `Time.map(dt)`. The map reckons in calendar time: a day is `DAY_SECONDS` (293) of its own seconds, and how
+many of them a game second holds follows from the march's speed on screen (`Speed.mapRate()`), so a day's march covers the same
+ground whatever that speed is. `Time.day()`: a day's game seconds at 1x, 708 (it was 391). `Time.t`: the game seconds played on the
+map (its speed in them, none while paused): a herd's animals, a pasture's and an army turning run on it; they stood on the wall
+clock, so they moved while the game was paused and ignored 2x.
+Gone: `WORLD_TEMPO`, `BATTLE_TEMPO`, `BATTLE_PACE`, `HERO_PACE` (now `SPEED.hero`).
+
+**The table** (`data/speed.js` `SPEED`; read by `core/speed.js` `Speed`). The unit: map px a game second, for a man on foot (speed
+stat 38) on open ground. Every mover's step is his pace x his gait x the ground x the step's time x the screen's scale.
+
+| Gait | px a second | Who |
+|---|---|---|
+| stalk | 3 | a hunter creeping up on game |
+| laden | 4 | a worker carrying |
+| stroll | 4.5 | town and camp folk, workers, sentries about their day; a town scene's folk |
+| walk | 5.6 | a formation's advance in a fight |
+| march | 8 | an army on the map; whoever walks the map on his way |
+| hurry | 9 | folk home from danger |
+| run | 10.3 | a charge; folk fleeing; you in a town's scene |
+| rout | 11.3 | a broken man |
+| sprint | 16.4 | your hero in hand (Shift), in a fight and in a scene |
+
+`SPEED.map`: who else goes on the map at what (caravan 4, refugee 2.6, ship 6.1, boat 3.1, a band going home 3.8 or wandering 2.8,
+a beast 6.1 or idle 2.4, a herd wandering 1.9, a holding's stock .95, a scattered herd gathering 1.4, a camp's beasts 1.2).
+`SPEED.body`: a figure's own px to a map px (2: the battle screen and a scene draw it at its own size; a fight on the map 6 field
+px a map px, its men 3 times their field's px). `SPEED.hero`: your hero out of his ranks, times his men's time.
+A party's pace is still its slowest and its average, its size and its load (`paceRatio`, `sizeMul`, `bandPace`), a soldier's his
+stat, an animal's its own (`CRITTERS.spd`); the pace numbers left in the other tables (critters, monsters, road encounters) are on
+the march's old scale, 34 a march (`Speed.px(n)` turns one into px a second).
+
+**What changed on screen** (the owner's choice: the battle's speeds everywhere). The battle is as it was. On the map a march is 8 px
+a second, was 14.5, and everything else on it as much slower with it (the map's clock runs at .41 of a game second, was .75), so a
+day is 11.8 minutes at 1x, was 6.5: 2x looks much as 1x did. Folk on foot are on the ladder: a stroll 4.5 (was 11.1), laden 4 (was
+7.8), hurry 9 (was 15.8), run 10.3 (was 21.7). In a town's scene you run at a soldier's run, 20.5 scene px a second (was 64; Shift
+32.8), and its folk stroll at 9 (was 20). An army walking into a fight on the map comes at the march's 8, between the fighters'
+walk and charge (it came at 14.5, faster than their charge); its men's steps are no longer 1.28 times too long there; a loose
+horse in a fight on the map goes as far as one on the battle screen (it went a third as far).
+
+**Reading it in code.** `Speed.gait(g)`, `Speed.ratio(a, b)` (a formation's walk of its run: `MARCH.walk`), `Speed.share(g)` (a map
+walker's gait as a share of a march: `footPace`), `Speed.pace(k)` (a row of `SPEED.map` as the map's pace number, what `moveStep`
+takes), `Speed.field()` (a soldier's field px a second for each point of his stat: `groundMul`), `Speed.scene(g)`.
+Gone: `BATTLE_RHYTHM.move`, `ROUT_RUN`, `SPRINT_MUL`, `WORLD_BATTLE.walk`, `MARCH.base`, `ON_FOOT.gait`, `SCENE_SPD`, `FOLK_SPD`,
+`HERD_SCATTER.gather`, `ENCAMP.folk.graze.speed`, and the numbers 16, 12, 26 and 10 in the bands' and beasts' moves. `CARAVAN_SPD`,
+`REFUGEE_SPD`, `SHIP_SPD` and `BOAT_SPD` stay as names for the table's rows.
+
+**Even frames.** Measured in a fight of 40 against 40 on the map at a phone's size: the battle's update 9.7 ms a frame, with a
+hitch of about 50 ms twice a second and one of 129 ms when a group broke. Now about 5 ms, the slowest hundredth of frames 79 to
+about 25 ms.
+- A fight on the map takes a frame's time in one battle step, as the battle screen does (`WORLD_BATTLE.step`: it stepped in
+  sixtieths, the whole battle twice a frame at a phone's 30 frames a second).
+- The captains' "can they reach it?" is answered from the ground's regions (`route.js` `routeRegions`, `routeReach`), labelled once
+  when the ground changes; it was a search of the whole field for every group and foe.
+- Men fleeing a fight on the map, and those coming back, share one reckoning of the way out and the way in (`routeNearest`,
+  `WorldBattleArea#nearestField`).
+- Evened time (`Time.even`, `TIME.even`): a frame's time is whole beats of the screen, averaged over the last 3 frames, so a late
+  frame moves everyone a little further for a few frames in place of far in one; a stall of more than 4 beats is passed whole.
+- The steady rate (`Time.work`, `Time.fps`, `TIME.steady`): at 60 frames a second, a scene whose frames keep taking over .9 of a
+  60th of a second is held at 30 till they take under .55 of one; Settings, Frame rate says so.
+
+**Left.** Far parties, caravans, ships and beasts still think every 4th or 12th step with that many steps' time (`WORLD_LOD`), and
+the world round a fight on the map every 3rd (`OPEN_FIGHT.every`): what they do is the same at any frame rate, how often is not.
+The map's own timers stay in its calendar units (shares of a day), made from the clock in one place (`Time.map`). The periodic
+work of a battle (morale views, sight) still does all its men on one step. Tests: `smoothframes`, `speedtable`, `frametime`,
+`battlespeed`.
 
 ## Figures and their gear (2026-10-31)
 

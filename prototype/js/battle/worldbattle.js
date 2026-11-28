@@ -45,7 +45,7 @@ const fightHolds=o=>inMapFight(o)||!!B?.world?.bystanders?.entries.has(o);
 //  the owner, 2026-11-15: "fix the battle performance")
 let OPEN_FIGHT_RT=0,OPEN_FIGHT_N=0;
 function openFightWorld(rt){const O=OPEN_FIGHT;if(!O.on||!O.world||!B?.world||B.paused||B.deploy||B.muster?.active||B.over||G.dead||G.modal){OPEN_FIGHT_RT=0;OPEN_FIGHT_N=0;return}
-  OPEN_FIGHT_RT+=rt;if(++OPEN_FIGHT_N<(O.every|0||1))return;rt=OPEN_FIGHT_RT;OPEN_FIGHT_RT=0;OPEN_FIGHT_N=0;
+  Time.pass(rt/Speed.mapRate()*G.speed);OPEN_FIGHT_RT+=rt;if(++OPEN_FIGHT_N<(O.every|0||1))return;rt=OPEN_FIGHT_RT;OPEN_FIGHT_RT=0;OPEN_FIGHT_N=0;
   Systems.hold=Systems.hold||new Set(O.held);lodTick(rt);Clock.advance(rt*G.speed*DAY/DAY_SECONDS);if(G.dead||!B)return;Systems.frame(rt*G.speed*WORLD_PACE,rt,O.still,true)}
 // (the fight over, B gone: your band's days and hours held through it run now; never while its Esc menu is up over it)
 function openFightOver(){if(Systems.hold&&!B)Systems.release()}
@@ -96,7 +96,7 @@ class BattleBystanders{
       let left=this.speed(o)*dt/this.area.scale,moved=0;
       while(left>0&&p.i<p.path.length){const q=p.path[p.i],dx=q.x-o.x,dy=q.y-o.y,d=Math.hypot(dx,dy);if(d<.1){p.i++;continue}const n=Math.min(left,d),to={x:o.x+dx*n/d,y:o.y+dy*n/d};if(!p.nav.clear(o,to))break;o.x=to.x;o.y=to.y;o.dir=dx>=0?1:-1;WALKED.set(o,(WALKED.get(o)||0)+n);left-=n;moved+=n}
       if(o.mapKind==='worker')o.moving=moved>0;
-      if(o instanceof Party)MarchArmy.of(o).step(dt/(this.area.scale*WORLD_SCALE.move));
+      if(o instanceof Party)MarchArmy.of(o).step(dt/(this.area.scale*WORLD_SCALE.move*WORLD_SCALE.travel));// (its men's time the party's own: moveStep's travel too, once)
     }
   }
   finish(){for(const [o,p] of this.entries)if(o.mapKind==='worker')o.moving=p.moving;this.entries.clear();this.navs.clear()}
@@ -308,7 +308,7 @@ class WorldBattleArea{
     const look=(this.scanT=(this.scanT||0)-dt)<=0;if(look)this.scanT=WORLD_BATTLE.scan;this.reinforce(dt,look);(this.bystanders||(this.bystanders=new BattleBystanders(this))).step(dt);this.watchBlocked();
   }
   enterMarchers(dt){
-    if(!this.arrivals.length)return;for(const army of new Set(this.arrivals.map(a=>a.army))){const o=army.owner,d=Math.hypot(o.x-this.x,o.y-this.y);if(o!==P&&d>Math.max(0,this.r-marchOuter(o)-3))walk(o,this.x-o.x,this.y-o.y,Math.min(d,partySpeed(o,o.troops)*dt/this.scale));army.step(dt/(this.scale*WORLD_SCALE.move),false,this.marchClamp,this.marchInside)}let entered=false;
+    if(!this.arrivals.length)return;for(const army of new Set(this.arrivals.map(a=>a.army))){const o=army.owner,d=Math.hypot(o.x-this.x,o.y-this.y);if(o!==P&&d>Math.max(0,this.r-marchOuter(o)-3))walk(o,this.x-o.x,this.y-o.y,Math.min(d,partySpeed(o,o.troops)*dt/this.scale));army.step(dt/(this.scale*WORLD_SCALE.move*WORLD_SCALE.travel),false,this.marchClamp,this.marchInside)}let entered=false;
     this.arrivals=this.arrivals.filter(a=>{const p=this.field(a.mini),u=a.u;u.x=p.x;u.y=p.y;if(!this.inside(p,6))return true;u.hp=u.hpLeft;delete u.waiting;delete u.left;SiteLife.bind(B,this,[u]);heralded([u]);const r=B.groups[u.grp]?.resolve;if(r){r.refreshState();r.sync()}entered=true;return false});
     if(entered){B.cmdT=0;B.moraleNext=0;setOrderUI()}
   }

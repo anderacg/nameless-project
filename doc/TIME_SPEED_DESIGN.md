@@ -2,7 +2,7 @@
 
 The owner, 2026-11-28: "I still feel like the battle frame rate is not smooth, can you check and make the game use single time unit, speed and make all units, or characters even the town folks or camps or armys or bandit using the same speed system? This also include world battle, battle screen and etc. Design what you do first".
 
-**Status:** design only, nothing built. Two choices are the owner's (§5).
+**Status:** built 2026-11-28 (the owner: "Go": choice A1, the battle's speeds everywhere; B, evened time on). Code: `core/time.js` `Time`, `data/speed.js` `SPEED`, `core/speed.js` `Speed`; `battle/route.js` `routeRegions`, `routeReach`, `routeNearest`. Tests: `smoothframes`, `speedtable`, `frametime`, `battlespeed`. What is in the game is in `prototype/README.md`, "Time and speed: one clock, one table"; what was built otherwise than designed here, and what is left, in §7.
 
 ## 1. What was measured
 
@@ -115,3 +115,13 @@ Tests: a new `smoothframes` (steps a frame, the worst step, no lump of periodic 
 
 - No drawing between simulation steps (interpolation): with one step a frame and evened time it adds nothing, and it would touch every drawing routine.
 - The cost of drawing (9 to 10 ms a frame here) is its own work: `?gpu=1` and the final composite, as said on 2026-11-27.
+
+## 7. As built
+
+- **The map's time is calendar time.** §3.1 and §4 step 5 said the map's timers would be rewritten in game seconds. They were not: everything the map counts is a share of a day (the owner's earlier requests kept it so), so the map keeps its own seconds, 293 a day, and `Time.map` makes them from game seconds in one place, at a rate that follows from the march's speed in the table. A day's march is the same ground at any speed; the timers needed no change and the world's fingerprints held.
+- **The ladder as built** (map px a game second, a man on foot): stalk 3, laden 4, stroll 4.5, walk 5.6, march 8, hurry 9, run 10.3, rout 11.3, sprint 16.4. A day is 708 game seconds at 1x (was 391).
+- **Two tables' pace numbers stay where they are**, on the march's old scale (34 is a march): the animals' (`CRITTERS.spd`), the beasts' (`data/monsters.js`) and the road encounters' (`ENC_SPD`). `Speed.px` turns one into px a second.
+- **Even frames:** done: one battle step a frame, the captains' reach by regions, one way out for the men who break (a hitch of 129 ms found while measuring, not in §1), evened time, the steady rate. Not done: the beat for periodic work (§3.3 item 3): each side's captain on its own step and morale a few groups a step would move the battle's fingerprints for a few ms; the world round a fight still steps every third frame. The Timings panel already showed the worst frame (item 7). One hitch of .2 s in the parties' update round a fight was seen twice and not caught again in a 30 s profile: not traced.
+- **Still counted in steps:** far parties, caravans, ships and beasts think every 4th or 12th step with that many steps' time (`WORLD_LOD`).
+- **Still on the wall clock, drawing only:** a camp's tents going up, a caravan's gait frames, flags and fires.
+
